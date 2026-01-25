@@ -1,16 +1,27 @@
 import { Post } from '../types';
 import { postsConfig } from '../site.config';
 
+
+const postFiles = import.meta.glob('../posts/*.md', { query: '?raw', import: 'default' });
+
 const fetchMarkdown = async (path: string): Promise<string> => {
+
+  const relativePath = `..${path}`;
+  
+  const loader = postFiles[relativePath];
+
+  if (!loader) {
+    console.error(`Markdown file not found: ${relativePath}`);
+    return '# Error Loading Content\n\nFile not found.';
+  }
+
   try {
-    const response = await fetch(path);
-    if (!response.ok) {
-      throw new Error(`Failed to load markdown: ${response.statusText}`);
-    }
-    return await response.text();
+
+    const content = await loader();
+    return content as string;
   } catch (error) {
     console.error(error);
-    return '# Error Loading Content\n\nCould not fetch the article content.';
+    return '# Error Loading Content\n\nCould not load the article content.';
   }
 };
 
