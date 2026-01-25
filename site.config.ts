@@ -48,34 +48,14 @@ export const postsConfig: PostConfig[] = [
     top: 1 // 置顶文章，排名第1
   },
   {
-    id: 'escape-plan',
-    title: '跑路的 Duck：我的逃跑计划',
+    id: 'cf-tunnel',
+    title: '1',
     excerpt: '告别复杂的后端依赖，拥抱 Serverless 和 Edge Computing。一个赛博鸭子的独白。',
-    date: '2023-11-15',
-    category: '随笔',
-    tags: ['生活', 'Cloudflare', 'Duck'],
-    readTime: '2 分钟阅读',
-    coverImage: 'https://picsum.photos/seed/duck/800/400',
-    filePath: '/posts/escape.md'
-  },
-  {
-    id: 'future-web',
-    title: 'Web 3.0 与去中心化存储',
-    excerpt: '虽然是个热词，但其中的技术原理值得探究。IPFS 在前端部署中的应用前景。',
-    date: '2023-12-01',
+    date: '2026-01-25',
     category: '技术',
-    tags: ['Web3', '区块链'],
-    readTime: '7 分钟阅读',
-    filePath: '/posts/web3.md'
-  },
-  {
-    id: 'react-server-components',
-    title: 'RSC: 前端的又一次革命？',
-    excerpt: 'React Server Components 到底解决了什么问题？它是 Next.js 的专属吗？',
-    date: '2023-12-10',
-    category: '技术',
-    tags: ['React', 'RSC'],
-    readTime: '6 分钟阅读',
-    filePath: '/posts/rsc.md'
+    tags: ['网络', 'Cloudflare', '内网穿透'],
+    readTime: '10分钟阅读',
+    coverImage: 'https://cdn.imgos.cn/vip/2026/01/25/6975b7847a444.png',
+    filePath: '/posts/ecf-tunnel.md'
   }
 ];
