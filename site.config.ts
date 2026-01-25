@@ -49,13 +49,13 @@ export const postsConfig: PostConfig[] = [
   },
   {
     id: 'cf-tunnel',
-    title: '1',
-    excerpt: '告别复杂的后端依赖，拥抱 Serverless 和 Edge Computing。一个赛博鸭子的独白。',
+    title: 'Cloudflare Tunnel内网穿透',
+    excerpt: '教你使用Cloudflare Tunnel轻松实现内网穿透',
     date: '2026-01-25',
     category: '技术',
     tags: ['网络', 'Cloudflare', '内网穿透'],
     readTime: '10分钟阅读',
     coverImage: 'https://cdn.imgos.cn/vip/2026/01/25/6975b7847a444.png',
-    filePath: '/posts/ecf-tunnel.md'
+    filePath: '/posts/cf-tunnel.md'
   }
 ];
