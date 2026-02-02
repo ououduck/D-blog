@@ -119,8 +119,8 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({
         to={`/post/${post.id}`} 
         className="group relative flex flex-col h-full bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 shadow-sm hover:shadow-xl transition-all duration-300"
       >
-        {/* 图片容器 - 调整为 16:9 比例 (aspect-video)，视野更开阔且符合大多数封面尺寸 */}
-        <div className="relative aspect-video overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-b border-zinc-100 dark:border-zinc-800/50">
+        {/* 图片容器 - 改为固定高度 h-52 (约208px) 并保持宽度填满，解决图片显示不一致或不全的问题 */}
+        <div className="relative h-52 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-b border-zinc-100 dark:border-zinc-800/50">
           {post.coverImage ? (
              <motion.img 
               src={post.coverImage} 
