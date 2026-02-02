@@ -21,14 +21,14 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({
     }
   };
 
-  // 统一的分类标签样式（毛玻璃效果）
+  // 统一的分类标签样式
   const CategoryBadge = ({ text }: { text: string }) => (
-    <span className="backdrop-blur-md bg-white/70 dark:bg-black/60 border border-white/20 text-ink dark:text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm z-10">
+    <span className="backdrop-blur-md bg-white/90 dark:bg-zinc-800/90 border border-zinc-200/50 dark:border-zinc-700/50 text-ink dark:text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm z-10">
       {text}
     </span>
   );
 
-  // --- 置顶/推荐大卡片 ---
+  // --- 置顶/推荐大卡片 (布局重构：桌面端左右分栏，移动端上下分栏) ---
   if (featured) {
     return (
       <motion.div
@@ -36,60 +36,71 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({
         className="col-span-1 md:col-span-2 lg:col-span-3 w-full"
       >
         <Link to={`/post/${post.id}`} className="group block h-full">
-          <div className="relative overflow-hidden rounded-[2rem] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl shadow-zinc-200/50 dark:shadow-none transition-all duration-500 hover:shadow-xl dark:hover:border-zinc-700">
+          <div className="relative overflow-hidden rounded-[2rem] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl shadow-zinc-200/50 dark:shadow-none transition-all duration-500 hover:shadow-xl dark:hover:border-zinc-700 flex flex-col md:flex-row h-auto md:h-[450px] lg:h-[480px]">
             
-            {/* 移动端：上图下文；桌面端：全屏背景图模式 */}
-            <div className="flex flex-col md:block h-full">
-              
-              {/* 图片区域 */}
-              <div className="relative w-full h-64 md:h-[500px] overflow-hidden">
-                {post.coverImage ? (
-                  <motion.img 
-                    src={post.coverImage} 
-                    alt={post.title}
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform"
-                    whileHover={{ scale: 1.05 }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                    <Sparkles className="text-zinc-300 w-16 h-16" />
-                  </div>
-                )}
-                
-                {/* 桌面端遮罩 (移动端隐藏) */}
-                <div className="hidden md:block absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
-                
-                {/* 左上角分类标签 */}
-                <div className="absolute top-4 left-4 md:top-6 md:left-6">
-                   <CategoryBadge text={post.category} />
+            {/* 图片区域 - 桌面端占左侧 60% */}
+            <div className="relative w-full md:w-3/5 h-64 md:h-full overflow-hidden border-b md:border-b-0 md:border-r border-zinc-100 dark:border-zinc-800">
+              {post.coverImage ? (
+                <motion.img 
+                  src={post.coverImage} 
+                  alt={post.title}
+                  className="w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                  <Sparkles className="text-zinc-300 w-16 h-16" />
                 </div>
-
-                {/* 右上角置顶图标 */}
-                {post.top !== undefined && (
-                  <div className="absolute top-4 right-4 md:top-6 md:right-6 bg-accent text-white p-2 rounded-full shadow-lg z-20">
-                    <Pin size={18} fill="currentColor" />
-                  </div>
-                )}
+              )}
+              
+              {/* 左上角分类标签 */}
+              <div className="absolute top-4 left-4 md:top-6 md:left-6">
+                 <CategoryBadge text={post.category} />
               </div>
 
-              {/* 内容区域 */}
-              <div className="relative p-6 md:absolute md:bottom-0 md:left-0 md:p-12 w-full md:max-w-4xl z-20 bg-white dark:bg-zinc-900 md:bg-transparent md:dark:bg-transparent">
-                <h2 className="text-2xl md:text-5xl font-serif font-bold text-ink dark:text-white md:text-white mb-3 md:mb-4 leading-tight group-hover:text-accent md:group-hover:text-white md:group-hover:translate-x-2 transition-all duration-300">
-                  {post.title}
-                </h2>
-                <p className="text-sm md:text-lg text-zinc-500 dark:text-zinc-400 md:text-gray-200 line-clamp-2 md:line-clamp-2 mb-4 md:mb-6 font-sans">
-                  {post.excerpt}
-                </p>
-                <div className="flex items-center text-zinc-400 md:text-gray-300 text-xs md:text-sm font-medium tracking-wide gap-4">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar size={14} />
-                    <span>{post.date}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Clock size={14} />
-                    <span>{post.readTime}</span>
-                  </div>
+              {/* 右上角置顶图标 (仅移动端显示在图片上，桌面端移至内容区) */}
+              {post.top !== undefined && (
+                <div className="md:hidden absolute top-4 right-4 bg-accent text-white p-2 rounded-full shadow-lg z-20">
+                  <Pin size={16} fill="currentColor" />
                 </div>
+              )}
+            </div>
+
+            {/* 内容区域 - 桌面端占右侧 40% */}
+            <div className="relative w-full md:w-2/5 p-6 md:p-10 lg:p-12 flex flex-col justify-center bg-white dark:bg-zinc-900">
+              {/* 桌面端置顶图标 */}
+              {post.top !== undefined && (
+                <div className="hidden md:flex absolute top-6 right-6 text-accent bg-accent/10 p-2 rounded-full">
+                  <Pin size={18} fill="currentColor" />
+                </div>
+              )}
+
+              <div className="mb-4 hidden md:block">
+                 <span className="text-xs font-bold tracking-widest uppercase text-zinc-400">Featured Post</span>
+              </div>
+
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-serif font-bold text-ink dark:text-white mb-4 leading-tight group-hover:text-accent transition-colors duration-300">
+                {post.title}
+              </h2>
+              <p className="text-sm md:text-base text-zinc-500 dark:text-zinc-400 line-clamp-3 md:line-clamp-4 mb-6 font-sans leading-relaxed">
+                {post.excerpt}
+              </p>
+              
+              <div className="flex items-center text-zinc-400 text-xs md:text-sm font-medium tracking-wide gap-4 mt-auto md:mt-0">
+                <div className="flex items-center gap-1.5">
+                  <Calendar size={14} />
+                  <span>{post.date}</span>
+                </div>
+                <div className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></div>
+                <div className="flex items-center gap-1.5">
+                  <Clock size={14} />
+                  <span>{post.readTime}</span>
+                </div>
+              </div>
+
+              {/* Read More Button (Visual only) */}
+              <div className="mt-8 hidden md:flex items-center text-accent text-sm font-bold tracking-wider uppercase group/btn">
+                <span className="mr-2">阅读全文</span>
+                <ArrowUpRight size={16} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
               </div>
             </div>
           </div>
@@ -108,8 +119,8 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({
         to={`/post/${post.id}`} 
         className="group relative flex flex-col h-full bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 shadow-sm hover:shadow-xl transition-all duration-300"
       >
-        {/* 图片容器 - 调整为 16:10 比例，视野更开阔 */}
-        <div className="relative aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+        {/* 图片容器 - 调整为 16:9 比例 (aspect-video)，视野更开阔且符合大多数封面尺寸 */}
+        <div className="relative aspect-video overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-b border-zinc-100 dark:border-zinc-800/50">
           {post.coverImage ? (
              <motion.img 
               src={post.coverImage} 
@@ -142,9 +153,9 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({
           </div>
         </div>
         
-        {/* 文字内容 - 增加内边距 */}
+        {/* 文字内容 */}
         <div className="flex flex-col flex-grow p-5 md:p-6">
-          <h3 className="text-xl font-serif font-bold mb-3 text-ink dark:text-gray-100 leading-snug group-hover:text-accent dark:group-hover:text-accent-light transition-colors line-clamp-2">
+          <h3 className="text-lg md:text-xl font-serif font-bold mb-3 text-ink dark:text-gray-100 leading-snug group-hover:text-accent dark:group-hover:text-accent-light transition-colors line-clamp-2">
             {post.title}
           </h3>
           <p className="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed line-clamp-2 mb-6 flex-grow">
@@ -167,7 +178,7 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({
   );
 };
 
-// --- 筛选栏组件 (保持大致不变，微调间距) ---
+// --- 筛选栏组件 ---
 const FilterBar = ({ 
   categories, 
   selected, 
@@ -213,7 +224,7 @@ const FilterBar = ({
   );
 };
 
-// --- Hero 区域 (微调移动端间距) ---
+// --- Hero 区域 ---
 const Hero = ({ onSearch }: { onSearch: (val: string) => void }) => {
   return (
     <div className="py-16 md:py-32 flex flex-col items-center text-center relative z-10 px-4">
