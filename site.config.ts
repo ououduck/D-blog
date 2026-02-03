@@ -57,5 +57,16 @@ export const postsConfig: PostConfig[] = [
     readTime: '10分钟阅读',
     coverImage: 'https://cdn.imgos.cn/vip/2026/01/25/6975b7847a444.png',
     filePath: '/posts/cf-tunnel.md'
+  },
+  {
+    id: 'Ddomain',
+    title: 'Ddomain二级域名',
+    excerpt: '精品实惠二级域名',
+    date: '2026-02-03',
+    category: '技术',
+    tags: ['Ddomain', '二级域名', '备案域名'],
+    readTime: '1分钟阅读',
+    coverImage: 'https://cdn.imgos.cn/vip/2026/02/03/6981b42b3aa28.jpg',
+    filePath: '/posts/Ddomain.md'
   }
 ];
