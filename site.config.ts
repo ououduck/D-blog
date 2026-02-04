@@ -42,7 +42,7 @@ export const postsConfig: PostConfig[] = [
     category: '随笔',
     tags: ['D-blog', 'D博客', '跑路的duck'],
     readTime: '1分钟阅读',
-    coverImage: 'https://aliyun-oss.pldduck.com/logo.jpg',
+    coverImage: 'https://aliyun-oss.pldduck.com/logo.png',
     filePath: '/posts/about-dblog.md',
     featured: true, // 自定义大卡片
     top: 1 // 置顶文章，排名第1
@@ -55,7 +55,7 @@ export const postsConfig: PostConfig[] = [
     category: '技术',
     tags: ['网络', 'Cloudflare', '内网穿透'],
     readTime: '10分钟阅读',
-    coverImage: 'https://aliyun-oss.pldduck.com/D-blog/cf.png',
+    coverImage: 'https://aliyun-oss.pldduck.com/D-blog/cloudflare.png',
     filePath: '/posts/cf-tunnel.md'
   },
   {
