@@ -6,4 +6,4 @@
 #### **超多低价未备案域名**
 #### **(可以通过够没会员组 10元获得未备案域名无限量解析/对接)**
 # 网址 [dns.3pw.pw](https://dns.3pw.pw)
-![Ddomain图片](https://cdn.imgos.cn/vip/2026/02/03/6981b42b3aa28.jpg)
+![Ddomain图片](https://aliyun-oss.pldduck.com/D-blog/6981b42b3aa28.jpg)
