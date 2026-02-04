@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Clock, Calendar, Shield } from 'lucide-react';
 import { getPostById } from '../services/posts';
 import { Post as PostType } from '../types';
+import { Seo } from '../components/Seo';
 
 export const Post = () => {
   const { id } = useParams<{ id: string }>();
@@ -13,7 +14,6 @@ export const Post = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-
     if (id) {
       setLoading(true);
       getPostById(id).then(data => {
@@ -28,6 +28,7 @@ export const Post = () => {
   if (!post) {
     return (
       <div className="text-center py-40">
+         <Seo title="404 Not Found" />
         <h2 className="text-3xl font-serif font-bold mb-4">未找到文章</h2>
         <Link to="/" className="text-accent hover:underline">返回首页</Link>
       </div>
@@ -36,16 +37,20 @@ export const Post = () => {
 
   return (
     <motion.article 
-      initial={{ opacity: 0, y: 100, filter: 'blur(10px)' }}
-      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-      exit={{ opacity: 0, y: -50, filter: 'blur(10px)' }}
-      transition={{ 
-        duration: 0.8, 
-        ease: [0.22, 1, 0.36, 1]
-      }}
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
     >
+      <Seo 
+        title={post.title} 
+        description={post.excerpt} 
+        image={post.coverImage} 
+        type="article"
+      />
+
       <header className="max-w-4xl mx-auto pt-10 mb-16 text-center">
-        <Link to="/" className="inline-flex items-center text-zinc-500 hover:text-accent transition-colors mb-10 group font-medium text-sm tracking-wide uppercase">
+        <Link to="/" className="inline-flex items-center text-zinc-500 hover:text-accent transition-colors mb-10 group font-bold text-xs tracking-widest uppercase">
           <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" />
           返回文章
         </Link>
@@ -53,38 +58,31 @@ export const Post = () => {
         <motion.div
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.2, duration: 0.8 }}
+           transition={{ delay: 0.2 }}
         >
           <div className="flex flex-col items-center gap-4 mb-8">
-            <span className="px-4 py-1.5 text-sm font-bold tracking-wider uppercase bg-accent/10 text-accent rounded-full">
+            <span className="px-4 py-1.5 text-xs font-bold tracking-widest uppercase bg-accent/10 text-accent rounded-full border border-accent/20">
                 {post.category}
             </span>
-            <div className="flex gap-2">
-                {post.tags.map(tag => (
-                   <span key={tag} className="text-zinc-400 text-xs">
-                     #{tag}
-                   </span>
-                ))}
-            </div>
           </div>
           
-          <h1 className="text-4xl md:text-6xl font-serif font-bold mb-8 text-ink dark:text-white leading-tight">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-8 text-ink dark:text-white leading-[1.2]">
             {post.title}
           </h1>
           
-          <div className="flex items-center justify-center space-x-8 text-zinc-500 dark:text-zinc-400 font-medium text-sm">
-            <span className="flex items-center"><Calendar size={16} className="mr-2" /> {post.date}</span>
+          <div className="flex items-center justify-center space-x-6 text-zinc-500 dark:text-zinc-400 font-bold text-xs tracking-wide uppercase">
+            <span className="flex items-center"><Calendar size={14} className="mr-2" /> {post.date}</span>
             <span className="w-1 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full"></span>
-            <span className="flex items-center"><Clock size={16} className="mr-2" /> {post.readTime}</span>
+            <span className="flex items-center"><Clock size={14} className="mr-2" /> {post.readTime}</span>
           </div>
         </motion.div>
       </header>
 
       {post.coverImage && (
         <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
+          initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: 0.3, duration: 0.8 }}
           className="mb-20 rounded-3xl overflow-hidden shadow-2xl shadow-zinc-200/50 dark:shadow-none mx-auto max-w-6xl aspect-[21/9]"
         >
           <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
@@ -92,7 +90,7 @@ export const Post = () => {
       )}
 
       <div className="max-w-3xl mx-auto px-4 pb-32">
-        <div className="prose prose-xl prose-stone dark:prose-invert max-w-none 
+        <div className="prose prose-lg prose-stone dark:prose-invert max-w-none 
           prose-headings:font-serif prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-ink dark:prose-headings:text-white
           prose-p:font-sans prose-p:text-lg prose-p:leading-relaxed prose-p:text-zinc-700 dark:prose-p:text-zinc-300
           prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline
