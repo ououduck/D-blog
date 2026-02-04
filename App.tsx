@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { HelmetProvider } from 'react-helmet-async';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { Post } from './pages/Post';
@@ -13,7 +12,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    // 优化：缩短加载时间到 1.5s，提升体感速度
     const duration = 1500; 
     const intervalTime = 20;
     const steps = duration / intervalTime;
@@ -130,19 +128,17 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   return (
-    <HelmetProvider>
-      <Router>
-        <AnimatePresence>
-          {loading && <LoadingScreen onComplete={() => setLoading(false)} />}
-        </AnimatePresence>
-        
-        {!loading && (
-          <Layout>
-            <AnimatedRoutes />
-          </Layout>
-        )}
-      </Router>
-    </HelmetProvider>
+    <Router>
+      <AnimatePresence>
+        {loading && <LoadingScreen onComplete={() => setLoading(false)} />}
+      </AnimatePresence>
+      
+      {!loading && (
+        <Layout>
+          <AnimatedRoutes />
+        </Layout>
+      )}
+    </Router>
   );
 };
 
