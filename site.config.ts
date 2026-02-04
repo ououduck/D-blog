@@ -42,7 +42,7 @@ export const postsConfig: PostConfig[] = [
     category: '随笔',
     tags: ['D-blog', 'D博客', '跑路的duck'],
     readTime: '1分钟阅读',
-    coverImage: 'https://cdn.imgos.cn/vip/2026/01/25/69756e9938a02.jpg',
+    coverImage: 'https://aliyun-oss.pldduck.com/logo.jpg',
     filePath: '/posts/about-dblog.md',
     featured: true, // 自定义大卡片
     top: 1 // 置顶文章，排名第1
@@ -55,7 +55,7 @@ export const postsConfig: PostConfig[] = [
     category: '技术',
     tags: ['网络', 'Cloudflare', '内网穿透'],
     readTime: '10分钟阅读',
-    coverImage: 'https://cdn.imgos.cn/vip/2026/01/25/6975b7847a444.png',
+    coverImage: 'https://aliyun-oss.pldduck.com/D-blog/cf.png',
     filePath: '/posts/cf-tunnel.md'
   },
   {
@@ -66,7 +66,7 @@ export const postsConfig: PostConfig[] = [
     category: '技术',
     tags: ['Ddomain', '二级域名', '备案域名'],
     readTime: '1分钟阅读',
-    coverImage: 'https://cdn.imgos.cn/vip/2026/02/03/6981b42b3aa28.jpg',
+    coverImage: 'https://aliyun-oss.pldduck.com/D-blog/6981b42b3aa28.jpg',
     filePath: '/posts/Ddomain.md'
   }
 ];
