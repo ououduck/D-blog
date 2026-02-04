@@ -1,13 +1,10 @@
 import { Post } from '../types';
 import { postsConfig } from '../site.config';
 
-
 const postFiles = import.meta.glob('../posts/*.md', { query: '?raw', import: 'default' });
 
 const fetchMarkdown = async (path: string): Promise<string> => {
-
   const relativePath = `..${path}`;
-  
   const loader = postFiles[relativePath];
 
   if (!loader) {
@@ -16,7 +13,6 @@ const fetchMarkdown = async (path: string): Promise<string> => {
   }
 
   try {
-
     const content = await loader();
     return content as string;
   } catch (error) {
@@ -26,13 +22,11 @@ const fetchMarkdown = async (path: string): Promise<string> => {
 };
 
 export const getPosts = async (): Promise<Post[]> => {
-  return new Promise((resolve) => {
-    const posts: Post[] = postsConfig.map(config => ({
+  // 移除 setTimeout，直接返回数据
+  return Promise.resolve(postsConfig.map(config => ({
       ...config,
       content: ''
-    }));
-    setTimeout(() => resolve(posts), 800); 
-  });
+  })));
 };
 
 export const getPostById = async (id: string): Promise<Post | undefined> => {
@@ -54,23 +48,16 @@ export const searchPosts = async (query: string): Promise<Post[]> => {
   if (!query) return [];
   const lowerQuery = query.toLowerCase();
   
-  return new Promise((resolve) => {
-    setTimeout(() => {
-        resolve(postsConfig.filter(post => 
-            post.title.toLowerCase().includes(lowerQuery) || 
-            post.tags.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
-            post.category.toLowerCase().includes(lowerQuery) ||
-            post.excerpt.toLowerCase().includes(lowerQuery)
-        ).map(p => ({ ...p, content: '' })));
-    }, 300);
-  });
+  // 移除模拟网络延迟，直接返回结果
+  return Promise.resolve(postsConfig.filter(post => 
+      post.title.toLowerCase().includes(lowerQuery) || 
+      post.tags.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
+      post.category.toLowerCase().includes(lowerQuery) ||
+      post.excerpt.toLowerCase().includes(lowerQuery)
+  ).map(p => ({ ...p, content: '' })));
 };
 
 export const getAllCategories = async (): Promise<string[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const categories = new Set(postsConfig.map(post => post.category));
-      resolve(Array.from(categories));
-    }, 100);
-  });
+  const categories = new Set(postsConfig.map(post => post.category));
+  return Promise.resolve(Array.from(categories));
 }
