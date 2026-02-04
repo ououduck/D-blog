@@ -1,5 +1,4 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
 
 interface SeoProps {
   title: string;
@@ -13,15 +12,15 @@ export const Seo: React.FC<SeoProps> = ({
   title, 
   description = "跑路的duck的技术分享和生活随笔", 
   image = "https://aliyun-oss.pldduck.com/logo.png", 
-  url = window.location.href,
+  url = typeof window !== 'undefined' ? window.location.href : '',
   type = 'website' 
 }) => {
   const siteTitle = "D-blog | 跑路的duck";
   const fullTitle = title === "D-blog" ? siteTitle : `${title} - ${siteTitle}`;
 
   return (
-    <Helmet>
-      {/* Basic Meta Tags */}
+    <>
+      {/* React 19 会自动将这些标签提升到 <head> 中 */}
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       
@@ -37,6 +36,6 @@ export const Seo: React.FC<SeoProps> = ({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={image} />
-    </Helmet>
+    </>
   );
 };
