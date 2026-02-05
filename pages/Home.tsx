@@ -7,7 +7,7 @@ import { Post } from '../types';
 import { siteConfig } from '../site.config';
 import { Seo } from '../components/Seo';
 
-// --- 优化的文章卡片组件 ---
+
 const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({ post, index, featured }) => {
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },

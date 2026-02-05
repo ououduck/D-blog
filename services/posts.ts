@@ -22,7 +22,7 @@ const fetchMarkdown = async (path: string): Promise<string> => {
 };
 
 export const getPosts = async (): Promise<Post[]> => {
-  // 移除 setTimeout，直接返回数据
+
   return Promise.resolve(postsConfig.map(config => ({
       ...config,
       content: ''
@@ -48,7 +48,7 @@ export const searchPosts = async (query: string): Promise<Post[]> => {
   if (!query) return [];
   const lowerQuery = query.toLowerCase();
   
-  // 移除模拟网络延迟，直接返回结果
+
   return Promise.resolve(postsConfig.filter(post => 
       post.title.toLowerCase().includes(lowerQuery) || 
       post.tags.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
