@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { Menu, X, Search, Sun, Moon, Github, Mail } from 'lucide-react';
+import { Sun, Moon, Github, Menu, X, Search, Mail } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { searchPosts } from '../services/posts';
+import { Post } from '../types';
 import { siteConfig } from '../site.config';
-import { getPosts } from '../services/posts';
 
 const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [query, setQuery] = useState('');
@@ -249,96 +250,30 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 };
 
 const Footer = () => {
-  const [postCount, setPostCount] = useState(0);
-  const [techStack] = useState([
-    { name: 'React', version: '19.2.3' },
-    { name: 'TypeScript', version: '5.8.2' },
-    { name: 'Vite', version: '6.2.0' },
-    { name: 'Framer Motion', version: '12.29.0' },
-    { name: 'Tailwind CSS', version: '3.x' }
-  ]);
-
-  useEffect(() => {
-    // 获取文章总数
-    getPosts().then(posts => {
-      setPostCount(posts.length);
-    });
-  }, []);
-
   return (
     <footer className="py-16 mt-32 border-t border-zinc-200 dark:border-zinc-800 bg-paper dark:bg-void relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-accent to-transparent opacity-30"></div>
       
-      <div className="max-w-7xl mx-auto px-6">
-        {/* 主要内容区域 */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8 md:gap-0 text-center md:text-left mb-12">
-          <div className="flex flex-col items-center md:items-start">
-            <span className="font-serif font-bold text-xl mb-2 text-ink dark:text-white tracking-tight">{siteConfig.title}</span>
-            <p className="text-zinc-500 text-sm">{siteConfig.footerText}</p>
-          </div>
-          
-          <div className="flex items-center gap-6">
-             <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300">
-               <Github size={20} />
-             </a>
-             <a href={siteConfig.social.email} className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300">
-               <Mail size={20} />
-             </a>
-          </div>
+      <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8 md:gap-0 text-center md:text-left">
+        <div className="flex flex-col items-center md:items-start">
+          <span className="font-serif font-bold text-xl mb-2 text-ink dark:text-white tracking-tight">{siteConfig.title}</span>
+          <p className="text-zinc-500 text-sm">{siteConfig.footerText}</p>
         </div>
-
-        {/* 技术栈和统计信息 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          {/* 技术栈信息 */}
-          <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl p-6 border border-zinc-200/50 dark:border-zinc-800/50">
-            <h3 className="font-serif font-bold text-lg mb-4 text-ink dark:text-white flex items-center">
-              <span className="w-2 h-2 bg-accent rounded-full mr-3"></span>
-              技术栈
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {techStack.map((tech, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-zinc-800/50 rounded-lg">
-                  <span className="text-sm font-medium text-ink dark:text-zinc-200">{tech.name}</span>
-                  <span className="text-xs bg-accent/10 text-accent px-2 py-1 rounded-full font-mono">
-                    v{tech.version}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 统计信息 */}
-          <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl p-6 border border-zinc-200/50 dark:border-zinc-800/50">
-            <h3 className="font-serif font-bold text-lg mb-4 text-ink dark:text-white flex items-center">
-              <span className="w-2 h-2 bg-accent rounded-full mr-3"></span>
-              博客统计
-            </h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-800/50 rounded-lg">
-                <span className="text-sm text-zinc-600 dark:text-zinc-300">文章总数</span>
-                <span className="text-lg font-bold text-accent">{postCount}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-800/50 rounded-lg">
-                <span className="text-sm text-zinc-600 dark:text-zinc-300">运行时间</span>
-                <span className="text-sm font-medium text-ink dark:text-zinc-200">2026年至今</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-zinc-800/50 rounded-lg">
-                <span className="text-sm text-zinc-600 dark:text-zinc-300">最后更新</span>
-                <span className="text-sm font-medium text-ink dark:text-zinc-200">持续更新中</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 备案信息 */}
-        <div className="w-full text-center pt-8 border-t border-zinc-200/50 dark:border-zinc-800/50">
-           <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="inline-block text-xs text-zinc-400 hover:text-accent transition-colors font-sans tracking-wide py-1 border-b border-transparent hover:border-accent/30">
-              {siteConfig.beian.text}
+        
+        <div className="flex items-center gap-6">
+           <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300">
+             <Github size={20} />
            </a>
-           <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-             Built with ❤️ using modern web technologies
-           </div>
+           <a href={siteConfig.social.email} className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300">
+             <Mail size={20} />
+           </a>
         </div>
+      </div>
+
+      <div className="w-full text-center mt-12 pt-8 border-t border-zinc-200/50 dark:border-zinc-800/50">
+         <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="inline-block text-xs text-zinc-400 hover:text-accent transition-colors font-sans tracking-wide py-1 border-b border-transparent hover:border-accent/30">
+            {siteConfig.beian.text}
+         </a>
       </div>
     </footer>
   );
