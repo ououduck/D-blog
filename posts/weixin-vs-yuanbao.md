@@ -1,3 +1,17 @@
+---
+id: weixin-vs-yuanbao
+title: 元宝被微信封了？
+excerpt: 腾讯内斗还是别有用心？
+date: 2026-02-04
+category: 随笔
+tags:
+  - 腾讯元宝
+  - 腾讯
+  - 微信
+readTime: 3分钟阅读
+coverImage: https://aliyun-oss.pldduck.com/D-blog/weixinvsyuanbao.png
+---
+
 # 微信和元宝打架？是腾讯内斗还是有意而为？  
 
 ## 前情提要  

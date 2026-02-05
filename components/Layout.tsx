@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee } from 'lucide-react';
+import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { searchPosts } from '../services/posts';
 import { Post } from '../types';
@@ -263,6 +263,15 @@ const Footer = () => {
      }, 0);
   }, []);
 
+  const technologies = [
+    { name: 'React 19', icon: Code2 },
+    { name: 'Vite', icon: Zap },
+    { name: 'Tailwind', icon: Box },
+    { name: 'Framer Motion', icon: Layers },
+    { name: 'TypeScript', icon: Code2 },
+    { name: 'React Router', icon: GitBranch },
+  ];
+
   return (
     <footer className="py-12 mt-32 border-t border-zinc-200 dark:border-zinc-800 bg-paper dark:bg-void relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-accent to-transparent opacity-30"></div>
@@ -288,12 +297,12 @@ const Footer = () => {
             </div>
 
             <div className="flex flex-col items-center md:items-start">
-               <h4 className="font-bold text-sm uppercase tracking-widest text-zinc-400 mb-6">Powered By</h4>
-               <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-                  {['React', 'Vite', 'Tailwind', 'Framer Motion'].map(tech => (
-                     <div key={tech} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-600 dark:text-zinc-400">
-                        <Zap size={12} className="text-accent" />
-                        {tech}
+               <h4 className="font-bold text-sm uppercase tracking-widest text-zinc-400 mb-6">Tech Stack</h4>
+               <div className="flex flex-wrap gap-2 justify-center md:justify-start max-w-xs">
+                  {technologies.map(tech => (
+                     <div key={tech.name} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:border-accent/30 transition-colors">
+                        <tech.icon size={12} className="text-accent" />
+                        {tech.name}
                      </div>
                   ))}
                </div>
@@ -304,7 +313,7 @@ const Footer = () => {
                <div className="flex flex-col gap-3 text-right">
                   <div className="flex items-center gap-2 text-xs font-bold text-zinc-500">
                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                     System Online
+                     All Systems Normal
                   </div>
                   {loadTime && (
                      <div className="text-xs text-zinc-400">
@@ -313,7 +322,7 @@ const Footer = () => {
                   )}
                   <div className="text-xs text-zinc-400">
                      <Coffee size={12} className="inline mr-1" />
-                     Fueled by Coffee
+                     Fueled by Coffee & Code
                   </div>
                </div>
             </div>

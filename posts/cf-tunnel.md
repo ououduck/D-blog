@@ -1,3 +1,16 @@
+---
+id: cf-tunnel
+title: Cloudflare Tunnel内网穿透
+excerpt: 教你使用Cloudflare Tunnel轻松实现内网穿透
+date: 2026-01-25
+category: 技术
+tags:
+  - 网络
+  - Cloudflare
+  - 内网穿透
+readTime: 10分钟阅读
+coverImage: https://aliyun-oss.pldduck.com/D-blog/cloudflare.png
+---
 
 # 使用Cloudflare Tunnel轻松实现内网穿透
 

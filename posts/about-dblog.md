@@ -1,3 +1,18 @@
+---
+id: about-dblog
+title: 关于D-blog
+excerpt: 跑路的duck的胡言乱语
+date: 2026-01-24
+category: 随笔
+tags:
+  - D-blog
+  - D博客
+  - 跑路的duck
+readTime: 1分钟阅读
+coverImage: https://aliyun-oss.pldduck.com/logo.png
+featured: true
+top: 1
+---
 
 # 关于 D-blog
 

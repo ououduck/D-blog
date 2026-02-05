@@ -3,6 +3,7 @@ export const siteConfig = {
   subtitle: "跑路的duck",
   description: "技术分享和生活随笔",
   footerText: "©2026 D工作室&duck",
+  url: "https://blog.pldduck.com", 
   social: {
     github: "https://github.com/ououduck/",
     email: "mailto:dduck@qq.com"
@@ -32,66 +33,3 @@ export const siteConfig = {
     url: "https://beian.miit.gov.cn"
   }
 };
-
-export interface PostConfig {
-  id: string;
-  title: string;
-  excerpt: string;
-  date: string;
-  category: string;
-  tags: string[];
-  coverImage?: string;
-  readTime: string;
-  filePath: string; // Path to the .md file
-  featured?: boolean; // Set to true for a large card
-  top?: number; // Smaller number = higher rank (Pinned)
-}
-
-export const postsConfig: PostConfig[] = [
-  {
-    id: 'about-dblog',
-    title: '关于D-blog',
-    excerpt: '跑路的duck的胡言乱语',
-    date: '2026-01-24',
-    category: '随笔',
-    tags: ['D-blog', 'D博客', '跑路的duck'],
-    readTime: '1分钟阅读',
-    coverImage: 'https://aliyun-oss.pldduck.com/logo.png',
-    filePath: '/posts/about-dblog.md',
-    featured: true, // 自定义大卡片
-    top: 1 // 置顶文章，排名第1
-  },
-  {
-    id: 'cf-tunnel',
-    title: 'Cloudflare Tunnel内网穿透',
-    excerpt: '教你使用Cloudflare Tunnel轻松实现内网穿透',
-    date: '2026-01-25',
-    category: '技术',
-    tags: ['网络', 'Cloudflare', '内网穿透'],
-    readTime: '10分钟阅读',
-    coverImage: 'https://aliyun-oss.pldduck.com/D-blog/cloudflare.png',
-    filePath: '/posts/cf-tunnel.md'
-  },
-  {
-    id: 'Ddomain',
-    title: 'Ddomain二级域名',
-    excerpt: '精品实惠二级域名',
-    date: '2026-02-03',
-    category: '技术',
-    tags: ['Ddomain', '二级域名', '备案域名'],
-    readTime: '1分钟阅读',
-    coverImage: 'https://aliyun-oss.pldduck.com/D-blog/6981b42b3aa28.jpg',
-    filePath: '/posts/Ddomain.md'
-  },
-  {
-    id: 'weixin-vs-yuanbao',
-    title: '元宝被微信封了？',
-    excerpt: '腾讯内斗还是别有用心？',
-    date: '2026-02-04',
-    category: '随笔',
-    tags: ['腾讯元宝', '腾讯',],
-    readTime: '3分钟阅读',
-    coverImage: 'https://aliyun-oss.pldduck.com/D-blog/weixinvsyuanbao.png',
-    filePath: '/posts/weixin-vs-yuanbao.md'
-  }
-];

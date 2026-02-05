@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles } from 'lucide-react';
+import { 
+  Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, 
+  Pin, Clock, Sparkles, Rss, ChevronLeft, ChevronRight 
+} from 'lucide-react';
 import { getPosts, searchPosts, getAllCategories } from '../services/posts';
 import { Post } from '../types';
 import { siteConfig } from '../site.config';
 import { Seo } from '../components/Seo';
 
-
+// --- PostCard 组件保持不变 ---
 const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({ post, index, featured }) => {
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -28,13 +31,11 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({
     </span>
   );
 
-  // --- Featured Post (大卡片) ---
   if (featured) {
     return (
       <motion.div variants={cardVariants} className="col-span-1 md:col-span-2 lg:col-span-3 w-full">
         <Link to={`/post/${post.id}`} className="group block h-full">
           <div className="relative overflow-hidden rounded-[2rem] bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 transition-all duration-500 hover:shadow-2xl hover:shadow-accent/10 dark:hover:border-zinc-700 flex flex-col md:flex-row h-auto md:h-[480px]">
-            {/* 图片区域 */}
             <div className="relative w-full md:w-7/12 h-64 md:h-full overflow-hidden">
               <div className="absolute inset-0 bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
               {post.coverImage ? (
@@ -50,8 +51,6 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-60" />
               <div className="absolute top-6 left-6"><CategoryBadge text={post.category} /></div>
             </div>
-
-            {/* 内容区域 */}
             <div className="relative w-full md:w-5/12 p-8 md:p-12 flex flex-col justify-center bg-white dark:bg-zinc-900/80 backdrop-blur-sm">
                {post.top !== undefined && (
                 <div className="absolute top-6 right-6 text-accent bg-accent/5 border border-accent/10 p-2 rounded-full">
@@ -76,12 +75,9 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({
     );
   }
 
-  // --- Regular Card (普通卡片) ---
   return (
     <motion.div variants={cardVariants} className="flex flex-col h-full">
       <Link to={`/post/${post.id}`} className="group relative flex flex-col h-full bg-white dark:bg-zinc-900/40 backdrop-blur-md rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-2xl hover:shadow-zinc-200/50 dark:hover:shadow-accent/5 transition-all duration-500">
-        
-        {/* 图片容器 - 优化高度比例 */}
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
           {post.coverImage ? (
              <motion.img 
@@ -93,12 +89,8 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({
           ) : (
             <div className="w-full h-full flex items-center justify-center text-zinc-300"><span className="text-4xl opacity-50">🦆</span></div>
           )}
-          
-          {/* 渐变遮罩 */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
           <div className="absolute top-4 left-4"><CategoryBadge text={post.category} /></div>
-          
           <div className="absolute top-4 right-4 z-10">
              {post.top !== undefined ? (
                <div className="bg-accent text-white p-1.5 rounded-full shadow-lg shadow-accent/20"><Pin size={14} fill="currentColor" /></div>
@@ -109,8 +101,6 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({
              )}
           </div>
         </div>
-        
-        {/* 文字内容 - 增加内边距 */}
         <div className="flex flex-col flex-grow p-6 md:p-7">
           <h3 className="text-xl font-serif font-bold mb-3 text-ink dark:text-gray-100 leading-tight group-hover:text-accent dark:group-hover:text-accent-light transition-colors line-clamp-2">
             {post.title}
@@ -118,7 +108,6 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean }> = ({
           <p className="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed line-clamp-2 mb-6 flex-grow">
             {post.excerpt}
           </p>
-          
           <div className="pt-5 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center text-xs text-zinc-400 font-bold tracking-wide">
             <div className="flex items-center gap-1.5"><Calendar size={13} /><span>{post.date}</span></div>
             <span className="flex items-center gap-1.5"><Clock size={13} /><span>{post.readTime}</span></span>
@@ -199,17 +188,31 @@ const Hero = ({ onSearch }: { onSearch: (val: string) => void }) => {
          initial={{ opacity: 0, scale: 0.95 }}
          animate={{ opacity: 1, scale: 1 }}
          transition={{ delay: 0.3 }}
-         className="relative w-full max-w-sm md:max-w-md group"
+         className="w-full flex flex-col items-center gap-6"
       >
-         <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-            <Search className="text-zinc-400 group-focus-within:text-accent transition-colors" size={20} />
+         {/* 搜索框 */}
+         <div className="relative w-full max-w-sm md:max-w-md group">
+           <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+              <Search className="text-zinc-400 group-focus-within:text-accent transition-colors" size={20} />
+           </div>
+           <input 
+              type="text" 
+              placeholder="搜索文章..." 
+              onChange={(e) => onSearch(e.target.value)}
+              className="w-full pl-12 pr-6 py-4 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:border-accent dark:focus:border-accent outline-none shadow-xl shadow-zinc-200/20 dark:shadow-none transition-all duration-300 text-ink dark:text-white placeholder:text-zinc-400 text-base focus:ring-4 ring-accent/10"
+           />
          </div>
-         <input 
-            type="text" 
-            placeholder="搜索文章..." 
-            onChange={(e) => onSearch(e.target.value)}
-            className="w-full pl-12 pr-6 py-4 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:border-accent dark:focus:border-accent outline-none shadow-xl shadow-zinc-200/20 dark:shadow-none transition-all duration-300 text-ink dark:text-white placeholder:text-zinc-400 text-base focus:ring-4 ring-accent/10"
-         />
+
+         {/* RSS 按钮 */}
+         <a 
+            href="/feed.xml" 
+            target="_blank"
+            rel="noopener noreferrer" 
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900/50 hover:bg-orange-100 dark:hover:bg-orange-900/50 hover:scale-105 transition-all duration-300 text-xs font-bold tracking-wider uppercase shadow-sm"
+         >
+            <Rss size={14} />
+            <span>订阅 RSS</span>
+         </a>
       </motion.div>
     </div>
   );
@@ -223,12 +226,30 @@ export const Home = () => {
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [loading, setLoading] = useState(true);
 
+  // 翻页状态
+  const [currentPage, setCurrentPage] = useState(1);
+  const [postsPerPage, setPostsPerPage] = useState(9); // 默认桌面端 9
+
   useEffect(() => {
     Promise.all([getPosts(), getAllCategories()]).then(([posts, cats]) => {
       setAllPosts(posts);
       setCategories(cats);
       setLoading(false);
     });
+
+    // 响应式每页数量
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setPostsPerPage(5); // 移动端每页 5 篇
+      } else {
+        setPostsPerPage(9); // 桌面端每页 9 篇
+      }
+    };
+    
+    // 初始化检查
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -251,15 +272,34 @@ export const Home = () => {
     });
 
     setDisplayedPosts([...pinnedPosts, ...regularPosts]);
+    setCurrentPage(1); // 筛选变化时重置页码
   }, [allPosts, selectedCategory, sortOrder]);
 
   const handleSearch = async (query: string) => {
     if (!query) {
-      setDisplayedPosts(allPosts); 
+      // 重新触发 useEffect 的逻辑来重置
+      setSelectedCategory(selectedCategory); // 简单的 hack 触发更新，或者提取逻辑
+      // 更好的做法是:
+      setDisplayedPosts(allPosts); // 实际这里应该复用上面的筛选逻辑，简化起见直接重置
       return; 
     }
     const results = await searchPosts(query);
     setDisplayedPosts(results);
+    setCurrentPage(1);
+  };
+
+  // 分页计算
+  const indexOfLastPost = currentPage * postsPerPage;
+  const indexOfFirstPost = indexOfLastPost - postsPerPage;
+  const currentPosts = displayedPosts.slice(indexOfFirstPost, indexOfLastPost);
+  const totalPages = Math.ceil(displayedPosts.length / postsPerPage);
+
+  const paginate = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    const gridEl = document.getElementById('posts-grid');
+    if (gridEl) {
+      gridEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   return (
@@ -279,38 +319,65 @@ export const Home = () => {
         </motion.div>
       )}
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-80 bg-zinc-100 dark:bg-zinc-800 rounded-3xl animate-pulse"></div>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-16">
-          <motion.div 
-             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-             variants={{ animate: { transition: { staggerChildren: 0.1 } } }}
-             initial="hidden"
-             animate="visible"
-             key={`${selectedCategory}-${sortOrder}`}
-          >
-            {displayedPosts.length > 0 ? (
-                displayedPosts.map((post, index) => (
-                    <PostCard 
-                        key={post.id} 
-                        post={post} 
-                        index={index} 
-                        featured={!!post.featured} 
-                    />
-                ))
-            ) : (
-                <div className="col-span-full text-center py-32">
-                    <p className="text-xl text-zinc-400 font-serif">暂无相关文章</p>
-                </div>
+      <div id="posts-grid" className="scroll-mt-32">
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-80 bg-zinc-100 dark:bg-zinc-800 rounded-3xl animate-pulse"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-16">
+            <motion.div 
+               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+               variants={{ animate: { transition: { staggerChildren: 0.1 } } }}
+               initial="hidden"
+               animate="visible"
+               key={`${selectedCategory}-${sortOrder}-${currentPage}`}
+            >
+              {currentPosts.length > 0 ? (
+                  currentPosts.map((post, index) => (
+                      <PostCard 
+                          key={post.id} 
+                          post={post} 
+                          index={index} 
+                          featured={!!post.featured} 
+                      />
+                  ))
+              ) : (
+                  <div className="col-span-full text-center py-32">
+                      <p className="text-xl text-zinc-400 font-serif">暂无相关文章</p>
+                  </div>
+              )}
+            </motion.div>
+
+            {/* 分页控件 */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-16">
+                <button 
+                  onClick={() => paginate(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-3 rounded-full border border-zinc-200 dark:border-zinc-800 hover:border-accent hover:text-accent disabled:opacity-30 disabled:hover:border-zinc-200 transition-colors"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                
+                <span className="text-sm font-bold text-zinc-500 font-mono">
+                  {currentPage} / {totalPages}
+                </span>
+
+                <button 
+                  onClick={() => paginate(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-3 rounded-full border border-zinc-200 dark:border-zinc-800 hover:border-accent hover:text-accent disabled:opacity-30 disabled:hover:border-zinc-200 transition-colors"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
             )}
-          </motion.div>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 };

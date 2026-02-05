@@ -1,3 +1,17 @@
+---
+id: Ddomain
+title: Ddomain二级域名
+excerpt: 精品实惠二级域名
+date: 2026-02-03
+category: 技术
+tags:
+  - Ddomain
+  - 二级域名
+  - 备案域名
+readTime: 1分钟阅读
+coverImage: https://aliyun-oss.pldduck.com/D-blog/6981b42b3aa28.jpg
+---
+
 # **Ddomain二级域名-精品实惠二级域名**  
 ## **900+站长的信任  1年＋的稳定运行**  
 ### **使用正版派小星DNS系统V3正式旗舰版**  
