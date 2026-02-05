@@ -13,6 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const POSTS_DIR = path.join(__dirname, '../posts');
+// JSON 生成到根目录下的 generated 文件夹
 const OUTPUT_JSON_DIR = path.join(__dirname, '../generated');
 // XML 文件输出到 public 目录
 const PUBLIC_DIR = path.join(__dirname, '../public');
@@ -30,8 +31,18 @@ const posts = files.map(filename => {
   
   const id = data.id || filename.replace(/\.md$/, '');
 
+  let formattedDate = data.date;
+  if (data.date instanceof Date) {
+     // 转换成 YYYY-MM-DD 格式
+     const year = data.date.getFullYear();
+     const month = String(data.date.getMonth() + 1).padStart(2, '0');
+     const day = String(data.date.getDate()).padStart(2, '0');
+     formattedDate = `${year}-${month}-${day}`;
+  }
+
   return {
     ...data,
+    date: formattedDate, // 使用格式化后的日期
     id,
     filePath: `/posts/${filename}`
   };

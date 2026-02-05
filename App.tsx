@@ -98,7 +98,7 @@ const AnimatedRoutes = () => {
 };
 
 const App: React.FC = () => {
-  // 智能加载状态：首先检查 sessionStorage，如果是“回头客”，初始状态直接为 false
+  // 智能加载状态：首先检查 sessionStorage
   const [loading, setLoading] = useState(() => {
     const hasVisited = sessionStorage.getItem('hasVisited');
     return !hasVisited;
@@ -106,21 +106,33 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (loading) {
-      const handleLoad = () => {
-        // 稍微给 800ms 的缓冲，让动画展示出来，不至于一闪而过（如果是极速网络）
-        setTimeout(() => {
-          setLoading(false);
-          sessionStorage.setItem('hasVisited', 'true');
-        }, 800); 
+      const finishLoading = () => {
+        setLoading(false);
+        sessionStorage.setItem('hasVisited', 'true');
       };
+
+      const handleLoad = () => {
+        // 稍微延迟一点点，保证动画流畅过渡
+        setTimeout(finishLoading, 800); 
+      };
+
+      // 如果 7 秒内 window.onload 还没触发（比如图片卡住），强制进入页面
+      const fallbackTimer = setTimeout(() => {
+        console.warn('Loading timeout, forcing render.');
+        finishLoading();
+      }, 7000);
 
       // 检查页面是否已经加载完成
       if (document.readyState === 'complete') {
         handleLoad();
       } else {
         window.addEventListener('load', handleLoad);
-        return () => window.removeEventListener('load', handleLoad);
       }
+      
+      return () => {
+        window.removeEventListener('load', handleLoad);
+        clearTimeout(fallbackTimer);
+      };
     }
   }, [loading]);
 
@@ -130,9 +142,6 @@ const App: React.FC = () => {
         {loading && <LoadingScreen />}
       </AnimatePresence>
       
-      {/* 当 loading 为 true 时隐藏主要内容，防止 Layout 闪烁。
-         但我们仍然渲染它（hidden），这样浏览器可以并行预加载 Layout 中的图片。
-      */}
       <div className={loading ? "hidden" : "block"}>
          <Layout>
             <AnimatedRoutes />
