@@ -2,8 +2,8 @@
 id: Ddomain
 title: Ddomain二级域名
 excerpt: 精品实惠二级域名
-date: 2026-02-03
-category: 技术
+date: 2026-02-05
+category: 分享
 tags:
   - Ddomain
   - 二级域名
