@@ -8,30 +8,8 @@ import { About } from './pages/About';
 import { Friends } from './pages/Friends';
 import { siteConfig } from './site.config';
 
-// --- Ultra Minimalist High-End Loader ---
-const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    const duration = 1500; 
-    const intervalTime = 20;
-    const steps = duration / intervalTime;
-    let currentStep = 0;
-
-    const timer = setInterval(() => {
-      currentStep++;
-      const progress = Math.min(Math.round(Math.pow(currentStep / steps, 0.5) * 100), 100);
-      setCount(progress);
-
-      if (currentStep >= steps) {
-        clearInterval(timer);
-        setTimeout(onComplete, 400);
-      }
-    }, intervalTime);
-
-    return () => clearInterval(timer);
-  }, [onComplete]);
-
+// --- Simplified "Real" Loader ---
+const LoadingScreen = () => {
   const letterVariants = {
     initial: { y: 100 },
     animate: (i: number) => ({
@@ -52,8 +30,8 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
         transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] }
       }}
     >
-      {/* Centered Brand Reveal */}
       <div className="relative flex flex-col items-center">
+        {/* Brand Reveal */}
         <div className="flex overflow-hidden pb-2">
           {"D-blog".split("").map((char, i) => (
             <motion.span
@@ -69,42 +47,35 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
           ))}
         </div>
 
-        {/* Minimalist Progress Line */}
-        <div className="w-48 md:w-64 h-[1px] bg-white/10 mt-6 relative overflow-hidden">
+        {/* Indeterminate Loading Indicator (呼吸灯条) */}
+        <motion.div 
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ scaleX: 1, opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.8 }}
+          className="w-48 md:w-64 h-[2px] bg-zinc-800 mt-6 relative overflow-hidden rounded-full"
+        >
           <motion.div 
-            className="absolute inset-y-0 left-0 bg-accent"
-            initial={{ width: 0 }}
-            animate={{ width: `${count}%` }}
-            transition={{ ease: "linear" }}
+            className="absolute inset-y-0 left-0 bg-accent w-full"
+            initial={{ x: '-100%' }}
+            animate={{ x: '100%' }}
+            transition={{ 
+              repeat: Infinity, 
+              duration: 1.5, 
+              ease: "easeInOut" 
+            }}
           />
-        </div>
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.4 }}
+          animate={{ opacity: 0.6 }}
           transition={{ delay: 1 }}
-          className="mt-6 text-[10px] tracking-[0.6em] uppercase font-sans font-light"
+          className="mt-6 text-[10px] tracking-[0.6em] uppercase font-sans font-light animate-pulse"
         >
-          {siteConfig.subtitle}
+          LOADING
         </motion.div>
       </div>
 
-      {/* Numerical Counter - Bottom Right */}
-      <div className="absolute bottom-12 right-12 md:bottom-16 md:right-16 overflow-hidden">
-        <motion.div
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          transition={{ delay: 0.5, duration: 0.8 }}
-          className="flex items-baseline gap-2"
-        >
-          <span className="text-4xl md:text-6xl font-sans font-bold tabular-nums tracking-tighter">
-            {count.toString().padStart(2, '0')}
-          </span>
-          <span className="text-sm opacity-30 font-sans tracking-widest uppercase">Index</span>
-        </motion.div>
-      </div>
-
-      {/* Fine-grained noise texture */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-screen bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
     </motion.div>
   );
@@ -127,19 +98,46 @@ const AnimatedRoutes = () => {
 };
 
 const App: React.FC = () => {
-  const [loading, setLoading] = useState(true);
+  // 智能加载状态：首先检查 sessionStorage，如果是“回头客”，初始状态直接为 false
+  const [loading, setLoading] = useState(() => {
+    const hasVisited = sessionStorage.getItem('hasVisited');
+    return !hasVisited;
+  });
+
+  useEffect(() => {
+    if (loading) {
+      const handleLoad = () => {
+        // 稍微给 800ms 的缓冲，让动画展示出来，不至于一闪而过（如果是极速网络）
+        setTimeout(() => {
+          setLoading(false);
+          sessionStorage.setItem('hasVisited', 'true');
+        }, 800); 
+      };
+
+      // 检查页面是否已经加载完成
+      if (document.readyState === 'complete') {
+        handleLoad();
+      } else {
+        window.addEventListener('load', handleLoad);
+        return () => window.removeEventListener('load', handleLoad);
+      }
+    }
+  }, [loading]);
 
   return (
     <Router>
       <AnimatePresence>
-        {loading && <LoadingScreen onComplete={() => setLoading(false)} />}
+        {loading && <LoadingScreen />}
       </AnimatePresence>
       
-      {!loading && (
-        <Layout>
-          <AnimatedRoutes />
-        </Layout>
-      )}
+      {/* 当 loading 为 true 时隐藏主要内容，防止 Layout 闪烁。
+         但我们仍然渲染它（hidden），这样浏览器可以并行预加载 Layout 中的图片。
+      */}
+      <div className={loading ? "hidden" : "block"}>
+         <Layout>
+            <AnimatedRoutes />
+         </Layout>
+      </div>
     </Router>
   );
 };

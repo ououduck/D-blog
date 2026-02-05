@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+// 引入新插件
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+// 引入代码高亮样式 (Github Dark 风格)
+import 'highlight.js/styles/github-dark.css';
+
 import { motion } from 'framer-motion';
 import { ArrowLeft, Clock, Calendar, Shield } from 'lucide-react';
 import { getPostById } from '../services/posts';
@@ -107,10 +113,14 @@ export const Post = () => {
             prose-strong:text-ink dark:prose-strong:text-white prose-strong:font-bold
             prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01]
             prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 dark:prose-blockquote:bg-zinc-900 prose-blockquote:py-6 prose-blockquote:px-8 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-xl
-            prose-code:text-accent dark:prose-code:text-accent-light prose-code:bg-zinc-100 dark:prose-code:bg-zinc-900 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none
-            prose-pre:bg-zinc-900 prose-pre:rounded-2xl prose-pre:shadow-xl
+            
+            /* 代码块样式优化 */
+            prose-code:font-mono prose-code:text-sm
+            prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:rounded-2xl prose-pre:shadow-xl prose-pre:overflow-hidden prose-pre:border prose-pre:border-zinc-800
           ">
             <ReactMarkdown
+               remarkPlugins={[remarkGfm]}
+               rehypePlugins={[rehypeHighlight]}
                components={{
                  img: ({node, ...props}) => (
                    <img 
@@ -118,7 +128,25 @@ export const Post = () => {
                      onClick={() => setPreviewImage({ src: props.src as string, alt: props.alt })}
                      className="cursor-zoom-in rounded-2xl shadow-lg my-12"
                    />
-                 )
+                 ),
+                 // 自定义代码渲染逻辑
+                 code({node, className, children, ...props}) {
+                    const match = /language-(\w+)/.exec(className || '')
+                    // 行内代码
+                    if (!match) {
+                        return (
+                            <code className="text-accent dark:text-accent-light bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded-md font-bold before:content-none after:content-none" {...props}>
+                                {children}
+                            </code>
+                        )
+                    }
+                    // 代码块 (highlight.js 处理)
+                    return (
+                        <code className={className} {...props}>
+                            {children}
+                        </code>
+                    )
+                 }
                }}
             >
               {post.content}
