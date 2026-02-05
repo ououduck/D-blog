@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { Sun, Moon, Github, Menu, X, Search, Mail } from 'lucide-react';
+import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { searchPosts } from '../services/posts';
 import { Post } from '../types';
@@ -184,6 +184,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           <div className="flex space-x-6 mr-4">
              {[
                { path: '/', label: '文章' },
+               { path: '/friends', label: '友链' },
                { path: '/about', label: '关于' }
              ].map((item) => (
                 <Link 
@@ -235,6 +236,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           >
             <div className="flex flex-col space-y-8 items-center text-center">
               <Link onClick={() => setIsOpen(false)} to="/" className="text-4xl font-serif font-bold text-ink dark:text-white hover:text-accent transition-colors">文章</Link>
+              <Link onClick={() => setIsOpen(false)} to="/friends" className="text-4xl font-serif font-bold text-ink dark:text-white hover:text-accent transition-colors">友链</Link>
               <Link onClick={() => setIsOpen(false)} to="/about" className="text-4xl font-serif font-bold text-ink dark:text-white hover:text-accent transition-colors">关于</Link>
               <div className="w-12 h-px bg-zinc-200 dark:bg-zinc-800 my-4" />
               <div className="flex items-center gap-4">
@@ -250,30 +252,82 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 };
 
 const Footer = () => {
+  const [loadTime, setLoadTime] = useState<string>('');
+  
+  useEffect(() => {
+     setTimeout(() => {
+        if (typeof window !== 'undefined' && window.performance) {
+           const timing = window.performance.now();
+           setLoadTime((timing / 1000).toFixed(2) + 's');
+        }
+     }, 0);
+  }, []);
+
   return (
-    <footer className="py-16 mt-32 border-t border-zinc-200 dark:border-zinc-800 bg-paper dark:bg-void relative overflow-hidden">
+    <footer className="py-12 mt-32 border-t border-zinc-200 dark:border-zinc-800 bg-paper dark:bg-void relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-accent to-transparent opacity-30"></div>
       
-      <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8 md:gap-0 text-center md:text-left">
-        <div className="flex flex-col items-center md:items-start">
-          <span className="font-serif font-bold text-xl mb-2 text-ink dark:text-white tracking-tight">{siteConfig.title}</span>
-          <p className="text-zinc-500 text-sm">{siteConfig.footerText}</p>
-        </div>
-        
-        <div className="flex items-center gap-6">
-           <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300">
-             <Github size={20} />
-           </a>
-           <a href={siteConfig.social.email} className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300">
-             <Mail size={20} />
-           </a>
-        </div>
-      </div>
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+            <div className="flex flex-col items-center md:items-start space-y-4">
+                <div>
+                   <span className="font-serif font-bold text-xl text-ink dark:text-white tracking-tight">{siteConfig.title}</span>
+                   <p className="text-zinc-500 text-sm mt-1">{siteConfig.subtitle}</p>
+                </div>
+                <p className="text-zinc-400 text-sm leading-relaxed text-center md:text-left">
+                   {siteConfig.description}
+                </p>
+                 <div className="flex items-center gap-4 pt-2">
+                   <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300">
+                     <Github size={18} />
+                   </a>
+                   <a href={siteConfig.social.email} className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300">
+                     <Mail size={18} />
+                   </a>
+                </div>
+            </div>
 
-      <div className="w-full text-center mt-12 pt-8 border-t border-zinc-200/50 dark:border-zinc-800/50">
-         <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="inline-block text-xs text-zinc-400 hover:text-accent transition-colors font-sans tracking-wide py-1 border-b border-transparent hover:border-accent/30">
-            {siteConfig.beian.text}
-         </a>
+            <div className="flex flex-col items-center md:items-start">
+               <h4 className="font-bold text-sm uppercase tracking-widest text-zinc-400 mb-6">Powered By</h4>
+               <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                  {['React', 'Vite', 'Tailwind', 'Framer Motion'].map(tech => (
+                     <div key={tech} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-600 dark:text-zinc-400">
+                        <Zap size={12} className="text-accent" />
+                        {tech}
+                     </div>
+                  ))}
+               </div>
+            </div>
+
+            <div className="flex flex-col items-center md:items-end">
+               <h4 className="font-bold text-sm uppercase tracking-widest text-zinc-400 mb-6">Status</h4>
+               <div className="flex flex-col gap-3 text-right">
+                  <div className="flex items-center gap-2 text-xs font-bold text-zinc-500">
+                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                     System Online
+                  </div>
+                  {loadTime && (
+                     <div className="text-xs text-zinc-400">
+                        Page loaded in <span className="text-accent font-mono">{loadTime}</span>
+                     </div>
+                  )}
+                  <div className="text-xs text-zinc-400">
+                     <Coffee size={12} className="inline mr-1" />
+                     Fueled by Coffee
+                  </div>
+               </div>
+            </div>
+        </div>
+
+        <div className="w-full flex flex-col md:flex-row justify-between items-center pt-8 border-t border-zinc-200/50 dark:border-zinc-800/50 text-xs text-zinc-400 font-medium">
+           <p>{siteConfig.footerText}</p>
+           <div className="flex items-center gap-6 mt-4 md:mt-0">
+               <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors">
+                  {siteConfig.beian.text}
+               </a>
+               <span className="flex items-center gap-1">Made with <Heart size={10} className="text-accent fill-accent" /> by duck</span>
+           </div>
+        </div>
       </div>
     </footer>
   );

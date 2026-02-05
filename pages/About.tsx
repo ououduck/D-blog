@@ -1,67 +1,81 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Github, Mail, Coffee } from 'lucide-react';
+import { Github, Mail, Code, Terminal } from 'lucide-react';
 import { siteConfig } from '../site.config';
+import { Seo } from '../components/Seo';
 
 export const About = () => {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.2 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 }
-  };
-
   return (
     <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      exit={{ opacity: 0, y: -20 }}
-      className="max-w-2xl mx-auto py-12"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      className="max-w-4xl mx-auto py-12 md:py-20"
     >
-      <motion.div variants={itemVariants} className="text-center mb-12">
-        <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden border-4 border-white dark:border-slate-800 shadow-2xl relative">
-            <img src={siteConfig.author.avatar} alt="Avatar" className="w-full h-full object-cover" />
+      <Seo title="关于我" />
+      
+      {/* 头部卡片 */}
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 md:p-12 border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-zinc-200/50 dark:shadow-none mb-12 flex flex-col md:flex-row items-center gap-8 md:gap-12 text-center md:text-left">
+        <div className="relative group">
+           <div className="absolute inset-0 bg-accent rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
+           <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-white dark:border-zinc-800 shadow-2xl relative z-10">
+              <img src={siteConfig.author.avatar} alt="Avatar" className="w-full h-full object-cover" />
+           </div>
         </div>
-        <h1 className="text-4xl font-bold mb-2 text-slate-900 dark:text-white">{siteConfig.author.name}</h1>
-        <p className="text-indigo-600 dark:text-indigo-400 font-medium">{siteConfig.author.role}</p>
-      </motion.div>
-
-      <motion.div variants={itemVariants} className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-800 mb-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-10">
-          <Coffee size={120} />
+        
+        <div className="flex-1">
+           <h1 className="text-4xl md:text-5xl font-serif font-bold text-ink dark:text-white mb-3">
+             {siteConfig.author.name}
+           </h1>
+           <p className="text-accent font-bold tracking-widest uppercase text-xs mb-6">
+             {siteConfig.author.role}
+           </p>
+           <p className="text-lg text-zinc-600 dark:text-zinc-300 leading-relaxed font-sans mb-8">
+             {siteConfig.author.bio}
+           </p>
+           
+           <div className="flex items-center justify-center md:justify-start gap-4">
+              <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white rounded-full hover:bg-accent transition-colors font-bold text-sm">
+                <Github size={18} />
+                <span>Github</span>
+              </a>
+              <a href={siteConfig.social.email} className="flex items-center gap-2 px-5 py-2.5 bg-zinc-100 dark:bg-zinc-800 text-ink dark:text-white rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors font-bold text-sm">
+                <Mail size={18} />
+                <span>Email</span>
+              </a>
+           </div>
         </div>
-        <h2 className="text-2xl font-bold mb-4">关于我</h2>
-        <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-          {siteConfig.author.bio}
-        </p>
-      </motion.div>
+      </div>
 
-      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[
-          { icon: <Github size={24} />, label: "Github", link: siteConfig.social.github },
-          { icon: <Mail size={24} />, label: "Email", link: siteConfig.social.email }
-        ].map((item, i) => (
-          <a
-            key={i}
-            href={item.link}
-            target={item.link.startsWith('http') ? "_blank" : undefined}
-            rel={item.link.startsWith('http') ? "noopener noreferrer" : undefined}
-            className="flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-900 rounded-xl shadow-sm hover:shadow-md border border-slate-100 dark:border-slate-800 hover:-translate-y-1 transition-all duration-300 group"
-          >
-            <div className="text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mb-2 transition-colors">
-              {item.icon}
-            </div>
-            <span className="font-medium text-slate-700 dark:text-slate-300">{item.label}</span>
-          </a>
-        ))}
-      </motion.div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* 技能卡片 */}
+        <div className="p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
+           <div className="flex items-center gap-3 mb-6 text-ink dark:text-white">
+              <Code className="text-accent" />
+              <h2 className="text-2xl font-serif font-bold">技术栈</h2>
+           </div>
+           <div className="flex flex-wrap gap-2">
+              {['React', 'TypeScript', 'Tailwind CSS', 'Next.js', 'Node.js', 'Vite', 'Framer Motion'].map(tech => (
+                 <span key={tech} className="px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-600 dark:text-zinc-300">
+                    {tech}
+                 </span>
+              ))}
+           </div>
+        </div>
+
+        {/* 理念卡片 */}
+        <div className="p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
+           <div className="flex items-center gap-3 mb-6 text-ink dark:text-white">
+              <Terminal className="text-accent" />
+              <h2 className="text-2xl font-serif font-bold">折腾记录</h2>
+           </div>
+           <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
+              热衷于探索前沿 Web 技术，喜欢构建极致性能和优秀交互的用户界面。
+              目前正致力于开源项目的贡献与个人产品的打磨。
+           </p>
+        </div>
+      </div>
+
     </motion.div>
   );
 };

@@ -5,6 +5,7 @@ import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { Post } from './pages/Post';
 import { About } from './pages/About';
+import { Friends } from './pages/Friends';
 import { siteConfig } from './site.config';
 
 // --- Ultra Minimalist High-End Loader ---
@@ -118,6 +119,7 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
         <Route path="/post/:id" element={<Post />} />
+        <Route path="/friends" element={<Friends />} />
         <Route path="/about" element={<About />} />
       </Routes>
     </AnimatePresence>

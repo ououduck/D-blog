@@ -20,3 +20,10 @@ export type Theme = 'light' | 'dark';
 export interface RouteState {
   isPageLoading: boolean;
 }
+
+export interface Friend {
+  name: string;
+  description: string;
+  avatar: string;
+  url: string;
+}
