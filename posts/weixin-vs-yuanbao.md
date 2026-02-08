@@ -9,7 +9,7 @@ tags:
   - 腾讯
   - 微信
 readTime: 3分钟阅读
-coverImage: https://aliyun-oss.pldduck.com/D-blog/weixinvsyuanbao.png
+coverImage: https://pic.pldduck.com/D-blog/weixinvsyuanbao.png
 ---
 
 # 微信和元宝打架？是腾讯内斗还是有意而为？  
@@ -22,11 +22,11 @@ coverImage: https://aliyun-oss.pldduck.com/D-blog/weixinvsyuanbao.png
 ## 主要事件  
 **结果......微信出手了**  
 **直接反手给元宝封了**  
-![元宝被封1](https://aliyun-oss.pldduck.com/D-blog/ybban1.jpg)  
-![元宝被封2](https://aliyun-oss.pldduck.com/D-blog/ybban2.jpg)  
+![元宝被封1](https://pic.pldduck.com/D-blog/ybban1.jpg)  
+![元宝被封2](https://pic.pldduck.com/D-blog/ybban2.jpg)  
 
 **很快 元宝也在微博发出了回应**  
-![元宝回应](https://aliyun-oss.pldduck.com/D-blog/ybhy.jpg)  
+![元宝回应](https://pic.pldduck.com/D-blog/ybhy.jpg)  
 
 ## 观点看法  
 **有的人认为这是腾讯内斗**  

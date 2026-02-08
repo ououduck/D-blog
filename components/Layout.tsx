@@ -170,7 +170,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           <div className="relative">
              <div className="absolute inset-0 bg-accent blur-md opacity-20 group-hover:opacity-40 transition-opacity"></div>
              <img 
-                src="https://aliyun-oss.pldduck.com/logo.png" 
+                src="https://pic.pldduck.com/logo.png" 
                 alt="Logo" 
                 className="relative w-10 h-10 rounded-lg group-hover:scale-105 transition-transform duration-300 object-cover bg-white/10"
              />
@@ -308,24 +308,35 @@ const Footer = () => {
                </div>
             </div>
 
+            {/* Status 区域 */}
             <div className="flex flex-col items-center md:items-end">
                <h4 className="font-bold text-sm uppercase tracking-widest text-zinc-400 mb-6">Status</h4>
-               <div className="flex flex-col gap-3 text-right">
-                  <div className="flex items-center gap-2 text-xs font-bold text-zinc-500">
-                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                     All Systems Normal
+               <div className="flex flex-col gap-4 w-full">
+                  
+                  <div className="flex items-center justify-center md:justify-end gap-2 text-xs font-bold text-zinc-500">
+                     <span className="relative flex h-2 w-2">
+                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                       <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                     </span>
+                     <span>All Systems Normal</span>
                   </div>
+
                   {loadTime && (
-                     <div className="text-xs text-zinc-400">
-                        Page loaded in <span className="text-accent font-mono">{loadTime}</span>
+                     <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-zinc-400">
+                        <Zap size={14} className="text-yellow-500" />
+                        <span>
+                           Page loaded in <span className="text-accent font-mono font-bold">{loadTime}</span>
+                        </span>
                      </div>
                   )}
-                  <div className="text-xs text-zinc-400">
-                     <Coffee size={12} className="inline mr-1" />
-                     Fueled by Coffee & Code
+
+                  <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-zinc-400">
+                     <Coffee size={14} className="text-amber-700 dark:text-amber-600" />
+                     <span>Fueled by Coffee & Code</span>
                   </div>
                </div>
             </div>
+
         </div>
 
         <div className="w-full flex flex-col md:flex-row justify-between items-center pt-8 border-t border-zinc-200/50 dark:border-zinc-800/50 text-xs text-zinc-400 font-medium">

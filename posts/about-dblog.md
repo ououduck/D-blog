@@ -9,7 +9,7 @@ tags:
   - D博客
   - 跑路的duck
 readTime: 1分钟阅读
-coverImage: https://aliyun-oss.pldduck.com/logo.png
+coverImage: https://pic.pldduck.com/logo.png
 featured: true
 top: 1
 ---
