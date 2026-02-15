@@ -8,7 +8,7 @@ tags:
   - FogPIC
   - 图床
 readTime: 1分钟阅读
-coverImage: https://pic.pldduck.com/D-blog/fogpic.jpg
+coverImage: https://fogpic-vip.3pw.pw/20260215/8af5c27f855d275dda990ad491058705.jpg
 ---
 
 # **FogPIC-雾图 免费图床**  
@@ -17,4 +17,4 @@ coverImage: https://pic.pldduck.com/D-blog/fogpic.jpg
 ### **我们不必要赚钱 只要不亏本**  
 ### **不断加油努力 感谢支持🙏**  
 # 网址 [www.fogpic.com](https://www.fogpic.com)  
-![Ddomain图片](https://pic.pldduck.com/D-blog/fogpic.jpg)  
+![Ddomain图片](https://fogpic-vip.3pw.pw/20260215/8af5c27f855d275dda990ad491058705.jpg)  

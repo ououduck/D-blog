@@ -9,7 +9,7 @@ tags:
   - 腾讯
   - 微信
 readTime: 3分钟阅读
-coverImage: https://pic.pldduck.com/D-blog/weixinvsyuanbao.png
+coverImage: https://fogpic-vip.3pw.pw/20260215/8a73d96b60029d8ace3a29c367639ae0.png
 ---
 
 # 微信和元宝打架？是腾讯内斗还是有意而为？  
@@ -17,16 +17,16 @@ coverImage: https://pic.pldduck.com/D-blog/weixinvsyuanbao.png
 ## 前情提要  
 **这两天 腾讯元宝推出了送10亿的活动**  
 **于是微信 QQ等各大平台全都被元宝的红包邀请广告刷屏**  
-![元宝广告](https://aliyun-oss.pldduck.com/D-blog/ybguanggao.jpg)  
+![元宝广告](https://fogpic-vip.3pw.pw/20260215/fb0be011f36279c9aff272a14ad6c1d4.jpg)  
 
 ## 主要事件  
 **结果......微信出手了**  
 **直接反手给元宝封了**  
-![元宝被封1](https://pic.pldduck.com/D-blog/ybban1.jpg)  
-![元宝被封2](https://pic.pldduck.com/D-blog/ybban2.jpg)  
+![元宝被封1](https://fogpic-vip.3pw.pw/20260215/f83d0aa0f5345d2f9f66f8d31e79b57f.jpg)  
+![元宝被封2](https://fogpic-vip.3pw.pw/20260215/7d61147c4d76198515d5b59babf0a0f1.jpg)  
 
 **很快 元宝也在微博发出了回应**  
-![元宝回应](https://pic.pldduck.com/D-blog/ybhy.jpg)  
+![元宝回应](https://fogpic-vip.3pw.pw/20260215/5dda253088d1512b81c3b018e1db9c85.jpg)  
 
 ## 观点看法  
 **有的人认为这是腾讯内斗**  
@@ -39,4 +39,7 @@ coverImage: https://pic.pldduck.com/D-blog/weixinvsyuanbao.png
 **3.我认为最根本 最真正的原因是为了接下了其他AI软件的活动做伏笔 因为很多AI软件(如千问)都宣布要开启送福利活动 腾讯内部决定故意封禁元宝 避免之后封其他AI软件的时候被说“双标”**  
 
 ## 总结  
-**这次事件绝非内斗或普通引流 而是为腾讯占据AI市场走了一步好棋**  
+**这次事件绝非内斗或普通引流 而是为腾讯的一步好棋**  
+
+##后补-2026.2.10
+**果然猜想是正确的**
