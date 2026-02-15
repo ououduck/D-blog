@@ -170,7 +170,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           <div className="relative">
              <div className="absolute inset-0 bg-accent blur-md opacity-20 group-hover:opacity-40 transition-opacity"></div>
              <img 
-                src="https://pic.pldduck.com/logo.png" 
+                src="https://fogpic-vip.3pw.pw/20260215/881e8c20019687c8fcf8737643a769a0.png" 
                 alt="Logo" 
                 className="relative w-10 h-10 rounded-lg group-hover:scale-105 transition-transform duration-300 object-cover bg-white/10"
              />
