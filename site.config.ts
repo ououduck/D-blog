@@ -12,24 +12,24 @@ export const siteConfig = {
     name: "跑路的duck",
     avatar: "http://q1.qlogo.cn/g?b=qq&nk=2472652060&s=100",
     role: "前端菜鸟",
-    bio: "你好！我是跑路的duck。感谢你能来光临D-blog。这个博客完全构建在 React 生态之上，旨在探索极致的静态页面体验。"
+    bio: "你好！我是跑路的duck 感谢你能来光临D-blog 这个博客完全构建在 React 生态之上 旨在探索极致的静态页面体验"
   },
   friends: [
     {
-      name: "React 官网",
-      description: "构建 Web 和原生交互界面的库",
-      avatar: "https://react.dev/favicon.ico",
-      url: "https://react.dev/"
+      name: "D的世界",
+      description: "跑路的duck的个人主页",
+      avatar: "https://www.pldduck.com/favicon.ico",
+      url: "https://www.pldduck.com"
     },
     {
-      name: "Vite",
-      description: "下一代前端开发与构建工具",
-      avatar: "https://vitejs.dev/logo.svg",
-      url: "https://vitejs.dev/"
+      name: "Ddomain二级域名",
+      description: "精品实惠的二级域名",
+      avatar: "https://www.pldduck.com/favicon.ico",
+      url: "https://dns.3pw.pw"
     }
   ],
   beian: {
-    text: "湘ICP备2025101669号-3",
+    text: "湘ICP备2025101669号",
     url: "https://beian.miit.gov.cn"
   }
 };
