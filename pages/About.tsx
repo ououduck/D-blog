@@ -70,8 +70,8 @@ export const About = () => {
               <h2 className="text-2xl font-serif font-bold">折腾记录</h2>
            </div>
            <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
-              热衷于探索前沿 Web 技术，喜欢构建极致性能和优秀交互的用户界面。
-              目前正致力于开源项目的贡献与个人产品的打磨。
+              热衷于探索前沿 Web 技术 喜欢构建极致性能和优秀交互的用户界面
+              目前正致力于开源项目的贡献与个人产品的打磨 
            </p>
         </div>
       </div>
