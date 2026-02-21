@@ -6,82 +6,41 @@ import { Home } from './pages/Home';
 import { Post } from './pages/Post';
 import { About } from './pages/About';
 import { Friends } from './pages/Friends';
-import { siteConfig } from './site.config';
 
-// --- Simplified "Real" Loader ---
 const LoadingScreen = () => {
   const letterVariants = {
     initial: { y: 100 },
     animate: (i: number) => ({
       y: 0,
-      transition: { 
-        duration: 0.8, 
-        ease: [0.33, 1, 0.68, 1], 
-        delay: 0.1 + i * 0.05 
-      }
+      transition: { duration: 0.8, ease: [0.33, 1, 0.68, 1], delay: 0.1 + i * 0.05 }
     })
   };
 
   return (
     <motion.div
       className="fixed inset-0 z-[100] bg-ink dark:bg-black text-white flex flex-col items-center justify-center overflow-hidden"
-      exit={{ 
-        clipPath: 'inset(0 0 100% 0)',
-        transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] }
-      }}
+      exit={{ clipPath: 'inset(0 0 100% 0)', transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] } }}
     >
       <div className="relative flex flex-col items-center">
-        {/* Brand Reveal */}
         <div className="flex overflow-hidden pb-2">
           {"D-blog".split("").map((char, i) => (
-            <motion.span
-              key={i}
-              custom={i}
-              variants={letterVariants}
-              initial="initial"
-              animate="animate"
-              className="text-6xl md:text-8xl font-serif font-bold tracking-tighter"
-            >
+            <motion.span key={i} custom={i} variants={letterVariants} initial="initial" animate="animate" className="text-6xl md:text-8xl font-serif font-bold tracking-tighter">
               {char}
             </motion.span>
           ))}
         </div>
-
-        {/* Indeterminate Loading Indicator (呼吸灯条) */}
-        <motion.div 
-          initial={{ scaleX: 0, opacity: 0 }}
-          animate={{ scaleX: 1, opacity: 1 }}
-          transition={{ delay: 0.8, duration: 0.8 }}
-          className="w-48 md:w-64 h-[2px] bg-zinc-800 mt-6 relative overflow-hidden rounded-full"
-        >
-          <motion.div 
-            className="absolute inset-y-0 left-0 bg-accent w-full"
-            initial={{ x: '-100%' }}
-            animate={{ x: '100%' }}
-            transition={{ 
-              repeat: Infinity, 
-              duration: 1.5, 
-              ease: "easeInOut" 
-            }}
-          />
+        <motion.div initial={{ scaleX: 0, opacity: 0 }} animate={{ scaleX: 1, opacity: 1 }} transition={{ delay: 0.8, duration: 0.8 }} className="w-48 md:w-64 h-[2px] bg-zinc-800 mt-6 relative overflow-hidden rounded-full">
+          <motion.div className="absolute inset-y-0 left-0 bg-accent w-full" initial={{ x: '-100%' }} animate={{ x: '100%' }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }} />
         </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.6 }}
-          transition={{ delay: 1 }}
-          className="mt-6 text-[10px] tracking-[0.6em] uppercase font-sans font-light animate-pulse"
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.6 }} transition={{ delay: 1 }} className="mt-6 text-[10px] tracking-[0.6em] uppercase font-sans font-light animate-pulse">
           LOADING
         </motion.div>
       </div>
-
       <div className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-screen bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
     </motion.div>
   );
 };
 
-// --- Animated Routes Wrapper ---
 const AnimatedRoutes = () => {
   const location = useLocation();
 
@@ -98,7 +57,6 @@ const AnimatedRoutes = () => {
 };
 
 const App: React.FC = () => {
-  // 智能加载状态：首先检查 sessionStorage
   const [loading, setLoading] = useState(() => {
     const hasVisited = sessionStorage.getItem('hasVisited');
     return !hasVisited;
@@ -112,17 +70,13 @@ const App: React.FC = () => {
       };
 
       const handleLoad = () => {
-        // 稍微延迟一点点，保证动画流畅过渡
         setTimeout(finishLoading, 800); 
       };
 
-      // 如果 7 秒内 window.onload 还没触发（比如图片卡住），强制进入页面
       const fallbackTimer = setTimeout(() => {
-        console.warn('Loading timeout, forcing render.');
         finishLoading();
       }, 7000);
 
-      // 检查页面是否已经加载完成
       if (document.readyState === 'complete') {
         handleLoad();
       } else {
@@ -142,11 +96,11 @@ const App: React.FC = () => {
         {loading && <LoadingScreen />}
       </AnimatePresence>
       
-      <div className={loading ? "hidden" : "block"}>
+      {!loading && (
          <Layout>
             <AnimatedRoutes />
          </Layout>
-      </div>
+      )}
     </Router>
   );
 };
