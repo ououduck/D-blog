@@ -1,24 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-// 引入新插件
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-// 引入代码高亮样式 (Github Dark 风格)
 import 'highlight.js/styles/github-dark.css';
-
 import { motion } from 'framer-motion';
-import { ArrowLeft, Clock, Calendar, Shield } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, Shield, Share2 } from 'lucide-react';
 import { getPostById } from '../services/posts';
 import { Post as PostType } from '../types';
 import { Seo } from '../components/Seo';
 import { ImageViewer } from '../components/ImageViewer';
+import { ShareModal } from '../components/ShareModal';
 
 export const Post = () => {
   const { id } = useParams<{ id: string }>();
   const [post, setPost] = useState<PostType | null>(null);
   const [loading, setLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<{src: string, alt?: string} | null>(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -36,7 +35,7 @@ export const Post = () => {
   if (!post) {
     return (
       <div className="text-center py-40">
-         <Seo title="404 Not Found" />
+        <Seo title="404 Not Found" />
         <h2 className="text-3xl font-serif font-bold mb-4">未找到文章</h2>
         <Link to="/" className="text-accent hover:underline">返回首页</Link>
       </div>
@@ -45,24 +44,10 @@ export const Post = () => {
 
   return (
     <>
-      <ImageViewer 
-        src={previewImage?.src || null} 
-        alt={previewImage?.alt} 
-        onClose={() => setPreviewImage(null)} 
-      />
-
-      <motion.article 
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
-        <Seo 
-          title={post.title} 
-          description={post.excerpt} 
-          image={post.coverImage} 
-          type="article"
-        />
+      <ImageViewer src={previewImage?.src || null} alt={previewImage?.alt} onClose={() => setPreviewImage(null)} />
+      
+      <motion.article initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
+        <Seo title={post.title} description={post.excerpt} image={post.coverImage} type="article" />
 
         <header className="max-w-4xl mx-auto pt-10 mb-16 text-center">
           <Link to="/" className="inline-flex items-center text-zinc-500 hover:text-accent transition-colors mb-10 group font-bold text-xs tracking-widest uppercase">
@@ -70,11 +55,7 @@ export const Post = () => {
             返回文章
           </Link>
           
-          <motion.div
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.2 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <div className="flex flex-col items-center gap-4 mb-8">
               <span className="px-4 py-1.5 text-xs font-bold tracking-widest uppercase bg-accent/10 text-accent rounded-full border border-accent/20">
                   {post.category}
@@ -85,67 +66,37 @@ export const Post = () => {
               {post.title}
             </h1>
             
-            <div className="flex items-center justify-center space-x-6 text-zinc-500 dark:text-zinc-400 font-bold text-xs tracking-wide uppercase">
+            <div className="flex items-center justify-center space-x-4 md:space-x-6 text-zinc-500 dark:text-zinc-400 font-bold text-xs tracking-wide uppercase">
               <span className="flex items-center"><Calendar size={14} className="mr-2" /> {post.date}</span>
               <span className="w-1 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full"></span>
               <span className="flex items-center"><Clock size={14} className="mr-2" /> {post.readTime}</span>
+              <span className="w-1 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full"></span>
+              <button onClick={() => setShareModalOpen(true)} className="flex items-center hover:text-accent transition-colors">
+                <Share2 size={14} className="mr-1.5" /> 分享
+              </button>
             </div>
           </motion.div>
         </header>
 
         {post.coverImage && (
-          <motion.div 
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.8 }}
-            className="mb-20 rounded-3xl overflow-hidden shadow-2xl shadow-zinc-200/50 dark:shadow-none mx-auto max-w-6xl aspect-[21/9] cursor-zoom-in"
-            onClick={() => setPreviewImage({ src: post.coverImage!, alt: post.title })}
-          >
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="mb-20 rounded-3xl overflow-hidden shadow-2xl shadow-zinc-200/50 dark:shadow-none mx-auto max-w-6xl aspect-[21/9] cursor-zoom-in" onClick={() => setPreviewImage({ src: post.coverImage!, alt: post.title })}>
             <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
           </motion.div>
         )}
 
         <div className="max-w-3xl mx-auto px-4 pb-32">
-          <div className="prose prose-lg prose-stone dark:prose-invert max-w-none 
-            prose-headings:font-serif prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-ink dark:prose-headings:text-white
-            prose-p:font-sans prose-p:text-lg prose-p:leading-relaxed prose-p:text-zinc-700 dark:prose-p:text-zinc-300
-            prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline
-            prose-strong:text-ink dark:prose-strong:text-white prose-strong:font-bold
-            prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01]
-            prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 dark:prose-blockquote:bg-zinc-900 prose-blockquote:py-6 prose-blockquote:px-8 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-xl
-            
-            /* 代码块样式优化 */
-            prose-code:font-mono prose-code:text-sm
-            prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:rounded-2xl prose-pre:shadow-xl prose-pre:overflow-hidden prose-pre:border prose-pre:border-zinc-800
-          ">
+          <div className="prose prose-lg prose-stone dark:prose-invert max-w-none prose-headings:font-serif prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-ink dark:prose-headings:text-white prose-p:font-sans prose-p:text-lg prose-p:leading-relaxed prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-strong:text-ink dark:prose-strong:text-white prose-strong:font-bold prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01] prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 dark:prose-blockquote:bg-zinc-900 prose-blockquote:py-6 prose-blockquote:px-8 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-xl prose-code:font-mono prose-code:text-sm prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:rounded-2xl prose-pre:shadow-xl prose-pre:overflow-hidden prose-pre:border prose-pre:border-zinc-800">
             <ReactMarkdown
                remarkPlugins={[remarkGfm]}
                rehypePlugins={[rehypeHighlight]}
                components={{
-                 img: ({node, ...props}) => (
-                   <img 
-                     {...props} 
-                     onClick={() => setPreviewImage({ src: props.src as string, alt: props.alt })}
-                     className="cursor-zoom-in rounded-2xl shadow-lg my-12"
-                   />
-                 ),
-                 // 自定义代码渲染逻辑
+                 img: ({node, ...props}) => <img {...props} onClick={() => setPreviewImage({ src: props.src as string, alt: props.alt })} className="cursor-zoom-in rounded-2xl shadow-lg my-12" />,
                  code({node, className, children, ...props}) {
                     const match = /language-(\w+)/.exec(className || '')
-                    // 行内代码
                     if (!match) {
-                        return (
-                            <code className="text-accent dark:text-accent-light bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded-md font-bold before:content-none after:content-none" {...props}>
-                                {children}
-                            </code>
-                        )
+                        return <code className="text-accent dark:text-accent-light bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded-md font-bold before:content-none after:content-none" {...props}>{children}</code>
                     }
-                    // 代码块 (highlight.js 处理)
-                    return (
-                        <code className={className} {...props}>
-                            {children}
-                        </code>
-                    )
+                    return <code className={className} {...props}>{children}</code>
                  }
                }}
             >
@@ -154,32 +105,16 @@ export const Post = () => {
           </div>
           
           <div className="mt-20 p-8 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm relative overflow-hidden group">
-            <div className="absolute -top-6 -right-6 text-zinc-200 dark:text-zinc-800 transform rotate-12 group-hover:rotate-0 transition-transform duration-500 opacity-50">
-               <Shield size={120} strokeWidth={0.5} />
-            </div>
-            
+            <div className="absolute -top-6 -right-6 text-zinc-200 dark:text-zinc-800 transform rotate-12 group-hover:rotate-0 transition-transform duration-500 opacity-50"><Shield size={120} strokeWidth={0.5} /></div>
             <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start">
                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 rounded-full border-2 border-accent/30 flex items-center justify-center text-accent bg-accent/5">
-                     <span className="font-serif font-bold text-xl">CC</span>
-                  </div>
+                  <div className="w-12 h-12 rounded-full border-2 border-accent/30 flex items-center justify-center text-accent bg-accent/5"><span className="font-serif font-bold text-xl">CC</span></div>
                </div>
                <div>
-                  <h3 className="text-lg font-serif font-bold text-ink dark:text-white mb-2">
-                    CC BY-SA 4.0 许可协议
-                  </h3>
+                  <h3 className="text-lg font-serif font-bold text-ink dark:text-white mb-2">CC BY-SA 4.0 许可协议</h3>
                   <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-3">
-                    本文由 <strong className="text-ink dark:text-zinc-200">跑路的duck</strong> 原创。
-                    除非另有声明，本站文章采用 
-                    <a 
-                      href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-accent hover:underline font-medium mx-1"
-                    >
-                      CC BY-SA 4.0
-                    </a>
-                    协议进行授权。
+                    本文由 <strong className="text-ink dark:text-zinc-200">跑路的duck</strong> 原创。除非另有声明，本站文章采用 
+                    <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium mx-1">CC BY-SA 4.0</a>协议进行授权。
                   </p>
                   <div className="text-xs text-zinc-500 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-950/50 p-3 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 inline-block">
                     <strong>协议含义：</strong> 您可以自由复制、传播、修改本作品，但必须<span className="text-accent">署名作者</span>且<span className="text-accent">以相同许可协议发布</span>衍生作品。
@@ -193,12 +128,18 @@ export const Post = () => {
                   <span className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">作者</span>
                   <span className="font-serif text-lg font-bold text-ink dark:text-white">跑路的duck</span>
                </div>
-               <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-sm font-medium text-accent hover:underline">
-                  回到顶部
-               </button>
+               <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-sm font-medium text-accent hover:underline">回到顶部</button>
           </div>
         </div>
       </motion.article>
+
+      <ShareModal 
+        isOpen={shareModalOpen} 
+        onClose={() => setShareModalOpen(false)} 
+        title={post.title} 
+        excerpt={post.excerpt} 
+        url={`${window.location.origin}/#/post/${post.id}`} 
+      />
     </>
   );
 };
