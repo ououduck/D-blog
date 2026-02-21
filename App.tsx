@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { searchPosts } from '../services/posts';
-import { Post } from '../types';
+import { searchPosts } from './services/posts';
+import { Post } from './types';
 import { siteConfig } from './site.config';
 
 const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
