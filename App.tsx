@@ -4,7 +4,7 @@ import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, La
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { searchPosts } from '../services/posts';
 import { Post } from '../types';
-import { siteConfig } from '../site.config';
+import { siteConfig } from './site.config';
 
 const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [query, setQuery] = useState('');
