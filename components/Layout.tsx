@@ -40,30 +40,11 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center pt-24 px-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-void/60 backdrop-blur-sm"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden relative z-10"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-void/60 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: -20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -20 }} transition={{ type: "spring", duration: 0.5 }} className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden relative z-10">
             <div className="flex items-center p-4 border-b border-zinc-100 dark:border-zinc-800">
               <Search className="text-zinc-400 mr-3" size={20} />
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder="搜索文章..."
-                className="w-full bg-transparent outline-none text-xl text-ink dark:text-white placeholder:text-zinc-400 font-serif"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
+              <input ref={inputRef} type="text" placeholder="搜索文章..." className="w-full bg-transparent outline-none text-xl text-ink dark:text-white placeholder:text-zinc-400 font-serif" value={query} onChange={(e) => setQuery(e.target.value)} />
               <button onClick={onClose} className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded">
                 <X size={20} className="text-zinc-400" />
               </button>
@@ -73,29 +54,19 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
               {results.length > 0 ? (
                 <div className="p-2">
                    {results.map((post) => (
-                     <div 
-                        key={post.id}
-                        onClick={() => handleSelect(post.id)}
-                        className="p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-xl cursor-pointer group transition-colors"
-                     >
+                     <div key={post.id} onClick={() => handleSelect(post.id)} className="p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-xl cursor-pointer group transition-colors">
                        <div className="flex items-center gap-2 mb-1">
                           <span className="text-xs font-bold text-accent px-1.5 py-0.5 border border-accent/20 rounded-md bg-accent/5">{post.category}</span>
                        </div>
-                       <h4 className="text-lg font-serif font-semibold text-ink dark:text-gray-100 group-hover:text-accent dark:group-hover:text-accent-light transition-colors">
-                         {post.title}
-                       </h4>
+                       <h4 className="text-lg font-serif font-semibold text-ink dark:text-gray-100 group-hover:text-accent dark:group-hover:text-accent-light transition-colors">{post.title}</h4>
                        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-1">{post.excerpt}</p>
                      </div>
                    ))}
                 </div>
               ) : query ? (
-                <div className="p-12 text-center text-zinc-400">
-                  <p>未找到关于 "{query}" 的内容</p>
-                </div>
+                <div className="p-12 text-center text-zinc-400"><p>未找到关于 "{query}" 的内容</p></div>
               ) : (
-                <div className="p-12 text-center text-zinc-400">
-                  <p className="text-sm font-medium">输入关键词开始搜索...</p>
-                </div>
+                <div className="p-12 text-center text-zinc-400"><p className="text-sm font-medium">输入关键词开始搜索...</p></div>
               )}
             </div>
             
@@ -116,8 +87,7 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
 const ThemeToggle = () => {
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark') || 
-             localStorage.getItem('theme') === 'dark';
+      return document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
     }
     return false;
   });
@@ -134,19 +104,9 @@ const ThemeToggle = () => {
   }, [isDark]);
 
   return (
-    <button
-      onClick={() => setIsDark(!isDark)}
-      className="p-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-ink dark:text-amber-300 hover:ring-2 ring-accent/20 transition-all duration-300"
-      aria-label="Toggle Theme"
-    >
+    <button onClick={() => setIsDark(!isDark)} className="p-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-ink dark:text-amber-300 hover:ring-2 ring-accent/20 transition-all duration-300" aria-label="Toggle Theme">
       <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={isDark ? 'moon' : 'sun'}
-          initial={{ y: -10, opacity: 0, rotate: -45 }}
-          animate={{ y: 0, opacity: 1, rotate: 0 }}
-          exit={{ y: 10, opacity: 0, rotate: 45 }}
-          transition={{ duration: 0.2 }}
-        >
+        <motion.div key={isDark ? 'moon' : 'sun'} initial={{ y: -10, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 10, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
           {isDark ? <Moon size={18} /> : <Sun size={18} />}
         </motion.div>
       </AnimatePresence>
@@ -165,19 +125,12 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-paper/80 dark:bg-void/80 border-b border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-500 supports-[backdrop-filter]:bg-paper/60">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        
         <Link to="/" className="flex items-center space-x-3 group z-50">
           <div className="relative">
              <div className="absolute inset-0 bg-accent blur-md opacity-20 group-hover:opacity-40 transition-opacity"></div>
-             <img 
-                src="https://fogpic-vip.3pw.pw/20260215/881e8c20019687c8fcf8737643a769a0.png" 
-                alt="Logo" 
-                className="relative w-10 h-10 rounded-lg group-hover:scale-105 transition-transform duration-300 object-cover bg-white/10"
-             />
+             <img src="https://fogpic-vip.3pw.pw/20260215/881e8c20019687c8fcf8737643a769a0.png" alt="Logo" className="relative w-10 h-10 rounded-lg group-hover:scale-105 transition-transform duration-300 object-cover bg-white/10" />
           </div>
-          <span className="font-serif font-bold text-2xl tracking-tight text-ink dark:text-white">
-            {siteConfig.title}
-          </span>
+          <span className="font-serif font-bold text-2xl tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
         </Link>
 
         <div className="hidden md:flex items-center space-x-8">
@@ -187,27 +140,15 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                { path: '/friends', label: '友链' },
                { path: '/about', label: '关于' }
              ].map((item) => (
-                <Link 
-                  key={item.path}
-                  to={item.path} 
-                  className="relative px-2 py-1 text-sm font-semibold uppercase tracking-wider text-zinc-500 hover:text-ink dark:text-zinc-400 dark:hover:text-white transition-colors"
-                >
+                <Link key={item.path} to={item.path} className="relative px-2 py-1 text-sm font-semibold uppercase tracking-wider text-zinc-500 hover:text-ink dark:text-zinc-400 dark:hover:text-white transition-colors">
                   {item.label}
-                  {location.pathname === item.path && (
-                    <motion.div 
-                      layoutId="nav-underline" 
-                      className="absolute -bottom-1 left-0 right-0 h-0.5 bg-accent"
-                    />
-                  )}
+                  {location.pathname === item.path && <motion.div layoutId="nav-underline" className="absolute -bottom-1 left-0 right-0 h-0.5 bg-accent" />}
                 </Link>
              ))}
           </div>
 
           <div className="flex items-center space-x-3 pl-6 border-l border-zinc-300 dark:border-zinc-700">
-            <button 
-              onClick={onSearchClick}
-              className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-accent dark:hover:text-accent-light transition-colors group"
-            >
+            <button onClick={onSearchClick} className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-accent dark:hover:text-accent-light transition-colors group">
               <Search size={16} />
               <span className="text-xs font-medium opacity-70 group-hover:opacity-100">Ctrl+K</span>
             </button>
@@ -216,24 +157,14 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
         </div>
 
         <div className="flex md:hidden items-center space-x-4">
-          <button onClick={onSearchClick} className="p-2 text-zinc-600 dark:text-zinc-300 active:scale-95 transition-transform">
-             <Search size={22} />
-          </button>
-          <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-ink dark:text-white z-50 active:scale-95 transition-transform">
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <button onClick={onSearchClick} className="p-2 text-zinc-600 dark:text-zinc-300 active:scale-95 transition-transform"><Search size={22} /></button>
+          <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-ink dark:text-white z-50 active:scale-95 transition-transform">{isOpen ? <X size={24} /> : <Menu size={24} />}</button>
         </div>
       </div>
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: '100vh' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="fixed inset-0 top-0 bg-paper/95 dark:bg-void/95 backdrop-blur-xl pt-24 px-6 md:hidden z-40 overflow-hidden"
-          >
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: '100vh' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="fixed inset-0 top-0 bg-paper/95 dark:bg-void/95 backdrop-blur-xl pt-24 px-6 md:hidden z-40 overflow-hidden">
             <div className="flex flex-col space-y-8 items-center text-center">
               <Link onClick={() => setIsOpen(false)} to="/" className="text-4xl font-serif font-bold text-ink dark:text-white hover:text-accent transition-colors">文章</Link>
               <Link onClick={() => setIsOpen(false)} to="/friends" className="text-4xl font-serif font-bold text-ink dark:text-white hover:text-accent transition-colors">友链</Link>
@@ -275,7 +206,6 @@ const Footer = () => {
   return (
     <footer className="py-12 mt-32 border-t border-zinc-200 dark:border-zinc-800 bg-paper dark:bg-void relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-accent to-transparent opacity-30"></div>
-      
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
             <div className="flex flex-col items-center md:items-start space-y-4">
@@ -283,16 +213,10 @@ const Footer = () => {
                    <span className="font-serif font-bold text-xl text-ink dark:text-white tracking-tight">{siteConfig.title}</span>
                    <p className="text-zinc-500 text-sm mt-1">{siteConfig.subtitle}</p>
                 </div>
-                <p className="text-zinc-400 text-sm leading-relaxed text-center md:text-left">
-                   {siteConfig.description}
-                </p>
+                <p className="text-zinc-400 text-sm leading-relaxed text-center md:text-left">{siteConfig.description}</p>
                  <div className="flex items-center gap-4 pt-2">
-                   <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300">
-                     <Github size={18} />
-                   </a>
-                   <a href={siteConfig.social.email} className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300">
-                     <Mail size={18} />
-                   </a>
+                   <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300"><Github size={18} /></a>
+                   <a href={siteConfig.social.email} className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300"><Mail size={18} /></a>
                 </div>
             </div>
 
@@ -308,11 +232,9 @@ const Footer = () => {
                </div>
             </div>
 
-            {/* Status 区域 */}
             <div className="flex flex-col items-center md:items-end">
                <h4 className="font-bold text-sm uppercase tracking-widest text-zinc-400 mb-6">Status</h4>
                <div className="flex flex-col gap-4 w-full">
-                  
                   <div className="flex items-center justify-center md:justify-end gap-2 text-xs font-bold text-zinc-500">
                      <span className="relative flex h-2 w-2">
                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -320,31 +242,24 @@ const Footer = () => {
                      </span>
                      <span>All Systems Normal</span>
                   </div>
-
                   {loadTime && (
                      <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-zinc-400">
                         <Zap size={14} className="text-yellow-500" />
-                        <span>
-                           Page loaded in <span className="text-accent font-mono font-bold">{loadTime}</span>
-                        </span>
+                        <span>Page loaded in <span className="text-accent font-mono font-bold">{loadTime}</span></span>
                      </div>
                   )}
-
                   <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-zinc-400">
                      <Coffee size={14} className="text-amber-700 dark:text-amber-600" />
                      <span>Fueled by Coffee & Code</span>
                   </div>
                </div>
             </div>
-
         </div>
 
         <div className="w-full flex flex-col md:flex-row justify-between items-center pt-8 border-t border-zinc-200/50 dark:border-zinc-800/50 text-xs text-zinc-400 font-medium">
            <p>{siteConfig.footerText}</p>
            <div className="flex items-center gap-6 mt-4 md:mt-0">
-               <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors">
-                  {siteConfig.beian.text}
-               </a>
+               <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors">{siteConfig.beian.text}</a>
                <span className="flex items-center gap-1">Made with <Heart size={10} className="text-accent fill-accent" /> by duck</span>
            </div>
         </div>
@@ -362,10 +277,7 @@ const ScrollProgress = () => {
   });
 
   return (
-    <motion.div
-      className="fixed top-0 left-0 right-0 h-1 bg-accent z-[100] origin-left"
-      style={{ scaleX }}
-    />
+    <motion.div className="fixed top-0 left-0 right-0 h-1 bg-accent z-[100] origin-left" style={{ scaleX }} />
   );
 };
 
@@ -384,6 +296,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -399,9 +312,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
     <div className="min-h-screen flex flex-col relative selection:bg-accent selection:text-white">
-      <ScrollProgress />
+      <ScrollProgress key={location.pathname} />
       <Background />
       <Navbar onSearchClick={() => setIsSearchOpen(true)} />
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
