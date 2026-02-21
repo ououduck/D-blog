@@ -128,7 +128,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
         <Link to="/" className="flex items-center space-x-3 group z-50">
           <div className="relative">
              <div className="absolute inset-0 bg-accent blur-md opacity-20 group-hover:opacity-40 transition-opacity"></div>
-             <img src="https://fogpic-vip.3pw.pw/20260215/881e8c20019687c8fcf8737643a769a0.png" alt="Logo" className="relative w-10 h-10 rounded-lg group-hover:scale-105 transition-transform duration-300 object-cover bg-white/10" />
+             <img src={siteConfig.logo} alt="Logo" className="relative w-10 h-10 rounded-lg group-hover:scale-105 transition-transform duration-300 object-cover bg-white/10" />
           </div>
           <span className="font-serif font-bold text-2xl tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
         </Link>
@@ -257,10 +257,10 @@ const Footer = () => {
         </div>
 
         <div className="w-full flex flex-col md:flex-row justify-between items-center pt-8 border-t border-zinc-200/50 dark:border-zinc-800/50 text-xs text-zinc-400 font-medium">
-           <p>{siteConfig.footerText}</p>
+           <p>{siteConfig.footerText} ｜ {siteConfig.author.name}</p>
            <div className="flex items-center gap-6 mt-4 md:mt-0">
                <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors">{siteConfig.beian.text}</a>
-               <span className="flex items-center gap-1">Made with <Heart size={10} className="text-accent fill-accent" /> by duck</span>
+               <span className="flex items-center gap-1">Made with <Heart size={10} className="text-accent fill-accent" /> by {siteConfig.author.name}</span>
            </div>
         </div>
       </div>

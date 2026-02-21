@@ -2,11 +2,14 @@ export const siteConfig = {
   title: "D-blog",
   subtitle: "跑路的duck",
   description: "技术分享和生活随笔",
-  footerText: "©2026 D工作室&duck",
+  logo: "https://fogpic-vip.3pw.pw/20260215/881e8c20019687c8fcf8737643a769a0.png",
+  seoImage: "https://fogpic-vip.3pw.pw/20260215/881e8c20019687c8fcf8737643a769a0.png",
+  footerText: "©2026 D工作室",
   url: "https://blog.pldduck.com", 
   social: {
     github: "https://github.com/ououduck/",
-    email: "mailto:dduck@qq.com"
+    email: "mailto:dduck@qq.com",
+    rawEmail: "dduck@qq.com"
   },
   author: {
     name: "跑路的duck",
@@ -28,6 +31,9 @@ export const siteConfig = {
       url: "https://dns.3pw.pw"
     }
   ],
+  friendsPage: {
+    announcement: "申请友链需修改模板并发送至我们的邮箱，且最好已经添加了本站友链。此外，我们会不定时清除无效友链（长时间无法访问、LOGO链接异常、网站内容违规等）。"
+  },
   beian: {
     text: "湘ICP备2025101669号",
     url: "https://beian.miit.gov.cn"

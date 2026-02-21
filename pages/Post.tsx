@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Clock, Calendar, Shield, Share2 } from 'lucide-react';
 import { getPostById } from '../services/posts';
 import { Post as PostType } from '../types';
+import { siteConfig } from '../site.config';
 import { Seo } from '../components/Seo';
 import { ImageViewer } from '../components/ImageViewer';
 import { ShareModal } from '../components/ShareModal';
@@ -113,7 +114,7 @@ export const Post = () => {
                <div>
                   <h3 className="text-lg font-serif font-bold text-ink dark:text-white mb-2">CC BY-SA 4.0 许可协议</h3>
                   <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-3">
-                    本文由 <strong className="text-ink dark:text-zinc-200">跑路的duck</strong> 原创。除非另有声明，本站文章采用 
+                    本文由 <strong className="text-ink dark:text-zinc-200">{siteConfig.author.name}</strong> 原创。除非另有声明，本站文章采用 
                     <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium mx-1">CC BY-SA 4.0</a>协议进行授权。
                   </p>
                   <div className="text-xs text-zinc-500 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-950/50 p-3 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 inline-block">
@@ -126,7 +127,7 @@ export const Post = () => {
           <div className="mt-10 pt-10 border-t border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
                <div>
                   <span className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">作者</span>
-                  <span className="font-serif text-lg font-bold text-ink dark:text-white">跑路的duck</span>
+                  <span className="font-serif text-lg font-bold text-ink dark:text-white">{siteConfig.author.name}</span>
                </div>
                <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-sm font-medium text-accent hover:underline">回到顶部</button>
           </div>

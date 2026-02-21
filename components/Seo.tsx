@@ -1,4 +1,5 @@
 import React from 'react';
+import { siteConfig } from '../site.config';
 
 interface SeoProps {
   title: string;
@@ -10,28 +11,25 @@ interface SeoProps {
 
 export const Seo: React.FC<SeoProps> = ({ 
   title, 
-  description = "跑路的duck的技术分享和生活随笔", 
-  image = "https://aliyun-oss.pldduck.com/logo.png", 
+  description = siteConfig.description, 
+  image = siteConfig.seoImage, 
   url = typeof window !== 'undefined' ? window.location.href : '',
   type = 'website' 
 }) => {
-  const siteTitle = "D-blog | 跑路的duck";
-  const fullTitle = title === "D-blog" ? siteTitle : `${title} - ${siteTitle}`;
+  const siteTitle = `${siteConfig.title} | ${siteConfig.author.name}`;
+  const fullTitle = title === siteConfig.title ? siteTitle : `${title} - ${siteTitle}`;
 
   return (
     <>
-      {/* React 19 会自动将这些标签提升到 <head> 中 */}
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       
-      {/* Open Graph / Facebook / WeChat */}
       <meta property="og:type" content={type} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={image} />
       <meta property="og:url" content={url} />
       
-      {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />

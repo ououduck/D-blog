@@ -19,10 +19,10 @@ export const Friends = () => {
   };
 
   const siteInfo = {
-    name: "D-blog",
-    description: "跑路的duck的技术分享和生活随笔",
-    url: "https://blog.pldduck.com",
-    avatar: "https://blog.pldduck.com/logo.png"
+    name: siteConfig.title,
+    description: siteConfig.description,
+    url: siteConfig.url,
+    avatar: siteConfig.logo
   };
 
   const templateText = `网站名：\n网站简介：\n网站链接：\n网站LOGO链接：`;
@@ -62,7 +62,6 @@ export const Friends = () => {
           </motion.a>
         ))}
         
-        {/* 申请友链按钮 */}
         <motion.div variants={itemVariants} onClick={() => setIsModalOpen(true)} className="p-6 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl flex flex-col items-center justify-center text-center hover:border-accent/50 hover:bg-accent/5 transition-colors group cursor-pointer">
            <div className="w-full h-full flex flex-col items-center justify-center">
              <div className="text-zinc-400 group-hover:text-accent mb-2 transition-colors font-serif font-bold text-xl">+</div>
@@ -71,14 +70,12 @@ export const Friends = () => {
         </motion.div>
       </motion.div>
 
-      {/* 申请友链弹窗 */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-void/60 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden flex flex-col max-h-[90vh] z-10">
               
-              {/* 弹窗头部 */}
               <div className="flex items-center justify-between p-5 border-b border-zinc-100 dark:border-zinc-800">
                 <h3 className="text-xl font-serif font-bold text-ink dark:text-white">申请友链</h3>
                 <button onClick={() => setIsModalOpen(false)} className="p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
@@ -86,14 +83,11 @@ export const Friends = () => {
                 </button>
               </div>
 
-              {/* 弹窗内容 (可滚动区域) */}
               <div className="p-5 overflow-y-auto space-y-6">
-                {/* 公告框 */}
                 <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50 rounded-xl p-4 text-sm text-orange-800 dark:text-orange-300 leading-relaxed">
-                  <strong>公告：</strong>申请友链需修改模板并发送至 <span className="font-bold select-all">dduck@qq.com</span>，且最好已经添加了本站友链。此外，我们会不定时清除无效友链（长时间无法访问、LOGO链接异常、网站内容违规等）。
+                  <strong>公告：</strong>{siteConfig.friendsPage.announcement} <span className="font-bold select-all">{siteConfig.social.rawEmail}</span>
                 </div>
 
-                {/* 本站信息卡片 */}
                 <div>
                   <h4 className="font-bold text-ink dark:text-white mb-3 text-sm">本站信息（请先添加本站）</h4>
                   <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -107,7 +101,6 @@ export const Friends = () => {
                   </div>
                 </div>
 
-                {/* 友链申请模板 */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-bold text-ink dark:text-white text-sm">友链申请模板</h4>
@@ -122,10 +115,9 @@ export const Friends = () => {
                 </div>
               </div>
 
-              {/* 弹窗底部操作区 */}
               <div className="p-5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex justify-end">
                 <a 
-                  href="mailto:dduck@qq.com" 
+                  href={siteConfig.social.email}
                   className="px-6 py-2.5 bg-ink dark:bg-white text-white dark:text-ink rounded-xl font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center shadow-md"
                 >
                   去发送
