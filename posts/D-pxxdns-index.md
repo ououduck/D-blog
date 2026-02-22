@@ -27,5 +27,4 @@ coverImage: https://fogpic-vip.3pw.pw/20260222/61b1546526fe56be9cfd49ee286268f9.
 ### 当完整URL为 https://你的站点域名/index.php 时 触发缓存 亲测不影响PXXDNS系统的运行　　
 
 ## 开源地址
-
 [Github-ououduck-D-pxxdns-index](https://github.com/ououduck/D-pxxdns-index/)

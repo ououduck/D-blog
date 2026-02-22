@@ -1,6 +1,5 @@
 import { Post, PostMetadata } from '../types';
 // 导入脚本自动生成的 JSON 数据
-// @ts-ignore (忽略 JSON 导入的类型检查警告)
 import postsData from '../generated/posts.json';
 
 // 建立 Markdown 文件的导入映射
@@ -33,9 +32,9 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
   try {
     const rawContent = await loader() as string;
     
-    // 【关键】移除 Markdown 顶部的 Frontmatter (--- ... ---)
-    // 防止 ReactMarkdown 把配置信息渲染到页面上
-    const content = rawContent.replace(/^---[\s\S]*?---\n/, '');
+    
+    // 使用 \r?\n 兼容 Windows (CRLF) 和 Unix (LF) 换行符
+    const content = rawContent.replace(/^---[\s\S]*?---\r?\n/, '');
     
     return {
       ...meta,

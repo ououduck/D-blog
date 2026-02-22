@@ -87,8 +87,8 @@ export const Post = () => {
 
         <div className="max-w-3xl mx-auto px-4 pb-32">
           <div className="prose prose-base md:prose-lg prose-stone dark:prose-invert max-w-none 
-            prose-headings:font-serif prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-ink dark:prose-headings:text-white 
-            prose-p:font-sans prose-p:text-base md:prose-p:text-lg prose-p:leading-loose prose-p:text-zinc-700 dark:prose-p:text-zinc-300 
+            prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white 
+            prose-p:font-sans prose-p:text-base md:prose-p:text-lg prose-p:leading-relaxed 
             prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline 
             prose-strong:text-ink dark:prose-strong:text-white prose-strong:font-bold 
             prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-8 md:prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01] 
