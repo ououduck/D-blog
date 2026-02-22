@@ -6,20 +6,20 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { PerformanceMonitor } from './components/PerformanceMonitor';
 import { siteConfig } from './site.config';
 
-// 路由组件懒加载 - 使用更稳健的路径格式
-const Home = lazy(() => import('./pages/Home').catch(() => {
+// 路由组件懒加载 - 使用绝对路径避免解析问题
+const Home = lazy(() => import('/pages/Home').catch(() => {
   console.error('Failed to load Home component');
   return { default: () => <div className="p-8 text-center">首页加载失败，请刷新页面</div> };
 }));
-const Post = lazy(() => import('./pages/Post').catch(() => {
+const Post = lazy(() => import('/pages/Post').catch(() => {
   console.error('Failed to load Post component');
   return { default: () => <div className="p-8 text-center">文章页加载失败，请刷新页面</div> };
 }));
-const About = lazy(() => import('./pages/About').catch(() => {
+const About = lazy(() => import('/pages/About').catch(() => {
   console.error('Failed to load About component');
   return { default: () => <div className="p-8 text-center">关于页加载失败，请刷新页面</div> };
 }));
-const Friends = lazy(() => import('./pages/Friends').catch(() => {
+const Friends = lazy(() => import('/pages/Friends').catch(() => {
   console.error('Failed to load Friends component');
   return { default: () => <div className="p-8 text-center">友链页加载失败，请刷新页面</div> };
 }));
