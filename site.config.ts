@@ -29,6 +29,18 @@ export const siteConfig = {
       description: "精品实惠的二级域名",
       avatar: "https://www.pldduck.com/favicon.ico",
       url: "https://dns.3pw.pw"
+    },
+    {
+      name: "雪球Bqiu的小破站",
+      description: "今天吃啥，明天干点啥q(≧▽≦q)",
+      avatar: "https://qq-avatar.bqiu.ru/avatar/640",
+      url: "https://www.bqiu.top"
+    },
+    {
+      name: "小慧博客",
+      description: "小慧的技术博客",
+      avatar: "https://blogoss.itxiaohui.top/logo%20-uhlgnmrf.png",
+      url: "https://www.itxiaohui.top"
     }
   ],
   friendsPage: {
