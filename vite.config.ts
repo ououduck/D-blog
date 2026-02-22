@@ -14,9 +14,6 @@ export default defineConfig({
       '@': path.resolve(__dirname, './'),
     },
   },
-  css: {
-    postcss: './postcss.config.js',
-  },
   server: {
     port: 3000,
     host: '0.0.0.0',
@@ -26,20 +23,5 @@ export default defineConfig({
     outDir: 'dist',
     // 生产环境移除 sourcemap 以减小体积
     sourcemap: false,
-    // 优化 CSS 输出
-    cssMinify: true,
-    rollupOptions: {
-      output: {
-        // 确保 CSS 文件在根目录，便于 HTML 引用
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name?.endsWith('.css')) {
-            return '[name].[hash].css'; // 放在根目录
-          }
-          return 'assets/[name].[hash].[ext]';
-        },
-        entryFileNames: '[name].[hash].js',
-        chunkFileNames: '[name].[hash].js'
-      }
-    }
   },
 });
