@@ -86,7 +86,15 @@ export const Post = () => {
         )}
 
         <div className="max-w-3xl mx-auto px-4 pb-32">
-          <div className="prose prose-lg prose-stone dark:prose-invert max-w-none prose-headings:font-serif prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-ink dark:prose-headings:text-white prose-p:font-sans prose-p:text-lg prose-p:leading-relaxed prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-strong:text-ink dark:prose-strong:text-white prose-strong:font-bold prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01] prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 dark:prose-blockquote:bg-zinc-900 prose-blockquote:py-6 prose-blockquote:px-8 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-xl prose-code:font-mono prose-code:text-sm prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:rounded-2xl prose-pre:shadow-xl prose-pre:overflow-hidden prose-pre:border prose-pre:border-zinc-800">
+          <div className="prose prose-base md:prose-lg prose-stone dark:prose-invert max-w-none 
+            prose-headings:font-serif prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-ink dark:prose-headings:text-white 
+            prose-p:font-sans prose-p:text-base md:prose-p:text-lg prose-p:leading-loose prose-p:text-zinc-700 dark:prose-p:text-zinc-300 
+            prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline 
+            prose-strong:text-ink dark:prose-strong:text-white prose-strong:font-bold 
+            prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-8 md:prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01] 
+            prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 dark:prose-blockquote:bg-zinc-900 prose-blockquote:py-6 prose-blockquote:px-8 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-lg md:prose-blockquote:text-xl 
+            prose-code:font-mono prose-code:text-sm 
+            prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:rounded-2xl prose-pre:shadow-xl prose-pre:overflow-hidden prose-pre:border prose-pre:border-zinc-800">
             <ReactMarkdown
                remarkPlugins={[remarkGfm]}
                rehypePlugins={[rehypeHighlight]}
@@ -129,7 +137,6 @@ export const Post = () => {
                   <span className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">作者</span>
                   <span className="font-serif text-lg font-bold text-ink dark:text-white">{siteConfig.author.name}</span>
                </div>
-               <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-sm font-medium text-accent hover:underline">回到顶部</button>
           </div>
         </div>
       </motion.article>

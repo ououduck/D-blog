@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box } from 'lucide-react';
+import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box, Monitor } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { searchPosts } from '../services/posts';
 import { Post } from '../types';
 import { siteConfig } from '../site.config';
+import { BackToTop } from './BackToTop';
 
 const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [query, setQuery] = useState('');
@@ -85,31 +86,58 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
 };
 
 const ThemeToggle = () => {
-  const [isDark, setIsDark] = useState(() => {
+  type Theme = 'light' | 'dark' | 'system';
+  const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
+      const saved = localStorage.getItem('theme') as Theme;
+      return saved || 'system';
     }
-    return false;
+    return 'system';
   });
 
   useEffect(() => {
     const root = document.documentElement;
-    if (isDark) {
-      root.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      root.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
+    const systemQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const applyTheme = (t: Theme) => {
+      if (t === 'dark' || (t === 'system' && systemQuery.matches)) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    };
+
+    applyTheme(theme);
+    localStorage.setItem('theme', theme);
+
+    const handleSystemChange = () => {
+      if (theme === 'system') {
+        applyTheme('system');
+      }
+    };
+
+    systemQuery.addEventListener('change', handleSystemChange);
+    return () => systemQuery.removeEventListener('change', handleSystemChange);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    if (theme === 'light') setTheme('dark');
+    else if (theme === 'dark') setTheme('system');
+    else setTheme('light');
+  };
 
   return (
-    <button onClick={() => setIsDark(!isDark)} className="p-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-ink dark:text-amber-300 hover:ring-2 ring-accent/20 transition-all duration-300" aria-label="Toggle Theme">
+    <button onClick={toggleTheme} className="p-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-ink dark:text-amber-300 hover:ring-2 ring-accent/20 transition-all duration-300 relative group" aria-label="Toggle Theme">
       <AnimatePresence mode="wait" initial={false}>
-        <motion.div key={isDark ? 'moon' : 'sun'} initial={{ y: -10, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 10, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
-          {isDark ? <Moon size={18} /> : <Sun size={18} />}
+        <motion.div key={theme} initial={{ y: -10, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 10, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
+          {theme === 'light' && <Sun size={18} />}
+          {theme === 'dark' && <Moon size={18} />}
+          {theme === 'system' && <Monitor size={18} className="text-zinc-500 dark:text-zinc-400" />}
         </motion.div>
       </AnimatePresence>
+      <span className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+        {theme === 'light' ? 'Light' : theme === 'dark' ? 'Dark' : 'System'}
+      </span>
     </button>
   );
 };
@@ -327,6 +355,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {children}
         </div>
       </main>
+      <BackToTop />
       <Footer />
     </div>
   );
