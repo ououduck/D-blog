@@ -17,7 +17,7 @@ html {
   bottom: -50%;
   width: 200%;
   height: 200vh;
-  background: transparent url('http://assets.iceable.com/img/noise-transparent.png') repeat 0 0;
+  /* background: transparent url('http://assets.iceable.com/img/noise-transparent.png') repeat 0 0; */
   background-repeat: repeat;
   animation: grain 8s steps(10) infinite;
   opacity: 0.02;
