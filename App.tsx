@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Layout } from './components/Layout';
-import { Home } from './pages/Home';
-import { Post } from './pages/Post';
-import { About } from './pages/About';
-import { Friends } from './pages/Friends';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { PerformanceMonitor } from './components/PerformanceMonitor';
 import { siteConfig } from './site.config';
 
+// 路由组件懒加载
+const Home = lazy(() => import('./pages/Home'));
+const Post = lazy(() => import('./pages/Post'));
+const About = lazy(() => import('./pages/About'));
+const Friends = lazy(() => import('./pages/Friends'));
+
+// 初始加载屏幕
 const LoadingScreen = () => {
   const letterVariants = {
     initial: { y: 100 },
@@ -42,16 +47,62 @@ const LoadingScreen = () => {
   );
 };
 
+// 路由页面加载状态
+const RouteLoading = () => (
+  <div className="flex items-center justify-center min-h-[200px]">
+    <div className="flex flex-col items-center">
+      <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mb-4"></div>
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">页面加载中...</p>
+    </div>
+  </div>
+);
+
 const AnimatedRoutes = () => {
   const location = useLocation();
 
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Home />} />
-        <Route path="/post/:id" element={<Post />} />
-        <Route path="/friends" element={<Friends />} />
-        <Route path="/about" element={<About />} />
+        <Route 
+          path="/" 
+          element={
+            <ErrorBoundary>
+              <Suspense fallback={<RouteLoading />}>
+                <Home />
+              </Suspense>
+            </ErrorBoundary>
+          } 
+        />
+        <Route 
+          path="/post/:id" 
+          element={
+            <ErrorBoundary>
+              <Suspense fallback={<RouteLoading />}>
+                <Post />
+              </Suspense>
+            </ErrorBoundary>
+          } 
+        />
+        <Route 
+          path="/friends" 
+          element={
+            <ErrorBoundary>
+              <Suspense fallback={<RouteLoading />}>
+                <Friends />
+              </Suspense>
+            </ErrorBoundary>
+          } 
+        />
+        <Route 
+          path="/about" 
+          element={
+            <ErrorBoundary>
+              <Suspense fallback={<RouteLoading />}>
+                <About />
+              </Suspense>
+            </ErrorBoundary>
+          } 
+        />
       </Routes>
     </AnimatePresence>
   );
@@ -102,6 +153,9 @@ const App: React.FC = () => {
             <AnimatedRoutes />
          </Layout>
       )}
+      
+      {/* 开发环境性能监控 */}
+      {import.meta.env.DEV && <PerformanceMonitor />}
     </Router>
   );
 };
