@@ -99,7 +99,7 @@ export const Post = () => {
                remarkPlugins={[remarkGfm]}
                rehypePlugins={[rehypeHighlight]}
                components={{
-                 img: ({node, ...props}) => <img {...props} onClick={() => setPreviewImage({ src: props.src as string, alt: props.alt })} className="cursor-zoom-in rounded-2xl shadow-lg my-12" />,
+                 img: ({node, ...props}) => <img {...props} loading="lazy" onClick={() => setPreviewImage({ src: props.src as string, alt: props.alt })} className="cursor-zoom-in rounded-2xl shadow-lg my-12" />,
                  code({node, className, children, ...props}) {
                     const match = /language-(\w+)/.exec(className || '')
                     if (!match) {
@@ -146,7 +146,7 @@ export const Post = () => {
         onClose={() => setShareModalOpen(false)} 
         title={post.title} 
         excerpt={post.excerpt} 
-        url={`${window.location.origin}/#/post/${post.id}`} 
+        url={`${window.location.origin}/post/${post.id}`} 
       />
     </>
   );
