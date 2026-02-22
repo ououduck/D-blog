@@ -30,13 +30,15 @@ export default defineConfig({
     cssMinify: true,
     rollupOptions: {
       output: {
-        // 分离 CSS 文件
+        // 确保 CSS 文件在根目录，便于 HTML 引用
         assetFileNames: (assetInfo) => {
           if (assetInfo.name?.endsWith('.css')) {
-            return 'assets/[name].[hash].css';
+            return '[name].[hash].css'; // 放在根目录
           }
           return 'assets/[name].[hash].[ext]';
-        }
+        },
+        entryFileNames: '[name].[hash].js',
+        chunkFileNames: '[name].[hash].js'
       }
     }
   },

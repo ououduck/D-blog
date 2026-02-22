@@ -69,6 +69,6 @@ export default {
     }
   },
   plugins: [
-    require('@tailwindcss/typography'),
+    // require('@tailwindcss/typography'), // 暂时注释掉，避免构建问题
   ],
 }
