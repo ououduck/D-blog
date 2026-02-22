@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Layout } from './components/Layout';
-import { Home } from './pages/Home';
-import { Post } from './pages/Post';
-import { About } from './pages/About';
-import { Friends } from './pages/Friends';
 import { siteConfig } from './site.config';
+
+// 路由懒加载
+const Home = React.lazy(() => import('./pages/Home').then(module => ({ default: module.Home })));
+const Post = React.lazy(() => import('./pages/Post').then(module => ({ default: module.Post })));
+const About = React.lazy(() => import('./pages/About').then(module => ({ default: module.About })));
+const Friends = React.lazy(() => import('./pages/Friends').then(module => ({ default: module.Friends })));
 
 const LoadingScreen = () => {
   const letterVariants = {
@@ -42,17 +44,25 @@ const LoadingScreen = () => {
   );
 };
 
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+  </div>
+);
+
 const AnimatedRoutes = () => {
   const location = useLocation();
 
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Home />} />
-        <Route path="/post/:id" element={<Post />} />
-        <Route path="/friends" element={<Friends />} />
-        <Route path="/about" element={<About />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Home />} />
+          <Route path="/post/:id" element={<Post />} />
+          <Route path="/friends" element={<Friends />} />
+          <Route path="/about" element={<About />} />
+        </Routes>
+      </Suspense>
     </AnimatePresence>
   );
 };
