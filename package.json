@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "gen:posts": "node scripts/generate-posts.mjs",
-    "dev": "npm run gen:posts && vite",
-    "build": "npm run gen:posts && vite build",
+    "gen:data": "node scripts/generate-site-data.mjs",
+    "dev": "npm run gen:data && vite",
+    "build": "npm run gen:data && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
