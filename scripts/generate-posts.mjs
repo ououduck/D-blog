@@ -66,7 +66,7 @@ const generateSitemap = () => {
   </url>`).join('')}
   ${posts.map(post => `
   <url>
-    <loc>${SITE_URL}/post/${post.id}</loc>
+    <loc>${SITE_URL}/#/post/${post.id}</loc>
     <lastmod>${new Date(post.date).toISOString().split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -90,8 +90,8 @@ const generateRss = () => {
     ${posts.map(post => `
     <item>
       <title><![CDATA[${post.title}]]></title>
-      <link>${SITE_URL}/post/${post.id}</link>
-      <guid isPermaLink="true">${SITE_URL}/post/${post.id}</guid>
+      <link>${SITE_URL}/#/post/${post.id}</link>
+      <guid isPermaLink="true">${SITE_URL}/#/post/${post.id}</guid>
       <description><![CDATA[${post.excerpt}]]></description>
       <pubDate>${new Date(post.date).toUTCString()}</pubDate>
       <category>${post.category}</category>

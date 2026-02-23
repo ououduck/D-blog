@@ -346,7 +346,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col relative selection:bg-accent selection:text-white">
-      <ScrollProgress key={location.pathname} />
+      <ScrollProgress />
       <Background />
       <Navbar onSearchClick={() => setIsSearchOpen(true)} />
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
