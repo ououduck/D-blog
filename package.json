@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "gen:data": "node scripts/generate-site-data.mjs",
+    "prerender": "node scripts/prerender.mjs",
     "dev": "npm run gen:data && vite",
-    "build": "npm run gen:data && vite build",
+    "build": "npm run gen:data && vite build && npm run prerender",
     "preview": "vite preview"
   },
   "dependencies": {

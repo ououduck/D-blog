@@ -239,7 +239,7 @@ export const Home = () => {
         onClose={() => setSharePost(null)} 
         title={sharePost?.title || ''} 
         excerpt={sharePost?.excerpt || ''} 
-        url={sharePost ? `${window.location.origin}/#/post/${sharePost.id}` : ''} 
+        url={sharePost ? `${window.location.origin}/post/${sharePost.id}` : ''} 
       />
     </motion.div>
   );

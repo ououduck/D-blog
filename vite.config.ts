@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react()],
   // 设置为 './' 可以确保在 Cloudflare Pages 等环境下，
   // 无论部署在根目录还是子目录，资源路径都能正确加载。
-  base: './', 
+  base: '/', 
   resolve: {
     alias: {
       // 保持与 tsconfig.json 一致的路径别名
