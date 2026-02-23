@@ -2,7 +2,7 @@
 id: centos-bt-install-swoole5
 title: CentOS 宝塔面板无法安装 Swoole5 解决教程
 excerpt: 教你解决CentOS 宝塔面板无法安装 Swoole5 的问题
-date: 2026-02-13
+date: 2026-02-24
 category: 技术
 tags:
   - Swoole5 编译报错
