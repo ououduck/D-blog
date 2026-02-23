@@ -198,7 +198,7 @@ export const Home = () => {
   };
 
   return (
-    <motion.div initial="initial" animate="animate" exit="exit" className="pb-20">
+    <motion.div initial="initial" animate="animate" exit="exit" className="pb-10 md:pb-20">
       <Seo title="首页" />
       <Hero onSearch={handleSearch} />
       
@@ -224,7 +224,7 @@ export const Home = () => {
             </motion.div>
 
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-16">
+              <div className="flex justify-center items-center gap-4 mt-8 md:mt-16">
                 <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="p-3 rounded-full border border-zinc-200 dark:border-zinc-800 hover:border-accent hover:text-accent disabled:opacity-30 disabled:hover:border-zinc-200 transition-colors"><ChevronLeft size={20} /></button>
                 <span className="text-sm font-bold text-zinc-500 font-mono">{currentPage} / {totalPages}</span>
                 <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="p-3 rounded-full border border-zinc-200 dark:border-zinc-800 hover:border-accent hover:text-accent disabled:opacity-30 disabled:hover:border-zinc-200 transition-colors"><ChevronRight size={20} /></button>
