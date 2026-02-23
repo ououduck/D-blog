@@ -31,7 +31,43 @@ export const Post = () => {
     }
   }, [id]);
 
-  if (loading) return <div className="h-screen"></div>;
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto pt-10 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="text-center mb-16">
+           <div className="inline-block w-20 h-4 bg-zinc-200 dark:bg-zinc-800 rounded mb-10"></div>
+           
+           <div className="flex flex-col items-center gap-4 mb-8">
+              <div className="w-16 h-6 bg-zinc-200 dark:bg-zinc-800 rounded-full"></div>
+           </div>
+           
+           <div className="h-12 md:h-16 bg-zinc-200 dark:bg-zinc-800 rounded-lg w-3/4 mx-auto mb-8"></div>
+           
+           <div className="flex justify-center space-x-6">
+              <div className="w-24 h-4 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
+              <div className="w-24 h-4 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
+              <div className="w-16 h-4 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
+           </div>
+        </div>
+
+        {/* Image Skeleton */}
+        <div className="mb-20 rounded-3xl bg-zinc-200 dark:bg-zinc-800 aspect-[21/9] w-full shadow-sm"></div>
+
+        {/* Content Skeleton */}
+        <div className="max-w-3xl mx-auto space-y-6 pb-32">
+           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-full"></div>
+           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-11/12"></div>
+           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-full"></div>
+           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4"></div>
+           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-5/6"></div>
+           <div className="h-32 bg-zinc-200 dark:bg-zinc-800 rounded-xl w-full my-8"></div>
+           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-full"></div>
+           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-4/5"></div>
+        </div>
+      </div>
+    );
+  }
 
   if (!post) {
     return (
