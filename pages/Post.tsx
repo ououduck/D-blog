@@ -71,10 +71,17 @@ export const Post = () => {
 
   if (!post) {
     return (
-      <div className="text-center py-40">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
         <Seo title="404 Not Found" />
-        <h2 className="text-3xl font-serif font-bold mb-4">未找到文章</h2>
-        <Link to="/" className="text-accent hover:underline">返回首页</Link>
+        <div className="text-9xl font-serif font-bold text-zinc-200 dark:text-zinc-800 mb-4">404</div>
+        <h2 className="text-3xl font-serif font-bold mb-4 text-ink dark:text-white">未找到文章</h2>
+        <p className="text-zinc-500 mb-8 max-w-md">很抱歉，您访问的文章可能已被删除、移动或不存在。</p>
+        <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-mono text-zinc-500 mb-8">
+            Debug Info: ID="{id}"
+        </div>
+        <Link to="/" className="px-6 py-3 bg-ink dark:bg-white text-white dark:text-ink rounded-full font-bold tracking-wide hover:scale-105 transition-transform">
+          返回首页
+        </Link>
       </div>
     );
   }
