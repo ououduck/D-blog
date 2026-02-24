@@ -5,13 +5,73 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Clock, Calendar, Shield, Share2 } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, Shield, Share2, Copy, Check } from 'lucide-react';
 import { getPostById } from '../services/posts';
 import { Post as PostType } from '../types';
 import { siteConfig } from '../site.config';
 import { Seo } from '../components/Seo';
 import { ImageViewer } from '../components/ImageViewer';
 import { ShareModal } from '../components/ShareModal';
+
+const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>) => {
+  const preRef = React.useRef<HTMLPreElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (preRef.current) {
+      const code = preRef.current.innerText.replace(/\n$/, '');
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(code);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } else {
+            throw new Error('Clipboard API not available');
+        }
+      } catch (err) {
+        // Fallback for older browsers or non-secure contexts
+        const textArea = document.createElement("textarea");
+        textArea.value = code;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch (e) {
+          console.error('Copy failed', e);
+        }
+        document.body.removeChild(textArea);
+      }
+    }
+  };
+
+  const childrenWithProps = React.Children.map(children, child => {
+    if (React.isValidElement(child)) {
+      return React.cloneElement(child as React.ReactElement<any>, { isBlock: true });
+    }
+    return child;
+  });
+
+  return (
+    <div className="relative group my-6 md:my-8">
+      <button
+        onClick={handleCopy}
+        className="absolute top-3 right-3 p-2 rounded-lg bg-zinc-700/80 hover:bg-zinc-600/80 text-zinc-300 hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10 backdrop-blur-sm"
+        title="复制代码"
+        aria-label="复制代码"
+      >
+        {copied ? <Check size={16} /> : <Copy size={16} />}
+      </button>
+      <pre ref={preRef} {...props} className={`${props.className || ''} !my-0 !p-4 md:!p-6 overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-transparent`}>
+        {childrenWithProps}
+      </pre>
+    </div>
+  );
+};
 
 export const Post = () => {
   const { id } = useParams<{ id: string }>();
@@ -93,8 +153,8 @@ export const Post = () => {
       <motion.article initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
         <Seo title={post.title} description={post.excerpt} image={post.coverImage} type="article" />
 
-        <header className="max-w-4xl mx-auto pt-10 mb-16 text-center">
-          <Link to="/" className="inline-flex items-center text-zinc-500 hover:text-accent transition-colors mb-10 group font-bold text-xs tracking-widest uppercase">
+        <header className="max-w-4xl mx-auto pt-6 md:pt-10 mb-10 md:mb-16 text-center">
+          <Link to="/" className="inline-flex items-center text-zinc-500 hover:text-accent transition-colors mb-6 md:mb-10 group font-bold text-xs tracking-widest uppercase">
             <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" />
             返回文章
           </Link>
@@ -106,7 +166,7 @@ export const Post = () => {
               </span>
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-8 text-ink dark:text-white leading-[1.2]">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif font-bold mb-6 md:mb-8 text-ink dark:text-white leading-[1.2]">
               {post.title}
             </h1>
             
@@ -123,19 +183,19 @@ export const Post = () => {
         </header>
 
         {post.coverImage && (
-          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="mb-20 rounded-3xl overflow-hidden shadow-2xl shadow-zinc-200/50 dark:shadow-none mx-auto max-w-6xl aspect-[21/9] cursor-zoom-in" onClick={() => setPreviewImage({ src: post.coverImage!, alt: post.title })}>
-            <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="mb-10 md:mb-20 rounded-3xl overflow-hidden shadow-2xl shadow-zinc-200/50 dark:shadow-none mx-auto max-w-6xl aspect-[21/9] cursor-zoom-in" onClick={() => setPreviewImage({ src: post.coverImage!, alt: post.title })}>
+            <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" decoding="async" />
           </motion.div>
         )}
 
-        <div className="max-w-3xl mx-auto px-4 pb-32">
+        <div className="max-w-3xl mx-auto px-4 pb-20 md:pb-32">
           <div className="prose prose-base md:prose-lg prose-stone dark:prose-invert max-w-none 
             prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white 
             prose-p:font-sans prose-p:text-base md:prose-p:text-lg prose-p:leading-relaxed 
             prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline 
             prose-strong:text-ink dark:prose-strong:text-white prose-strong:font-bold 
-            prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-8 md:prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01] 
-            prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 dark:prose-blockquote:bg-zinc-900 prose-blockquote:py-6 prose-blockquote:px-8 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-lg md:prose-blockquote:text-xl 
+            prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-6 md:prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01] 
+            prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 dark:prose-blockquote:bg-zinc-900 prose-blockquote:py-4 prose-blockquote:px-6 md:prose-blockquote:py-6 md:prose-blockquote:px-8 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-lg md:prose-blockquote:text-xl 
             prose-code:font-mono prose-code:text-sm 
             prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:rounded-2xl prose-pre:shadow-xl prose-pre:overflow-hidden prose-pre:border prose-pre:border-zinc-800">
             <ReactMarkdown
@@ -143,12 +203,12 @@ export const Post = () => {
                rehypePlugins={[rehypeHighlight]}
                components={{
                  img: ({node, ...props}) => <img {...props} loading="lazy" onClick={() => setPreviewImage({ src: props.src as string, alt: props.alt })} className="cursor-zoom-in rounded-2xl shadow-lg my-12" />,
-                 code({node, className, children, ...props}) {
-                    const match = /language-(\w+)/.exec(className || '')
-                    if (!match) {
-                        return <code className="text-accent dark:text-accent-light bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded-md font-bold before:content-none after:content-none" {...props}>{children}</code>
+                 pre: PreBlock,
+                 code({node, className, children, isBlock, ...props}: any) {
+                    if (isBlock || /language-(\w+)/.exec(className || '')) {
+                        return <code className={className} {...props}>{children}</code>
                     }
-                    return <code className={className} {...props}>{children}</code>
+                    return <code className="text-accent dark:text-accent-light bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded-md font-bold before:content-none after:content-none" {...props}>{children}</code>
                  }
                }}
             >
