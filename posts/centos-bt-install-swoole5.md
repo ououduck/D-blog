@@ -58,7 +58,7 @@ yum update
 
 说明你的 CentOS 镜像源有问题，需要自行更换国内镜像源（如阿里云、腾讯云镜像源。    
 
-(如何更换CentOS镜像源)[https://cn.bing.com/search?q=centos%E6%8D%A2%E6%BA%90&setmkt=zh-CN&PC=EMMX01&form=LBT003&scope=web]
+[如何更换CentOS镜像源](https://cn.bing.com/search?q=centos%E6%8D%A2%E6%BA%90&setmkt=zh-CN&PC=EMMX01&form=LBT003&scope=web)
 
 ---
 

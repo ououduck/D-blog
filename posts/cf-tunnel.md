@@ -18,9 +18,13 @@ coverImage: https://fogpic-vip.3pw.pw/20260215/8e96a096530df88c7bf18a3ee5123ec6.
 
 在日常开发和运维中，我们经常遇到需要从公网访问本地网络服务的需求。传统的做法可能涉及复杂的配置或高昂的成本。然而，随着Cloudflare Tunnel的出现，这一切都变得简单而高效。
 
+---
+
 ## Cloudflare Tunnel简介
 
 Cloudflare Tunnel通过建立一条安全、加密的隧道，将本地的服务暴露到公网，无需公网IP地址或端口转发。这不仅简化了内网穿透的过程，还提升了安全性。
+
+---
 
 ## 主要功能
 
@@ -29,9 +33,13 @@ Cloudflare Tunnel通过建立一条安全、加密的隧道，将本地的服务
 - **自动HTTPS**：为您的服务自动配置SSL证书，确保数据传输的安全性。
 - **额外认证**：为您的服务添加额外的安全层，提高访问控制。
 
+---
+
 ## 工作原理
 
 Cloudflare Tunnel利用Cloudflare全球网络作为中介，通过运行在本地服务器上的`cloudflared`守护程序与Cloudflare云端进行通信，从而实现在公网访问本地服务的目的。
+
+---
 
 ## 开始使用Cloudflare Tunnel
 
@@ -75,11 +83,17 @@ docker run --name cloudflared -d --restart unless-stop cloudflare/cloudflared:la
 ![配置域名图片](https://fogpic-vip.3pw.pw/20260215/f24d20dee47cab50495fff31ef27c903.jpg)
 为你的域名配置一个子域名（Subdomain），Path 留空，URL 处填写内网服务的IP加端口号。注意 Type 处建议使用 HTTP，因为 Cloudflare 会自动为你提供 HTTPS，因此此处的转发目标可以是 HTTP 服务端口。
 
+---
+
 ### 现在，你就能通过刚刚设置的子域名直接在公网访问你的内网项目了
+
+---
 
 ## 安全增强
 
 为了进一步提升安全性，您可以为服务添加基于Email、IP等多种方式的身份验证。
+
+---
 
 ## 结论
 
