@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Layout } from './components/Layout';
 import { siteConfig } from './site.config';
@@ -81,19 +82,21 @@ const App: React.FC = () => {
       };
 
       const handleLoad = () => {
-        setTimeout(finishLoading, 800); 
+        // 减少人为延迟，从 800ms 降至 300ms
+        setTimeout(finishLoading, 300);
       };
 
+      // 减少后备超时时间
       const fallbackTimer = setTimeout(() => {
         finishLoading();
-      }, 7000);
+      }, 3000);
 
       if (document.readyState === 'complete') {
         handleLoad();
       } else {
         window.addEventListener('load', handleLoad);
       }
-      
+
       return () => {
         window.removeEventListener('load', handleLoad);
         clearTimeout(fallbackTimer);
@@ -102,17 +105,19 @@ const App: React.FC = () => {
   }, [loading]);
 
   return (
-    <Router>
-      <AnimatePresence>
-        {loading && <LoadingScreen />}
-      </AnimatePresence>
-      
-      {!loading && (
-         <Layout>
-            <AnimatedRoutes />
-         </Layout>
-      )}
-    </Router>
+    <HelmetProvider>
+      <Router>
+        <AnimatePresence>
+          {loading && <LoadingScreen />}
+        </AnimatePresence>
+
+        {!loading && (
+           <Layout>
+              <AnimatedRoutes />
+           </Layout>
+        )}
+      </Router>
+    </HelmetProvider>
   );
 };
 

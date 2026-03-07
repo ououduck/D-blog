@@ -22,7 +22,7 @@
 }
 
 @layer utilities {
-  /* Noise texture overlay */
+  /* Noise texture overlay - 使用 CSS 生成，避免外部请求 */
   .bg-noise {
     position: fixed;
     top: -50%;
@@ -31,15 +31,20 @@
     bottom: -50%;
     width: 200%;
     height: 200vh;
-    background: transparent url('http://assets.iceable.com/img/noise-transparent.png') repeat 0 0;
-    background-repeat: repeat;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px),
+      repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
     animation: grain 8s steps(10) infinite;
-    opacity: 0.02;
+    opacity: 0.3;
     z-index: 9999;
     pointer-events: none;
+    will-change: transform;
   }
   .dark .bg-noise {
-    opacity: 0.04;
+    opacity: 0.2;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,.02) 2px, rgba(255,255,255,.02) 4px),
+      repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,.02) 2px, rgba(255,255,255,.02) 4px);
   }
 
   /* Custom scrollbar */

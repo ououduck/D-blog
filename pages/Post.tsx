@@ -3,8 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import 'highlight.js/styles/github-dark.css';
 import { motion } from 'framer-motion';
+
+// 动态加载代码高亮样式，避免阻塞首页渲染
+if (typeof window !== 'undefined') {
+  import('highlight.js/styles/github-dark.css');
+}
 import { ArrowLeft, Clock, Calendar, Shield, Share2, Copy, Check } from 'lucide-react';
 import { getPostById } from '../services/posts';
 import { Post as PostType } from '../types';
@@ -184,7 +188,7 @@ export const Post = () => {
 
         {post.coverImage && (
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="mb-10 md:mb-20 rounded-3xl overflow-hidden shadow-2xl shadow-zinc-200/50 dark:shadow-none mx-auto max-w-6xl aspect-[21/9] cursor-zoom-in" onClick={() => setPreviewImage({ src: post.coverImage!, alt: post.title })}>
-            <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" decoding="async" />
+            <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" loading="eager" decoding="async" fetchpriority="high" />
           </motion.div>
         )}
 

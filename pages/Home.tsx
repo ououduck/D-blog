@@ -34,7 +34,7 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean; onShar
             <div className="relative w-full md:w-7/12 h-64 md:h-full overflow-hidden">
               <div className="absolute inset-0 bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
               {post.coverImage ? (
-                <motion.img src={post.coverImage} alt={post.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
+                <motion.img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800"><Sparkles className="text-zinc-300 w-16 h-16" /></div>
               )}
@@ -68,7 +68,7 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean; onShar
       <Link to={`/post/${post.id}`} className="group relative flex flex-col h-full bg-white dark:bg-zinc-900/40 backdrop-blur-md rounded-2xl md:rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-2xl hover:shadow-zinc-200/50 dark:hover:shadow-accent/5 transition-all duration-500">
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
           {post.coverImage ? (
-             <motion.img src={post.coverImage} alt={post.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-110" />
+             <motion.img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-110" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-zinc-300"><span className="text-4xl opacity-50">🦆</span></div>
           )}
