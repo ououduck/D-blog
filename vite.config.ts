@@ -37,13 +37,7 @@ export default defineConfig({
     cssCodeSplit: true,
     // chunk 大小警告限制
     chunkSizeWarningLimit: 1000,
-    // 压缩优化
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // 生产环境移除 console
-        drop_debugger: true,
-      },
-    },
+    // 使用 esbuild 压缩（默认，更快）
+    minify: 'esbuild',
   },
 });
