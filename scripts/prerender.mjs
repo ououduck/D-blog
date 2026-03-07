@@ -5,9 +5,9 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DIST_DIR = path.join(__dirname, '../../dist');
-const POSTS_FILE = path.join(__dirname, '../../generated/posts.json');
-const SITE_CONFIG_FILE = path.join(__dirname, '../../config/site.config.ts');
+const DIST_DIR = path.join(__dirname, '../dist');
+const POSTS_FILE = path.join(__dirname, '../generated/posts.json');
+const SITE_CONFIG_FILE = path.join(__dirname, '../config/site.config.ts');
 
 // Extract Site Config
 let siteTitle = 'D-blog';

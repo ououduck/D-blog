@@ -15,7 +15,7 @@ const loadPostsData = async (): Promise<PostMetadata[]> => {
 };
 
 // 建立 Markdown 文件的导入映射
-const postFiles = import.meta.glob('../../content/posts/*.md', { query: '?raw', import: 'default' });
+const postFiles = import.meta.glob('../../posts/*.md', { query: '?raw', import: 'default' });
 
 export const getPosts = async (): Promise<PostMetadata[]> => {
   return loadPostsData();
