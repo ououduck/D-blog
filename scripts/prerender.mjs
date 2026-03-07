@@ -100,7 +100,7 @@ posts.forEach(post => {
 // 2. Process Static Pages
 const staticPages = [
   { path: 'about', title: `关于${siteTitle} - ${SITE_SUFFIX}`, description: `关于${siteTitle}的介绍` },
-  { path: 'friends', title: `我的朋友们 - ${SITE_SUFFIX}`, description: `${siteTitle}的友情链接` }
+  { path: 'friends', title: `友情链接 - ${SITE_SUFFIX}`, description: `我的朋友们和推荐的网站` }
 ];
 
 staticPages.forEach(page => {
