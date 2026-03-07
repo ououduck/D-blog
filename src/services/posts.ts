@@ -1,4 +1,4 @@
-import { Post, PostMetadata } from '../types';
+﻿import { Post, PostMetadata } from '../types';
 
 // 使用缓存避免重复加载
 let postsDataCache: PostMetadata[] | null = null;
@@ -9,13 +9,13 @@ const loadPostsData = async (): Promise<PostMetadata[]> => {
     return postsDataCache;
   }
 
-  const data = await import('../generated/posts.json');
+  const data = await import('../../generated/posts.json');
   postsDataCache = data.default as PostMetadata[];
   return postsDataCache;
 };
 
 // 建立 Markdown 文件的导入映射
-const postFiles = import.meta.glob('../posts/*.md', { query: '?raw', import: 'default' });
+const postFiles = import.meta.glob('../../content/posts/*.md', { query: '?raw', import: 'default' });
 
 export const getPosts = async (): Promise<PostMetadata[]> => {
   return loadPostsData();
