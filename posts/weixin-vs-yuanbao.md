@@ -9,7 +9,7 @@ tags:
   - 腾讯
   - 微信
 readTime: 3分钟阅读
-coverImage: https://fogpic-vip.3pw.pw/20260215/8a73d96b60029d8ace3a29c367639ae0.png
+coverImage: /posts-img/8a73d96b60029d8ace3a29c367639ae0.png
 ---
 
 # 微信和元宝打架？是腾讯内斗还是有意而为？  
@@ -17,16 +17,16 @@ coverImage: https://fogpic-vip.3pw.pw/20260215/8a73d96b60029d8ace3a29c367639ae0.
 ## 前情提要  
 **这两天 腾讯元宝推出了送10亿的活动**  
 **于是微信 QQ等各大平台全都被元宝的红包邀请广告刷屏**  
-![元宝广告](https://fogpic-vip.3pw.pw/20260215/fb0be011f36279c9aff272a14ad6c1d4.jpg)  
+![元宝广告](/posts-img/fb0be011f36279c9aff272a14ad6c1d4.jpg)  
 
 ## 主要事件  
 **结果......微信出手了**  
 **直接反手给元宝封了**  
-![元宝被封1](https://fogpic-vip.3pw.pw/20260215/f83d0aa0f5345d2f9f66f8d31e79b57f.jpg)  
-![元宝被封2](https://fogpic-vip.3pw.pw/20260215/7d61147c4d76198515d5b59babf0a0f1.jpg)  
+![元宝被封1](/posts-img/f83d0aa0f5345d2f9f66f8d31e79b57f.jpg)  
+![元宝被封2](/posts-img/7d61147c4d76198515d5b59babf0a0f1.jpg)  
 
 **很快 元宝也在微博发出了回应**  
-![元宝回应](https://fogpic-vip.3pw.pw/20260215/5dda253088d1512b81c3b018e1db9c85.jpg)  
+![元宝回应](/posts-img/5dda253088d1512b81c3b018e1db9c85.jpg)  
 
 ## 观点看法  
 **有的人认为这是腾讯内斗**  

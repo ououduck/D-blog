@@ -5,41 +5,39 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // 设置为 './' 可以确保在 Cloudflare Pages 等环境下，
-  // 无论部署在根目录还是子目录，资源路径都能正确加载。
-  base: './', 
+  base: '/',
   resolve: {
     alias: {
-      // 保持与 tsconfig.json 一致的路径别名
       '@': path.resolve(__dirname, './'),
     },
-  },
-  css: {
-    postcss: './postcss.config.js',
   },
   server: {
     port: 3000,
     host: '0.0.0.0',
   },
   build: {
-    // 确保输出目录为 dist
     outDir: 'dist',
-    // 生产环境移除 sourcemap 以减小体积
     sourcemap: false,
-    // 优化 CSS 输出
-    cssMinify: true,
+    // 代码分割优化
     rollupOptions: {
       output: {
-        // 确保 CSS 文件在根目录，便于 HTML 引用
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name?.endsWith('.css')) {
-            return '[name].[hash].css'; // 放在根目录
-          }
-          return 'assets/[name].[hash].[ext]';
+        manualChunks: {
+          // React 核心库单独打包
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // 动画库单独打包
+          'animation': ['framer-motion'],
+          // Markdown 相关库单独打包
+          'markdown': ['react-markdown', 'remark-gfm', 'rehype-highlight'],
+          // 代码高亮单独打包（按需加载）
+          'highlight': ['highlight.js'],
         },
-        entryFileNames: '[name].[hash].js',
-        chunkFileNames: '[name].[hash].js'
-      }
-    }
+      },
+    },
+    // 启用 CSS 代码分割
+    cssCodeSplit: true,
+    // chunk 大小警告限制
+    chunkSizeWarningLimit: 1000,
+    // 使用 esbuild 压缩（默认，更快）
+    minify: 'esbuild',
   },
 });

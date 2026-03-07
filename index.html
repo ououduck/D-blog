@@ -6,101 +6,34 @@
     <title>D-blog</title>
     <link rel="icon" href="/favicon.ico" />
     <meta name="description" content="跑路的duck的技术分享和生活随笔" />
-    <!-- Fonts -->
+
+    <!-- DNS 预解析和预连接优化 -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="dns-prefetch" href="https://www.clarity.ms">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- clarity -->
+    <!-- 预加载关键资源 -->
+    <link rel="modulepreload" href="/index.tsx">
+    <link rel="preload" href="/generated/posts.json" as="fetch" crossorigin="anonymous">
+
+    <!-- 字体加载优化：使用 display=swap 避免阻塞渲染 -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    </noscript>
+
+    <!-- Clarity 分析脚本异步加载 -->
     <script type="text/javascript">
-    (function(c,l,a,r,i,t,y){
-        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-    })(window, document, "clarity", "script", "v9s22psrcc");
+    window.addEventListener('load', function() {
+      (function(c,l,a,r,i,t,y){
+          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "v9s22psrcc");
+    });
     </script>
-    
-    <!-- Tailwind CSS will be loaded via Vite build process -->
-    <style>
-      /* Smooth scrolling */
-      html {
-        scroll-behavior: smooth;
-        -webkit-font-smoothing: antialiased;
-      }
-      
-      /* Noise texture overlay */
-      .bg-noise {
-        position: fixed;
-        top: -50%;
-        left: -50%;
-        right: -50%;
-        bottom: -50%;
-        width: 200%;
-        height: 200vh;
-        background: transparent url('http://assets.iceable.com/img/noise-transparent.png') repeat 0 0;
-        background-repeat: repeat;
-        animation: grain 8s steps(10) infinite;
-        opacity: 0.02;
-        z-index: 9999;
-        pointer-events: none;
-      }
-      .dark .bg-noise {
-        opacity: 0.04;
-      }
-
-      /* Custom scrollbar */
-      ::-webkit-scrollbar {
-        width: 4px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: rgba(168, 162, 158, 0.5); 
-        border-radius: 10px;
-      }
-      .dark ::-webkit-scrollbar-thumb {
-        background: rgba(64, 64, 64, 0.5); 
-      }
-      
-      /* Premium text effects */
-      .text-glow {
-        text-shadow: 0 0 15px rgba(192, 57, 43, 0.2);
-      }
-      
-      /* Layout optimization */
-      body {
-        cursor: default;
-      }
-
-      /* Better focus states */
-      :focus-visible {
-        outline: 2px solid #c0392b;
-        outline-offset: 4px;
-      }
-
-      .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "framer-motion": "https://esm.sh/framer-motion@^12.29.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "react-markdown": "https://esm.sh/react-markdown@^10.1.0",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
-  }
-}
-</script>
-
 </head>
   <body class="bg-paper text-ink dark:bg-void dark:text-gray-200 transition-colors duration-1000 ease-in-out overflow-x-hidden">
     <div class="bg-noise"></div>

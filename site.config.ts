@@ -2,8 +2,8 @@ export const siteConfig = {
   title: "D-blog",
   subtitle: "跑路的duck",
   description: "技术分享和生活随笔",
-  logo: "https://fogpic-vip.3pw.pw/20260215/881e8c20019687c8fcf8737643a769a0.png",
-  seoImage: "https://fogpic-vip.3pw.pw/20260215/881e8c20019687c8fcf8737643a769a0.png",
+  logo: "/posts-img/881e8c20019687c8fcf8737643a769a0.png",
+  seoImage: "/posts-img/881e8c20019687c8fcf8737643a769a0.png",
   footerText: "©2026 D工作室",
   url: "https://blog.pldduck.com", 
   social: {

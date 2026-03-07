@@ -28,28 +28,28 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean; onShar
 
   if (featured) {
     return (
-      <motion.div variants={cardVariants} className="col-span-1 md:col-span-2 lg:col-span-3 w-full">
+      <motion.div variants={cardVariants} className="col-span-2 md:col-span-2 lg:col-span-3 w-full">
         <Link to={`/post/${post.id}`} className="group block h-full">
           <div className="relative overflow-hidden rounded-[2rem] bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 transition-all duration-500 hover:shadow-2xl hover:shadow-accent/10 dark:hover:border-zinc-700 flex flex-col md:flex-row h-auto md:h-[480px]">
             <div className="relative w-full md:w-7/12 h-64 md:h-full overflow-hidden">
               <div className="absolute inset-0 bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
               {post.coverImage ? (
-                <motion.img src={post.coverImage} alt={post.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
+                <motion.img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800"><Sparkles className="text-zinc-300 w-16 h-16" /></div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-60" />
               <div className="absolute top-6 left-6"><CategoryBadge text={post.category} /></div>
             </div>
-            <div className="relative w-full md:w-5/12 p-8 md:p-12 flex flex-col justify-center bg-white dark:bg-zinc-900/80 backdrop-blur-sm">
+            <div className="relative w-full md:w-5/12 p-6 md:p-12 flex flex-col justify-center bg-white dark:bg-zinc-900/80 backdrop-blur-sm">
                {post.top !== undefined && (
                 <div className="absolute top-6 right-6 text-accent bg-accent/5 border border-accent/10 p-2 rounded-full">
                   <Pin size={16} fill="currentColor" />
                 </div>
               )}
-              <div className="mb-6"><span className="text-xs font-bold tracking-[0.2em] uppercase text-accent">Featured Post</span></div>
-              <h2 className="text-2xl md:text-4xl font-serif font-bold text-ink dark:text-white mb-6 leading-[1.1] group-hover:text-accent transition-colors duration-300">{post.title}</h2>
-              <p className="text-base text-zinc-500 dark:text-zinc-400 line-clamp-3 mb-8 font-sans leading-relaxed">{post.excerpt}</p>
+              <div className="mb-4 md:mb-6"><span className="text-xs font-bold tracking-[0.2em] uppercase text-accent">Featured Post</span></div>
+              <h2 className="text-xl md:text-4xl font-serif font-bold text-ink dark:text-white mb-4 md:mb-6 leading-[1.1] group-hover:text-accent transition-colors duration-300">{post.title}</h2>
+              <p className="text-sm md:text-base text-zinc-500 dark:text-zinc-400 line-clamp-3 mb-6 md:mb-8 font-sans leading-relaxed">{post.excerpt}</p>
               <div className="flex items-center text-zinc-400 text-xs font-bold tracking-wider gap-4 mt-auto">
                 <div className="flex items-center gap-2"><Calendar size={14} /><span>{post.date}</span></div>
                 <div className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></div>
@@ -65,32 +65,31 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean; onShar
 
   return (
     <motion.div variants={cardVariants} className="flex flex-col h-full">
-      <Link to={`/post/${post.id}`} className="group relative flex flex-col h-full bg-white dark:bg-zinc-900/40 backdrop-blur-md rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-2xl hover:shadow-zinc-200/50 dark:hover:shadow-accent/5 transition-all duration-500">
+      <Link to={`/post/${post.id}`} className="group relative flex flex-col h-full bg-white dark:bg-zinc-900/40 backdrop-blur-md rounded-2xl md:rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-2xl hover:shadow-zinc-200/50 dark:hover:shadow-accent/5 transition-all duration-500">
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
           {post.coverImage ? (
-             <motion.img src={post.coverImage} alt={post.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-110" />
+             <motion.img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-110" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-zinc-300"><span className="text-4xl opacity-50">🦆</span></div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="absolute top-4 left-4"><CategoryBadge text={post.category} /></div>
-          <div className="absolute top-4 right-4 z-10">
+          <div className="absolute top-2 left-2 md:top-4 md:left-4"><CategoryBadge text={post.category} /></div>
+          <div className="absolute top-2 right-2 md:top-4 md:right-4 z-10">
              {post.top !== undefined ? (
-               <div className="bg-accent text-white p-1.5 rounded-full shadow-lg shadow-accent/20"><Pin size={14} fill="currentColor" /></div>
+               <div className="bg-accent text-white p-1 md:p-1.5 rounded-full shadow-lg shadow-accent/20"><Pin size={12} className="md:w-3.5 md:h-3.5" fill="currentColor" /></div>
              ) : (
-               <div className="bg-white/90 dark:bg-black/80 backdrop-blur rounded-full p-2.5 opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-lg"><ArrowUpRight size={16} className="text-ink dark:text-white" /></div>
+               <div className="bg-white/90 dark:bg-black/80 backdrop-blur rounded-full p-2 md:p-2.5 opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-lg"><ArrowUpRight size={14} className="md:w-4 md:h-4 text-ink dark:text-white" /></div>
              )}
           </div>
         </div>
-        <div className="flex flex-col flex-grow p-6 md:p-7">
-          <h3 className="text-xl font-serif font-bold mb-3 text-ink dark:text-gray-100 leading-tight group-hover:text-accent dark:group-hover:text-accent-light transition-colors line-clamp-2">{post.title}</h3>
-          <p className="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed line-clamp-2 mb-6 flex-grow">{post.excerpt}</p>
-          <div className="pt-5 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center text-xs text-zinc-400 font-bold tracking-wide">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5"><Calendar size={13} /><span>{post.date}</span></div>
-              <span className="flex items-center gap-1.5"><Clock size={13} /><span>{post.readTime}</span></span>
+        <div className="flex flex-col flex-grow p-4 md:p-7">
+          <h3 className="text-sm md:text-xl font-serif font-bold mb-2 md:mb-3 text-ink dark:text-gray-100 leading-tight group-hover:text-accent dark:group-hover:text-accent-light transition-colors line-clamp-2">{post.title}</h3>
+          <p className="hidden md:block text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed line-clamp-2 mb-6 flex-grow">{post.excerpt}</p>
+          <div className="pt-3 md:pt-5 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center text-[10px] md:text-xs text-zinc-400 font-bold tracking-wide mt-auto">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="flex items-center gap-1 md:gap-1.5"><Calendar size={12} className="md:w-[13px] md:h-[13px]" /><span>{post.date}</span></div>
             </div>
-            <button onClick={handleShareClick} className="p-1.5 hover:text-accent hover:bg-accent/10 rounded-md transition-colors"><Share2 size={14} /></button>
+            <button onClick={handleShareClick} className="p-1.5 hover:text-accent hover:bg-accent/10 rounded-md transition-colors"><Share2 size={12} className="md:w-[14px] md:h-[14px]" /></button>
           </div>
         </div>
       </Link>
@@ -199,7 +198,7 @@ export const Home = () => {
   };
 
   return (
-    <motion.div initial="initial" animate="animate" exit="exit" className="pb-20">
+    <motion.div initial="initial" animate="animate" exit="exit" className="pb-10 md:pb-20">
       <Seo title="首页" />
       <Hero onSearch={handleSearch} />
       
@@ -216,7 +215,7 @@ export const Home = () => {
           </div>
         ) : (
           <div className="space-y-16">
-            <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" variants={{ animate: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible" key={`${selectedCategory}-${sortOrder}-${currentPage}`}>
+            <motion.div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8" variants={{ animate: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible" key={`${selectedCategory}-${sortOrder}-${currentPage}`}>
               {currentPosts.length > 0 ? (
                   currentPosts.map((post, index) => <PostCard key={post.id} post={post} index={index} featured={!!post.featured} onShare={setSharePost} />)
               ) : (
@@ -225,7 +224,7 @@ export const Home = () => {
             </motion.div>
 
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-16">
+              <div className="flex justify-center items-center gap-4 mt-8 md:mt-16">
                 <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="p-3 rounded-full border border-zinc-200 dark:border-zinc-800 hover:border-accent hover:text-accent disabled:opacity-30 disabled:hover:border-zinc-200 transition-colors"><ChevronLeft size={20} /></button>
                 <span className="text-sm font-bold text-zinc-500 font-mono">{currentPage} / {totalPages}</span>
                 <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="p-3 rounded-full border border-zinc-200 dark:border-zinc-800 hover:border-accent hover:text-accent disabled:opacity-30 disabled:hover:border-zinc-200 transition-colors"><ChevronRight size={20} /></button>
@@ -240,7 +239,7 @@ export const Home = () => {
         onClose={() => setSharePost(null)} 
         title={sharePost?.title || ''} 
         excerpt={sharePost?.excerpt || ''} 
-        url={sharePost ? `${window.location.origin}/#/post/${sharePost.id}` : ''} 
+        url={sharePost ? `${window.location.origin}/post/${sharePost.id}` : ''} 
       />
     </motion.div>
   );

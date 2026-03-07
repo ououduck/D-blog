@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Layout } from './components/Layout';
-import { Home } from './pages/Home';
-import { Post } from './pages/Post';
-import { About } from './pages/About';
-import { Friends } from './pages/Friends';
 import { siteConfig } from './site.config';
+
+// 路由懒加载
+const Home = React.lazy(() => import('./pages/Home').then(module => ({ default: module.Home })));
+const Post = React.lazy(() => import('./pages/Post').then(module => ({ default: module.Post })));
+const About = React.lazy(() => import('./pages/About').then(module => ({ default: module.About })));
+const Friends = React.lazy(() => import('./pages/Friends').then(module => ({ default: module.Friends })));
 
 const LoadingScreen = () => {
   const letterVariants = {
@@ -42,17 +45,25 @@ const LoadingScreen = () => {
   );
 };
 
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+  </div>
+);
+
 const AnimatedRoutes = () => {
   const location = useLocation();
 
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Home />} />
-        <Route path="/post/:id" element={<Post />} />
-        <Route path="/friends" element={<Friends />} />
-        <Route path="/about" element={<About />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Home />} />
+          <Route path="/post/:id" element={<Post />} />
+          <Route path="/friends" element={<Friends />} />
+          <Route path="/about" element={<About />} />
+        </Routes>
+      </Suspense>
     </AnimatePresence>
   );
 };
@@ -71,19 +82,21 @@ const App: React.FC = () => {
       };
 
       const handleLoad = () => {
-        setTimeout(finishLoading, 800); 
+        // 减少人为延迟，从 800ms 降至 300ms
+        setTimeout(finishLoading, 300);
       };
 
+      // 减少后备超时时间
       const fallbackTimer = setTimeout(() => {
         finishLoading();
-      }, 7000);
+      }, 3000);
 
       if (document.readyState === 'complete') {
         handleLoad();
       } else {
         window.addEventListener('load', handleLoad);
       }
-      
+
       return () => {
         window.removeEventListener('load', handleLoad);
         clearTimeout(fallbackTimer);
@@ -92,17 +105,19 @@ const App: React.FC = () => {
   }, [loading]);
 
   return (
-    <Router>
-      <AnimatePresence>
-        {loading && <LoadingScreen />}
-      </AnimatePresence>
-      
-      {!loading && (
-         <Layout>
-            <AnimatedRoutes />
-         </Layout>
-      )}
-    </Router>
+    <HelmetProvider>
+      <Router>
+        <AnimatePresence>
+          {loading && <LoadingScreen />}
+        </AnimatePresence>
+
+        {!loading && (
+           <Layout>
+              <AnimatedRoutes />
+           </Layout>
+        )}
+      </Router>
+    </HelmetProvider>
   );
 };
 

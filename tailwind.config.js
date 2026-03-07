@@ -1,15 +1,57 @@
+import typography from '@tailwindcss/typography';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./*.{js,ts,jsx,tsx}",
+    "./components/**/*.{js,ts,jsx,tsx}",
+    "./pages/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-        serif: ['"Playfair Display"', 'serif'],
+        sans: [
+          '"Plus Jakarta Sans"',
+          '"PingFang SC"', 
+          '"Microsoft YaHei"', 
+          'ui-sans-serif', 
+          'system-ui', 
+          '-apple-system', 
+          'BlinkMacSystemFont', 
+          '"Segoe UI"', 
+          'Roboto', 
+          '"Helvetica Neue"', 
+          'Arial', 
+          '"Noto Sans"', 
+          'sans-serif', 
+          '"Apple Color Emoji"', 
+          '"Segoe UI Emoji"', 
+          '"Segoe UI Symbol"', 
+          '"Noto Color Emoji"'
+        ],
+        serif: [
+          '"Playfair Display"', 
+          '"Noto Serif SC"', 
+          '"Songti SC"', 
+          '"SimSun"', 
+          '"Times New Roman"', 
+          'Times', 
+          'serif'
+        ],
+        mono: [
+          '"JetBrains Mono"', 
+          '"Fira Code"', 
+          'ui-monospace', 
+          'SFMono-Regular', 
+          'Menlo', 
+          'Monaco', 
+          'Consolas', 
+          '"Liberation Mono"', 
+          '"Courier New"', 
+          'monospace'
+        ],
       },
       colors: {
         paper: '#f2f0e9',
@@ -51,24 +93,69 @@ export default {
       typography: (theme) => ({
         DEFAULT: {
           css: {
-            fontFamily: '"Plus Jakarta Sans", sans-serif',
+            fontFamily: theme('fontFamily.sans').join(', '),
             color: theme('colors.ink'),
-            h1: { fontFamily: '"Playfair Display", serif', fontWeight: '800' },
-            h2: { fontFamily: '"Playfair Display", serif', fontWeight: '700' },
-            h3: { fontFamily: '"Playfair Display", serif', fontWeight: '600' },
+            fontSize: '1.125rem', // 18px
+            lineHeight: '1.8',
+            maxWidth: 'none', // 取消最大宽度限制，由容器控制
+            
+            h1: { 
+              fontFamily: theme('fontFamily.serif').join(', '), 
+              fontWeight: '800',
+              color: theme('colors.ink'),
+            },
+            h2: { 
+              fontFamily: theme('fontFamily.serif').join(', '), 
+              fontWeight: '700',
+              color: theme('colors.ink'),
+              marginTop: '2em',
+            },
+            h3: { 
+              fontFamily: theme('fontFamily.serif').join(', '), 
+              fontWeight: '600',
+              color: theme('colors.ink'),
+            },
+            h4: { 
+              fontFamily: theme('fontFamily.serif').join(', '), 
+              color: theme('colors.ink'),
+            },
             strong: { color: theme('colors.accent.DEFAULT') },
+            
+            // 优化代码块
+            code: {
+              color: theme('colors.accent.DEFAULT'),
+              backgroundColor: 'rgba(0,0,0,0.05)',
+              padding: '0.2em 0.4em',
+              borderRadius: '0.25rem',
+              fontWeight: '600',
+            },
+            'code::before': { content: '""' },
+            'code::after': { content: '""' },
+            
+            blockquote: {
+              fontFamily: theme('fontFamily.serif').join(', '),
+              borderLeftColor: theme('colors.accent.DEFAULT'),
+            },
           },
         },
         invert: {
           css: {
             color: '#e5e5e5',
+            h1: { color: '#e5e5e5' },
+            h2: { color: '#e5e5e5' },
+            h3: { color: '#e5e5e5' },
+            h4: { color: '#e5e5e5' },
             strong: { color: theme('colors.accent.light') },
+            code: {
+              color: theme('colors.accent.light'),
+              backgroundColor: 'rgba(255,255,255,0.1)',
+            },
           }
         }
       }),
     }
   },
   plugins: [
-    // require('@tailwindcss/typography'), // 暂时注释掉，避免构建问题
+    typography,
   ],
 }
