@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <!-- 预加载关键资源 -->
-    <link rel="modulepreload" href="/index.tsx">
+    <link rel="modulepreload" href="/src/index.tsx">
     <link rel="preload" href="/generated/posts.json" as="fetch" crossorigin="anonymous">
 
     <!-- 字体加载优化：使用 display=swap 避免阻塞渲染 -->
@@ -38,6 +38,6 @@
   <body class="bg-paper text-ink dark:bg-void dark:text-gray-200 transition-colors duration-1000 ease-in-out overflow-x-hidden">
     <div class="bg-noise"></div>
     <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
+  <script type="module" src="/src/index.tsx"></script>
 </body>
 </html>

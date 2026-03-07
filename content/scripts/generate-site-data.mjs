@@ -1,4 +1,4 @@
-import fs from 'fs';
+﻿import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import { fileURLToPath } from 'url';
@@ -14,9 +14,9 @@ const __dirname = path.dirname(__filename);
 
 const POSTS_DIR = path.join(__dirname, '../posts');
 // JSON 生成到根目录下的 generated 文件夹
-const OUTPUT_JSON_DIR = path.join(__dirname, '../generated');
+const OUTPUT_JSON_DIR = path.join(__dirname, '../../generated');
 // XML 文件输出到 public 目录
-const PUBLIC_DIR = path.join(__dirname, '../public');
+const PUBLIC_DIR = path.join(__dirname, '../../public');
 
 // 确保目录存在
 if (!fs.existsSync(OUTPUT_JSON_DIR)) fs.mkdirSync(OUTPUT_JSON_DIR, { recursive: true });

@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, Rss, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
-import { getPosts, searchPosts, getAllCategories } from '../services/posts';
+import { getPosts, searchPosts, getAllCategories } from '@/services/posts';
 import { Post } from '../types';
-import { siteConfig } from '../site.config';
+import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ShareModal } from '../components/ShareModal';
 

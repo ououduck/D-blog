@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Github, Mail, Code, Terminal } from 'lucide-react';
-import { siteConfig } from '../site.config';
+import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 
 export const About = () => {

@@ -1,11 +1,11 @@
-{
+﻿{
   "name": "D-blog | 跑路的duck",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "gen:data": "node scripts/generate-site-data.mjs",
-    "prerender": "node scripts/prerender.mjs",
+    "gen:data": "node content/scripts/generate-site-data.mjs",
+    "prerender": "node content/scripts/prerender.mjs",
     "dev": "npm run gen:data && vite",
     "build": "npm run gen:data && vite build && npm run prerender",
     "preview": "vite preview"

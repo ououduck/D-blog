@@ -1,14 +1,15 @@
-import { defineConfig } from 'vite';
+﻿import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   base: '/',
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './'),
+      '@': path.resolve(__dirname, './src'),
+      '@config': path.resolve(__dirname, './config'),
+      '@content': path.resolve(__dirname, './content'),
     },
   },
   server: {
@@ -18,26 +19,18 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    // 代码分割优化
     rollupOptions: {
       output: {
         manualChunks: {
-          // React 核心库单独打包
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          // 动画库单独打包
           'animation': ['framer-motion'],
-          // Markdown 相关库单独打包
           'markdown': ['react-markdown', 'remark-gfm', 'rehype-highlight'],
-          // 代码高亮单独打包（按需加载）
           'highlight': ['highlight.js'],
         },
       },
     },
-    // 启用 CSS 代码分割
     cssCodeSplit: true,
-    // chunk 大小警告限制
     chunkSizeWarningLimit: 1000,
-    // 使用 esbuild 压缩（默认，更快）
     minify: 'esbuild',
   },
 });

@@ -1,9 +1,9 @@
-import React, { useState, useEffect, Suspense } from 'react';
+﻿import React, { useState, useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Layout } from './components/Layout';
-import { siteConfig } from './site.config';
+import { siteConfig } from '@config/site.config';
 
 // 路由懒加载
 const Home = React.lazy(() => import('./pages/Home').then(module => ({ default: module.Home })));

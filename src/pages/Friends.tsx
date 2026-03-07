@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink, X, Copy, Check } from 'lucide-react';
-import { siteConfig } from '../site.config';
+import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 
 export const Friends = () => {

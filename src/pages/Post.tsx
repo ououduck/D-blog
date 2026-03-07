@@ -10,9 +10,9 @@ if (typeof window !== 'undefined') {
   import('highlight.js/styles/github-dark.css');
 }
 import { ArrowLeft, Clock, Calendar, Shield, Share2, Copy, Check } from 'lucide-react';
-import { getPostById } from '../services/posts';
+import { getPostById } from '@/services/posts';
 import { Post as PostType } from '../types';
-import { siteConfig } from '../site.config';
+import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ImageViewer } from '../components/ImageViewer';
 import { ShareModal } from '../components/ShareModal';
