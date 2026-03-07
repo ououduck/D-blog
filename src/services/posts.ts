@@ -30,7 +30,7 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
   }
 
   // 构建 import.meta.glob 需要的相对路径
-  const relativePath = `..${(meta as any).filePath}`;
+  const relativePath = `../..${(meta as any).filePath}`;
   const loader = postFiles[relativePath];
 
   if (!loader) {
