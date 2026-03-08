@@ -1,8 +1,11 @@
 # D-blog
 
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)
+
 一个基于 React + Vite 构建的静态博客项目，内容以 Markdown 管理，支持友情链接、RSS、站点地图、页面预渲染和响应式阅读体验。
 
-在线地址：<https://blog.pldduck.com>
+**在线预览：** <https://blog.pldduck.com>
 
 ## 项目特点
 
@@ -190,22 +193,31 @@ posts/*.md + friends/*.json
 
 如果使用单页应用回退规则，建议将所有未知路由回退到 `index.html`；如果直接使用预渲染输出，也可以按静态页面路径访问。
 
-## 开源协作建议
+## 贡献指南
 
-- 提交前先执行 `npm run build`
-- 新增文章时保证 Front Matter 完整
-- 新增友链时保证 JSON 可解析且字段完整
+欢迎提交 Issue 和 Pull Request！
+
+### 提交文章
+
+1. Fork 本仓库
+2. 在 `posts/` 目录下新增 Markdown 文件
+3. 确保 Front Matter 字段完整
+4. 本地执行 `npm run build` 验证构建通过
+5. 提交 PR
+
+### 申请友链
+
+1. Fork 本仓库
+2. 在 `friends/` 目录下新增 JSON 文件（文件名建议使用站点域名或英文名称）
+3. 确保包含所有必填字段：`name`、`description`、`avatar`、`url`
+4. 提交 PR，标题格式：`feat: 添加友链 - [站点名称]`
+
+### 代码贡献
+
+- 提交前先执行 `npm run build` 确保构建通过
 - PR 尽量聚焦单一主题，方便审查和回滚
-
-## 已验证命令
-
-以下命令已在当前仓库执行通过：
-
-```bash
-npm install
-npm run build
-```
+- 遵循项目现有的代码风格和目录结构
 
 ## License
 
-当前仓库尚未添加 `LICENSE` 文件。若准备正式开源，建议尽快补充许可证后再长期对外传播。
+本项目采用 [MIT License](LICENSE) 开源协议。
