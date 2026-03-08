@@ -39,17 +39,15 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
   }
 
   try {
-    const rawContent = await loader() as string;
+    let rawContent = await loader() as string;
 
-    // 调试：输出原始内容的前200个字符
-    console.log('Raw content preview:', rawContent.substring(0, 200));
-    console.log('First char code:', rawContent.charCodeAt(0));
+    // 移除 BOM (Byte Order Mark) 如果存在
+    if (rawContent.charCodeAt(0) === 0xFEFF) {
+      rawContent = rawContent.substring(1);
+    }
 
-    // 更简单健壮的正则：匹配从开头的 --- 到第二个 --- 及其后的换行符
+    // 移除 frontmatter：匹配从开头的 --- 到第二个 --- 及其后的换行符
     const content = rawContent.replace(/^---[\s\S]*?---[\r\n]*/, '');
-
-    console.log('Content after replace preview:', content.substring(0, 200));
-    console.log('Match found:', rawContent !== content);
 
     return {
       ...meta,
