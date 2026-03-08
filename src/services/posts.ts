@@ -41,9 +41,15 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
   try {
     const rawContent = await loader() as string;
 
-    // 使用 \r?\n 兼容 Windows (CRLF) 和 Unix (LF) 换行符
-    // 匹配完整的 frontmatter 块：开头的 ---\n，中间内容，结束的 ---\n，以及后续的空行
-    const content = rawContent.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n*/, '');
+    // 调试：输出原始内容的前200个字符
+    console.log('Raw content preview:', rawContent.substring(0, 200));
+    console.log('First char code:', rawContent.charCodeAt(0));
+
+    // 更简单健壮的正则：匹配从开头的 --- 到第二个 --- 及其后的换行符
+    const content = rawContent.replace(/^---[\s\S]*?---[\r\n]*/, '');
+
+    console.log('Content after replace preview:', content.substring(0, 200));
+    console.log('Match found:', rawContent !== content);
 
     return {
       ...meta,
