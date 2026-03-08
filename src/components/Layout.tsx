@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box, Monitor } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -6,6 +6,25 @@ import { searchPosts } from '@/services/posts';
 import { Post } from '../types';
 import { siteConfig } from '@config/site.config';
 import { BackToTop } from './BackToTop';
+
+const TEXT = {
+  searchPlaceholder: '\u641c\u7d22\u6587\u7ae0...',
+  searchEmpty: '\u8f93\u5165\u5173\u952e\u8bcd\u5f00\u59cb\u641c\u7d22',
+  searchHint: '\u652f\u6301\u6309\u6807\u9898\u3001\u6807\u7b7e\u3001\u5206\u7c7b\u641c\u7d22',
+  close: '\u5173\u95ed',
+  theme: '\u5916\u89c2',
+  notFoundPrefix: '\u6ca1\u6709\u627e\u5230\u4e0e',
+  notFoundSuffix: '\u76f8\u5173\u7684\u5185\u5bb9',
+  themeLight: '\u6d45\u8272',
+  themeDark: '\u6df1\u8272',
+  themeSystem: '\u8ddf\u968f\u7cfb\u7edf',
+  navPosts: '\u6587\u7ae0',
+  navArchive: '\u5f52\u6863',
+  navStats: '\u7edf\u8ba1',
+  navFriends: '\u53cb\u94fe',
+  navAbout: '\u5173\u4e8e',
+  sourceCode: '\u9879\u76ee\u6e90\u7801'
+};
 
 const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [query, setQuery] = useState('');
@@ -21,13 +40,14 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
 
   useEffect(() => {
     const fetchResults = async () => {
-      if (query.trim().length > 0) {
+      if (query.trim()) {
         const res = await searchPosts(query);
         setResults(res);
       } else {
         setResults([]);
       }
     };
+
     const debounce = setTimeout(fetchResults, 300);
     return () => clearTimeout(debounce);
   }, [query]);
@@ -40,43 +60,74 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-24 px-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-void/60 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, scale: 0.95, y: -20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -20 }} transition={{ type: "spring", duration: 0.5 }} className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden relative z-10">
-            <div className="flex items-center p-4 border-b border-zinc-100 dark:border-zinc-800">
-              <Search className="text-zinc-400 mr-3" size={20} />
-              <input ref={inputRef} type="text" placeholder="搜索文章..." className="w-full bg-transparent outline-none text-xl text-ink dark:text-white placeholder:text-zinc-400 font-serif" value={query} onChange={(e) => setQuery(e.target.value)} />
-              <button onClick={onClose} className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-24">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-void/60 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+            transition={{ type: 'spring', duration: 0.5 }}
+            className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
+          >
+            <div className="flex items-center border-b border-zinc-100 p-4 dark:border-zinc-800">
+              <Search className="mr-3 text-zinc-400" size={20} />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={TEXT.searchPlaceholder}
+                className="w-full bg-transparent text-xl text-ink outline-none placeholder:text-zinc-400 dark:text-white"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <button onClick={onClose} className="rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800">
                 <X size={20} className="text-zinc-400" />
               </button>
             </div>
-            
+
             <div className="max-h-[60vh] overflow-y-auto">
               {results.length > 0 ? (
                 <div className="p-2">
-                   {results.map((post) => (
-                     <div key={post.id} onClick={() => handleSelect(post.id)} className="p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-xl cursor-pointer group transition-colors">
-                       <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-bold text-accent px-1.5 py-0.5 border border-accent/20 rounded-md bg-accent/5">{post.category}</span>
-                       </div>
-                       <h4 className="text-lg font-serif font-semibold text-ink dark:text-gray-100 group-hover:text-accent dark:group-hover:text-accent-light transition-colors">{post.title}</h4>
-                       <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-1">{post.excerpt}</p>
-                     </div>
-                   ))}
+                  {results.map((post) => (
+                    <button
+                      key={post.id}
+                      onClick={() => handleSelect(post.id)}
+                      className="group block w-full rounded-xl p-4 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                    >
+                      <div className="mb-1 flex items-center gap-2">
+                        <span className="rounded-md border border-accent/20 bg-accent/5 px-1.5 py-0.5 text-xs font-bold text-accent">
+                          {post.category}
+                        </span>
+                      </div>
+                      <h4 className="text-lg font-semibold text-ink transition-colors group-hover:text-accent dark:text-gray-100 dark:group-hover:text-accent-light">
+                        {post.title}
+                      </h4>
+                      <p className="mt-1 line-clamp-1 text-sm text-zinc-500 dark:text-zinc-400">{post.excerpt}</p>
+                    </button>
+                  ))}
                 </div>
               ) : query ? (
-                <div className="p-12 text-center text-zinc-400"><p>未找到关于 "{query}" 的内容</p></div>
+                <div className="p-12 text-center text-zinc-400">
+                  <p>{`${TEXT.notFoundPrefix} “${query}” ${TEXT.notFoundSuffix}`}</p>
+                </div>
               ) : (
-                <div className="p-12 text-center text-zinc-400"><p className="text-sm font-medium">输入关键词开始搜索...</p></div>
+                <div className="p-12 text-center text-zinc-400">
+                  <p className="text-sm font-medium">{TEXT.searchEmpty}</p>
+                </div>
               )}
             </div>
-            
-            <div className="p-3 bg-zinc-50 dark:bg-zinc-950/50 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center text-xs text-zinc-400">
-               <span>按标题、标签或分类搜索</span>
-               <div className="flex items-center gap-2">
-                 <kbd className="px-2 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 font-mono">esc</kbd>
-                 <span>关闭</span>
-               </div>
+
+            <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50 p-3 text-xs text-zinc-400 dark:border-zinc-800 dark:bg-zinc-950/50">
+              <span>{TEXT.searchHint}</span>
+              <div className="flex items-center gap-2">
+                <kbd className="rounded border border-zinc-200 bg-white px-2 py-0.5 font-mono dark:border-zinc-700 dark:bg-zinc-800">esc</kbd>
+                <span>{TEXT.close}</span>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -99,8 +150,8 @@ const ThemeToggle = () => {
     const root = document.documentElement;
     const systemQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-    const applyTheme = (t: Theme) => {
-      if (t === 'dark' || (t === 'system' && systemQuery.matches)) {
+    const applyTheme = (nextTheme: Theme) => {
+      if (nextTheme === 'dark' || (nextTheme === 'system' && systemQuery.matches)) {
         root.classList.add('dark');
       } else {
         root.classList.remove('dark');
@@ -121,13 +172,21 @@ const ThemeToggle = () => {
   }, [theme]);
 
   const toggleTheme = () => {
-    if (theme === 'light') setTheme('dark');
-    else if (theme === 'dark') setTheme('system');
-    else setTheme('light');
+    if (theme === 'light') {
+      setTheme('dark');
+      return;
+    }
+
+    if (theme === 'dark') {
+      setTheme('system');
+      return;
+    }
+
+    setTheme('light');
   };
 
   return (
-    <button onClick={toggleTheme} className="p-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-ink dark:text-amber-300 hover:ring-2 ring-accent/20 transition-all duration-300 relative group" aria-label="Toggle Theme">
+    <button onClick={toggleTheme} className="group relative rounded-full bg-zinc-100 p-2.5 text-ink transition-all duration-300 hover:ring-2 ring-accent/20 dark:bg-zinc-800 dark:text-amber-300" aria-label="\u5207\u6362\u4e3b\u9898">
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={theme} initial={{ y: -10, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 10, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
           {theme === 'light' && <Sun size={18} />}
@@ -135,8 +194,8 @@ const ThemeToggle = () => {
           {theme === 'system' && <Monitor size={18} className="text-zinc-500 dark:text-zinc-400" />}
         </motion.div>
       </AnimatePresence>
-      <span className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-        {theme === 'light' ? 'Light' : theme === 'dark' ? 'Dark' : 'System'}
+      <span className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+        {theme === 'light' ? TEXT.themeLight : theme === 'dark' ? TEXT.themeDark : TEXT.themeSystem}
       </span>
     </button>
   );
@@ -145,38 +204,41 @@ const ThemeToggle = () => {
 const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navItems = [
+    { path: '/', label: TEXT.navPosts },
+    { path: '/archive', label: TEXT.navArchive },
+    { path: '/stats', label: TEXT.navStats },
+    { path: '/friends', label: TEXT.navFriends },
+    { path: '/about', label: TEXT.navAbout }
+  ];
 
   useEffect(() => {
     setIsOpen(false);
   }, [location]);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-paper/80 dark:bg-void/80 border-b border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-500 supports-[backdrop-filter]:bg-paper/60">
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <Link to="/" className="flex items-center space-x-3 group z-50">
+    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/50 bg-paper/80 backdrop-blur-lg transition-all duration-500 supports-[backdrop-filter]:bg-paper/60 dark:border-zinc-800/50 dark:bg-void/80">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+        <Link to="/" className="group z-50 flex items-center space-x-3">
           <div className="relative">
-             <div className="absolute inset-0 bg-accent blur-md opacity-20 group-hover:opacity-40 transition-opacity"></div>
-             <img src={siteConfig.logo} alt="Logo" className="relative w-10 h-10 rounded-lg group-hover:scale-105 transition-transform duration-300 object-cover bg-white/10" />
+            <div className="absolute inset-0 bg-accent opacity-20 blur-md transition-opacity group-hover:opacity-40"></div>
+            <img src={siteConfig.logo} alt="Logo" className="relative h-10 w-10 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105" />
           </div>
-          <span className="font-serif font-bold text-2xl tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
+          <span className="font-serif text-2xl font-bold tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
         </Link>
 
-        <div className="hidden md:flex items-center space-x-8">
-          <div className="flex space-x-6 mr-4">
-             {[
-               { path: '/', label: '文章' },
-               { path: '/friends', label: '友链' },
-               { path: '/about', label: '关于' }
-             ].map((item) => (
-                <Link key={item.path} to={item.path} className="relative px-2 py-1 text-sm font-semibold uppercase tracking-wider text-zinc-500 hover:text-ink dark:text-zinc-400 dark:hover:text-white transition-colors">
-                  {item.label}
-                  {location.pathname === item.path && <motion.div layoutId="nav-underline" className="absolute -bottom-1 left-0 right-0 h-0.5 bg-accent" />}
-                </Link>
-             ))}
+        <div className="hidden items-center space-x-8 md:flex">
+          <div className="mr-4 flex space-x-6">
+            {navItems.map((item) => (
+              <Link key={item.path} to={item.path} className="relative px-2 py-1 text-sm font-semibold uppercase tracking-wider text-zinc-500 transition-colors hover:text-ink dark:text-zinc-400 dark:hover:text-white">
+                {item.label}
+                {location.pathname === item.path && <motion.div layoutId="nav-underline" className="absolute -bottom-1 left-0 right-0 h-0.5 bg-accent" />}
+              </Link>
+            ))}
           </div>
 
-          <div className="flex items-center space-x-3 pl-6 border-l border-zinc-300 dark:border-zinc-700">
-            <button onClick={onSearchClick} className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-accent dark:hover:text-accent-light transition-colors group">
+          <div className="flex items-center space-x-3 border-l border-zinc-300 pl-6 dark:border-zinc-700">
+            <button onClick={onSearchClick} className="group flex items-center space-x-2 rounded-lg bg-zinc-100 px-3 py-2 text-zinc-500 transition-colors hover:text-accent dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-accent-light">
               <Search size={16} />
               <span className="text-xs font-medium opacity-70 group-hover:opacity-100">Ctrl+K</span>
             </button>
@@ -184,22 +246,33 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           </div>
         </div>
 
-        <div className="flex md:hidden items-center space-x-4">
-          <button onClick={onSearchClick} className="p-2 text-zinc-600 dark:text-zinc-300 active:scale-95 transition-transform"><Search size={22} /></button>
-          <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-ink dark:text-white z-50 active:scale-95 transition-transform">{isOpen ? <X size={24} /> : <Menu size={24} />}</button>
+        <div className="flex items-center space-x-4 md:hidden">
+          <button onClick={onSearchClick} className="p-2 text-zinc-600 transition-transform active:scale-95 dark:text-zinc-300">
+            <Search size={22} />
+          </button>
+          <button onClick={() => setIsOpen(!isOpen)} className="z-50 p-2 text-ink transition-transform active:scale-95 dark:text-white">
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
       </div>
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: '100vh' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="fixed inset-0 top-0 bg-paper/95 dark:bg-void/95 backdrop-blur-xl pt-24 px-6 md:hidden z-40 overflow-hidden">
-            <div className="flex flex-col space-y-8 items-center text-center">
-              <Link onClick={() => setIsOpen(false)} to="/" className="text-4xl font-serif font-bold text-ink dark:text-white hover:text-accent transition-colors">文章</Link>
-              <Link onClick={() => setIsOpen(false)} to="/friends" className="text-4xl font-serif font-bold text-ink dark:text-white hover:text-accent transition-colors">友链</Link>
-              <Link onClick={() => setIsOpen(false)} to="/about" className="text-4xl font-serif font-bold text-ink dark:text-white hover:text-accent transition-colors">关于</Link>
-              <div className="w-12 h-px bg-zinc-200 dark:bg-zinc-800 my-4" />
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: '100vh' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: 'easeInOut' }} className="fixed inset-0 top-0 z-40 overflow-hidden bg-paper/95 px-6 pt-24 backdrop-blur-xl dark:bg-void/95 md:hidden">
+            <div className="flex flex-col items-center space-y-8 text-center">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  onClick={() => setIsOpen(false)}
+                  to={item.path}
+                  className="text-4xl font-serif font-bold text-ink transition-colors hover:text-accent dark:text-white"
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <div className="my-4 h-px w-12 bg-zinc-200 dark:bg-zinc-800" />
               <div className="flex items-center gap-4">
-                <span className="text-lg font-medium text-zinc-500">外观</span>
+                <span className="text-lg font-medium text-zinc-500">{TEXT.theme}</span>
                 <ThemeToggle />
               </div>
             </div>
@@ -212,14 +285,14 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
 const Footer = () => {
   const [loadTime, setLoadTime] = useState<string>('');
-  
+
   useEffect(() => {
-     setTimeout(() => {
-        if (typeof window !== 'undefined' && window.performance) {
-           const timing = window.performance.now();
-           setLoadTime((timing / 1000).toFixed(2) + 's');
-        }
-     }, 0);
+    setTimeout(() => {
+      if (typeof window !== 'undefined' && window.performance) {
+        const timing = window.performance.now();
+        setLoadTime(`${(timing / 1000).toFixed(2)}s`);
+      }
+    }, 0);
   }, []);
 
   const technologies = [
@@ -228,81 +301,91 @@ const Footer = () => {
     { name: 'Tailwind', icon: Box },
     { name: 'Framer Motion', icon: Layers },
     { name: 'TypeScript', icon: Code2 },
-    { name: 'React Router', icon: GitBranch },
+    { name: 'React Router', icon: GitBranch }
   ];
 
   return (
-    <footer className="py-12 mt-12 md:mt-32 border-t border-zinc-200 dark:border-zinc-800 bg-paper dark:bg-void relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-accent to-transparent opacity-30"></div>
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-            <div className="flex flex-col items-center md:items-start space-y-4">
-                <div>
-                   <span className="font-serif font-bold text-xl text-ink dark:text-white tracking-tight">{siteConfig.title}</span>
-                   <p className="text-zinc-500 text-sm mt-1">{siteConfig.subtitle}</p>
-                </div>
-                <p className="text-zinc-400 text-sm leading-relaxed text-center md:text-left">{siteConfig.description}</p>
-                 <div className="flex items-center gap-4 pt-2">
-                   <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300"><Github size={18} /></a>
-                   <a href={siteConfig.social.email} className="p-2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-white hover:bg-black dark:hover:bg-accent transition-all duration-300"><Mail size={18} /></a>
-                </div>
+    <footer className="relative mt-12 overflow-hidden border-t border-zinc-200 bg-paper py-12 dark:border-zinc-800 dark:bg-void md:mt-32">
+      <div className="absolute left-1/2 top-0 h-px w-full -translate-x-1/2 bg-gradient-to-r from-transparent via-accent to-transparent opacity-30"></div>
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-3">
+          <div className="flex flex-col items-center space-y-4 md:items-start">
+            <div>
+              <span className="font-serif text-xl font-bold tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
+              <p className="mt-1 text-sm text-zinc-500">{siteConfig.subtitle}</p>
             </div>
+            <p className="text-center text-sm leading-relaxed text-zinc-400 md:text-left">{siteConfig.description}</p>
+            <div className="flex items-center gap-4 pt-2">
+              <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="rounded-full bg-zinc-100 p-2 text-zinc-500 transition-all duration-300 hover:bg-black hover:text-white dark:bg-zinc-800 dark:hover:bg-accent">
+                <Github size={18} />
+              </a>
+              <a href={siteConfig.social.email} className="rounded-full bg-zinc-100 p-2 text-zinc-500 transition-all duration-300 hover:bg-black hover:text-white dark:bg-zinc-800 dark:hover:bg-accent">
+                <Mail size={18} />
+              </a>
+            </div>
+          </div>
 
-            <div className="flex flex-col items-center md:items-start">
-               <h4 className="font-bold text-sm uppercase tracking-widest text-zinc-400 mb-6">Tech Stack</h4>
-               <div className="flex flex-wrap gap-2 justify-center md:justify-start max-w-xs">
-                  {technologies.map(tech => (
-                     <div key={tech.name} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:border-accent/30 transition-colors">
-                        <tech.icon size={12} className="text-accent" />
-                        {tech.name}
-                     </div>
-                  ))}
-               </div>
+          <div className="flex flex-col items-center md:items-start">
+            <h4 className="mb-6 text-sm font-bold uppercase tracking-widest text-zinc-400">Tech Stack</h4>
+            <div className="flex max-w-xs flex-wrap justify-center gap-2 md:justify-start">
+              {technologies.map((tech) => (
+                <div key={tech.name} className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-600 transition-colors hover:border-accent/30 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-400">
+                  <tech.icon size={12} className="text-accent" />
+                  {tech.name}
+                </div>
+              ))}
             </div>
+          </div>
 
-            <div className="flex flex-col items-center md:items-end">
-               <h4 className="font-bold text-sm uppercase tracking-widest text-zinc-400 mb-6">Status</h4>
-               <div className="flex flex-col gap-4 w-full">
-                  <div className="flex items-center justify-center md:justify-end gap-2 text-xs font-bold text-zinc-500">
-                     <span className="relative flex h-2 w-2">
-                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                       <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                     </span>
-                     <span>All Systems Normal</span>
-                  </div>
-                  {loadTime && (
-                     <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-zinc-400">
-                        <Zap size={14} className="text-yellow-500" />
-                        <span>Page loaded in <span className="text-accent font-mono font-bold">{loadTime}</span></span>
-                     </div>
-                  )}
-                  <div className="flex items-center justify-center md:justify-end gap-2 text-xs text-zinc-400">
-                     <Coffee size={14} className="text-amber-700 dark:text-amber-600" />
-                     <span>Fueled by Coffee & Code</span>
-                  </div>
-               </div>
+          <div className="flex flex-col items-center md:items-end">
+            <h4 className="mb-6 text-sm font-bold uppercase tracking-widest text-zinc-400">Status</h4>
+            <div className="flex w-full flex-col gap-4">
+              <div className="flex items-center justify-center gap-2 text-xs font-bold text-zinc-500 md:justify-end">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
+                </span>
+                <span>All Systems Normal</span>
+              </div>
+              {loadTime && (
+                <div className="flex items-center justify-center gap-2 text-xs text-zinc-400 md:justify-end">
+                  <Zap size={14} className="text-yellow-500" />
+                  <span>
+                    Page loaded in <span className="font-mono font-bold text-accent">{loadTime}</span>
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-center gap-2 text-xs text-zinc-400 md:justify-end">
+                <Coffee size={14} className="text-amber-700 dark:text-amber-600" />
+                <span>Fueled by Coffee & Code</span>
+              </div>
             </div>
+          </div>
         </div>
 
-        <div className="flex justify-center pt-8 pb-6">
-          <a href={siteConfig.friendsPage.repoUrl} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-r from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900 border border-zinc-200 dark:border-zinc-700 hover:border-accent/50 dark:hover:border-accent/50 transition-all duration-300 hover:shadow-lg hover:shadow-accent/10">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-black dark:bg-white group-hover:scale-110 transition-transform duration-300">
+        <div className="flex justify-center pb-6 pt-8">
+          <a href={siteConfig.friendsPage.repoUrl} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 rounded-xl border border-zinc-200 bg-gradient-to-r from-zinc-100 to-zinc-50 px-6 py-3 transition-all duration-300 hover:border-accent/50 hover:shadow-lg hover:shadow-accent/10 dark:border-zinc-700 dark:from-zinc-800 dark:to-zinc-900 dark:hover:border-accent/50">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black transition-transform duration-300 group-hover:scale-110 dark:bg-white">
               <Github size={18} className="text-white dark:text-black" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-bold text-ink dark:text-white">此项目已开源</span>
+              <span className="text-sm font-bold text-ink dark:text-white">{TEXT.sourceCode}</span>
               <span className="text-xs text-zinc-500 dark:text-zinc-400">Open Source on GitHub</span>
             </div>
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-accent/0 via-accent/5 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-accent/0 via-accent/5 to-accent/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
           </a>
         </div>
 
-        <div className="w-full flex flex-col md:flex-row justify-between items-center pt-8 border-t border-zinc-200/50 dark:border-zinc-800/50 text-xs text-zinc-400 font-medium">
-           <p>{siteConfig.footerText} ｜ {siteConfig.author.name}</p>
-           <div className="flex items-center gap-6 mt-4 md:mt-0">
-               <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="hover:text-accent transition-colors">{siteConfig.beian.text}</a>
-               <span className="flex items-center gap-1">Made with <Heart size={10} className="text-accent fill-accent" /> by {siteConfig.author.name}</span>
-           </div>
+        <div className="flex w-full flex-col items-center justify-between border-t border-zinc-200/50 pt-8 text-xs font-medium text-zinc-400 dark:border-zinc-800/50 md:flex-row">
+          <p>{siteConfig.footerText} · {siteConfig.author.name}</p>
+          <div className="mt-4 flex items-center gap-6 md:mt-0">
+            <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-accent">
+              {siteConfig.beian.text}
+            </a>
+            <span className="flex items-center gap-1">
+              Made with <Heart size={10} className="fill-accent text-accent" /> by {siteConfig.author.name}
+            </span>
+          </div>
         </div>
       </div>
     </footer>
@@ -317,16 +400,14 @@ const ScrollProgress = () => {
     restDelta: 0.001
   });
 
-  return (
-    <motion.div className="fixed top-0 left-0 right-0 h-1 bg-accent z-[100] origin-left" style={{ scaleX }} />
-  );
+  return <motion.div className="fixed left-0 right-0 top-0 z-[100] h-1 origin-left bg-accent" style={{ scaleX }} />;
 };
 
 const Background = () => {
   return (
-    <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-zinc-200/40 dark:bg-zinc-800/20 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-overlay animate-float"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-zinc-300/40 dark:bg-zinc-800/20 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-overlay animate-float" style={{ animationDelay: '2s' }}></div>
+    <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden">
+      <div className="absolute left-[-10%] top-[-10%] h-[50%] w-[50%] animate-float rounded-full bg-zinc-200/40 blur-[120px] mix-blend-multiply dark:bg-zinc-800/20 dark:mix-blend-overlay"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] animate-float rounded-full bg-zinc-300/40 blur-[120px] mix-blend-multiply dark:bg-zinc-800/20 dark:mix-blend-overlay" style={{ animationDelay: '2s' }}></div>
     </div>
   );
 };
@@ -345,10 +426,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         e.preventDefault();
         setIsSearchOpen(true);
       }
+
       if (e.key === 'Escape') {
         setIsSearchOpen(false);
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
@@ -358,15 +441,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col relative selection:bg-accent selection:text-white">
+    <div className="relative flex min-h-screen flex-col selection:bg-accent selection:text-white">
       <ScrollProgress />
       <Background />
       <Navbar onSearchClick={() => setIsSearchOpen(true)} />
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-      <main className="flex-grow pt-32 px-4 sm:px-6 relative">
-        <div className="max-w-7xl mx-auto">
-          {children}
-        </div>
+      <main className="relative flex-grow px-4 pt-32 sm:px-6">
+        <div className="mx-auto max-w-7xl">{children}</div>
       </main>
       <BackToTop />
       <Footer />

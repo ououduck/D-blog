@@ -221,3 +221,95 @@ posts/*.md + friends/*.json
 ## License
 
 本项目采用 [MIT License](LICENSE) 开源协议。
+
+## Clarity 统计页
+
+- 统计页路由：`/stats`
+- 数据来源：Microsoft Clarity Export API
+- 安全策略：仅在构建阶段读取 `CLARITY_API_TOKEN`，前端只消费生成后的 `generated/clarity.json`
+- 本地变量模板见 `.env.example`
+
+### Cloudflare Pages 配置
+
+Cloudflare Pages 可直接使用当前静态站点方案，无需额外后端：
+
+1. 构建命令：`npm run build`
+2. 输出目录：`dist`
+3. Node 版本：仓库已提供 `.nvmrc`
+4. 在 Pages 项目的环境变量中配置：
+   - `CLARITY_API_TOKEN`
+   - `CLARITY_EXPORT_DAYS`
+   - `CLARITY_DIMENSION_1`
+   - `CLARITY_DIMENSION_2`
+   - `CLARITY_DIMENSION_3`
+
+### 变量示例
+
+```env
+CLARITY_API_TOKEN=eyJhbGciOi...
+CLARITY_EXPORT_DAYS=1
+CLARITY_DIMENSION_1=URL
+CLARITY_DIMENSION_2=Browser
+CLARITY_DIMENSION_3=Device
+```
+
+说明：
+
+- `CLARITY_API_TOKEN`：Clarity 项目管理员在项目设置中生成的 Bearer Token
+- `CLARITY_EXPORT_DAYS`：导出最近 1、2、3 天的数据，官方仅支持这三个值
+- `CLARITY_DIMENSION_1~3`：最多传三个维度，推荐先用 `URL`、`Browser`、`Device`
+
+### 如何获取
+
+#### 获取 `CLARITY_API_TOKEN`
+
+根据 Microsoft Clarity Export API 官方文档：
+
+1. 进入你的 Clarity 项目
+2. 打开 `Settings`
+3. 进入 `Data Export`
+4. 点击 `Generate new API token`
+5. 输入一个 token 名称
+6. 生成后立即复制并保存到 Cloudflare Pages 环境变量 `CLARITY_API_TOKEN`
+
+注意：
+
+- 只有项目管理员可以管理和生成 token
+- token 只会在生成时完整显示一次，不要写入前端代码
+- 本项目只在构建阶段读取该变量，不会下发到浏览器
+
+#### 选择 `CLARITY_DIMENSION_1~3`
+
+根据官方文档，Export API 当前可用维度包括：
+
+- `Browser`
+- `Device`
+- `Country/Region`
+- `OS`
+- `Source`
+- `Medium`
+- `Campaign`
+- `Channel`
+- `URL`
+
+推荐的起步组合：
+
+```env
+CLARITY_DIMENSION_1=URL
+CLARITY_DIMENSION_2=Browser
+CLARITY_DIMENSION_3=Device
+```
+
+这个组合更适合博客场景，能直接看页面、浏览器和设备分布。
+
+构建流程如下：
+
+```text
+Cloudflare Pages Build
+  -> npm run build
+  -> scripts/generate-site-data.mjs
+  -> Clarity Export API
+  -> generated/clarity.json
+  -> vite build + prerender
+  -> dist/
+```

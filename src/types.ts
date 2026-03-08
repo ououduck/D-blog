@@ -27,3 +27,23 @@ export interface Friend {
   avatar: string;
   url: string;
 }
+
+export interface ClarityMetricRow {
+  [key: string]: string | number | null;
+}
+
+export interface ClarityMetric {
+  metricName: string;
+  information: ClarityMetricRow[];
+}
+
+export interface ClaritySnapshot {
+  enabled: boolean;
+  fetchedAt: string | null;
+  request: {
+    numOfDays: number;
+    dimensions: string[];
+  };
+  metrics: ClarityMetric[];
+  error: string | null;
+}

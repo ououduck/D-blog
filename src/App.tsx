@@ -9,6 +9,8 @@ import { siteConfig } from '@config/site.config';
 const Home = React.lazy(() => import('./pages/Home').then(module => ({ default: module.Home })));
 const Post = React.lazy(() => import('./pages/Post').then(module => ({ default: module.Post })));
 const About = React.lazy(() => import('./pages/About').then(module => ({ default: module.About })));
+const ArchivePage = React.lazy(() => import('./pages/Archive').then(module => ({ default: module.ArchivePage })));
+const Stats = React.lazy(() => import('./pages/Stats').then(module => ({ default: module.Stats })));
 const Friends = React.lazy(() => import('./pages/Friends').then(module => ({ default: module.Friends })));
 
 const LoadingScreen = () => {
@@ -60,6 +62,8 @@ const AnimatedRoutes = () => {
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<Home />} />
           <Route path="/post/:id" element={<Post />} />
+          <Route path="/archive" element={<ArchivePage />} />
+          <Route path="/stats" element={<Stats />} />
           <Route path="/friends" element={<Friends />} />
           <Route path="/about" element={<About />} />
         </Routes>

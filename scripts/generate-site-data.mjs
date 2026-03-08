@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
@@ -16,9 +17,28 @@ const POSTS_DIR = path.join(__dirname, '../posts');
 const FRIENDS_DIR = path.join(__dirname, '../friends');
 const OUTPUT_JSON_DIR = path.join(__dirname, '../generated');
 const PUBLIC_DIR = path.join(__dirname, '../public');
+const CLARITY_FILE = path.join(OUTPUT_JSON_DIR, 'clarity.json');
 
 if (!fs.existsSync(OUTPUT_JSON_DIR)) fs.mkdirSync(OUTPUT_JSON_DIR, { recursive: true });
 if (!fs.existsSync(PUBLIC_DIR)) fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+
+const clarityDays = (() => {
+  const raw = Number.parseInt(process.env.CLARITY_EXPORT_DAYS || '1', 10);
+  if ([1, 2, 3].includes(raw)) {
+    return raw;
+  }
+  return 1;
+})();
+
+const clarityDimensions = [
+  process.env.CLARITY_DIMENSION_1?.trim(),
+  process.env.CLARITY_DIMENSION_2?.trim(),
+  process.env.CLARITY_DIMENSION_3?.trim()
+].filter(Boolean);
+
+const writeClaritySnapshot = (snapshot) => {
+  fs.writeFileSync(CLARITY_FILE, JSON.stringify(snapshot, null, 2));
+};
 
 const files = fs.readdirSync(POSTS_DIR).filter(file => file.endsWith('.md'));
 const posts = files.map(filename => {
@@ -80,8 +100,70 @@ const friends = friendFiles.flatMap(filename => {
 fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'friends.json'), JSON.stringify(friends, null, 2));
 console.log(`✅ JSON Generated: ${friends.length} friends`);
 
+const generateClaritySnapshot = async () => {
+  const snapshot = {
+    enabled: false,
+    fetchedAt: null,
+    request: {
+      numOfDays: clarityDays,
+      dimensions: clarityDimensions
+    },
+    metrics: [],
+    error: null
+  };
+
+  const token = process.env.CLARITY_API_TOKEN?.trim();
+  if (!token) {
+    writeClaritySnapshot(snapshot);
+    console.log('ℹ️ Clarity Export skipped: missing CLARITY_API_TOKEN');
+    return;
+  }
+
+  const params = new URLSearchParams({
+    numOfDays: String(clarityDays)
+  });
+
+  clarityDimensions.forEach((dimension, index) => {
+    params.set(`dimension${index + 1}`, dimension);
+  });
+
+  try {
+    const response = await fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?${params.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    snapshot.enabled = true;
+    snapshot.fetchedAt = new Date().toISOString();
+
+    if (!response.ok) {
+      snapshot.error = `Clarity Export API request failed with status ${response.status}`;
+      writeClaritySnapshot(snapshot);
+      console.warn(`⚠️ ${snapshot.error}`);
+      return;
+    }
+
+    const payload = await response.json();
+    snapshot.metrics = Array.isArray(payload) ? payload : [];
+
+    if (!Array.isArray(payload)) {
+      snapshot.error = 'Clarity Export API returned an unexpected payload.';
+    }
+
+    writeClaritySnapshot(snapshot);
+    console.log(`✅ Clarity Snapshot Generated: ${snapshot.metrics.length} metrics`);
+  } catch (error) {
+    snapshot.enabled = true;
+    snapshot.fetchedAt = new Date().toISOString();
+    snapshot.error = error instanceof Error ? error.message : 'Unknown Clarity Export API error.';
+    writeClaritySnapshot(snapshot);
+    console.warn(`⚠️ Clarity Export failed: ${snapshot.error}`);
+  }
+};
+
 const generateSitemap = () => {
-  const staticPages = ['', 'friends', 'about'];
+  const staticPages = ['', 'archive', 'stats', 'friends', 'about'];
 
   const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -129,5 +211,6 @@ const generateRss = () => {
   console.log('✅ RSS Feed Generated');
 };
 
+await generateClaritySnapshot();
 generateSitemap();
 generateRss();
