@@ -42,7 +42,11 @@ coverImage: /posts-img/1033012711.png
 
 ### 6. 依次来到Policies/system
 
-完整路径：`HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System`
+完整路径：
+
+```
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
+```
 
 ![6.png](/posts-img/2365001702.png)
 
