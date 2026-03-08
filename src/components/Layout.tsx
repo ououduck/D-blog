@@ -284,6 +284,19 @@ const Footer = () => {
             </div>
         </div>
 
+        <div className="flex justify-center pt-8 pb-6">
+          <a href={siteConfig.friendsPage.repoUrl} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-r from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900 border border-zinc-200 dark:border-zinc-700 hover:border-accent/50 dark:hover:border-accent/50 transition-all duration-300 hover:shadow-lg hover:shadow-accent/10">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-black dark:bg-white group-hover:scale-110 transition-transform duration-300">
+              <Github size={18} className="text-white dark:text-black" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-ink dark:text-white">此项目已开源</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">Open Source on GitHub</span>
+            </div>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-accent/0 via-accent/5 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </a>
+        </div>
+
         <div className="w-full flex flex-col md:flex-row justify-between items-center pt-8 border-t border-zinc-200/50 dark:border-zinc-800/50 text-xs text-zinc-400 font-medium">
            <p>{siteConfig.footerText} ｜ {siteConfig.author.name}</p>
            <div className="flex items-center gap-6 mt-4 md:mt-0">
