@@ -70,7 +70,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
       >
         {copied ? <Check size={16} /> : <Copy size={16} />}
       </button>
-      <pre ref={preRef} {...props} className={`${props.className || ''} !my-0 !p-4 md:!p-6 overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-transparent`}>
+      <pre ref={preRef} {...props} className={`${props.className || ''} !my-0 !p-3 md:!p-6 overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-transparent touch-pan-x`}>
         {childrenWithProps}
       </pre>
     </div>
@@ -187,21 +187,21 @@ export const Post = () => {
         </header>
 
         {post.coverImage && (
-          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="mb-10 md:mb-20 rounded-3xl overflow-hidden shadow-2xl shadow-zinc-200/50 dark:shadow-none mx-auto max-w-6xl aspect-[21/9] cursor-zoom-in" onClick={() => setPreviewImage({ src: post.coverImage!, alt: post.title })}>
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="mb-10 md:mb-20 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl shadow-zinc-200/50 dark:shadow-none mx-auto max-w-6xl aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] cursor-zoom-in px-4 md:px-0" onClick={() => setPreviewImage({ src: post.coverImage!, alt: post.title })}>
             <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" loading="eager" decoding="async" fetchpriority="high" />
           </motion.div>
         )}
 
         <div className="max-w-3xl mx-auto px-4 pb-20 md:pb-32">
-          <div className="prose prose-base md:prose-lg prose-stone dark:prose-invert max-w-none 
-            prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white 
-            prose-p:font-sans prose-p:text-base md:prose-p:text-lg prose-p:leading-relaxed 
-            prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline 
-            prose-strong:text-ink dark:prose-strong:text-white prose-strong:font-bold 
-            prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-6 md:prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01] 
-            prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 dark:prose-blockquote:bg-zinc-900 prose-blockquote:py-4 prose-blockquote:px-6 md:prose-blockquote:py-6 md:prose-blockquote:px-8 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-lg md:prose-blockquote:text-xl 
-            prose-code:font-mono prose-code:text-sm 
-            prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:rounded-2xl prose-pre:shadow-xl prose-pre:overflow-hidden prose-pre:border prose-pre:border-zinc-800">
+          <div className="prose prose-base md:prose-lg prose-stone dark:prose-invert max-w-none
+            prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white
+            prose-p:font-sans prose-p:text-base md:prose-p:text-lg prose-p:leading-relaxed
+            prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-a:break-words
+            prose-strong:text-ink dark:prose-strong:text-white prose-strong:font-bold
+            prose-img:rounded-xl md:prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-6 md:prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01] prose-img:w-full prose-img:h-auto prose-img:max-w-full
+            prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 dark:prose-blockquote:bg-zinc-900 prose-blockquote:py-3 prose-blockquote:px-4 md:prose-blockquote:py-6 md:prose-blockquote:px-8 prose-blockquote:rounded-r-xl md:prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-base md:prose-blockquote:text-xl
+            prose-code:font-mono prose-code:text-xs md:prose-code:text-sm
+            prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:rounded-xl md:prose-pre:rounded-2xl prose-pre:shadow-xl prose-pre:overflow-hidden prose-pre:border prose-pre:border-zinc-800">
             <ReactMarkdown
                remarkPlugins={[remarkGfm]}
                rehypePlugins={[rehypeHighlight]}
@@ -220,7 +220,7 @@ export const Post = () => {
             </ReactMarkdown>
           </div>
           
-          <div className="mt-20 p-8 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm relative overflow-hidden group">
+          <div className="mt-16 md:mt-20 p-6 md:p-8 rounded-xl md:rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm relative overflow-hidden group">
             <div className="absolute -top-6 -right-6 text-zinc-200 dark:text-zinc-800 transform rotate-12 group-hover:rotate-0 transition-transform duration-500 opacity-50"><Shield size={120} strokeWidth={0.5} /></div>
             <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start">
                <div className="flex-shrink-0">
