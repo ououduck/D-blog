@@ -5,6 +5,9 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   base: '/',
+  css: {
+    postcss: path.resolve(__dirname, './config/postcss.config.js'),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
