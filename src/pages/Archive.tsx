@@ -67,7 +67,18 @@ const buildArchiveGroups = (posts: PostMetadata[]) => {
       }
     });
 
-  return Array.from(groups.values()).sort((a, b) => Number(b.year) - Number(a.year));
+  // Sort months and categories for each group
+  const sortedGroups = Array.from(groups.values()).map((group) => ({
+    ...group,
+    months: group.months.sort((a, b) => {
+      const monthA = parseInt(a.replace('月', ''));
+      const monthB = parseInt(b.replace('月', ''));
+      return monthB - monthA; // Descending order (12月, 11月, ...)
+    }),
+    categories: group.categories.sort()
+  }));
+
+  return sortedGroups.sort((a, b) => Number(b.year) - Number(a.year));
 };
 
 export const ArchivePage = () => {
