@@ -241,7 +241,9 @@ export const Home = () => {
 
     setIsSearching(true);
     const results = await searchPosts(query);
-    const filteredResults = filterAndSortPosts(results, selectedCategory, sortOrder);
+    const filteredResults = selectedCategory === ALL_CATEGORY 
+      ? sortPosts(results, sortOrder)
+      : sortPosts(results.filter(post => post.category === selectedCategory), sortOrder);
     setDisplayedPosts(filteredResults);
     setIsSearching(false);
     setCurrentPage(1);
