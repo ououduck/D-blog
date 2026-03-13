@@ -3,7 +3,7 @@ import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box, Monitor } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { searchPosts } from '@/services/posts';
-import { Post } from '../types';
+import { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
 import { BackToTop } from './BackToTop';
 
@@ -28,7 +28,7 @@ const TEXT = {
 
 const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Post[]>([]);
+  const [results, setResults] = useState<PostMetadata[]>([]);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
 

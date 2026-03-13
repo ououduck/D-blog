@@ -59,7 +59,7 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean; onShar
 
   if (featured) {
     return (
-      <motion.div variants={cardVariants} className="col-span-2 md:col-span-2 lg:col-span-3 w-full">
+      <motion.div variants={cardVariants} className="col-span-full w-full">
         <Link to={`/post/${post.id}`} className="group block h-full">
           <div className="relative overflow-hidden rounded-[2rem] bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 transition-all duration-500 hover:shadow-2xl hover:shadow-accent/10 dark:hover:border-zinc-700 flex flex-col md:flex-row h-auto md:h-[480px]">
             <div className="relative w-full md:w-7/12 h-64 md:h-full overflow-hidden">
