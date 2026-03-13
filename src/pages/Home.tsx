@@ -8,6 +8,37 @@ import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ShareModal } from '../components/ShareModal';
 
+const ALL_CATEGORY = '全部';
+
+const sortPosts = (posts: Post[], sortOrder: 'newest' | 'oldest') => {
+  const pinnedPosts = posts
+    .filter((post) => post.top !== undefined)
+    .sort((a, b) => (a.top ?? 0) - (b.top ?? 0));
+
+  const regularPosts = posts
+    .filter((post) => post.top === undefined)
+    .sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+
+  return [...pinnedPosts, ...regularPosts];
+};
+
+const filterAndSortPosts = (
+  posts: Post[],
+  selectedCategory: string,
+  sortOrder: 'newest' | 'oldest'
+) => {
+  const filteredPosts =
+    selectedCategory === ALL_CATEGORY
+      ? posts
+      : posts.filter((post) => post.category === selectedCategory);
+
+  return sortPosts(filteredPosts, sortOrder);
+};
+
 const PostCard: React.FC<{ post: Post; index: number; featured?: boolean; onShare: (post: Post) => void }> = ({ post, index, featured, onShare }) => {
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -70,7 +101,9 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean; onShar
           {post.coverImage ? (
              <motion.img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-110" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-zinc-300"><span className="text-4xl opacity-50">🦆</span></div>
+            <div className="flex h-full w-full items-center justify-center text-zinc-300">
+              <Sparkles className="h-10 w-10 opacity-50" />
+            </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <div className="absolute top-2 left-2 md:top-4 md:left-4"><CategoryBadge text={post.category} /></div>
@@ -97,12 +130,20 @@ const PostCard: React.FC<{ post: Post; index: number; featured?: boolean; onShar
   );
 };
 
-const FilterBar = ({ categories, selected, onSelect, sortOrder, onToggleSort }: any) => {
+interface FilterBarProps {
+  categories: string[];
+  selected: string;
+  onSelect: (category: string) => void;
+  sortOrder: 'newest' | 'oldest';
+  onToggleSort: () => void;
+}
+
+const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, sortOrder, onToggleSort }) => {
   return (
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-12 px-2">
         <div className="overflow-x-auto pb-2 md:pb-0 no-scrollbar w-full md:w-auto -mx-4 md:mx-0 px-4 md:px-0">
           <div className="flex space-x-2">
-            {['全部', ...categories].map((cat: string) => (
+            {[ALL_CATEGORY, ...categories].map((cat) => (
               <button key={cat} onClick={() => onSelect(cat)} className={`px-5 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all duration-300 border whitespace-nowrap ${selected === cat ? 'bg-ink text-white border-ink dark:bg-white dark:text-ink dark:border-white shadow-lg transform scale-105' : 'bg-transparent text-zinc-500 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-ink dark:hover:text-white'}`}>{cat}</button>
             ))}
           </div>
@@ -139,7 +180,7 @@ export const Home = () => {
   const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('全部');
+  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -163,25 +204,21 @@ export const Home = () => {
   }, []);
 
   useEffect(() => {
-    if (allPosts.length === 0) return;
-    let filtered = selectedCategory !== '全部' ? allPosts.filter(p => p.category === selectedCategory) : allPosts;
+    if (allPosts.length === 0) {
+      return;
+    }
 
-    const pinnedPosts = filtered.filter(p => p.top !== undefined).sort((a, b) => (a.top || 0) - (b.top || 0));
-    const regularPosts = filtered.filter(p => p.top === undefined).sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
-    });
-
-    setDisplayedPosts([...pinnedPosts, ...regularPosts]);
+    setDisplayedPosts(filterAndSortPosts(allPosts, selectedCategory, sortOrder));
     setCurrentPage(1);
   }, [allPosts, selectedCategory, sortOrder]);
 
   const handleSearch = async (query: string) => {
     if (!query) {
-      setDisplayedPosts(allPosts);
-      return; 
+      setDisplayedPosts(filterAndSortPosts(allPosts, selectedCategory, sortOrder));
+      setCurrentPage(1);
+      return;
     }
+
     const results = await searchPosts(query);
     setDisplayedPosts(results);
     setCurrentPage(1);

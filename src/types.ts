@@ -5,20 +5,15 @@ export interface PostMetadata {
   date: string;
   tags: string[];
   category: string;
+  filePath: string;
   coverImage?: string;
   readTime: string;
   featured?: boolean;
-  top?: number; // 0 or undefined means no pin, 1 is highest priority, 2 is second, etc.
+  top?: number;
 }
 
 export interface Post extends PostMetadata {
   content: string;
-}
-
-export type Theme = 'light' | 'dark';
-
-export interface RouteState {
-  isPageLoading: boolean;
 }
 
 export interface Friend {

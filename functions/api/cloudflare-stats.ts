@@ -1,5 +1,3 @@
-// Cloudflare Pages Function for real-time analytics
-
 interface CloudflareAnalyticsData {
   requests: number;
   pageViews: number;
@@ -33,13 +31,30 @@ interface CloudflareSnapshot {
   timeWindows: CloudflareTimeWindow[];
 }
 
+interface CloudflareGroup {
+  sum?: {
+    requests?: number;
+    pageViews?: number;
+    bytes?: number;
+  };
+  uniq?: {
+    uniques?: number;
+  };
+}
+
+interface CloudflareRequestContext {
+  env: {
+    CLOUDFLARE_API_TOKEN?: string;
+    CLOUDFLARE_ZONE_ID?: string;
+  };
+}
+
 const fetchAnalyticsForDays = async (
   token: string,
   zoneId: string,
   days: number
 ): Promise<CloudflareTimeWindow> => {
   try {
-    // 使用 GraphQL API（支持 Account-Owned Token）
     const now = new Date();
     const since = new Date(now);
     since.setDate(since.getDate() - days);
@@ -89,9 +104,9 @@ const fetchAnalyticsForDays = async (
       throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`);
     }
 
-    const groups = data?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
+    const groups = (data?.data?.viewer?.zones?.[0]?.httpRequests1dGroups ?? []) as CloudflareGroup[];
     
-    const totals = groups.reduce((acc: CloudflareAnalyticsData, group: any) => ({
+    const totals = groups.reduce((acc: CloudflareAnalyticsData, group) => ({
       requests: acc.requests + (group.sum?.requests || 0),
       pageViews: acc.pageViews + (group.sum?.pageViews || 0),
       bandwidth: acc.bandwidth + (group.sum?.bytes || 0),
@@ -116,7 +131,7 @@ const fetchAnalyticsForDays = async (
   }
 };
 
-export async function onRequest(context: any) {
+export async function onRequest(context: CloudflareRequestContext) {
   const { env } = context;
   
   const token = env.CLOUDFLARE_API_TOKEN?.replace(/\s+/g, '');

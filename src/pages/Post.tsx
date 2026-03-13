@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { motion } from 'framer-motion';
@@ -17,6 +18,10 @@ import { Seo } from '../components/Seo';
 import { ImageViewer } from '../components/ImageViewer';
 import { ShareModal } from '../components/ShareModal';
 
+type BlockCodeProps = {
+  isBlock?: boolean;
+};
+
 const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>) => {
   const preRef = React.useRef<HTMLPreElement>(null);
   const [copied, setCopied] = useState(false);
@@ -32,8 +37,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
         } else {
             throw new Error('Clipboard API not available');
         }
-      } catch (err) {
-        // Fallback for older browsers or non-secure contexts
+      } catch {
         const textArea = document.createElement("textarea");
         textArea.value = code;
         textArea.style.position = "fixed";
@@ -55,7 +59,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
 
   const childrenWithProps = React.Children.map(children, child => {
     if (React.isValidElement(child)) {
-      return React.cloneElement(child as React.ReactElement<any>, { isBlock: true });
+      return React.cloneElement(child as React.ReactElement<BlockCodeProps>, { isBlock: true });
     }
     return child;
   });
@@ -75,6 +79,38 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
       </pre>
     </div>
   );
+};
+
+const markdownComponents: Components = {
+  img: ({ ...props }) => (
+    <img
+      {...props}
+      loading="lazy"
+      className="cursor-zoom-in rounded-2xl shadow-lg my-12"
+    />
+  ),
+  pre: PreBlock,
+  code: ({ className, children, ...props }) => {
+    const { isBlock, ...restProps } = props as React.HTMLAttributes<HTMLElement> & BlockCodeProps;
+    const isBlockCode = Boolean(isBlock) || /language-(\w+)/.test(className || '');
+
+    if (isBlockCode) {
+      return (
+        <code className={className} {...restProps}>
+          {children}
+        </code>
+      );
+    }
+
+    return (
+      <code
+        className="text-accent dark:text-accent-light bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded-md font-bold before:content-none after:content-none"
+        {...restProps}
+      >
+        {children}
+      </code>
+    );
+  }
 };
 
 export const Post = () => {
@@ -206,14 +242,15 @@ export const Post = () => {
                remarkPlugins={[remarkGfm]}
                rehypePlugins={[rehypeHighlight]}
                components={{
-                 img: ({node, ...props}) => <img {...props} loading="lazy" onClick={() => setPreviewImage({ src: props.src as string, alt: props.alt })} className="cursor-zoom-in rounded-2xl shadow-lg my-12" />,
-                 pre: PreBlock,
-                 code({node, className, children, isBlock, ...props}: any) {
-                    if (isBlock || /language-(\w+)/.exec(className || '')) {
-                        return <code className={className} {...props}>{children}</code>
-                    }
-                    return <code className="text-accent dark:text-accent-light bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded-md font-bold before:content-none after:content-none" {...props}>{children}</code>
-                 }
+                 ...markdownComponents,
+                 img: ({ ...props }) => (
+                   <img
+                     {...props}
+                     loading="lazy"
+                     onClick={() => setPreviewImage({ src: props.src || '', alt: props.alt })}
+                     className="cursor-zoom-in rounded-2xl shadow-lg my-12"
+                   />
+                 )
                }}
             >
               {post.content}

@@ -1,9 +1,9 @@
-﻿import { Post, PostMetadata } from '../types';
+import { Post, PostMetadata } from '../types';
 
-// 使用缓存避免重复加载
 let postsDataCache: PostMetadata[] | null = null;
 
-// 动态导入 JSON 数据
+const postFiles = import.meta.glob('../../posts/*.md', { query: '?raw', import: 'default' });
+
 const loadPostsData = async (): Promise<PostMetadata[]> => {
   if (postsDataCache) {
     return postsDataCache;
@@ -14,8 +14,10 @@ const loadPostsData = async (): Promise<PostMetadata[]> => {
   return postsDataCache;
 };
 
-// 建立 Markdown 文件的导入映射
-const postFiles = import.meta.glob('../../posts/*.md', { query: '?raw', import: 'default' });
+const stripFrontmatter = (rawContent: string) => {
+  const normalized = rawContent.charCodeAt(0) === 0xfeff ? rawContent.slice(1) : rawContent;
+  return normalized.replace(/^---[\s\S]*?---[\r\n]*/, '');
+};
 
 export const getPosts = async (): Promise<PostMetadata[]> => {
   return loadPostsData();
@@ -23,14 +25,13 @@ export const getPosts = async (): Promise<PostMetadata[]> => {
 
 export const getPostById = async (id: string): Promise<Post | undefined> => {
   const allPosts = await loadPostsData();
-  const meta = allPosts.find(p => p.id === id);
+  const meta = allPosts.find((post) => post.id === id);
 
   if (!meta) {
     return undefined;
   }
 
-  // 构建 import.meta.glob 需要的相对路径
-  const relativePath = `../..${(meta as any).filePath}`;
+  const relativePath = `../..${meta.filePath}`;
   const loader = postFiles[relativePath];
 
   if (!loader) {
@@ -39,19 +40,11 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
   }
 
   try {
-    let rawContent = await loader() as string;
-
-    // 移除 BOM (Byte Order Mark) 如果存在
-    if (rawContent.charCodeAt(0) === 0xFEFF) {
-      rawContent = rawContent.substring(1);
-    }
-
-    // 移除 frontmatter：匹配从开头的 --- 到第二个 --- 及其后的换行符
-    const content = rawContent.replace(/^---[\s\S]*?---[\r\n]*/, '');
+    const rawContent = (await loader()) as string;
 
     return {
       ...meta,
-      content
+      content: stripFrontmatter(rawContent)
     };
   } catch (error) {
     console.error(error);
@@ -60,13 +53,17 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
 };
 
 export const searchPosts = async (query: string): Promise<PostMetadata[]> => {
-  if (!query) return [];
+  if (!query) {
+    return [];
+  }
+
   const lowerQuery = query.toLowerCase();
   const allPosts = await loadPostsData();
 
-  return allPosts.filter(post =>
+  return allPosts.filter(
+    (post) =>
       post.title.toLowerCase().includes(lowerQuery) ||
-      post.tags.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
+      post.tags.some((tag) => tag.toLowerCase().includes(lowerQuery)) ||
       post.category.toLowerCase().includes(lowerQuery) ||
       post.excerpt.toLowerCase().includes(lowerQuery)
   );
@@ -74,6 +71,6 @@ export const searchPosts = async (query: string): Promise<PostMetadata[]> => {
 
 export const getAllCategories = async (): Promise<string[]> => {
   const allPosts = await loadPostsData();
-  const categories = new Set(allPosts.map(post => post.category));
+  const categories = new Set(allPosts.map((post) => post.category));
   return Array.from(categories);
-}
+};

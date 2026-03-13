@@ -13,15 +13,32 @@ interface ShareModalProps {
 export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, excerpt, url }) => {
   const [copiedType, setCopiedType] = useState<'all' | 'link' | null>(null);
 
+  const writeToClipboard = async (value: string) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const textArea = document.createElement('textarea');
+    textArea.value = value;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+  };
+
   const handleCopyAll = async () => {
     const text = `标题：${title}\n简介：${excerpt}\n链接：${url}`;
-    await navigator.clipboard.writeText(text);
+    await writeToClipboard(text);
     setCopiedType('all');
     setTimeout(() => setCopiedType(null), 2000);
   };
 
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(url);
+    await writeToClipboard(url);
     setCopiedType('link');
     setTimeout(() => setCopiedType(null), 2000);
   };

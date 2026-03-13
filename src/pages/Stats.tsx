@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, Database, ShieldCheck, Eye, Users, TrendingUp, HardDrive, RefreshCw } from 'lucide-react';
 import { Seo } from '../components/Seo';
-import { CloudflareSnapshot, CloudflareTimeWindow } from '../types';
+import { CloudflareSnapshot } from '../types';
 import { getCloudflareSnapshot } from '../services/cloudflare';
 
 const EMPTY_SNAPSHOT: CloudflareSnapshot = {

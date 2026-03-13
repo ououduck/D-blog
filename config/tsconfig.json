@@ -14,13 +14,17 @@
       "node"
     ],
     "moduleResolution": "bundler",
+    "baseUrl": "..",
     "isolatedModules": true,
     "moduleDetection": "force",
     "allowJs": true,
     "jsx": "react-jsx",
     "paths": {
       "@/*": [
-        "./*"
+        "src/*"
+      ],
+      "@config/*": [
+        "config/*"
       ]
     },
     "allowImportingTsExtensions": true,
