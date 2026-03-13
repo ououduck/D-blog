@@ -281,13 +281,21 @@ server {
 
 - 统计页路由：`/stats`
 - 数据来源：Cloudflare Analytics API
-- 安全策略：仅在构建阶段读取 `CLOUDFLARE_API_TOKEN`，前端只消费生成后的 `generated/cloudflare.json`
+- 数据获取方式：
+  - 实时模式：通过 Cloudflare Pages Functions (`/api/cloudflare-stats`) 实时获取数据
+  - 降级模式：如果API不可用，使用构建时生成的静态数据 (`generated/cloudflare.json`)
+  - 缓存策略：前端缓存5分钟，支持手动刷新
+- 安全策略：API Token 配置在 Cloudflare Pages 环境变量中，不暴露给前端
 - 本地变量模板见 `.env.example`
 - 详细配置指南见 `CLOUDFLARE_SETUP.md`
 
 ### Cloudflare Pages 配置
 
-Cloudflare Pages 可直接使用当前静态站点方案，无需额外后端：
+在 Cloudflare Pages 项目设置中添加环境变量：
+- `CLOUDFLARE_API_TOKEN`：你的 Cloudflare API Token
+- `CLOUDFLARE_ZONE_ID`：你的站点 Zone ID
+
+这样统计页将自动使用实时数据，每次访问都会获取最新的统计信息（带5分钟缓存）。
 
 1. 构建命令：`npm run build`
 2. 输出目录：`dist`

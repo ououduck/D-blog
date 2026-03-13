@@ -1,9 +1,10 @@
 ﻿import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { cloudflareApiMock } from './vite-plugin-cloudflare-mock';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), cloudflareApiMock()],
   base: '/',
   css: {
     postcss: path.resolve(__dirname, './config/postcss.config.js'),

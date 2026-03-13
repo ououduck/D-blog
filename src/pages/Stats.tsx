@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Database, ShieldCheck, Eye, Users, Globe, TrendingUp, HardDrive, MapPin } from 'lucide-react';
+import { BarChart3, Database, ShieldCheck, Eye, Users, Globe, TrendingUp, HardDrive, MapPin, RefreshCw } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { CloudflareSnapshot, CloudflareTimeWindow } from '../types';
 import { getCloudflareSnapshot } from '../services/cloudflare';
@@ -62,14 +62,34 @@ const SummaryCard = ({
 export const Stats = () => {
   const [snapshot, setSnapshot] = useState<CloudflareSnapshot>(EMPTY_SNAPSHOT);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedDays, setSelectedDays] = useState(7);
 
-  useEffect(() => {
-    getCloudflareSnapshot().then((data) => {
+  const loadData = async (forceRefresh = false) => {
+    if (forceRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    
+    try {
+      const data = await getCloudflareSnapshot(forceRefresh);
       setSnapshot(data);
+    } catch (error) {
+      console.error('Failed to load Cloudflare data:', error);
+    } finally {
       setLoading(false);
-    });
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
+
+  const handleRefresh = () => {
+    loadData(true);
+  };
 
   const currentTimeWindow = snapshot.timeWindows.find(tw => tw.days === selectedDays) || snapshot.timeWindows[0] || null;
 
@@ -86,8 +106,18 @@ export const Stats = () => {
       />
 
       <section className="relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.12),_transparent_38%),linear-gradient(135deg,_rgba(255,255,255,0.96),_rgba(244,244,245,0.9))] p-8 md:p-12 dark:border-zinc-800 dark:bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.2),_transparent_40%),linear-gradient(135deg,_rgba(24,24,27,0.96),_rgba(9,9,11,0.96))]">
-        <div className="absolute right-6 top-6 rounded-full border border-accent/20 bg-accent/10 p-3 text-accent">
-          <BarChart3 size={22} />
+        <div className="absolute right-6 top-6 flex gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="rounded-full border border-accent/20 bg-accent/10 p-3 text-accent transition-all hover:bg-accent/20 disabled:opacity-50"
+            title="刷新数据"
+          >
+            <RefreshCw size={22} className={refreshing ? 'animate-spin' : ''} />
+          </button>
+          <div className="rounded-full border border-accent/20 bg-accent/10 p-3 text-accent">
+            <BarChart3 size={22} />
+          </div>
         </div>
         <div className="max-w-3xl">
           <p className="mb-4 text-xs font-bold uppercase tracking-[0.35em] text-accent">Analytics Dashboard</p>
@@ -95,7 +125,7 @@ export const Stats = () => {
             站点访问统计
           </h1>
           <p className="max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 md:text-base">
-            基于 Cloudflare Analytics 的访问数据分析，在构建时安全拉取，展示关键指标与详细数据。
+            基于 Cloudflare Analytics 的实时访问数据分析，每5分钟自动更新，展示关键指标与详细数据。
           </p>
         </div>
 
