@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Database, ShieldCheck, Eye, Users, Globe, TrendingUp, HardDrive, MapPin, RefreshCw } from 'lucide-react';
+import { BarChart3, Database, ShieldCheck, Eye, Users, TrendingUp, HardDrive, RefreshCw } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { CloudflareSnapshot, CloudflareTimeWindow } from '../types';
 import { getCloudflareSnapshot } from '../services/cloudflare';
@@ -176,62 +176,7 @@ export const Stats = () => {
                   />
                 </div>
 
-                {currentTimeWindow.topPages.length > 0 && (
-                  <div className="mt-6 rounded-2xl border border-white/60 bg-white/70 p-5 backdrop-blur dark:border-white/10 dark:bg-white/5">
-                    <div className="mb-4 flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
-                      <Globe size={16} />
-                      <span className="text-xs font-bold uppercase tracking-[0.25em]">热门页面</span>
-                    </div>
-                    <div className="space-y-3">
-                      {currentTimeWindow.topPages.slice(0, 10).map((page, index) => (
-                        <div 
-                          key={index} 
-                          className="flex items-center justify-between rounded-xl border border-zinc-200/60 bg-white/60 px-4 py-3 dark:border-zinc-700/60 dark:bg-zinc-900/40"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-medium text-ink dark:text-white">
-                              {page.path}
-                            </div>
-                          </div>
-                          <div className="ml-4 flex items-center gap-4">
-                            <div className="flex items-center gap-1">
-                              <Eye size={14} className="text-zinc-400" />
-                              <span className="text-sm font-bold text-accent">{formatValue(page.pageViews)}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <TrendingUp size={14} className="text-zinc-400" />
-                              <span className="text-sm text-zinc-500 dark:text-zinc-400">{formatValue(page.requests)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
-                {currentTimeWindow.topCountries.length > 0 && (
-                  <div className="mt-6 rounded-2xl border border-white/60 bg-white/70 p-5 backdrop-blur dark:border-white/10 dark:bg-white/5">
-                    <div className="mb-4 flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
-                      <MapPin size={16} />
-                      <span className="text-xs font-bold uppercase tracking-[0.25em]">访客地区</span>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {currentTimeWindow.topCountries.slice(0, 10).map((country, index) => (
-                        <div 
-                          key={index} 
-                          className="flex items-center justify-between rounded-xl border border-zinc-200/60 bg-white/60 px-4 py-3 dark:border-zinc-700/60 dark:bg-zinc-900/40"
-                        >
-                          <div className="text-sm font-medium text-ink dark:text-white">
-                            {country.country}
-                          </div>
-                          <div className="text-sm font-bold text-accent">
-                            {formatValue(country.requests)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {currentTimeWindow.error && (
                   <div className="mt-6 rounded-2xl border border-amber-300/40 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-300">

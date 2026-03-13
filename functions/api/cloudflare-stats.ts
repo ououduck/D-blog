@@ -46,12 +46,8 @@ const fetchAnalyticsForDays = async (
   const since = new Date(now);
   since.setDate(since.getDate() - days);
   
-  // date_lt 不包含结束日期，所以需要加1天
-  const until = new Date(now);
-  until.setDate(until.getDate() + 1);
-  
   const sinceStr = since.toISOString().split('T')[0];
-  const untilStr = until.toISOString().split('T')[0];
+  const untilStr = new Date(now.getTime() + 86400000).toISOString().split('T')[0];
 
   try {
     // Fetch analytics totals
@@ -87,10 +83,16 @@ const fetchAnalyticsForDays = async (
     });
 
     if (!totalsResponse.ok) {
-      throw new Error(`API request failed with status ${totalsResponse.status}`);
+      const errorText = await totalsResponse.text();
+      throw new Error(`API request failed with status ${totalsResponse.status}: ${errorText}`);
     }
 
     const totalsData = await totalsResponse.json();
+    
+    if (totalsData.errors) {
+      throw new Error(`GraphQL errors: ${JSON.stringify(totalsData.errors)}`);
+    }
+    
     const groups = totalsData?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
     
     const totals = groups.reduce((acc: CloudflareAnalyticsData, group: any) => ({
@@ -100,101 +102,10 @@ const fetchAnalyticsForDays = async (
       uniques: acc.uniques + (group.uniq?.uniques || 0)
     }), { requests: 0, pageViews: 0, bandwidth: 0, uniques: 0 });
 
-    // Fetch top pages
-    const pagesQuery = `
-      query {
-        viewer {
-          zones(filter: { zoneTag: "${zoneId}" }) {
-            httpRequests1dGroups(
-              limit: 10000
-              filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
-              orderBy: [sum_requests_DESC]
-            ) {
-              dimensions {
-                clientRequestPath
-              }
-              sum {
-                requests
-                pageViews
-              }
-            }
-          }
-        }
-      }
-    `;
-
-    const pagesResponse = await fetch('https://api.cloudflare.com/client/v4/graphql', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query: pagesQuery })
-    });
-
-    const pagesData = await pagesResponse.json();
-    const pagesGroups = pagesData?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
-    
-    const pathMap = new Map<string, { requests: number; pageViews: number }>();
-    pagesGroups.forEach((group: any) => {
-      const path = group.dimensions?.clientRequestPath || '/';
-      const existing = pathMap.get(path) || { requests: 0, pageViews: 0 };
-      pathMap.set(path, {
-        requests: existing.requests + (group.sum?.requests || 0),
-        pageViews: existing.pageViews + (group.sum?.pageViews || 0)
-      });
-    });
-
-    const topPages = Array.from(pathMap.entries())
-      .map(([path, data]) => ({ path, ...data }))
-      .sort((a, b) => b.pageViews - a.pageViews)
-      .slice(0, 20);
-
-    // Fetch top countries
-    const countriesQuery = `
-      query {
-        viewer {
-          zones(filter: { zoneTag: "${zoneId}" }) {
-            httpRequests1dGroups(
-              limit: 10000
-              filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
-              orderBy: [sum_requests_DESC]
-            ) {
-              dimensions {
-                clientCountryName
-              }
-              sum {
-                requests
-              }
-            }
-          }
-        }
-      }
-    `;
-
-    const countriesResponse = await fetch('https://api.cloudflare.com/client/v4/graphql', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query: countriesQuery })
-    });
-
-    const countriesData = await countriesResponse.json();
-    const countriesGroups = countriesData?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
-    
-    const countryMap = new Map<string, number>();
-    countriesGroups.forEach((group: any) => {
-      const country = group.dimensions?.clientCountryName || 'Unknown';
-      const existing = countryMap.get(country) || 0;
-      countryMap.set(country, existing + (group.sum?.requests || 0));
-    });
-
-    const topCountries = Array.from(countryMap.entries())
-      .map(([country, requests]) => ({ country, requests }))
-      .sort((a, b) => b.requests - a.requests)
-      .slice(0, 20);
+    // 暂时返回空的 topPages 和 topCountries
+    // Cloudflare GraphQL API 的 dimensions 查询需要特定的权限和配置
+    const topPages: CloudflareTopItem[] = [];
+    const topCountries: CloudflareCountryItem[] = [];
 
     return {
       days,
@@ -230,7 +141,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=300' // 5分钟缓存
+        'Cache-Control': 'public, max-age=300'
       }
     });
   }
@@ -244,7 +155,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   const timeWindows = [1, 7, 30];
   
-  // 并行获取所有时间窗口的数据
   const results = await Promise.all(
     timeWindows.map(days => fetchAnalyticsForDays(token, zoneId, days))
   );
@@ -255,7 +165,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'public, max-age=300', // 5分钟缓存
+      'Cache-Control': 'public, max-age=300',
       'Access-Control-Allow-Origin': '*'
     }
   });
