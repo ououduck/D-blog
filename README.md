@@ -1,139 +1,171 @@
 # D-blog
 
+<div align="center">
+
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)
+![React](https://img.shields.io/badge/react-19-61dafb.svg)
+![Vite](https://img.shields.io/badge/vite-6-646cff.svg)
 
-一个基于 React + Vite 构建的静态博客项目，内容以 Markdown 管理，支持友情链接、RSS、站点地图、页面预渲染和响应式阅读体验。
+一个现代化的静态博客系统，基于 React + Vite 构建，支持 Markdown 内容管理、友情链接、RSS 订阅、SEO 优化和响应式设计。
 
-**在线预览：** <https://blog.pldduck.com>
+[在线预览](https://blog.pldduck.com) · [快速开始](#快速开始) · [部署指南](#部署说明)
 
-## 项目特点
+</div>
 
-- Markdown 驱动内容管理，文章直接存放在 `posts/` 目录。
-- 构建期自动生成文章与友链数据，无需数据库。
-- 基于 `react-router-dom` 的单页应用，同时输出预渲染页面，兼顾开发体验与 SEO。
-- 自动生成 `sitemap.xml` 和 `feed.xml`。
-- 支持文章搜索、分类筛选、置顶、精选展示。
-- 友情链接采用 JSON 文件管理，适合通过 PR 协作维护。
-- 适合部署到 Cloudflare Pages、Vercel、Netlify、Nginx 等静态托管环境。
+## ✨ 核心特性
 
-## 技术栈
+### 📝 内容管理
+- **Markdown 驱动** - 文章直接存放在 `posts/` 目录，支持 Front Matter 元数据
+- **无需数据库** - 构建期自动生成文章索引和友链数据
+- **灵活分类** - 支持文章分类、标签、置顶和精选展示
+- **全文搜索** - 内置文章搜索和筛选功能
 
-- React 19
-- Vite 6
-- TypeScript
-- Tailwind CSS
-- Framer Motion
-- React Router
-- React Markdown + Remark GFM + Rehype Highlight
-- Gray Matter
+### 🚀 性能优化
+- **预渲染** - 构建时生成静态 HTML，提升首屏加载速度
+- **SEO 友好** - 自动生成 `sitemap.xml` 和 `feed.xml`
+- **响应式设计** - 完美适配桌面端和移动端
+- **代码高亮** - 支持多种编程语言语法高亮
 
-## 目录结构
+### 🔧 开发体验
+- **热更新** - Vite 提供极速的开发体验
+- **TypeScript** - 完整的类型支持
+- **组件化** - 基于 React 19 的现代化组件架构
+- **易于定制** - 清晰的配置文件和目录结构
+
+### 🌐 部署灵活
+- 支持 Cloudflare Pages、Vercel、Netlify 等平台
+- 可部署到传统 Nginx 服务器
+- 集成 Cloudflare Analytics 统计功能
+
+## 🛠️ 技术栈
+
+| 类别 | 技术 |
+|------|------|
+| 框架 | React 19 + Vite 6 |
+| 语言 | TypeScript |
+| 样式 | Tailwind CSS |
+| 动画 | Framer Motion |
+| 路由 | React Router v7 |
+| Markdown | React Markdown + Remark GFM + Rehype Highlight |
+| 元数据解析 | Gray Matter |
+| 数学公式 | KaTeX |
+| 图表 | Mermaid |
+
+## 📁 目录结构
 
 ```text
 D-blog/
-├─ config/                 # 站点配置、Tailwind、TS 配置
-├─ friends/                # 友情链接数据（JSON）
-├─ posts/                  # 博客文章（Markdown）
-├─ public/                 # 静态资源
-├─ scripts/                # 构建期脚本
-├─ src/                    # 前端源码
-├─ generated/              # 构建生成的数据文件（自动生成）
-├─ _redirects              # Cloudflare Pages SPA 路由配置
-├─ _headers                # Cloudflare Pages 安全头配置
-├─ _routes.json            # Cloudflare Pages 路由配置
-├─ .nvmrc                  # Node 版本配置
-├─ index.html
-├─ package.json
-└─ vite.config.ts
+├── config/                 # 配置文件
+│   ├── site.config.ts     # 站点配置（标题、作者、社交链接等）
+│   ├── tailwind.config.js # Tailwind CSS 配置
+│   ├── postcss.config.js  # PostCSS 配置
+│   └── tsconfig.json      # TypeScript 配置
+├── friends/               # 友情链接数据（JSON 格式）
+├── posts/                 # 博客文章（Markdown 格式）
+├── public/                # 静态资源
+│   ├── posts-img/        # 文章图片
+│   ├── sitemap.xml       # 站点地图（自动生成）
+│   ├── feed.xml          # RSS 订阅源（自动生成）
+│   ├── _redirects        # SPA 路由配置
+│   ├── _headers          # 安全响应头配置
+│   └── _routes.json      # Cloudflare Pages 路由配置
+├── scripts/               # 构建脚本
+│   ├── generate-site-data.mjs  # 生成站点数据
+│   └── prerender.mjs           # 预渲染静态页面
+├── src/                   # 前端源码
+│   ├── components/       # React 组件
+│   ├── pages/            # 页面组件
+│   ├── services/         # 数据服务
+│   ├── types.ts          # TypeScript 类型定义
+│   ├── App.tsx           # 应用入口
+│   └── index.tsx         # 渲染入口
+├── functions/             # Cloudflare Pages Functions
+│   └── api/              # API 端点
+├── generated/             # 构建生成的数据（自动生成，不提交到 Git）
+├── .env.example          # 环境变量示例
+├── index.html            # HTML 模板
+├── package.json          # 项目依赖
+└── vite.config.ts        # Vite 配置
 ```
 
-## 快速开始
+## 🚀 快速开始
 
 ### 环境要求
 
-- Node.js 20+
-- npm 10+
+- Node.js >= 20
+- npm >= 10
 
-### 安装依赖
+### 安装
 
 ```bash
+# 克隆仓库
+git clone https://github.com/ououduck/D-blog.git
+cd D-blog
+
+# 安装依赖
 npm install
 ```
 
-### 本地开发
+### 开发
 
 ```bash
 npm run dev
 ```
 
-启动后会先执行数据生成脚本，再进入 Vite 开发模式。
+启动后会自动执行数据生成脚本，然后进入 Vite 开发模式，访问 `http://localhost:5173`
 
-### 生产构建
+### 构建
 
 ```bash
 npm run build
 ```
 
-该命令会依次执行：
+构建流程：
+1. 生成站点数据（文章索引、友链、RSS、Sitemap）
+2. Vite 打包前端资源
+3. 预渲染静态页面
 
-```text
-生成站点数据 -> Vite 打包 -> 预渲染静态页面
-```
+构建产物位于 `dist/` 目录，可直接部署。
 
-构建完成后：
-
-- `dist/` 为可部署产物
-- `generated/posts.json` 为文章索引
-- `generated/friends.json` 为友链索引
-- `public/sitemap.xml` 为站点地图
-- `public/feed.xml` 为 RSS 订阅源
-
-### 本地预览
+### 预览
 
 ```bash
 npm run preview
 ```
 
-## 内容管理
+本地预览构建后的生产版本。
+
+## 📝 内容管理
 
 ### 新增文章
 
-在 `posts/` 目录下新增 `.md` 文件，推荐使用以下 Front Matter：
+在 `posts/` 目录下创建 `.md` 文件，使用以下 Front Matter 格式：
 
 ```yaml
 ---
-id: my-first-post
-title: 文章标题
-excerpt: 文章摘要
-date: 2026-03-08
-category: 随笔
-tags:
+id: my-first-post           # 文章唯一标识，对应路由 /post/:id
+title: 文章标题              # 文章标题
+excerpt: 文章摘要            # 列表摘要和 SEO 描述
+date: 2026-03-08            # 发布日期（YYYY-MM-DD）
+category: 随笔               # 分类名称
+tags:                       # 标签数组
   - React
   - Vite
-readTime: 5分钟阅读
-coverImage: /posts-img/example.png
-featured: false
-top: 1
+readTime: 5分钟阅读          # 阅读时长
+coverImage: /posts-img/example.png  # 封面图路径
+featured: false             # 是否精选展示
+top: 1                      # 置顶优先级（数值越小优先级越高，可选）
 ---
+
+# 文章内容
+
+这里是文章正文，支持完整的 Markdown 语法...
 ```
-
-字段说明：
-
-- `id`：文章唯一标识，对应路由 `/post/:id`
-- `title`：文章标题
-- `excerpt`：列表摘要和 SEO 描述
-- `date`：发布日期，推荐 `YYYY-MM-DD`
-- `category`：分类名称
-- `tags`：标签数组
-- `readTime`：阅读时长说明
-- `coverImage`：封面图路径
-- `featured`：是否以精选样式展示
-- `top`：置顶优先级，数值越小优先级越高；不需要时可省略
 
 ### 新增友情链接
 
-在 `friends/` 目录下新增一个 `.json` 文件，格式如下：
+在 `friends/` 目录下创建 `.json` 文件（建议使用站点域名或英文名称命名）：
 
 ```json
 {
@@ -144,202 +176,230 @@ top: 1
 }
 ```
 
-必填字段：
+所有字段均为必填项。构建脚本会自动跳过字段缺失或格式错误的文件。
 
-- `name`
-- `description`
-- `avatar`
-- `url`
+### 站点配置
 
-构建脚本会自动跳过字段缺失或 JSON 非法的友链文件。
+编辑 `config/site.config.ts` 修改站点信息：
 
-## 站点配置
-
-主要配置位于 [config/site.config.ts](/d:/program/website/D-blog/config/site.config.ts)：
-
-- 站点标题、副标题、描述
-- 站点地址
-- 作者信息
-- 社交链接
-- 友情链接页说明
-- 页脚与备案信息
-
-如果你要二次开发自己的博客，优先修改这个文件。
-
-## 构建流程
-
-项目的核心构建流程如下：
-
-```text
-posts/*.md + friends/*.json
-  -> scripts/generate-site-data.mjs
-  -> generated/*.json + sitemap.xml + feed.xml
-  -> vite build
-  -> scripts/prerender.mjs
-  -> dist/
+```typescript
+export const siteConfig = {
+  title: "站点标题",
+  subtitle: "站点副标题",
+  description: "站点描述",
+  url: "https://your-domain.com",
+  author: {
+    name: "作者名称",
+    avatar: "头像URL",
+    role: "角色描述",
+    bio: "个人简介"
+  },
+  social: {
+    github: "GitHub链接",
+    email: "邮箱地址"
+  },
+  // ... 更多配置
+};
 ```
 
-说明：
+## 🔨 构建流程
 
-- `scripts/generate-site-data.mjs` 负责解析 Markdown Front Matter、校验友链数据、生成文章索引、RSS 和 Sitemap。
-- `scripts/prerender.mjs` 会为文章页、关于页、友链页输出预渲染 HTML，提升静态托管场景下的首屏和 SEO 表现。
+项目采用三阶段构建流程：
 
-## 部署说明
+```mermaid
+graph LR
+    A[posts/*.md + friends/*.json] --> B[generate-site-data.mjs]
+    B --> C[generated/*.json + sitemap.xml + feed.xml]
+    C --> D[vite build]
+    D --> E[prerender.mjs]
+    E --> F[dist/]
+```
 
-这是一个纯前端静态项目，构建产物为 `dist/`，可直接部署到任意静态托管平台。
+1. **数据生成阶段** - `scripts/generate-site-data.mjs`
+   - 解析 Markdown Front Matter
+   - 校验友链数据
+   - 生成文章索引
+   - 生成 RSS 订阅源
+   - 生成站点地图
+
+2. **打包阶段** - `vite build`
+   - 编译 TypeScript
+   - 打包 React 组件
+   - 优化静态资源
+   - 生成生产版本
+
+3. **预渲染阶段** - `scripts/prerender.mjs`
+   - 为文章页生成静态 HTML
+   - 为关于页生成静态 HTML
+   - 为友链页生成静态 HTML
+   - 提升 SEO 和首屏性能
+
+## 🚢 部署说明
+
+构建产物为纯静态文件（`dist/`），可部署到任意静态托管平台。
 
 ### Cloudflare Pages（推荐）
 
-本项目针对 Cloudflare Pages 进行了优化配置，支持自动部署和 Analytics 集成。
+本项目针对 Cloudflare Pages 进行了深度优化，开箱即用。
 
-**快速部署步骤：**
+#### 快速部署
 
-1. 连接 Git 仓库到 Cloudflare Pages
-2. 配置构建设置：
-   - 构建命令：`npm run build`
-   - 输出目录：`dist`
-   - Node 版本：自动检测（从 `.nvmrc`）
-3. 配置环境变量（可选，用于统计功能）：
-   - `CLOUDFLARE_API_TOKEN`
-   - `CLOUDFLARE_ZONE_ID`
-4. 保存并部署
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. 进入 Pages，点击「创建项目」
+3. 连接 GitHub 仓库
+4. 配置构建设置：
+   ```
+   构建命令：npm run build
+   输出目录：dist
+   Node 版本：20（自动检测）
+   ```
+5. 添加环境变量（可选，用于统计功能）：
+   ```
+   CLOUDFLARE_API_TOKEN=your_api_token
+   CLOUDFLARE_ZONE_ID=your_zone_id
+   ```
+6. 保存并部署
 
-**详细部署指南请查看：** [CLOUDFLARE_PAGES_DEPLOY.md](./CLOUDFLARE_PAGES_DEPLOY.md)
+#### 内置特性
 
-**项目特性：**
-- ✅ 自动 SPA 路由回退（`_redirects`）
-- ✅ 安全响应头配置（`_headers`）
+- ✅ SPA 路由自动回退
+- ✅ 安全响应头配置
 - ✅ 静态资源缓存优化
 - ✅ Cloudflare Analytics 集成
 - ✅ 自动构建和部署
 
-### 其他平台
+### Vercel
 
-**Vercel：**
+```bash
+# 使用 Vercel CLI 部署
+npm i -g vercel
+vercel
+```
+
+或在 Vercel Dashboard 中配置：
 - Framework Preset: `Vite`
 - Build Command: `npm run build`
 - Output Directory: `dist`
 
-**Netlify：**
-- Build command: `npm run build`
-- Publish directory: `dist`
-- 需要添加 `_redirects` 文件支持 SPA 路由
+### Netlify
 
-**Nginx：**
+```bash
+# 使用 Netlify CLI 部署
+npm i -g netlify-cli
+netlify deploy --prod
+```
+
+或在 `netlify.toml` 中配置：
+```toml
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
+### Nginx
+
 ```nginx
 server {
     listen 80;
-    server_name blog.pldduck.com;
+    server_name your-domain.com;
     root /var/www/blog/dist;
     index index.html;
 
+    # SPA 路由回退
     location / {
         try_files $uri $uri/ /index.html;
     }
 
+    # 静态资源缓存
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
+
+    # Gzip 压缩
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 }
 ```
 
-**静态文件服务器：**
-
-将 `dist/` 目录内容发布到站点根目录，确保配置 SPA 回退规则（所有未知路由回退到 `index.html`）。
-
-## 贡献指南
+## 🤝 贡献指南
 
 欢迎提交 Issue 和 Pull Request！
 
 ### 提交文章
 
 1. Fork 本仓库
-2. 在 `posts/` 目录下新增 Markdown 文件
-3. 确保 Front Matter 字段完整
+2. 在 `posts/` 目录下创建 Markdown 文件
+3. 确保 Front Matter 字段完整且格式正确
 4. 本地执行 `npm run build` 验证构建通过
-5. 提交 PR
+5. 提交 PR，标题格式：`docs: 新增文章 - [文章标题]`
 
 ### 申请友链
 
 1. Fork 本仓库
-2. 在 `friends/` 目录下新增 JSON 文件（文件名建议使用站点域名或英文名称）
+2. 在 `friends/` 目录下创建 JSON 文件（建议使用域名或英文名称命名）
 3. 确保包含所有必填字段：`name`、`description`、`avatar`、`url`
-4. 提交 PR，标题格式：`feat: 添加友链 - [站点名称]`
+4. 确认已添加本站友链
+5. 提交 PR，标题格式：`feat: 添加友链 - [站点名称]`
 
 ### 代码贡献
 
-- 提交前先执行 `npm run build` 确保构建通过
-- PR 尽量聚焦单一主题，方便审查和回滚
-- 遵循项目现有的代码风格和目录结构
+1. Fork 本仓库并创建新分支
+2. 进行代码修改
+3. 确保代码风格一致
+4. 执行 `npm run build` 验证构建通过
+5. 提交 PR，清晰描述改动内容
 
-## License
+#### 开发规范
+
+- 遵循项目现有的代码风格和目录结构
+- PR 聚焦单一主题，便于审查和回滚
+- 提交信息遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范
+- 重大改动请先开 Issue 讨论
+
+## 📊 Cloudflare Analytics 统计
+
+项目内置 Cloudflare Analytics 统计功能，访问 `/stats` 查看站点数据。
+
+### 工作原理
+
+- **实时模式**：通过 Cloudflare Pages Functions (`/api/cloudflare-stats`) 实时获取数据
+- **降级模式**：API 不可用时使用构建时生成的静态数据 (`generated/cloudflare.json`)
+- **缓存策略**：前端缓存 5 分钟，支持手动刷新
+- **安全策略**：API Token 配置在环境变量中，不暴露给前端
+
+### 配置方法
+
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. 创建 API Token（需要 Analytics Read 权限）
+3. 获取站点的 Zone ID
+4. 在 Cloudflare Pages 项目设置中添加环境变量：
+   ```
+   CLOUDFLARE_API_TOKEN=your_api_token
+   CLOUDFLARE_ZONE_ID=your_zone_id
+   ```
+
+本地开发时可参考 `.env.example` 配置环境变量。
+
+## 📄 License
 
 本项目采用 [MIT License](LICENSE) 开源协议。
 
-## Cloudflare Analytics 统计页
+## 🙏 致谢
 
-- 统计页路由：`/stats`
-- 数据来源：Cloudflare Analytics API
-- 数据获取方式：
-  - 实时模式：通过 Cloudflare Pages Functions (`/api/cloudflare-stats`) 实时获取数据
-  - 降级模式：如果API不可用，使用构建时生成的静态数据 (`generated/cloudflare.json`)
-  - 缓存策略：前端缓存5分钟，支持手动刷新
-- 安全策略：API Token 配置在 Cloudflare Pages 环境变量中，不暴露给前端
-- 本地变量模板见 `.env.example`
-- 详细配置指南见 `CLOUDFLARE_SETUP.md`
+感谢所有为本项目做出贡献的开发者！
 
-### Cloudflare Pages 配置
+---
 
-在 Cloudflare Pages 项目设置中添加环境变量：
-- `CLOUDFLARE_API_TOKEN`：你的 Cloudflare API Token
-- `CLOUDFLARE_ZONE_ID`：你的站点 Zone ID
+<div align="center">
 
-这样统计页将自动使用实时数据，每次访问都会获取最新的统计信息（带5分钟缓存）。
+如果这个项目对你有帮助，欢迎 Star ⭐️
 
-1. 构建命令：`npm run build`
-2. 输出目录：`dist`
-3. Node 版本：仓库已提供 `.nvmrc`
-4. 在 Pages 项目的环境变量中配置：
-   - `CLOUDFLARE_API_TOKEN`
-   - `CLOUDFLARE_ZONE_ID`
+[报告问题](https://github.com/ououduck/D-blog/issues) · [功能建议](https://github.com/ououduck/D-blog/issues) · [贡献代码](https://github.com/ououduck/D-blog/pulls)
 
-### 变量示例
-
-```env
-CLOUDFLARE_API_TOKEN=your_cloudflare_global_api_token
-CLOUDFLARE_ZONE_ID=your_zone_id_for_blog_pldduck_com
-```
-
-说明：
-
-- `CLOUDFLARE_API_TOKEN`：Cloudflare API Token，需要 Analytics Read 权限
-- `CLOUDFLARE_ZONE_ID`：blog.pldduck.com 域名的 Zone ID
-
-### 如何获取
-
-详细配置步骤请参考 `CLOUDFLARE_SETUP.md` 文档。
-
-简要说明：
-
-1. 登录 Cloudflare Dashboard
-2. 创建 API Token（Analytics Read 权限）
-3. 在域名概览页面获取 Zone ID
-4. 配置到环境变量中
-
-注意：
-
-- Token 只需要只读权限
-- 本项目只在构建阶段读取该变量，不会下发到浏览器
-
-构建流程如下：
-
-```text
-Cloudflare Pages Build
-  -> npm run build
-  -> scripts/generate-site-data.mjs
-  -> Cloudflare Analytics API
-  -> generated/cloudflare.json
-  -> vite build + prerender
-  -> dist/
-```
+</div>
