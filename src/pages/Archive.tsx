@@ -148,87 +148,98 @@ export const ArchivePage = () => {
         </div>
       </section>
 
-      <section className="mt-10 space-y-8 md:mt-14">
+      <section className="mt-10 md:mt-14">
         {loading ? (
-          Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="h-48 animate-pulse rounded-[1.75rem] bg-zinc-100 dark:bg-zinc-900" />
-          ))
+          <div className="space-y-6">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="h-32 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-900" />
+            ))}
+          </div>
         ) : (
-          groups.map((group, index) => (
-            <motion.div
-              key={group.year}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: index * 0.06 }}
-              className="rounded-[1.75rem] border border-zinc-200 bg-white/80 p-6 shadow-xl shadow-zinc-200/20 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/50 dark:shadow-none md:p-8"
-            >
-              <div className="mb-8 flex flex-col gap-6 border-b border-zinc-100 pb-6 dark:border-zinc-800 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <div className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-accent">Year {group.year}</div>
-                  <h2 className="font-serif text-3xl font-bold text-ink dark:text-white md:text-4xl">{group.year}</h2>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="rounded-full border border-accent/20 bg-accent/5 px-3 py-1 text-xs font-bold text-accent">
-                    {group.total} {'\u7bc7\u6587\u7ae0'}
-                  </span>
-                  {group.months.map((month) => (
-                    <span
-                      key={`${group.year}-${month}`}
-                      className="rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-500 dark:border-zinc-700 dark:text-zinc-400"
-                    >
-                      {month}
-                    </span>
-                  ))}
-                </div>
-              </div>
+          <div className="relative">
+            {/* Timeline vertical line */}
+            <div className="absolute left-[7px] top-0 bottom-0 w-[2px] bg-gradient-to-b from-accent via-zinc-300 to-transparent dark:via-zinc-700 md:left-[9px]" />
 
-              <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-                <aside className="rounded-2xl bg-zinc-50 p-5 dark:bg-zinc-950/60">
-                  <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-zinc-400">{'\u5206\u7c7b\u5206\u5e03'}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {group.categories.map((category) => (
-                      <span
-                        key={`${group.year}-${category}`}
-                        className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                      >
-                        {category}
+            <div className="space-y-12">
+              {groups.map((group, groupIndex) => (
+                <motion.div
+                  key={group.year}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, delay: groupIndex * 0.08 }}
+                >
+                  {/* Year marker */}
+                  <div className="relative flex items-center gap-4 mb-8">
+                    <div className="relative z-10 flex h-4 w-4 items-center justify-center rounded-full bg-accent shadow-lg shadow-accent/30 md:h-5 md:w-5">
+                      <div className="h-2 w-2 rounded-full bg-white md:h-2.5 md:w-2.5" />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2 className="font-serif text-2xl font-bold text-ink dark:text-white md:text-3xl">
+                        {group.year}
+                      </h2>
+                      <span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs font-bold text-accent">
+                        {group.total} 篇
                       </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {group.categories.map((category) => (
+                          <span
+                            key={`${group.year}-${category}`}
+                            className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                          >
+                            {category}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Posts timeline */}
+                  <div className="space-y-6 pl-8 md:pl-10">
+                    {group.posts.map((post, postIndex) => (
+                      <motion.div
+                        key={post.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: groupIndex * 0.08 + postIndex * 0.03 }}
+                        className="relative"
+                      >
+                        {/* Timeline dot */}
+                        <div className="absolute -left-[30px] top-2 h-2 w-2 rounded-full border-2 border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900 md:-left-[38px]" />
+
+                        <Link
+                          to={`/post/${post.id}`}
+                          className="group block rounded-xl border border-zinc-200 bg-white/50 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:bg-white hover:shadow-lg hover:shadow-accent/5 dark:border-zinc-800 dark:bg-zinc-900/30 dark:hover:bg-zinc-900/60 md:p-5"
+                        >
+                          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                            <time className="font-mono font-semibold">{formatDay(post.date)}</time>
+                            <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                              {post.category}
+                            </span>
+                            <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                            <span>{post.readTime}</span>
+                          </div>
+
+                          <h3 className="mb-2 font-serif text-lg font-bold text-ink transition-colors group-hover:text-accent dark:text-white md:text-xl">
+                            {post.title}
+                          </h3>
+
+                          <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                            {post.excerpt}
+                          </p>
+
+                          <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-zinc-400 transition-colors group-hover:text-accent">
+                            <span>阅读文章</span>
+                            <ArrowUpRight size={14} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                          </div>
+                        </Link>
+                      </motion.div>
                     ))}
                   </div>
-                </aside>
-
-                <div className="space-y-4">
-                  {group.posts.map((post) => (
-                    <Link
-                      key={post.id}
-                      to={`/post/${post.id}`}
-                      className="group grid gap-4 rounded-2xl border border-zinc-200 px-4 py-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-xl hover:shadow-accent/5 dark:border-zinc-800 dark:hover:border-accent/30 md:grid-cols-[88px_minmax(0,1fr)_auto] md:items-center md:px-5"
-                    >
-                      <div className="text-sm font-bold tracking-wider text-zinc-400">{formatDay(post.date)}</div>
-                      <div className="min-w-0">
-                        <div className="mb-2 flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
-                            {post.category}
-                          </span>
-                          <span className="text-xs text-zinc-400">{post.readTime}</span>
-                        </div>
-                        <h3 className="truncate font-serif text-lg font-bold text-ink transition-colors group-hover:text-accent dark:text-white">
-                          {post.title}
-                        </h3>
-                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-                          {post.excerpt}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm font-medium text-zinc-400 transition-colors group-hover:text-accent">
-                        <span>{'\u67e5\u770b'}</span>
-                        <ArrowUpRight size={16} />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          ))
+                </motion.div>
+              ))}
+            </div>
+          </div>
         )}
       </section>
     </motion.div>

@@ -39,6 +39,10 @@ D-blog/
 ├─ scripts/                # 构建期脚本
 ├─ src/                    # 前端源码
 ├─ generated/              # 构建生成的数据文件（自动生成）
+├─ _redirects              # Cloudflare Pages SPA 路由配置
+├─ _headers                # Cloudflare Pages 安全头配置
+├─ _routes.json            # Cloudflare Pages 路由配置
+├─ .nvmrc                  # Node 版本配置
 ├─ index.html
 ├─ package.json
 └─ vite.config.ts
@@ -184,14 +188,65 @@ posts/*.md + friends/*.json
 
 这是一个纯前端静态项目，构建产物为 `dist/`，可直接部署到任意静态托管平台。
 
-常见方式：
+### Cloudflare Pages（推荐）
 
-- Cloudflare Pages：构建命令 `npm run build`，输出目录 `dist`
-- Vercel：Framework Preset 选择 `Vite`
-- Netlify：Build command `npm run build`，Publish directory `dist`
-- Nginx：将 `dist/` 目录内容发布到站点根目录
+本项目针对 Cloudflare Pages 进行了优化配置，支持自动部署和 Analytics 集成。
 
-如果使用单页应用回退规则，建议将所有未知路由回退到 `index.html`；如果直接使用预渲染输出，也可以按静态页面路径访问。
+**快速部署步骤：**
+
+1. 连接 Git 仓库到 Cloudflare Pages
+2. 配置构建设置：
+   - 构建命令：`npm run build`
+   - 输出目录：`dist`
+   - Node 版本：自动检测（从 `.nvmrc`）
+3. 配置环境变量（可选，用于统计功能）：
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ZONE_ID`
+4. 保存并部署
+
+**详细部署指南请查看：** [CLOUDFLARE_PAGES_DEPLOY.md](./CLOUDFLARE_PAGES_DEPLOY.md)
+
+**项目特性：**
+- ✅ 自动 SPA 路由回退（`_redirects`）
+- ✅ 安全响应头配置（`_headers`）
+- ✅ 静态资源缓存优化
+- ✅ Cloudflare Analytics 集成
+- ✅ 自动构建和部署
+
+### 其他平台
+
+**Vercel：**
+- Framework Preset: `Vite`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+
+**Netlify：**
+- Build command: `npm run build`
+- Publish directory: `dist`
+- 需要添加 `_redirects` 文件支持 SPA 路由
+
+**Nginx：**
+```nginx
+server {
+    listen 80;
+    server_name blog.pldduck.com;
+    root /var/www/blog/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+```
+
+**静态文件服务器：**
+
+将 `dist/` 目录内容发布到站点根目录，确保配置 SPA 回退规则（所有未知路由回退到 `index.html`）。
 
 ## 贡献指南
 
@@ -222,12 +277,13 @@ posts/*.md + friends/*.json
 
 本项目采用 [MIT License](LICENSE) 开源协议。
 
-## Clarity 统计页
+## Cloudflare Analytics 统计页
 
 - 统计页路由：`/stats`
-- 数据来源：Microsoft Clarity Export API
-- 安全策略：仅在构建阶段读取 `CLARITY_API_TOKEN`，前端只消费生成后的 `generated/clarity.json`
+- 数据来源：Cloudflare Analytics API
+- 安全策略：仅在构建阶段读取 `CLOUDFLARE_API_TOKEN`，前端只消费生成后的 `generated/cloudflare.json`
 - 本地变量模板见 `.env.example`
+- 详细配置指南见 `CLOUDFLARE_SETUP.md`
 
 ### Cloudflare Pages 配置
 
@@ -237,70 +293,36 @@ Cloudflare Pages 可直接使用当前静态站点方案，无需额外后端：
 2. 输出目录：`dist`
 3. Node 版本：仓库已提供 `.nvmrc`
 4. 在 Pages 项目的环境变量中配置：
-   - `CLARITY_API_TOKEN`
-   - `CLARITY_EXPORT_DAYS`
-   - `CLARITY_DIMENSION_1`
-   - `CLARITY_DIMENSION_2`
-   - `CLARITY_DIMENSION_3`
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ZONE_ID`
 
 ### 变量示例
 
 ```env
-CLARITY_API_TOKEN=eyJhbGciOi...
-CLARITY_EXPORT_DAYS=1
-CLARITY_DIMENSION_1=URL
-CLARITY_DIMENSION_2=Browser
-CLARITY_DIMENSION_3=Device
+CLOUDFLARE_API_TOKEN=your_cloudflare_global_api_token
+CLOUDFLARE_ZONE_ID=your_zone_id_for_blog_pldduck_com
 ```
 
 说明：
 
-- `CLARITY_API_TOKEN`：Clarity 项目管理员在项目设置中生成的 Bearer Token
-- `CLARITY_EXPORT_DAYS`：导出最近 1、2、3 天的数据，官方仅支持这三个值
-- `CLARITY_DIMENSION_1~3`：最多传三个维度，推荐先用 `URL`、`Browser`、`Device`
+- `CLOUDFLARE_API_TOKEN`：Cloudflare API Token，需要 Analytics Read 权限
+- `CLOUDFLARE_ZONE_ID`：blog.pldduck.com 域名的 Zone ID
 
 ### 如何获取
 
-#### 获取 `CLARITY_API_TOKEN`
+详细配置步骤请参考 `CLOUDFLARE_SETUP.md` 文档。
 
-根据 Microsoft Clarity Export API 官方文档：
+简要说明：
 
-1. 进入你的 Clarity 项目
-2. 打开 `Settings`
-3. 进入 `Data Export`
-4. 点击 `Generate new API token`
-5. 输入一个 token 名称
-6. 生成后立即复制并保存到 Cloudflare Pages 环境变量 `CLARITY_API_TOKEN`
+1. 登录 Cloudflare Dashboard
+2. 创建 API Token（Analytics Read 权限）
+3. 在域名概览页面获取 Zone ID
+4. 配置到环境变量中
 
 注意：
 
-- 只有项目管理员可以管理和生成 token
-- token 只会在生成时完整显示一次，不要写入前端代码
+- Token 只需要只读权限
 - 本项目只在构建阶段读取该变量，不会下发到浏览器
-
-#### 选择 `CLARITY_DIMENSION_1~3`
-
-根据官方文档，Export API 当前可用维度包括：
-
-- `Browser`
-- `Device`
-- `Country/Region`
-- `OS`
-- `Source`
-- `Medium`
-- `Campaign`
-- `Channel`
-- `URL`
-
-推荐的起步组合：
-
-```env
-CLARITY_DIMENSION_1=URL
-CLARITY_DIMENSION_2=Browser
-CLARITY_DIMENSION_3=Device
-```
-
-这个组合更适合博客场景，能直接看页面、浏览器和设备分布。
 
 构建流程如下：
 
@@ -308,8 +330,8 @@ CLARITY_DIMENSION_3=Device
 Cloudflare Pages Build
   -> npm run build
   -> scripts/generate-site-data.mjs
-  -> Clarity Export API
-  -> generated/clarity.json
+  -> Cloudflare Analytics API
+  -> generated/cloudflare.json
   -> vite build + prerender
   -> dist/
 ```

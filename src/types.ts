@@ -28,24 +28,35 @@ export interface Friend {
   url: string;
 }
 
-export interface ClarityMetricRow {
-  [key: string]: string | number | null;
+export interface CloudflareAnalyticsData {
+  requests: number;
+  pageViews: number;
+  uniques: number;
+  bandwidth: number;
 }
 
-export interface ClarityMetric {
-  metricName: string;
-  information: ClarityMetricRow[];
+export interface CloudflareTopItem {
+  path: string;
+  requests: number;
+  pageViews: number;
 }
 
-export interface ClarityTimeWindow {
-  numOfDays: number;
-  dimension: string;
-  metrics: ClarityMetric[];
+export interface CloudflareCountryItem {
+  country: string;
+  requests: number;
+}
+
+export interface CloudflareTimeWindow {
+  days: number;
+  data: CloudflareAnalyticsData;
+  topPages: CloudflareTopItem[];
+  topCountries: CloudflareCountryItem[];
   error: string | null;
 }
 
-export interface ClaritySnapshot {
+export interface CloudflareSnapshot {
   enabled: boolean;
   fetchedAt: string | null;
-  timeWindows: ClarityTimeWindow[];
+  domain: string;
+  timeWindows: CloudflareTimeWindow[];
 }

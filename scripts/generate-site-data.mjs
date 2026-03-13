@@ -17,13 +17,13 @@ const POSTS_DIR = path.join(__dirname, '../posts');
 const FRIENDS_DIR = path.join(__dirname, '../friends');
 const OUTPUT_JSON_DIR = path.join(__dirname, '../generated');
 const PUBLIC_DIR = path.join(__dirname, '../public');
-const CLARITY_FILE = path.join(OUTPUT_JSON_DIR, 'clarity.json');
+const CLOUDFLARE_FILE = path.join(OUTPUT_JSON_DIR, 'cloudflare.json');
 
 if (!fs.existsSync(OUTPUT_JSON_DIR)) fs.mkdirSync(OUTPUT_JSON_DIR, { recursive: true });
 if (!fs.existsSync(PUBLIC_DIR)) fs.mkdirSync(PUBLIC_DIR, { recursive: true });
 
-const writeClaritySnapshot = (snapshot) => {
-  fs.writeFileSync(CLARITY_FILE, JSON.stringify(snapshot, null, 2));
+const writeCloudflareSnapshot = (snapshot) => {
+  fs.writeFileSync(CLOUDFLARE_FILE, JSON.stringify(snapshot, null, 2));
 };
 
 const files = fs.readdirSync(POSTS_DIR).filter(file => file.endsWith('.md'));
@@ -86,76 +86,204 @@ const friends = friendFiles.flatMap(filename => {
 fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'friends.json'), JSON.stringify(friends, null, 2));
 console.log(`✅ JSON Generated: ${friends.length} friends`);
 
-const generateClaritySnapshot = async () => {
-  const token = process.env.CLARITY_API_TOKEN?.trim();
+const generateCloudflareSnapshot = async () => {
+  const token = process.env.CLOUDFLARE_API_TOKEN?.trim();
+  const zoneId = process.env.CLOUDFLARE_ZONE_ID?.trim();
 
-  if (!token) {
+  if (!token || !zoneId) {
     const emptySnapshot = {
       enabled: false,
       fetchedAt: null,
+      domain: 'blog.pldduck.com',
       timeWindows: []
     };
-    writeClaritySnapshot(emptySnapshot);
-    console.log('ℹ️ Clarity Export skipped: missing CLARITY_API_TOKEN');
+    writeCloudflareSnapshot(emptySnapshot);
+    console.log('ℹ️ Cloudflare Analytics skipped: missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ZONE_ID');
     return;
   }
 
   const snapshot = {
     enabled: true,
     fetchedAt: new Date().toISOString(),
+    domain: 'blog.pldduck.com',
     timeWindows: []
   };
 
-  // Fetch data for multiple time windows
   const timeWindows = [1, 7, 30];
-  const dimension = 'URL'; // Fixed dimension for simplicity
 
   for (const days of timeWindows) {
-    const params = new URLSearchParams({
-      numOfDays: String(days),
-      dimension1: dimension
-    });
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const sinceStr = since.toISOString();
+    const untilStr = new Date().toISOString();
 
     try {
-      const response = await fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
+      // Fetch analytics totals
+      const totalsQuery = `
+        query {
+          viewer {
+            zones(filter: { zoneTag: "${zoneId}" }) {
+              httpRequests1dGroups(
+                limit: 1
+                filter: { date_geq: "${sinceStr.split('T')[0]}", date_lt: "${untilStr.split('T')[0]}" }
+              ) {
+                sum {
+                  requests
+                  pageViews
+                  bytes
+                }
+                uniq {
+                  uniques
+                }
+              }
+            }
+          }
         }
+      `;
+
+      const totalsResponse = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ query: totalsQuery })
       });
 
-      if (!response.ok) {
-        console.warn(`⚠️ Clarity API request failed for ${days} days with status ${response.status}`);
-        snapshot.timeWindows.push({
-          numOfDays: days,
-          dimension,
-          metrics: [],
-          error: `API request failed with status ${response.status}`
-        });
-        continue;
+      if (!totalsResponse.ok) {
+        throw new Error(`API request failed with status ${totalsResponse.status}`);
       }
 
-      const payload = await response.json();
-      snapshot.timeWindows.push({
-        numOfDays: days,
-        dimension,
-        metrics: Array.isArray(payload) ? payload : [],
-        error: Array.isArray(payload) ? null : 'Unexpected API response format'
+      const totalsData = await totalsResponse.json();
+      const groups = totalsData?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
+      
+      const totals = groups.reduce((acc, group) => ({
+        requests: acc.requests + (group.sum?.requests || 0),
+        pageViews: acc.pageViews + (group.sum?.pageViews || 0),
+        bandwidth: acc.bandwidth + (group.sum?.bytes || 0),
+        uniques: acc.uniques + (group.uniq?.uniques || 0)
+      }), { requests: 0, pageViews: 0, bandwidth: 0, uniques: 0 });
+
+      // Fetch top pages
+      const pagesQuery = `
+        query {
+          viewer {
+            zones(filter: { zoneTag: "${zoneId}" }) {
+              httpRequests1dGroups(
+                limit: 10000
+                filter: { date_geq: "${sinceStr.split('T')[0]}", date_lt: "${untilStr.split('T')[0]}" }
+                orderBy: [sum_requests_DESC]
+              ) {
+                dimensions {
+                  clientRequestHTTPHost
+                  clientRequestPath
+                }
+                sum {
+                  requests
+                  pageViews
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const pagesResponse = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ query: pagesQuery })
       });
 
-      console.log(`✅ Clarity data fetched for ${days} days: ${Array.isArray(payload) ? payload.length : 0} metrics`);
-    } catch (error) {
-      console.warn(`⚠️ Clarity Export failed for ${days} days: ${error.message}`);
+      const pagesData = await pagesResponse.json();
+      const pagesGroups = pagesData?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
+      
+      const pathMap = new Map();
+      pagesGroups.forEach(group => {
+        const path = group.dimensions?.clientRequestPath || '/';
+        const existing = pathMap.get(path) || { requests: 0, pageViews: 0 };
+        pathMap.set(path, {
+          requests: existing.requests + (group.sum?.requests || 0),
+          pageViews: existing.pageViews + (group.sum?.pageViews || 0)
+        });
+      });
+
+      const topPages = Array.from(pathMap.entries())
+        .map(([path, data]) => ({ path, ...data }))
+        .sort((a, b) => b.pageViews - a.pageViews)
+        .slice(0, 20);
+
+      // Fetch top countries
+      const countriesQuery = `
+        query {
+          viewer {
+            zones(filter: { zoneTag: "${zoneId}" }) {
+              httpRequests1dGroups(
+                limit: 10000
+                filter: { date_geq: "${sinceStr.split('T')[0]}", date_lt: "${untilStr.split('T')[0]}" }
+                orderBy: [sum_requests_DESC]
+              ) {
+                dimensions {
+                  clientCountryName
+                }
+                sum {
+                  requests
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const countriesResponse = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ query: countriesQuery })
+      });
+
+      const countriesData = await countriesResponse.json();
+      const countriesGroups = countriesData?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
+      
+      const countryMap = new Map();
+      countriesGroups.forEach(group => {
+        const country = group.dimensions?.clientCountryName || 'Unknown';
+        const existing = countryMap.get(country) || 0;
+        countryMap.set(country, existing + (group.sum?.requests || 0));
+      });
+
+      const topCountries = Array.from(countryMap.entries())
+        .map(([country, requests]) => ({ country, requests }))
+        .sort((a, b) => b.requests - a.requests)
+        .slice(0, 20);
+
       snapshot.timeWindows.push({
-        numOfDays: days,
-        dimension,
-        metrics: [],
+        days,
+        data: totals,
+        topPages,
+        topCountries,
+        error: null
+      });
+
+      console.log(`✅ Cloudflare data fetched for ${days} days: ${totals.pageViews} page views, ${topPages.length} pages`);
+    } catch (error) {
+      console.warn(`⚠️ Cloudflare Analytics failed for ${days} days: ${error.message}`);
+      snapshot.timeWindows.push({
+        days,
+        data: { requests: 0, pageViews: 0, bandwidth: 0, uniques: 0 },
+        topPages: [],
+        topCountries: [],
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
 
-  writeClaritySnapshot(snapshot);
-  console.log(`✅ Clarity Snapshot Generated with ${snapshot.timeWindows.length} time windows`);
+  writeCloudflareSnapshot(snapshot);
+  console.log(`✅ Cloudflare Snapshot Generated with ${snapshot.timeWindows.length} time windows`);
 };
 
 const generateSitemap = () => {
@@ -207,6 +335,17 @@ const generateRss = () => {
   console.log('✅ RSS Feed Generated');
 };
 
-await generateClaritySnapshot();
+await generateCloudflareSnapshot();
 generateSitemap();
 generateRss();
+
+// Copy Cloudflare Pages configuration files to public directory
+const cfConfigFiles = ['_redirects', '_headers', '_routes.json'];
+cfConfigFiles.forEach(file => {
+  const srcPath = path.join(__dirname, '..', file);
+  const destPath = path.join(PUBLIC_DIR, file);
+  if (fs.existsSync(srcPath)) {
+    fs.copyFileSync(srcPath, destPath);
+    console.log(`✅ Copied ${file} to public/`);
+  }
+});

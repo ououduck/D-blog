@@ -100,7 +100,7 @@ posts.forEach(post => {
 // 2. Process Static Pages
 const staticPages = [
   { path: 'archive', title: `归档 - ${SITE_SUFFIX}`, description: `按年份整理 ${siteTitle} 的全部文章归档` },
-  { path: 'stats', title: `统计 - ${SITE_SUFFIX}`, description: `基于 Microsoft Clarity Export API 生成的站点统计快照` },
+  { path: 'stats', title: `统计 - ${SITE_SUFFIX}`, description: `基于 Cloudflare Analytics API 生成的站点统计快照` },
   { path: 'about', title: `关于${siteTitle} - ${SITE_SUFFIX}`, description: `关于${siteTitle}的介绍` },
   { path: 'friends', title: `友情链接 - ${SITE_SUFFIX}`, description: `我的朋友们和推荐的网站` }
 ];

@@ -1,0 +1,57 @@
+# Cloudflare Pages 部署工作流示例
+# 注意：如果使用 Cloudflare Pages 的 Git 集成，不需要此文件
+# 此文件仅作为参考，展示如何通过 GitHub Actions 手动部署
+
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: d-blog
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
+
+# 使用说明：
+# 1. 将此文件重命名为 cloudflare-pages.yml（去掉 .example 后缀）
+# 2. 在 GitHub 仓库的 Settings > Secrets and variables > Actions 中添加：
+#    - CLOUDFLARE_API_TOKEN: Analytics API Token
+#    - CLOUDFLARE_ZONE_ID: Zone ID
+#    - CLOUDFLARE_PAGES_API_TOKEN: Pages 部署 Token
+#    - CLOUDFLARE_ACCOUNT_ID: Cloudflare Account ID
+# 3. 推送代码即可触发自动部署
+#
+# 注意：推荐使用 Cloudflare Pages 原生 Git 集成，更简单且功能更完整
