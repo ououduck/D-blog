@@ -42,76 +42,46 @@ const fetchAnalyticsForDays = async (
   zoneId: string,
   days: number
 ): Promise<CloudflareTimeWindow> => {
-  const now = new Date();
-  const since = new Date(now);
-  since.setDate(since.getDate() - days);
-  
-  const sinceStr = since.toISOString().split('T')[0];
-  const untilStr = new Date(now.getTime() + 86400000).toISOString().split('T')[0];
-
   try {
-    // Fetch analytics totals
-    const totalsQuery = `
-      query {
-        viewer {
-          zones(filter: { zoneTag: "${zoneId}" }) {
-            httpRequests1dGroups(
-              limit: ${days + 1}
-              filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
-            ) {
-              sum {
-                requests
-                pageViews
-                bytes
-              }
-              uniq {
-                uniques
-              }
-            }
-          }
-        }
-      }
-    `;
+    // 使用 REST API 而不是 GraphQL
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const sinceMinutes = days * 1440; // 转换为分钟
 
-    const totalsResponse = await fetch('https://api.cloudflare.com/client/v4/graphql', {
-      method: 'POST',
+    const url = `https://api.cloudflare.com/client/v4/zones/${zoneId}/analytics/dashboard?since=-${sinceMinutes}&until=0&continuous=true`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query: totalsQuery })
+      }
     });
 
-    if (!totalsResponse.ok) {
-      const errorText = await totalsResponse.text();
-      throw new Error(`API request failed with status ${totalsResponse.status}: ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
     }
 
-    const totalsData = await totalsResponse.json();
+    const data = await response.json();
     
-    if (totalsData.errors) {
-      throw new Error(`GraphQL errors: ${JSON.stringify(totalsData.errors)}`);
+    if (!data.success) {
+      throw new Error(`API returned error: ${JSON.stringify(data.errors)}`);
     }
-    
-    const groups = totalsData?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
-    
-    const totals = groups.reduce((acc: CloudflareAnalyticsData, group: any) => ({
-      requests: acc.requests + (group.sum?.requests || 0),
-      pageViews: acc.pageViews + (group.sum?.pageViews || 0),
-      bandwidth: acc.bandwidth + (group.sum?.bytes || 0),
-      uniques: acc.uniques + (group.uniq?.uniques || 0)
-    }), { requests: 0, pageViews: 0, bandwidth: 0, uniques: 0 });
 
-    // 暂时返回空的 topPages 和 topCountries
-    // Cloudflare GraphQL API 的 dimensions 查询需要特定的权限和配置
-    const topPages: CloudflareTopItem[] = [];
-    const topCountries: CloudflareCountryItem[] = [];
+    const result = data.result;
+    const totals = result?.totals || {};
 
     return {
       days,
-      data: totals,
-      topPages,
-      topCountries,
+      data: {
+        requests: totals.requests?.all || 0,
+        pageViews: totals.pageviews?.all || 0,
+        uniques: totals.uniques?.all || 0,
+        bandwidth: totals.bandwidth?.all || 0
+      },
+      topPages: [],
+      topCountries: [],
       error: null
     };
   } catch (error) {
