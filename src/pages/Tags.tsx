@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Tag, Calendar, Clock, Search, X } from 'lucide-react';
-import { getPosts, searchPosts } from '@/services/posts';
+import { getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
+import { usePostSearch } from '@/hooks/usePostSearch';
 
 interface TagInfo {
   name: string;
@@ -12,103 +13,51 @@ interface TagInfo {
   posts: PostMetadata[];
 }
 
+const buildTagList = (posts: PostMetadata[]) => {
+  const tagMap = new Map<string, PostMetadata[]>();
+
+  posts.forEach((post) => {
+    post.tags.forEach((tag) => {
+      if (!tagMap.has(tag)) {
+        tagMap.set(tag, []);
+      }
+
+      tagMap.get(tag)!.push(post);
+    });
+  });
+
+  return Array.from(tagMap.entries())
+    .map(([name, taggedPosts]) => ({
+      name,
+      count: taggedPosts.length,
+      posts: taggedPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    }))
+    .sort((a, b) => b.count - a.count);
+};
+
 export const Tags = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
-  const [tags, setTags] = useState<TagInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const searchRequestIdRef = useRef(0);
   const selectedTag = searchParams.get('tag');
-
-  const buildTagList = useCallback((posts: PostMetadata[]) => {
-    const tagMap = new Map<string, PostMetadata[]>();
-    
-    posts.forEach(post => {
-      post.tags.forEach(tag => {
-        if (!tagMap.has(tag)) {
-          tagMap.set(tag, []);
-        }
-        tagMap.get(tag)!.push(post);
-      });
-    });
-
-    return Array.from(tagMap.entries())
-      .map(([name, posts]) => ({
-        name,
-        count: posts.length,
-        posts: posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      }))
-      .sort((a, b) => b.count - a.count);
-  }, []);
+  const { searchQuery, isSearching, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch({
+    emptyResults: allPosts
+  });
 
   useEffect(() => {
-    getPosts().then(posts => {
+    getPosts().then((posts) => {
       setAllPosts(posts);
-      const tagList = buildTagList(posts);
-      setTags(tagList);
       setLoading(false);
     });
-  }, [buildTagList]);
-
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
   }, []);
 
-  const performSearch = useCallback(async (query: string) => {
-    const requestId = ++searchRequestIdRef.current;
+  const tags = buildTagList(results);
+  const handleClearSearch = () => {
+    clearSearch();
+  };
 
-    if (!query.trim()) {
-      if (requestId !== searchRequestIdRef.current) {
-        return;
-      }
-      const tagList = buildTagList(allPosts);
-      setTags(tagList);
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-    const results = await searchPosts(query);
-    if (requestId !== searchRequestIdRef.current) {
-      return;
-    }
-    const tagList = buildTagList(results);
-    setTags(tagList);
-    setIsSearching(false);
-  }, [allPosts, buildTagList]);
-
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-    
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      performSearch(query);
-    }, 300);
-  }, [performSearch]);
-
-  const handleClearSearch = useCallback(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    searchRequestIdRef.current += 1;
-    setSearchQuery('');
-    setIsSearching(false);
-    const tagList = buildTagList(allPosts);
-    setTags(tagList);
-  }, [allPosts, buildTagList]);
-
-  const selectedTagInfo = selectedTag ? tags.find(t => t.name === selectedTag) : null;
-  const maxCount = Math.max(...tags.map(t => t.count), 1);
+  const selectedTagInfo = selectedTag ? tags.find((tag) => tag.name === selectedTag) : null;
+  const maxCount = Math.max(...tags.map((tag) => tag.count), 1);
 
   const getTagSize = (count: number) => {
     const ratio = count / maxCount;
@@ -168,7 +117,7 @@ export const Tags = () => {
                 </button>
               )}
             </div>
-            {searchQuery && (
+            {hasSearchQuery && (
               <div className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
                 搜索 "<span className="font-bold text-accent">{searchQuery}</span>" 找到 {tags.length} 个标签
               </div>
@@ -244,6 +193,16 @@ export const Tags = () => {
                     </Link>
                   </motion.div>
                 ))}
+                {selectedTagInfo && selectedTagInfo.posts.length === 0 && (
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
+                    当前筛选条件下没有文章。
+                  </div>
+                )}
+                {!selectedTagInfo && (
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
+                    当前标签在搜索结果中不可用，请清除搜索或查看全部标签。
+                  </div>
+                )}
               </div>
             </div>
           )}

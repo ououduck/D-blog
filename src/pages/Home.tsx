@@ -1,12 +1,13 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, Rss, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react';
-import { getPosts, searchPosts, getAllCategories } from '@/services/posts';
+import { getPosts, getAllCategories } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ShareModal } from '../components/ShareModal';
+import { usePostSearch } from '@/hooks/usePostSearch';
 
 const ALL_CATEGORY = '全部';
 
@@ -192,7 +193,6 @@ const Hero = ({ onSearch, searchQuery, onClearSearch }: { onSearch: (val: string
 
 export const Home = () => {
   const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
-  const [displayedPosts, setDisplayedPosts] = useState<PostMetadata[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
@@ -200,10 +200,9 @@ export const Home = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [postsPerPage, setPostsPerPage] = useState(9);
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const searchRequestIdRef = useRef(0);
+  const { searchQuery, isSearching, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch({
+    emptyResults: allPosts
+  });
 
   useEffect(() => {
     Promise.all([getPosts(), getAllCategories()]).then(([posts, cats]) => {
@@ -222,72 +221,15 @@ export const Home = () => {
   }, []);
 
   useEffect(() => {
-    if (allPosts.length === 0) {
-      return;
-    }
-
-    if (!searchQuery) {
-      setDisplayedPosts(filterAndSortPosts(allPosts, selectedCategory, sortOrder));
-      setCurrentPage(1);
-    }
-  }, [allPosts, selectedCategory, sortOrder, searchQuery]);
-
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const performSearch = useCallback(async (query: string) => {
-    const requestId = ++searchRequestIdRef.current;
-
-    if (!query.trim()) {
-      if (requestId !== searchRequestIdRef.current) {
-        return;
-      }
-      setDisplayedPosts(filterAndSortPosts(allPosts, selectedCategory, sortOrder));
-      setIsSearching(false);
-      setCurrentPage(1);
-      return;
-    }
-
-    setIsSearching(true);
-    const results = await searchPosts(query);
-    if (requestId !== searchRequestIdRef.current) {
-      return;
-    }
-    const filteredResults = selectedCategory === ALL_CATEGORY 
-      ? sortPosts(results, sortOrder)
-      : sortPosts(results.filter(post => post.category === selectedCategory), sortOrder);
-    setDisplayedPosts(filteredResults);
-    setIsSearching(false);
     setCurrentPage(1);
-  }, [allPosts, selectedCategory, sortOrder]);
+  }, [searchQuery, selectedCategory, sortOrder]);
 
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-    
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+  const displayedPosts = filterAndSortPosts(results, selectedCategory, sortOrder);
 
-    searchTimeoutRef.current = setTimeout(() => {
-      performSearch(query);
-    }, 300);
-  }, [performSearch]);
-
-  const handleClearSearch = useCallback(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    searchRequestIdRef.current += 1;
-    setSearchQuery('');
-    setIsSearching(false);
-    setDisplayedPosts(filterAndSortPosts(allPosts, selectedCategory, sortOrder));
+  const handleClearSearch = () => {
+    clearSearch();
     setCurrentPage(1);
-  }, [allPosts, selectedCategory, sortOrder]);
+  };
 
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
@@ -306,7 +248,7 @@ export const Home = () => {
       
       {!loading && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-          {searchQuery && (
+          {hasSearchQuery && (
             <div className="mb-6 px-2">
               <div className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
                 <Search size={16} className="text-accent" />
@@ -337,9 +279,9 @@ export const Home = () => {
               ) : (
                   <div className="col-span-full text-center py-32">
                     <p className="text-xl text-zinc-400 font-serif mb-2">
-                      {searchQuery ? '未找到匹配的文章' : '暂无相关文章'}
+                      {hasSearchQuery ? '未找到匹配的文章' : '暂无相关文章'}
                     </p>
-                    {searchQuery && (
+                    {hasSearchQuery && (
                       <button 
                         onClick={handleClearSearch}
                         className="mt-4 text-sm text-accent hover:underline"

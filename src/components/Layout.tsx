@@ -2,10 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box, Monitor } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { searchPosts } from '@/services/posts';
-import { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
 import { BackToTop } from './BackToTop';
+import { usePostSearch } from '@/hooks/usePostSearch';
 
 const TEXT = {
   searchPlaceholder: '\u641c\u7d22\u6587\u7ae0...',
@@ -27,11 +26,11 @@ const TEXT = {
 };
 
 const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<PostMetadata[]>([]);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
-  const searchRequestIdRef = useRef(0);
+  const { searchQuery, isSearching, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch();
+  const query = searchQuery;
+  const visibleResults = results.slice(0, 8);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -41,34 +40,19 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
 
   useEffect(() => {
     if (!isOpen) {
-      searchRequestIdRef.current += 1;
-      setQuery('');
-      setResults([]);
+      clearSearch();
     }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const fetchResults = async () => {
-      if (query.trim()) {
-        const requestId = ++searchRequestIdRef.current;
-        const res = await searchPosts(query);
-        if (requestId !== searchRequestIdRef.current) {
-          return;
-        }
-        setResults(res);
-      } else {
-        searchRequestIdRef.current += 1;
-        setResults([]);
-      }
-    };
-
-    const debounce = setTimeout(fetchResults, 300);
-    return () => clearTimeout(debounce);
-  }, [query]);
+  }, [clearSearch, isOpen]);
 
   const handleSelect = (id: string) => {
     navigate(`/post/${id}`);
     onClose();
+  };
+
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && visibleResults[0]) {
+      handleSelect(visibleResults[0].id);
+    }
   };
 
   return (
@@ -96,8 +80,9 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
                 type="text"
                 placeholder={TEXT.searchPlaceholder}
                 className="w-full bg-transparent text-xl text-ink outline-none placeholder:text-zinc-400 dark:text-white"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                onKeyDown={handleInputKeyDown}
               />
               <button onClick={onClose} className="rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800">
                 <X size={20} className="text-zinc-400" />
@@ -105,9 +90,16 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
             </div>
 
             <div className="max-h-[60vh] overflow-y-auto">
-              {results.length > 0 ? (
+              {isSearching ? (
+                <div className="p-12 text-center text-zinc-400">
+                  <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                </div>
+              ) : visibleResults.length > 0 ? (
                 <div className="p-2">
-                  {results.map((post) => (
+                  <div className="px-3 pt-3 text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+                    {results.length} 条结果
+                  </div>
+                  {visibleResults.map((post) => (
                     <button
                       key={post.id}
                       onClick={() => handleSelect(post.id)}
@@ -125,7 +117,7 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
                     </button>
                   ))}
                 </div>
-              ) : query ? (
+              ) : hasSearchQuery ? (
                 <div className="p-12 text-center text-zinc-400">
                   <p>{`${TEXT.notFoundPrefix} “${query}” ${TEXT.notFoundSuffix}`}</p>
                 </div>

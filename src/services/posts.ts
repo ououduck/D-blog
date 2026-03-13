@@ -1,6 +1,8 @@
 import { Post, PostMetadata } from '../types';
 
 let postsDataCache: PostMetadata[] | null = null;
+let postsSearchIndexCache: SearchIndexEntry[] | null = null;
+const searchResultsCache = new Map<string, PostMetadata[]>();
 
 const postFiles = import.meta.glob('../../posts/*.md', { query: '?raw', import: 'default' });
 
@@ -19,7 +21,79 @@ const stripFrontmatter = (rawContent: string) => {
   return normalized.replace(/^---[\s\S]*?---[\r\n]*/, '');
 };
 
-const normalizeSearchText = (value: string) => value.toLowerCase().trim().replace(/\s+/g, ' ');
+const normalizeSearchText = (value: string) =>
+  value
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+
+const splitSearchTerms = (value: string) => normalizeSearchText(value).split(' ').filter(Boolean);
+
+interface SearchIndexEntry {
+  post: PostMetadata;
+  dateTimestamp: number;
+  title: string;
+  excerpt: string;
+  category: string;
+  content: string;
+  tags: string[];
+}
+
+const buildSearchIndex = (posts: PostMetadata[]): SearchIndexEntry[] =>
+  posts.map((post) => ({
+    post,
+    dateTimestamp: new Date(post.date).getTime(),
+    title: normalizeSearchText(post.title),
+    excerpt: normalizeSearchText(post.excerpt),
+    category: normalizeSearchText(post.category),
+    content: normalizeSearchText(post.searchText ?? ''),
+    tags: post.tags.map((tag) => normalizeSearchText(String(tag)))
+  }));
+
+const loadPostsSearchIndex = async (): Promise<SearchIndexEntry[]> => {
+  if (postsSearchIndexCache) {
+    return postsSearchIndexCache;
+  }
+
+  const posts = await loadPostsData();
+  postsSearchIndexCache = buildSearchIndex(posts);
+  return postsSearchIndexCache;
+};
+
+const getFieldMatchScore = (value: string, terms: string[], fullQuery: string, weight: number) => {
+  if (!value) {
+    return 0;
+  }
+
+  let score = 0;
+
+  if (value === fullQuery) {
+    score += weight * 12;
+  } else if (value.startsWith(fullQuery)) {
+    score += weight * 9;
+  } else if (value.includes(fullQuery)) {
+    score += weight * 6;
+  }
+
+  terms.forEach((term) => {
+    if (value === term) {
+      score += weight * 5;
+      return;
+    }
+
+    if (value.startsWith(term)) {
+      score += weight * 4;
+      return;
+    }
+
+    if (value.includes(term)) {
+      score += weight * 2;
+    }
+  });
+
+  return score;
+};
 
 export const getPosts = async (): Promise<PostMetadata[]> => {
   return loadPostsData();
@@ -56,65 +130,80 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
 
 interface SearchResult extends PostMetadata {
   score: number;
-  matchedFields: string[];
+  dateTimestamp: number;
 }
 
 export const searchPosts = async (query: string): Promise<PostMetadata[]> => {
-  const lowerQuery = normalizeSearchText(query);
+  const normalizedQuery = normalizeSearchText(query);
 
-  if (!lowerQuery) {
+  if (!normalizedQuery) {
     return [];
   }
 
-  const allPosts = await loadPostsData();
+  const cachedResult = searchResultsCache.get(normalizedQuery);
+  if (cachedResult) {
+    return cachedResult;
+  }
+
+  const allPosts = await loadPostsSearchIndex();
+  const searchTerms = splitSearchTerms(normalizedQuery);
   const results: SearchResult[] = [];
 
-  allPosts.forEach((post) => {
+  allPosts.forEach((entry) => {
     let score = 0;
-    const matchedFields: string[] = [];
+    const matchedTerms = new Set<string>();
+    const searchableFields = [
+      { key: 'title', value: entry.title, weight: 8 },
+      { key: 'category', value: entry.category, weight: 4 },
+      { key: 'excerpt', value: entry.excerpt, weight: 2 },
+      { key: 'content', value: entry.content, weight: 1 }
+    ] as const;
 
-    const titleMatch = normalizeSearchText(post.title).includes(lowerQuery);
-    if (titleMatch) {
-      score += 10;
-      matchedFields.push('title');
-    }
+    searchableFields.forEach(({ value, weight }) => {
+      const fieldScore = getFieldMatchScore(value, searchTerms, normalizedQuery, weight);
+      if (fieldScore > 0) {
+        score += fieldScore;
+      }
 
-    const categoryMatch = normalizeSearchText(post.category).includes(lowerQuery);
-    if (categoryMatch) {
-      score += 5;
-      matchedFields.push('category');
-    }
+      searchTerms.forEach((term) => {
+        if (value.includes(term)) {
+          matchedTerms.add(term);
+        }
+      });
+    });
 
-    const tagMatches = post.tags.filter((tag) => normalizeSearchText(tag).includes(lowerQuery));
-    if (tagMatches.length > 0) {
-      score += tagMatches.length * 3;
-      matchedFields.push('tags');
-    }
+    entry.tags.forEach((tag) => {
+      const fieldScore = getFieldMatchScore(tag, searchTerms, normalizedQuery, 5);
+      if (fieldScore > 0) {
+        score += fieldScore;
+      }
 
-    const excerptMatch = normalizeSearchText(post.excerpt).includes(lowerQuery);
-    if (excerptMatch) {
-      score += 2;
-      matchedFields.push('excerpt');
-    }
+      searchTerms.forEach((term) => {
+        if (tag.includes(term)) {
+          matchedTerms.add(term);
+        }
+      });
+    });
 
-    const contentMatch = normalizeSearchText(post.searchText ?? '').includes(lowerQuery);
-    if (contentMatch) {
-      score += 1;
-      matchedFields.push('content');
-    }
+    const matchesFullQuery =
+      searchableFields.some(({ value }) => value.includes(normalizedQuery)) ||
+      entry.tags.some((tag) => tag.includes(normalizedQuery));
 
-    if (score > 0) {
+    if (score > 0 && (matchesFullQuery || matchedTerms.size === searchTerms.length)) {
       results.push({
-        ...post,
+        ...entry.post,
         score,
-        matchedFields
+        dateTimestamp: entry.dateTimestamp
       });
     }
   });
 
-  return results
-    .sort((a, b) => b.score - a.score)
-    .map(({ score, matchedFields, ...post }) => post);
+  const resolvedResults = results
+    .sort((a, b) => b.score - a.score || b.dateTimestamp - a.dateTimestamp)
+    .map(({ score, dateTimestamp, ...post }) => post);
+
+  searchResultsCache.set(normalizedQuery, resolvedResults);
+  return resolvedResults;
 };
 
 export const getAllCategories = async (): Promise<string[]> => {

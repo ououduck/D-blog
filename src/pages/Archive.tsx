@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Archive, Calendar, FolderTree, ArrowUpRight, Search, X } from 'lucide-react';
-import { getPosts, searchPosts } from '@/services/posts';
+import { getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
+import { usePostSearch } from '@/hooks/usePostSearch';
 
 interface ArchiveGroup {
   year: string;
@@ -83,77 +84,23 @@ const buildArchiveGroups = (posts: PostMetadata[]) => {
 
 export const ArchivePage = () => {
   const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
-  const [groups, setGroups] = useState<ArchiveGroup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [latestDate, setLatestDate] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const searchRequestIdRef = useRef(0);
+  const latestDate = allPosts[0]?.date || '';
+  const { searchQuery, isSearching, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch({
+    emptyResults: allPosts
+  });
 
   useEffect(() => {
     getPosts().then((posts) => {
       setAllPosts(posts);
-      const archiveGroups = buildArchiveGroups(posts);
-      setGroups(archiveGroups);
-      setLatestDate(posts[0]?.date || '');
       setLoading(false);
     });
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const performSearch = useCallback(async (query: string) => {
-    const requestId = ++searchRequestIdRef.current;
-
-    if (!query.trim()) {
-      if (requestId !== searchRequestIdRef.current) {
-        return;
-      }
-      const archiveGroups = buildArchiveGroups(allPosts);
-      setGroups(archiveGroups);
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-    const results = await searchPosts(query);
-    if (requestId !== searchRequestIdRef.current) {
-      return;
-    }
-    const archiveGroups = buildArchiveGroups(results);
-    setGroups(archiveGroups);
-    setIsSearching(false);
-  }, [allPosts]);
-
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-    
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      performSearch(query);
-    }, 300);
-  }, [performSearch]);
-
-  const handleClearSearch = useCallback(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    searchRequestIdRef.current += 1;
-    setSearchQuery('');
-    setIsSearching(false);
-    const archiveGroups = buildArchiveGroups(allPosts);
-    setGroups(archiveGroups);
-  }, [allPosts]);
+  const groups = buildArchiveGroups(results);
+  const handleClearSearch = () => {
+    clearSearch();
+  };
 
   const totalPosts = groups.reduce((sum, group) => sum + group.total, 0);
 
@@ -230,7 +177,7 @@ export const ArchivePage = () => {
               </button>
             )}
           </div>
-          {searchQuery && (
+          {hasSearchQuery && (
             <div className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
               搜索 "<span className="font-bold text-accent">{searchQuery}</span>" 找到 {totalPosts} 篇文章
             </div>
