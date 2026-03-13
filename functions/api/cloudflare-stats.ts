@@ -1,8 +1,4 @@
 // Cloudflare Pages Function for real-time analytics
-interface Env {
-  CLOUDFLARE_API_TOKEN: string;
-  CLOUDFLARE_ZONE_ID: string;
-}
 
 interface CloudflareAnalyticsData {
   requests: number;
@@ -43,46 +39,68 @@ const fetchAnalyticsForDays = async (
   days: number
 ): Promise<CloudflareTimeWindow> => {
   try {
-    // 方法 1: 尝试使用 Analytics Dashboard API
-    const sinceMinutes = days * 1440;
-    const url = `https://api.cloudflare.com/client/v4/zones/${zoneId}/analytics/dashboard?since=-${sinceMinutes}&until=0&continuous=true`;
+    // 使用 GraphQL API（支持 Account-Owned Token）
+    const now = new Date();
+    const since = new Date(now);
+    since.setDate(since.getDate() - days);
     
-    const response = await fetch(url, {
-      method: 'GET',
+    const sinceStr = since.toISOString().split('T')[0];
+    const untilStr = new Date(now.getTime() + 86400000).toISOString().split('T')[0];
+
+    const query = `
+      query {
+        viewer {
+          zones(filter: { zoneTag: "${zoneId}" }) {
+            httpRequests1dGroups(
+              limit: ${days + 1}
+              filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
+            ) {
+              sum {
+                requests
+                pageViews
+                bytes
+              }
+              uniq {
+                uniques
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify({ query })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      
-      // 如果是认证错误，尝试使用 X-Auth-Key 方式（如果用户提供的是 Global API Key）
-      if (response.status === 400 || response.status === 403) {
-        throw new Error(`Authentication failed. Please check: 1) API Token has 'Zone.Analytics:Read' permission 2) Zone ID is correct 3) Token is not expired. Error: ${errorText}`);
-      }
-      
-      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
     
-    if (!data.success) {
-      throw new Error(`API returned error: ${JSON.stringify(data.errors)}`);
+    if (data.errors) {
+      throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`);
     }
 
-    const result = data.result;
-    const totals = result?.totals || {};
+    const groups = data?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
+    
+    const totals = groups.reduce((acc: CloudflareAnalyticsData, group: any) => ({
+      requests: acc.requests + (group.sum?.requests || 0),
+      pageViews: acc.pageViews + (group.sum?.pageViews || 0),
+      bandwidth: acc.bandwidth + (group.sum?.bytes || 0),
+      uniques: acc.uniques + (group.uniq?.uniques || 0)
+    }), { requests: 0, pageViews: 0, bandwidth: 0, uniques: 0 });
 
     return {
       days,
-      data: {
-        requests: totals.requests?.all || 0,
-        pageViews: totals.pageviews?.all || 0,
-        uniques: totals.uniques?.all || 0,
-        bandwidth: totals.bandwidth?.all || 0
-      },
+      data: totals,
       topPages: [],
       topCountries: [],
       error: null
@@ -98,10 +116,9 @@ const fetchAnalyticsForDays = async (
   }
 };
 
-export const onRequest: PagesFunction<Env> = async (context) => {
+export async function onRequest(context: any) {
   const { env } = context;
   
-  // 清理 Token 和 Zone ID，移除所有空白字符
   const token = env.CLOUDFLARE_API_TOKEN?.replace(/\s+/g, '');
   const zoneId = env.CLOUDFLARE_ZONE_ID?.replace(/\s+/g, '');
 
@@ -110,25 +127,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       enabled: false,
       fetchedAt: null,
       domain: 'blog.pldduck.com',
-      timeWindows: [],
-      error: 'Missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ZONE_ID'
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=300'
-      }
-    });
-  }
-
-  // 验证 Token 格式（Cloudflare API Token 通常是 40 个字符）
-  if (token.length < 20) {
-    return new Response(JSON.stringify({
-      enabled: false,
-      fetchedAt: null,
-      domain: 'blog.pldduck.com',
-      timeWindows: [],
-      error: 'Invalid API token format'
+      timeWindows: []
     }), {
       status: 200,
       headers: {
@@ -161,4 +160,4 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       'Access-Control-Allow-Origin': '*'
     }
   });
-};
+}
