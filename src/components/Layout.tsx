@@ -31,6 +31,7 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   const [results, setResults] = useState<PostMetadata[]>([]);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchRequestIdRef = useRef(0);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -39,11 +40,24 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   }, [isOpen]);
 
   useEffect(() => {
+    if (!isOpen) {
+      searchRequestIdRef.current += 1;
+      setQuery('');
+      setResults([]);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     const fetchResults = async () => {
       if (query.trim()) {
+        const requestId = ++searchRequestIdRef.current;
         const res = await searchPosts(query);
+        if (requestId !== searchRequestIdRef.current) {
+          return;
+        }
         setResults(res);
       } else {
+        searchRequestIdRef.current += 1;
         setResults([]);
       }
     };

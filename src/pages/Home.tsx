@@ -203,6 +203,7 @@ export const Home = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchRequestIdRef = useRef(0);
 
   useEffect(() => {
     Promise.all([getPosts(), getAllCategories()]).then(([posts, cats]) => {
@@ -231,8 +232,21 @@ export const Home = () => {
     }
   }, [allPosts, selectedCategory, sortOrder, searchQuery]);
 
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const performSearch = useCallback(async (query: string) => {
+    const requestId = ++searchRequestIdRef.current;
+
     if (!query.trim()) {
+      if (requestId !== searchRequestIdRef.current) {
+        return;
+      }
       setDisplayedPosts(filterAndSortPosts(allPosts, selectedCategory, sortOrder));
       setIsSearching(false);
       setCurrentPage(1);
@@ -241,6 +255,9 @@ export const Home = () => {
 
     setIsSearching(true);
     const results = await searchPosts(query);
+    if (requestId !== searchRequestIdRef.current) {
+      return;
+    }
     const filteredResults = selectedCategory === ALL_CATEGORY 
       ? sortPosts(results, sortOrder)
       : sortPosts(results.filter(post => post.category === selectedCategory), sortOrder);
@@ -262,7 +279,12 @@ export const Home = () => {
   }, [performSearch]);
 
   const handleClearSearch = useCallback(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchRequestIdRef.current += 1;
     setSearchQuery('');
+    setIsSearching(false);
     setDisplayedPosts(filterAndSortPosts(allPosts, selectedCategory, sortOrder));
     setCurrentPage(1);
   }, [allPosts, selectedCategory, sortOrder]);

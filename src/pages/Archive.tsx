@@ -89,6 +89,7 @@ export const ArchivePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchRequestIdRef = useRef(0);
 
   useEffect(() => {
     getPosts().then((posts) => {
@@ -100,8 +101,21 @@ export const ArchivePage = () => {
     });
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const performSearch = useCallback(async (query: string) => {
+    const requestId = ++searchRequestIdRef.current;
+
     if (!query.trim()) {
+      if (requestId !== searchRequestIdRef.current) {
+        return;
+      }
       const archiveGroups = buildArchiveGroups(allPosts);
       setGroups(archiveGroups);
       setIsSearching(false);
@@ -110,6 +124,9 @@ export const ArchivePage = () => {
 
     setIsSearching(true);
     const results = await searchPosts(query);
+    if (requestId !== searchRequestIdRef.current) {
+      return;
+    }
     const archiveGroups = buildArchiveGroups(results);
     setGroups(archiveGroups);
     setIsSearching(false);
@@ -128,7 +145,12 @@ export const ArchivePage = () => {
   }, [performSearch]);
 
   const handleClearSearch = useCallback(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchRequestIdRef.current += 1;
     setSearchQuery('');
+    setIsSearching(false);
     const archiveGroups = buildArchiveGroups(allPosts);
     setGroups(archiveGroups);
   }, [allPosts]);

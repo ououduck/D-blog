@@ -20,6 +20,7 @@ export const Tags = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchRequestIdRef = useRef(0);
   const selectedTag = searchParams.get('tag');
 
   const buildTagList = useCallback((posts: PostMetadata[]) => {
@@ -52,8 +53,21 @@ export const Tags = () => {
     });
   }, [buildTagList]);
 
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const performSearch = useCallback(async (query: string) => {
+    const requestId = ++searchRequestIdRef.current;
+
     if (!query.trim()) {
+      if (requestId !== searchRequestIdRef.current) {
+        return;
+      }
       const tagList = buildTagList(allPosts);
       setTags(tagList);
       setIsSearching(false);
@@ -62,6 +76,9 @@ export const Tags = () => {
 
     setIsSearching(true);
     const results = await searchPosts(query);
+    if (requestId !== searchRequestIdRef.current) {
+      return;
+    }
     const tagList = buildTagList(results);
     setTags(tagList);
     setIsSearching(false);
@@ -80,7 +97,12 @@ export const Tags = () => {
   }, [performSearch]);
 
   const handleClearSearch = useCallback(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchRequestIdRef.current += 1;
     setSearchQuery('');
+    setIsSearching(false);
     const tagList = buildTagList(allPosts);
     setTags(tagList);
   }, [allPosts, buildTagList]);
