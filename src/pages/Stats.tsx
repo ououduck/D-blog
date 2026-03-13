@@ -2,18 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, Database, ShieldCheck, RefreshCcw, Eye, Users, MousePointer, TrendingUp, Globe, ChevronDown, ChevronUp } from 'lucide-react';
 import { Seo } from '../components/Seo';
-import { ClarityMetric, ClarityMetricRow, ClaritySnapshot } from '../types';
+import { ClarityMetric, ClarityMetricRow, ClaritySnapshot, ClarityTimeWindow } from '../types';
 import { getClaritySnapshot } from '../services/clarity';
 
 const EMPTY_SNAPSHOT: ClaritySnapshot = {
   enabled: false,
   fetchedAt: null,
-  request: {
-    numOfDays: 1,
-    dimensions: []
-  },
-  metrics: [],
-  error: null
+  timeWindows: []
 };
 
 const formatDateTime = (dateText: string | null) => {
@@ -52,7 +47,7 @@ const getMetricColumns = (metric: ClarityMetric) => {
   return Array.from(keys);
 };
 
-const extractKeyMetrics = (snapshot: ClaritySnapshot) => {
+const extractKeyMetrics = (timeWindow: ClarityTimeWindow | null) => {
   const metrics = {
     pageViews: 0,
     users: 0,
@@ -61,46 +56,73 @@ const extractKeyMetrics = (snapshot: ClaritySnapshot) => {
     topPages: [] as { page: string; views: number }[]
   };
 
-  snapshot.metrics.forEach((metric) => {
+  if (!timeWindow) return metrics;
+
+  timeWindow.metrics.forEach((metric) => {
     const name = metric.metricName.toLowerCase();
 
-    // Extract page views
-    if (name.includes('page') && name.includes('view')) {
-      metric.information.forEach((row) => {
-        const views = Number(row.PageViews || row.Views || row.Count || 0);
-        metrics.pageViews += views;
+    // Extract all numeric values from each metric
+    metric.information.forEach((row) => {
+      Object.entries(row).forEach(([key, value]) => {
+        const keyLower = key.toLowerCase();
+        const numValue = Number(value);
 
-        if (row.Page || row.URL || row.PageName) {
-          const pageName = String(row.Page || row.URL || row.PageName);
-          metrics.topPages.push({ page: pageName, views });
+        if (isNaN(numValue) || numValue === 0) return;
+
+        // Page views - look for any view-related field
+        if (keyLower.includes('pageview') || keyLower.includes('page view') ||
+            (keyLower.includes('page') && keyLower.includes('count'))) {
+          metrics.pageViews += numValue;
+        }
+
+        // Users - look for user/visitor related fields
+        if (keyLower.includes('user') || keyLower.includes('visitor')) {
+          metrics.users += numValue;
+        }
+
+        // Sessions
+        if (keyLower.includes('session')) {
+          metrics.sessions += numValue;
+        }
+
+        // Clicks
+        if (keyLower.includes('click')) {
+          metrics.clicks += numValue;
         }
       });
-    }
 
-    // Extract user counts
-    if (name.includes('user') || name.includes('visitor')) {
-      metric.information.forEach((row) => {
-        metrics.users += Number(row.Users || row.Visitors || row.UniqueUsers || 0);
-      });
-    }
+      // Extract top pages - look for URL/Page field
+      const urlField = Object.keys(row).find(k =>
+        k.toLowerCase().includes('url') ||
+        k.toLowerCase().includes('page') ||
+        k.toLowerCase() === 'dimension'
+      );
 
-    // Extract session counts
-    if (name.includes('session')) {
-      metric.information.forEach((row) => {
-        metrics.sessions += Number(row.Sessions || row.Count || 0);
+      const countField = Object.keys(row).find(k => {
+        const kl = k.toLowerCase();
+        return kl.includes('pageview') || kl.includes('count') || kl.includes('view');
       });
-    }
 
-    // Extract click counts
-    if (name.includes('click')) {
-      metric.information.forEach((row) => {
-        metrics.clicks += Number(row.Clicks || row.Count || 0);
-      });
-    }
+      if (urlField && countField && typeof row[urlField] === 'string') {
+        const views = Number(row[countField]) || 0;
+        if (views > 0) {
+          metrics.topPages.push({
+            page: String(row[urlField]),
+            views
+          });
+        }
+      }
+    });
   });
 
-  // Sort and limit top pages
-  metrics.topPages = metrics.topPages
+  // Sort and limit top pages, remove duplicates
+  const pageMap = new Map<string, number>();
+  metrics.topPages.forEach(({ page, views }) => {
+    pageMap.set(page, (pageMap.get(page) || 0) + views);
+  });
+
+  metrics.topPages = Array.from(pageMap.entries())
+    .map(([page, views]) => ({ page, views }))
     .sort((a, b) => b.views - a.views)
     .slice(0, 5);
 
@@ -183,6 +205,7 @@ const MetricTable = ({ metric }: { metric: ClarityMetric }) => {
 export const Stats = () => {
   const [snapshot, setSnapshot] = useState<ClaritySnapshot>(EMPTY_SNAPSHOT);
   const [loading, setLoading] = useState(true);
+  const [selectedDays, setSelectedDays] = useState(7);
 
   useEffect(() => {
     getClaritySnapshot().then((data) => {
@@ -191,8 +214,9 @@ export const Stats = () => {
     });
   }, []);
 
-  const totalRows = snapshot.metrics.reduce((sum, metric) => sum + metric.information.length, 0);
-  const keyMetrics = extractKeyMetrics(snapshot);
+  const currentTimeWindow = snapshot.timeWindows.find(tw => tw.numOfDays === selectedDays) || snapshot.timeWindows[0] || null;
+  const totalRows = currentTimeWindow?.metrics.reduce((sum, metric) => sum + metric.information.length, 0) || 0;
+  const keyMetrics = extractKeyMetrics(currentTimeWindow);
 
   return (
     <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }} className="pb-10 md:pb-20">
@@ -215,14 +239,30 @@ export const Stats = () => {
           </p>
         </div>
 
-        {!loading && snapshot.enabled && (
+        {!loading && snapshot.enabled && snapshot.timeWindows.length > 0 && (
           <>
+            <div className="mt-8 flex flex-wrap gap-2">
+              {snapshot.timeWindows.map((tw) => (
+                <button
+                  key={tw.numOfDays}
+                  onClick={() => setSelectedDays(tw.numOfDays)}
+                  className={`rounded-full px-4 py-2 text-sm font-bold transition-all ${
+                    selectedDays === tw.numOfDays
+                      ? 'border-2 border-accent bg-accent text-white'
+                      : 'border-2 border-white/60 bg-white/70 text-zinc-600 hover:border-accent/40 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300'
+                  }`}
+                >
+                  最近 {tw.numOfDays} 天
+                </button>
+              ))}
+            </div>
+
             <div className="mt-10 grid gap-4 md:grid-cols-4">
               <SummaryCard
                 icon={Eye}
                 title="页面浏览"
                 value={keyMetrics.pageViews > 0 ? formatValue(keyMetrics.pageViews) : '--'}
-                detail={`最近 ${snapshot.request.numOfDays} 天的浏览量`}
+                detail={`最近 ${selectedDays} 天的浏览量`}
               />
               <SummaryCard
                 icon={Users}
@@ -269,22 +309,18 @@ export const Stats = () => {
         )}
 
         {!loading && !snapshot.enabled && (
-          <div className="mt-10 grid gap-4 md:grid-cols-4">
-            <SummaryCard icon={Database} title="指标数" value={snapshot.metrics.length} detail="当前快照包含的 metric 总数" />
-            <SummaryCard icon={BarChart3} title="数据行" value={totalRows} detail="所有 metric information 行数累计" />
-            <SummaryCard icon={RefreshCcw} title="更新时间" value={formatDateTime(snapshot.fetchedAt)} detail="静态构建时拉取" />
-            <SummaryCard
-              icon={ShieldCheck}
-              title="安全状态"
-              value="未配置"
-              detail="未检测到 Clarity API Token"
-            />
+          <div className="mt-10 rounded-2xl border border-white/60 bg-white/70 p-8 text-center backdrop-blur dark:border-white/10 dark:bg-white/5">
+            <ShieldCheck size={48} className="mx-auto mb-4 text-zinc-400" />
+            <h3 className="mb-2 font-serif text-xl font-bold text-ink dark:text-white">未配置 Clarity API</h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              请在环境变量中配置 CLARITY_API_TOKEN 后重新构建
+            </p>
           </div>
         )}
       </section>
 
       <section className="mt-10 space-y-8 md:mt-14">
-        {!loading && snapshot.enabled && (
+        {!loading && snapshot.enabled && currentTimeWindow && (
           <div className="rounded-[1.75rem] border border-zinc-200 bg-white/80 p-6 shadow-xl shadow-zinc-200/20 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/50 dark:shadow-none md:p-8">
             <div className="mb-4 flex items-center gap-2">
               <Database size={18} className="text-accent" />
@@ -293,7 +329,7 @@ export const Stats = () => {
             <div className="grid gap-4 md:grid-cols-3">
               <div>
                 <div className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-400">统计窗口</div>
-                <div className="mt-2 text-lg font-bold text-ink dark:text-white">{`${snapshot.request.numOfDays} 天`}</div>
+                <div className="mt-2 text-lg font-bold text-ink dark:text-white">{selectedDays} 天</div>
               </div>
               <div>
                 <div className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-400">更新时间</div>
@@ -301,26 +337,13 @@ export const Stats = () => {
               </div>
               <div>
                 <div className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-400">原始指标</div>
-                <div className="mt-2 text-lg font-bold text-ink dark:text-white">{snapshot.metrics.length} 个</div>
+                <div className="mt-2 text-lg font-bold text-ink dark:text-white">{currentTimeWindow.metrics.length} 个</div>
               </div>
             </div>
 
-            {snapshot.request.dimensions.length > 0 && (
-              <div className="mt-4">
-                <div className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-400">维度</div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {snapshot.request.dimensions.map((dimension) => (
-                    <span key={dimension} className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
-                      {dimension}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {snapshot.error && (
+            {currentTimeWindow.error && (
               <div className="mt-6 rounded-2xl border border-amber-300/40 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-300">
-                {snapshot.error}
+                {currentTimeWindow.error}
               </div>
             )}
           </div>
@@ -330,7 +353,7 @@ export const Stats = () => {
           Array.from({ length: 3 }).map((_, index) => (
             <div key={index} className="h-60 animate-pulse rounded-[1.75rem] bg-zinc-100 dark:bg-zinc-900" />
           ))
-        ) : snapshot.metrics.length > 0 ? (
+        ) : currentTimeWindow && currentTimeWindow.metrics.length > 0 ? (
           <>
             <div className="rounded-[1.75rem] border border-zinc-200 bg-white/80 p-6 shadow-xl shadow-zinc-200/20 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/50 dark:shadow-none md:p-8">
               <div className="mb-2 flex items-center gap-2">
@@ -341,7 +364,7 @@ export const Stats = () => {
                 点击展开查看各项指标的详细数据表格
               </p>
             </div>
-            {snapshot.metrics.map((metric, index) => (
+            {currentTimeWindow.metrics.map((metric, index) => (
               <motion.div key={metric.metricName} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: index * 0.05 }}>
                 <MetricTable metric={metric} />
               </motion.div>

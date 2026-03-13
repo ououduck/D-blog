@@ -37,13 +37,15 @@ export interface ClarityMetric {
   information: ClarityMetricRow[];
 }
 
+export interface ClarityTimeWindow {
+  numOfDays: number;
+  dimension: string;
+  metrics: ClarityMetric[];
+  error: string | null;
+}
+
 export interface ClaritySnapshot {
   enabled: boolean;
   fetchedAt: string | null;
-  request: {
-    numOfDays: number;
-    dimensions: string[];
-  };
-  metrics: ClarityMetric[];
-  error: string | null;
+  timeWindows: ClarityTimeWindow[];
 }

@@ -22,20 +22,6 @@ const CLARITY_FILE = path.join(OUTPUT_JSON_DIR, 'clarity.json');
 if (!fs.existsSync(OUTPUT_JSON_DIR)) fs.mkdirSync(OUTPUT_JSON_DIR, { recursive: true });
 if (!fs.existsSync(PUBLIC_DIR)) fs.mkdirSync(PUBLIC_DIR, { recursive: true });
 
-const clarityDays = (() => {
-  const raw = Number.parseInt(process.env.CLARITY_EXPORT_DAYS || '1', 10);
-  if ([1, 2, 3].includes(raw)) {
-    return raw;
-  }
-  return 1;
-})();
-
-const clarityDimensions = [
-  process.env.CLARITY_DIMENSION_1?.trim(),
-  process.env.CLARITY_DIMENSION_2?.trim(),
-  process.env.CLARITY_DIMENSION_3?.trim()
-].filter(Boolean);
-
 const writeClaritySnapshot = (snapshot) => {
   fs.writeFileSync(CLARITY_FILE, JSON.stringify(snapshot, null, 2));
 };
@@ -101,65 +87,75 @@ fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'friends.json'), JSON.stringify(frie
 console.log(`✅ JSON Generated: ${friends.length} friends`);
 
 const generateClaritySnapshot = async () => {
-  const snapshot = {
-    enabled: false,
-    fetchedAt: null,
-    request: {
-      numOfDays: clarityDays,
-      dimensions: clarityDimensions
-    },
-    metrics: [],
-    error: null
-  };
-
   const token = process.env.CLARITY_API_TOKEN?.trim();
+
   if (!token) {
-    writeClaritySnapshot(snapshot);
+    const emptySnapshot = {
+      enabled: false,
+      fetchedAt: null,
+      timeWindows: []
+    };
+    writeClaritySnapshot(emptySnapshot);
     console.log('ℹ️ Clarity Export skipped: missing CLARITY_API_TOKEN');
     return;
   }
 
-  const params = new URLSearchParams({
-    numOfDays: String(clarityDays)
-  });
+  const snapshot = {
+    enabled: true,
+    fetchedAt: new Date().toISOString(),
+    timeWindows: []
+  };
 
-  clarityDimensions.forEach((dimension, index) => {
-    params.set(`dimension${index + 1}`, dimension);
-  });
+  // Fetch data for multiple time windows
+  const timeWindows = [1, 7, 30];
+  const dimension = 'URL'; // Fixed dimension for simplicity
 
-  try {
-    const response = await fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?${params.toString()}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+  for (const days of timeWindows) {
+    const params = new URLSearchParams({
+      numOfDays: String(days),
+      dimension1: dimension
     });
 
-    snapshot.enabled = true;
-    snapshot.fetchedAt = new Date().toISOString();
+    try {
+      const response = await fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
-    if (!response.ok) {
-      snapshot.error = `Clarity Export API request failed with status ${response.status}`;
-      writeClaritySnapshot(snapshot);
-      console.warn(`⚠️ ${snapshot.error}`);
-      return;
+      if (!response.ok) {
+        console.warn(`⚠️ Clarity API request failed for ${days} days with status ${response.status}`);
+        snapshot.timeWindows.push({
+          numOfDays: days,
+          dimension,
+          metrics: [],
+          error: `API request failed with status ${response.status}`
+        });
+        continue;
+      }
+
+      const payload = await response.json();
+      snapshot.timeWindows.push({
+        numOfDays: days,
+        dimension,
+        metrics: Array.isArray(payload) ? payload : [],
+        error: Array.isArray(payload) ? null : 'Unexpected API response format'
+      });
+
+      console.log(`✅ Clarity data fetched for ${days} days: ${Array.isArray(payload) ? payload.length : 0} metrics`);
+    } catch (error) {
+      console.warn(`⚠️ Clarity Export failed for ${days} days: ${error.message}`);
+      snapshot.timeWindows.push({
+        numOfDays: days,
+        dimension,
+        metrics: [],
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
-
-    const payload = await response.json();
-    snapshot.metrics = Array.isArray(payload) ? payload : [];
-
-    if (!Array.isArray(payload)) {
-      snapshot.error = 'Clarity Export API returned an unexpected payload.';
-    }
-
-    writeClaritySnapshot(snapshot);
-    console.log(`✅ Clarity Snapshot Generated: ${snapshot.metrics.length} metrics`);
-  } catch (error) {
-    snapshot.enabled = true;
-    snapshot.fetchedAt = new Date().toISOString();
-    snapshot.error = error instanceof Error ? error.message : 'Unknown Clarity Export API error.';
-    writeClaritySnapshot(snapshot);
-    console.warn(`⚠️ Clarity Export failed: ${snapshot.error}`);
   }
+
+  writeClaritySnapshot(snapshot);
+  console.log(`✅ Clarity Snapshot Generated with ${snapshot.timeWindows.length} time windows`);
 };
 
 const generateSitemap = () => {
