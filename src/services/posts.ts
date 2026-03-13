@@ -52,21 +52,60 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
   }
 };
 
+interface SearchResult extends PostMetadata {
+  score: number;
+  matchedFields: string[];
+}
+
 export const searchPosts = async (query: string): Promise<PostMetadata[]> => {
   if (!query) {
     return [];
   }
 
-  const lowerQuery = query.toLowerCase();
+  const lowerQuery = query.toLowerCase().trim();
   const allPosts = await loadPostsData();
+  const results: SearchResult[] = [];
 
-  return allPosts.filter(
-    (post) =>
-      post.title.toLowerCase().includes(lowerQuery) ||
-      post.tags.some((tag) => tag.toLowerCase().includes(lowerQuery)) ||
-      post.category.toLowerCase().includes(lowerQuery) ||
-      post.excerpt.toLowerCase().includes(lowerQuery)
-  );
+  allPosts.forEach((post) => {
+    let score = 0;
+    const matchedFields: string[] = [];
+
+    const titleMatch = post.title.toLowerCase().includes(lowerQuery);
+    if (titleMatch) {
+      score += 10;
+      matchedFields.push('title');
+    }
+
+    const categoryMatch = post.category.toLowerCase().includes(lowerQuery);
+    if (categoryMatch) {
+      score += 5;
+      matchedFields.push('category');
+    }
+
+    const tagMatches = post.tags.filter(tag => tag.toLowerCase().includes(lowerQuery));
+    if (tagMatches.length > 0) {
+      score += tagMatches.length * 3;
+      matchedFields.push('tags');
+    }
+
+    const excerptMatch = post.excerpt.toLowerCase().includes(lowerQuery);
+    if (excerptMatch) {
+      score += 2;
+      matchedFields.push('excerpt');
+    }
+
+    if (score > 0) {
+      results.push({
+        ...post,
+        score,
+        matchedFields
+      });
+    }
+  });
+
+  return results
+    .sort((a, b) => b.score - a.score)
+    .map(({ score, matchedFields, ...post }) => post);
 };
 
 export const getAllCategories = async (): Promise<string[]> => {

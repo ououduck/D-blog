@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, Rss, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
+import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, Rss, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react';
 import { getPosts, searchPosts, getAllCategories } from '@/services/posts';
 import { Post } from '../types';
 import { siteConfig } from '@config/site.config';
@@ -156,7 +156,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
   );
 };
 
-const Hero = ({ onSearch }: { onSearch: (val: string) => void }) => {
+const Hero = ({ onSearch, searchQuery, onClearSearch }: { onSearch: (val: string) => void; searchQuery: string; onClearSearch: () => void }) => {
   return (
     <div className="py-20 md:py-32 flex flex-col items-center text-center relative z-10 px-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8 relative">
@@ -168,7 +168,21 @@ const Hero = ({ onSearch }: { onSearch: (val: string) => void }) => {
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="w-full flex flex-col items-center gap-6">
          <div className="relative w-full max-w-sm md:max-w-md group">
            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><Search className="text-zinc-400 group-focus-within:text-accent transition-colors" size={20} /></div>
-           <input type="text" placeholder="搜索文章..." onChange={(e) => onSearch(e.target.value)} className="w-full pl-12 pr-6 py-4 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:border-accent dark:focus:border-accent outline-none shadow-xl shadow-zinc-200/20 dark:shadow-none transition-all duration-300 text-ink dark:text-white placeholder:text-zinc-400 text-base focus:ring-4 ring-accent/10" />
+           <input 
+             type="text" 
+             placeholder="搜索文章..." 
+             value={searchQuery}
+             onChange={(e) => onSearch(e.target.value)} 
+             className="w-full pl-12 pr-12 py-4 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:border-accent dark:focus:border-accent outline-none shadow-xl shadow-zinc-200/20 dark:shadow-none transition-all duration-300 text-ink dark:text-white placeholder:text-zinc-400 text-base focus:ring-4 ring-accent/10" 
+           />
+           {searchQuery && (
+             <button 
+               onClick={onClearSearch}
+               className="absolute inset-y-0 right-0 pr-5 flex items-center text-zinc-400 hover:text-accent transition-colors"
+             >
+               <X size={18} />
+             </button>
+           )}
          </div>
          <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900/50 hover:bg-orange-100 dark:hover:bg-orange-900/50 hover:scale-105 transition-all duration-300 text-xs font-bold tracking-wider uppercase shadow-sm"><Rss size={14} /><span>订阅 RSS</span></a>
       </motion.div>
@@ -186,6 +200,9 @@ export const Home = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [postsPerPage, setPostsPerPage] = useState(9);
   const [sharePost, setSharePost] = useState<Post | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     Promise.all([getPosts(), getAllCategories()]).then(([posts, cats]) => {
@@ -208,21 +225,45 @@ export const Home = () => {
       return;
     }
 
-    setDisplayedPosts(filterAndSortPosts(allPosts, selectedCategory, sortOrder));
-    setCurrentPage(1);
-  }, [allPosts, selectedCategory, sortOrder]);
-
-  const handleSearch = async (query: string) => {
-    if (!query) {
+    if (!searchQuery) {
       setDisplayedPosts(filterAndSortPosts(allPosts, selectedCategory, sortOrder));
+      setCurrentPage(1);
+    }
+  }, [allPosts, selectedCategory, sortOrder, searchQuery]);
+
+  const performSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setDisplayedPosts(filterAndSortPosts(allPosts, selectedCategory, sortOrder));
+      setIsSearching(false);
       setCurrentPage(1);
       return;
     }
 
+    setIsSearching(true);
     const results = await searchPosts(query);
-    setDisplayedPosts(results);
+    const filteredResults = filterAndSortPosts(results, selectedCategory, sortOrder);
+    setDisplayedPosts(filteredResults);
+    setIsSearching(false);
     setCurrentPage(1);
-  };
+  }, [allPosts, selectedCategory, sortOrder]);
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(query);
+    }, 300);
+  }, [performSearch]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    setDisplayedPosts(filterAndSortPosts(allPosts, selectedCategory, sortOrder));
+    setCurrentPage(1);
+  }, [allPosts, selectedCategory, sortOrder]);
 
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
@@ -237,26 +278,52 @@ export const Home = () => {
   return (
     <motion.div initial="initial" animate="animate" exit="exit" className="pb-10 md:pb-20">
       <Seo title="首页" />
-      <Hero onSearch={handleSearch} />
+      <Hero onSearch={handleSearch} searchQuery={searchQuery} onClearSearch={handleClearSearch} />
       
       {!loading && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          {searchQuery && (
+            <div className="mb-6 px-2">
+              <div className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+                <Search size={16} className="text-accent" />
+                <span>搜索 "<span className="font-bold text-accent">{searchQuery}</span>" 找到 {displayedPosts.length} 篇文章</span>
+                <button 
+                  onClick={handleClearSearch}
+                  className="ml-auto text-xs px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 hover:border-accent hover:text-accent transition-colors"
+                >
+                  清除搜索
+                </button>
+              </div>
+            </div>
+          )}
           <FilterBar categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} sortOrder={sortOrder} onToggleSort={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')} />
         </motion.div>
       )}
 
       <div id="posts-grid" className="scroll-mt-32">
-        {loading ? (
+        {loading || isSearching ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3].map(i => <div key={i} className="h-80 bg-zinc-100 dark:bg-zinc-800 rounded-3xl animate-pulse"></div>)}
           </div>
         ) : (
           <div className="space-y-16">
-            <motion.div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8" variants={{ animate: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible" key={`${selectedCategory}-${sortOrder}-${currentPage}`}>
+            <motion.div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8" variants={{ animate: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible" key={`${selectedCategory}-${sortOrder}-${currentPage}-${searchQuery}`}>
               {currentPosts.length > 0 ? (
                   currentPosts.map((post, index) => <PostCard key={post.id} post={post} index={index} featured={!!post.featured} onShare={setSharePost} />)
               ) : (
-                  <div className="col-span-full text-center py-32"><p className="text-xl text-zinc-400 font-serif">暂无相关文章</p></div>
+                  <div className="col-span-full text-center py-32">
+                    <p className="text-xl text-zinc-400 font-serif mb-2">
+                      {searchQuery ? '未找到匹配的文章' : '暂无相关文章'}
+                    </p>
+                    {searchQuery && (
+                      <button 
+                        onClick={handleClearSearch}
+                        className="mt-4 text-sm text-accent hover:underline"
+                      >
+                        清除搜索条件
+                      </button>
+                    )}
+                  </div>
               )}
             </motion.div>
 

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Archive, Calendar, FolderTree, ArrowUpRight } from 'lucide-react';
-import { getPosts } from '@/services/posts';
+import { Archive, Calendar, FolderTree, ArrowUpRight, Search, X } from 'lucide-react';
+import { getPosts, searchPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
 
@@ -82,18 +82,56 @@ const buildArchiveGroups = (posts: PostMetadata[]) => {
 };
 
 export const ArchivePage = () => {
+  const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
   const [groups, setGroups] = useState<ArchiveGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [latestDate, setLatestDate] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     getPosts().then((posts) => {
+      setAllPosts(posts);
       const archiveGroups = buildArchiveGroups(posts);
       setGroups(archiveGroups);
       setLatestDate(posts[0]?.date || '');
       setLoading(false);
     });
   }, []);
+
+  const performSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      const archiveGroups = buildArchiveGroups(allPosts);
+      setGroups(archiveGroups);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const results = await searchPosts(query);
+    const archiveGroups = buildArchiveGroups(results);
+    setGroups(archiveGroups);
+    setIsSearching(false);
+  }, [allPosts]);
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(query);
+    }, 300);
+  }, [performSearch]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    const archiveGroups = buildArchiveGroups(allPosts);
+    setGroups(archiveGroups);
+  }, [allPosts]);
 
   const totalPosts = groups.reduce((sum, group) => sum + group.total, 0);
 
@@ -149,7 +187,35 @@ export const ArchivePage = () => {
       </section>
 
       <section className="mt-10 md:mt-14">
-        {loading ? (
+        <div className="mb-8">
+          <div className="relative max-w-md group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="text-zinc-400 group-focus-within:text-accent transition-colors" size={18} />
+            </div>
+            <input 
+              type="text" 
+              placeholder="搜索归档文章..." 
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)} 
+              className="w-full pl-11 pr-11 py-3 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:border-accent dark:focus:border-accent outline-none transition-all duration-300 text-ink dark:text-white placeholder:text-zinc-400 text-sm focus:ring-4 ring-accent/10" 
+            />
+            {searchQuery && (
+              <button 
+                onClick={handleClearSearch}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-zinc-400 hover:text-accent transition-colors"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <div className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+              搜索 "<span className="font-bold text-accent">{searchQuery}</span>" 找到 {totalPosts} 篇文章
+            </div>
+          )}
+        </div>
+
+        {loading || isSearching ? (
           <div className="space-y-6">
             {Array.from({ length: 3 }).map((_, index) => (
               <div key={index} className="h-32 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-900" />
