@@ -207,6 +207,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const navItems = [
     { path: '/', label: TEXT.navPosts },
     { path: '/archive', label: TEXT.navArchive },
+    { path: '/tags', label: '标签' },
     { path: '/stats', label: TEXT.navStats },
     { path: '/friends', label: TEXT.navFriends },
     { path: '/about', label: TEXT.navAbout }

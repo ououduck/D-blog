@@ -3,12 +3,28 @@ import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
+import rehypeKatex from 'rehype-katex';
 import { motion } from 'framer-motion';
+import mermaid from 'mermaid';
 
-// 动态加载代码高亮样式，避免阻塞首页渲染
 if (typeof window !== 'undefined') {
   import('highlight.js/styles/github-dark.css');
+  import('katex/dist/katex.min.css');
+  
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#f97316',
+      primaryTextColor: '#fff',
+      primaryBorderColor: '#ea580c',
+      lineColor: '#71717a',
+      secondaryColor: '#27272a',
+      tertiaryColor: '#18181b',
+    },
+  });
 }
 import { ArrowLeft, Clock, Calendar, Shield, Share2, Copy, Check } from 'lucide-react';
 import { getPostById } from '@/services/posts';
@@ -17,6 +33,7 @@ import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ImageViewer } from '../components/ImageViewer';
 import { ShareModal } from '../components/ShareModal';
+import { TableOfContents } from '../components/TableOfContents';
 
 type BlockCodeProps = {
   isBlock?: boolean;
@@ -81,6 +98,29 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
   );
 };
 
+const MermaidBlock = ({ children }: { children: string }) => {
+  const [svg, setSvg] = useState<string>('');
+  const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+
+  useEffect(() => {
+    const renderDiagram = async () => {
+      try {
+        const { svg } = await mermaid.render(id, children);
+        setSvg(svg);
+      } catch (error) {
+        console.error('Mermaid render error:', error);
+      }
+    };
+    renderDiagram();
+  }, [children, id]);
+
+  return (
+    <div className="my-8 flex justify-center overflow-x-auto rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900/50">
+      <div dangerouslySetInnerHTML={{ __html: svg }} />
+    </div>
+  );
+};
+
 const markdownComponents: Components = {
   img: ({ ...props }) => (
     <img
@@ -93,6 +133,10 @@ const markdownComponents: Components = {
   code: ({ className, children, ...props }) => {
     const { isBlock, ...restProps } = props as React.HTMLAttributes<HTMLElement> & BlockCodeProps;
     const isBlockCode = Boolean(isBlock) || /language-(\w+)/.test(className || '');
+
+    if (className?.includes('language-mermaid')) {
+      return <MermaidBlock>{String(children)}</MermaidBlock>;
+    }
 
     if (isBlockCode) {
       return (
@@ -110,6 +154,18 @@ const markdownComponents: Components = {
         {children}
       </code>
     );
+  },
+  h1: ({ children, ...props }) => {
+    const id = String(children).toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-').replace(/^-+|-+$/g, '');
+    return <h1 id={id} {...props}>{children}</h1>;
+  },
+  h2: ({ children, ...props }) => {
+    const id = String(children).toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-').replace(/^-+|-+$/g, '');
+    return <h2 id={id} {...props}>{children}</h2>;
+  },
+  h3: ({ children, ...props }) => {
+    const id = String(children).toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-').replace(/^-+|-+$/g, '');
+    return <h3 id={id} {...props}>{children}</h3>;
   }
 };
 
@@ -228,34 +284,35 @@ export const Post = () => {
           </motion.div>
         )}
 
-        <div className="max-w-3xl mx-auto px-4 pb-20 md:pb-32">
-          <div className="prose prose-base md:prose-lg prose-stone dark:prose-invert max-w-none
-            prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white
-            prose-p:font-sans prose-p:text-base md:prose-p:text-lg prose-p:leading-relaxed
-            prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-a:break-words
-            prose-strong:text-ink dark:prose-strong:text-white prose-strong:font-bold
-            prose-img:rounded-xl md:prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-6 md:prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01] prose-img:w-full prose-img:h-auto prose-img:max-w-full
-            prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 dark:prose-blockquote:bg-zinc-900 prose-blockquote:py-3 prose-blockquote:px-4 md:prose-blockquote:py-6 md:prose-blockquote:px-8 prose-blockquote:rounded-r-xl md:prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-base md:prose-blockquote:text-xl
-            prose-code:font-mono prose-code:text-xs md:prose-code:text-sm
-            prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:rounded-xl md:prose-pre:rounded-2xl prose-pre:shadow-xl prose-pre:overflow-hidden prose-pre:border prose-pre:border-zinc-800">
-            <ReactMarkdown
-               remarkPlugins={[remarkGfm]}
-               rehypePlugins={[rehypeHighlight]}
-               components={{
-                 ...markdownComponents,
-                 img: ({ ...props }) => (
-                   <img
-                     {...props}
-                     loading="lazy"
-                     onClick={() => setPreviewImage({ src: props.src || '', alt: props.alt })}
-                     className="cursor-zoom-in rounded-2xl shadow-lg my-12"
-                   />
-                 )
-               }}
-            >
-              {post.content}
-            </ReactMarkdown>
-          </div>
+        <div className="flex gap-8">
+          <div className="max-w-3xl flex-1 px-4 pb-20 md:pb-32">
+            <div className="prose prose-base md:prose-lg prose-stone dark:prose-invert max-w-none
+              prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white prose-headings:scroll-mt-24
+              prose-p:font-sans prose-p:text-base md:prose-p:text-lg prose-p:leading-relaxed
+              prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-a:break-words
+              prose-strong:text-ink dark:prose-strong:text-white prose-strong:font-bold
+              prose-img:rounded-xl md:prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-6 md:prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01] prose-img:w-full prose-img:h-auto prose-img:max-w-full
+              prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 dark:prose-blockquote:bg-zinc-900 prose-blockquote:py-3 prose-blockquote:px-4 md:prose-blockquote:py-6 md:prose-blockquote:px-8 prose-blockquote:rounded-r-xl md:prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-base md:prose-blockquote:text-xl
+              prose-code:font-mono prose-code:text-xs md:prose-code:text-sm
+              prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:rounded-xl md:prose-pre:rounded-2xl prose-pre:shadow-xl prose-pre:overflow-hidden prose-pre:border prose-pre:border-zinc-800">
+              <ReactMarkdown
+                 remarkPlugins={[remarkGfm, remarkMath]}
+                 rehypePlugins={[rehypeHighlight, rehypeKatex]}
+                 components={{
+                   ...markdownComponents,
+                   img: ({ ...props }) => (
+                     <img
+                       {...props}
+                       loading="lazy"
+                       onClick={() => setPreviewImage({ src: props.src || '', alt: props.alt })}
+                       className="cursor-zoom-in rounded-2xl shadow-lg my-12"
+                     />
+                   )
+                 }}
+              >
+                {post.content}
+              </ReactMarkdown>
+            </div>
           
           <div className="mt-16 md:mt-20 p-6 md:p-8 rounded-xl md:rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm relative overflow-hidden group">
             <div className="absolute -top-6 -right-6 text-zinc-200 dark:text-zinc-800 transform rotate-12 group-hover:rotate-0 transition-transform duration-500 opacity-50"><Shield size={120} strokeWidth={0.5} /></div>
@@ -283,6 +340,11 @@ export const Post = () => {
                </div>
           </div>
         </div>
+
+        <div className="hidden lg:block flex-shrink-0">
+          <TableOfContents content={post.content} />
+        </div>
+      </div>
       </motion.article>
 
       <ShareModal 

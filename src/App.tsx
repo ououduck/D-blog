@@ -12,6 +12,7 @@ const About = React.lazy(() => import('./pages/About').then(module => ({ default
 const ArchivePage = React.lazy(() => import('./pages/Archive').then(module => ({ default: module.ArchivePage })));
 const Stats = React.lazy(() => import('./pages/Stats').then(module => ({ default: module.Stats })));
 const Friends = React.lazy(() => import('./pages/Friends').then(module => ({ default: module.Friends })));
+const Tags = React.lazy(() => import('./pages/Tags').then(module => ({ default: module.Tags })));
 
 const LoadingScreen = () => {
   const letterVariants = {
@@ -63,6 +64,7 @@ const AnimatedRoutes = () => {
           <Route path="/" element={<Home />} />
           <Route path="/post/:id" element={<Post />} />
           <Route path="/archive" element={<ArchivePage />} />
+          <Route path="/tags" element={<Tags />} />
           <Route path="/stats" element={<Stats />} />
           <Route path="/friends" element={<Friends />} />
           <Route path="/about" element={<About />} />
