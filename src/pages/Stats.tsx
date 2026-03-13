@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Database, ShieldCheck, Eye, Users, TrendingUp, HardDrive, RefreshCw } from 'lucide-react';
+import { BarChart3, Database, ShieldCheck, Eye, Users, TrendingUp, HardDrive, RefreshCw, Loader2 } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { CloudflareSnapshot } from '../types';
 import { getCloudflareSnapshot } from '../services/cloudflare';
@@ -129,6 +129,13 @@ export const Stats = () => {
           </p>
         </div>
 
+        {loading && (
+          <div className="mt-10 flex flex-col items-center justify-center py-16">
+            <Loader2 size={48} className="animate-spin text-accent" />
+            <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">加载统计数据中...</p>
+          </div>
+        )}
+
         {!loading && snapshot.enabled && snapshot.timeWindows.length > 0 && (
           <>
             <div className="mt-8 flex flex-wrap gap-2">
@@ -176,8 +183,6 @@ export const Stats = () => {
                   />
                 </div>
 
-
-
                 {currentTimeWindow.error && (
                   <div className="mt-6 rounded-2xl border border-amber-300/40 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-300">
                     {currentTimeWindow.error}
@@ -200,6 +205,13 @@ export const Stats = () => {
       </section>
 
       <section className="mt-10 space-y-8 md:mt-14">
+        {loading && (
+          <div className="flex flex-col items-center justify-center rounded-[1.75rem] border border-zinc-200 bg-white/80 py-20 shadow-xl shadow-zinc-200/20 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/50 dark:shadow-none">
+            <Loader2 size={48} className="animate-spin text-accent" />
+            <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">加载数据源信息中...</p>
+          </div>
+        )}
+
         {!loading && snapshot.enabled && currentTimeWindow && (
           <div className="rounded-[1.75rem] border border-zinc-200 bg-white/80 p-6 shadow-xl shadow-zinc-200/20 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/50 dark:shadow-none md:p-8">
             <div className="mb-4 flex items-center gap-2">
@@ -223,10 +235,6 @@ export const Stats = () => {
               </div>
             </div>
           </div>
-        )}
-
-        {loading && (
-          <div className="h-60 animate-pulse rounded-[1.75rem] bg-zinc-100 dark:bg-zinc-900" />
         )}
 
         {!loading && !snapshot.enabled && (

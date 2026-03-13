@@ -8,14 +8,6 @@
     <atom:link href="https://blog.pldduck.com/feed.xml" rel="self" type="application/rss+xml" />
     
     <item>
-      <title><![CDATA[Markdown 增强功能演示]]></title>
-      <link>https://blog.pldduck.com/post/markdown-enhanced-demo</link>
-      <guid isPermaLink="true">https://blog.pldduck.com/post/markdown-enhanced-demo</guid>
-      <description><![CDATA[展示博客的数学公式和 Mermaid 图表支持]]></description>
-      <pubDate>Fri, 13 Mar 2026 00:00:00 GMT</pubDate>
-      <category>技术</category>
-    </item>
-    <item>
       <title><![CDATA[CentOS 宝塔面板无法安装 Swoole5 解决教程]]></title>
       <link>https://blog.pldduck.com/post/centos-bt-install-swoole5</link>
       <guid isPermaLink="true">https://blog.pldduck.com/post/centos-bt-install-swoole5</guid>
