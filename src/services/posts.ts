@@ -19,6 +19,8 @@ const stripFrontmatter = (rawContent: string) => {
   return normalized.replace(/^---[\s\S]*?---[\r\n]*/, '');
 };
 
+const normalizeSearchText = (value: string) => value.toLowerCase().trim().replace(/\s+/g, ' ');
+
 export const getPosts = async (): Promise<PostMetadata[]> => {
   return loadPostsData();
 };
@@ -58,11 +60,12 @@ interface SearchResult extends PostMetadata {
 }
 
 export const searchPosts = async (query: string): Promise<PostMetadata[]> => {
-  if (!query) {
+  const lowerQuery = normalizeSearchText(query);
+
+  if (!lowerQuery) {
     return [];
   }
 
-  const lowerQuery = query.toLowerCase().trim();
   const allPosts = await loadPostsData();
   const results: SearchResult[] = [];
 
@@ -70,28 +73,34 @@ export const searchPosts = async (query: string): Promise<PostMetadata[]> => {
     let score = 0;
     const matchedFields: string[] = [];
 
-    const titleMatch = post.title.toLowerCase().includes(lowerQuery);
+    const titleMatch = normalizeSearchText(post.title).includes(lowerQuery);
     if (titleMatch) {
       score += 10;
       matchedFields.push('title');
     }
 
-    const categoryMatch = post.category.toLowerCase().includes(lowerQuery);
+    const categoryMatch = normalizeSearchText(post.category).includes(lowerQuery);
     if (categoryMatch) {
       score += 5;
       matchedFields.push('category');
     }
 
-    const tagMatches = post.tags.filter(tag => tag.toLowerCase().includes(lowerQuery));
+    const tagMatches = post.tags.filter((tag) => normalizeSearchText(tag).includes(lowerQuery));
     if (tagMatches.length > 0) {
       score += tagMatches.length * 3;
       matchedFields.push('tags');
     }
 
-    const excerptMatch = post.excerpt.toLowerCase().includes(lowerQuery);
+    const excerptMatch = normalizeSearchText(post.excerpt).includes(lowerQuery);
     if (excerptMatch) {
       score += 2;
       matchedFields.push('excerpt');
+    }
+
+    const contentMatch = normalizeSearchText(post.searchText ?? '').includes(lowerQuery);
+    if (contentMatch) {
+      score += 1;
+      matchedFields.push('content');
     }
 
     if (score > 0) {

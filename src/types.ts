@@ -6,6 +6,7 @@ export interface PostMetadata {
   tags: string[];
   category: string;
   filePath: string;
+  searchText?: string;
   coverImage?: string;
   readTime: string;
   featured?: boolean;

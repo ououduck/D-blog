@@ -25,6 +25,17 @@ if (!fs.existsSync(PUBLIC_DIR)) {
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
 }
 
+const markdownToSearchText = (markdown) =>
+  markdown
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`[^`]*`/g, ' ')
+    .replace(/!\[[^\]]*]\([^)]+\)/g, ' ')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[#>*_~|-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 const writeCloudflareSnapshot = (snapshot) => {
   fs.writeFileSync(CLOUDFLARE_FILE, JSON.stringify(snapshot, null, 2));
 };
@@ -34,7 +45,7 @@ const posts = files
   .map((filename) => {
     const filePath = path.join(POSTS_DIR, filename);
     const fileContent = fs.readFileSync(filePath, 'utf-8');
-    const { data } = matter(fileContent);
+    const { data, content } = matter(fileContent);
 
     const id = data.id || filename.replace(/\.md$/, '');
 
@@ -50,7 +61,8 @@ const posts = files
       ...data,
       date: formattedDate,
       id,
-      filePath: `/posts/${filename}`
+      filePath: `/posts/${filename}`,
+      searchText: markdownToSearchText(content)
     };
   })
   .sort((a, b) => new Date(b.date) - new Date(a.date));
