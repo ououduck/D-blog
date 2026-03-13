@@ -42,10 +42,13 @@ const fetchAnalyticsForDays = async (
   zoneId: string,
   days: number
 ): Promise<CloudflareTimeWindow> => {
-  const since = new Date();
+  const now = new Date();
+  const since = new Date(now);
   since.setDate(since.getDate() - days);
+  
+  // 确保日期格式为 YYYY-MM-DD
   const sinceStr = since.toISOString().split('T')[0];
-  const untilStr = new Date().toISOString().split('T')[0];
+  const untilStr = now.toISOString().split('T')[0];
 
   try {
     // Fetch analytics totals
@@ -54,8 +57,8 @@ const fetchAnalyticsForDays = async (
         viewer {
           zones(filter: { zoneTag: "${zoneId}" }) {
             httpRequests1dGroups(
-              limit: 1
-              filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
+              limit: ${days + 1}
+              filter: { date_geq: "${sinceStr}", date_leq: "${untilStr}" }
             ) {
               sum {
                 requests
@@ -101,7 +104,7 @@ const fetchAnalyticsForDays = async (
           zones(filter: { zoneTag: "${zoneId}" }) {
             httpRequests1dGroups(
               limit: 10000
-              filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
+              filter: { date_geq: "${sinceStr}", date_leq: "${untilStr}" }
               orderBy: [sum_requests_DESC]
             ) {
               dimensions {
@@ -151,7 +154,7 @@ const fetchAnalyticsForDays = async (
           zones(filter: { zoneTag: "${zoneId}" }) {
             httpRequests1dGroups(
               limit: 10000
-              filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
+              filter: { date_geq: "${sinceStr}", date_leq: "${untilStr}" }
               orderBy: [sum_requests_DESC]
             ) {
               dimensions {

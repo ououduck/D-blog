@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>D-blog</title>
+    <link>https://blog.pldduck.com</link>
+    <description>跑路的duck的技术分享和生活随笔</description>
+    <language>zh-CN</language>
+    <atom:link href="https://blog.pldduck.com/feed.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title><![CDATA[CentOS 宝塔面板无法安装 Swoole5 解决教程]]></title>
+      <link>https://blog.pldduck.com/post/centos-bt-install-swoole5</link>
+      <guid isPermaLink="true">https://blog.pldduck.com/post/centos-bt-install-swoole5</guid>
+      <description><![CDATA[教你解决CentOS 宝塔面板无法安装 Swoole5 的问题]]></description>
+      <pubDate>Tue, 24 Feb 2026 00:00:00 GMT</pubDate>
+      <category>技术</category>
+    </item>
+    <item>
+      <title><![CDATA[D-pxxdns-index]]></title>
+      <link>https://blog.pldduck.com/post/D-pxxdns-index</link>
+      <guid isPermaLink="true">https://blog.pldduck.com/post/D-pxxdns-index</guid>
+      <description><![CDATA[为PXXDNS定制的企业级首页模板]]></description>
+      <pubDate>Sun, 22 Feb 2026 00:00:00 GMT</pubDate>
+      <category>分享</category>
+    </item>
+    <item>
+      <title><![CDATA[《让出盲道》]]></title>
+      <link>https://blog.pldduck.com/post/rangchumangdao</link>
+      <guid isPermaLink="true">https://blog.pldduck.com/post/rangchumangdao</guid>
+      <description><![CDATA[记录一张吊图]]></description>
+      <pubDate>Sat, 21 Feb 2026 00:00:00 GMT</pubDate>
+      <category>随笔</category>
+    </item>
+    <item>
+      <title><![CDATA[元宝被微信封了？]]></title>
+      <link>https://blog.pldduck.com/post/weixin-vs-yuanbao</link>
+      <guid isPermaLink="true">https://blog.pldduck.com/post/weixin-vs-yuanbao</guid>
+      <description><![CDATA[腾讯内斗还是别有用心？]]></description>
+      <pubDate>Wed, 04 Feb 2026 00:00:00 GMT</pubDate>
+      <category>随笔</category>
+    </item>
+    <item>
+      <title><![CDATA[电脑C盘0x80070005打开C盘拒绝访问，打开exe提示网络错误，更改所有者卡死没反应的解决方法]]></title>
+      <link>https://blog.pldduck.com/post/fix-c-drive-access-denied</link>
+      <guid isPermaLink="true">https://blog.pldduck.com/post/fix-c-drive-access-denied</guid>
+      <description><![CDATA[解决Windows C盘权限异常、0x80070005错误、拒绝访问等问题的完整教程]]></description>
+      <pubDate>Fri, 30 Jan 2026 00:00:00 GMT</pubDate>
+      <category>技术</category>
+    </item>
+    <item>
+      <title><![CDATA[Cloudflare Tunnel内网穿透]]></title>
+      <link>https://blog.pldduck.com/post/cf-tunnel</link>
+      <guid isPermaLink="true">https://blog.pldduck.com/post/cf-tunnel</guid>
+      <description><![CDATA[教你使用Cloudflare Tunnel轻松实现内网穿透]]></description>
+      <pubDate>Sun, 25 Jan 2026 00:00:00 GMT</pubDate>
+      <category>技术</category>
+    </item>
+    <item>
+      <title><![CDATA[关于D-blog]]></title>
+      <link>https://blog.pldduck.com/post/about-dblog</link>
+      <guid isPermaLink="true">https://blog.pldduck.com/post/about-dblog</guid>
+      <description><![CDATA[跑路的duck的胡言乱语]]></description>
+      <pubDate>Sat, 24 Jan 2026 00:00:00 GMT</pubDate>
+      <category>随笔</category>
+    </item>
+  </channel>
+</rss>

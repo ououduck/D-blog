@@ -112,10 +112,11 @@ const generateCloudflareSnapshot = async () => {
   const timeWindows = [1, 7, 30];
 
   for (const days of timeWindows) {
-    const since = new Date();
+    const now = new Date();
+    const since = new Date(now);
     since.setDate(since.getDate() - days);
-    const sinceStr = since.toISOString();
-    const untilStr = new Date().toISOString();
+    const sinceStr = since.toISOString().split('T')[0];
+    const untilStr = now.toISOString().split('T')[0];
 
     try {
       // Fetch analytics totals
@@ -124,8 +125,8 @@ const generateCloudflareSnapshot = async () => {
           viewer {
             zones(filter: { zoneTag: "${zoneId}" }) {
               httpRequests1dGroups(
-                limit: 1
-                filter: { date_geq: "${sinceStr.split('T')[0]}", date_lt: "${untilStr.split('T')[0]}" }
+                limit: ${days + 1}
+                filter: { date_geq: "${sinceStr}", date_leq: "${untilStr}" }
               ) {
                 sum {
                   requests
@@ -171,11 +172,10 @@ const generateCloudflareSnapshot = async () => {
             zones(filter: { zoneTag: "${zoneId}" }) {
               httpRequests1dGroups(
                 limit: 10000
-                filter: { date_geq: "${sinceStr.split('T')[0]}", date_lt: "${untilStr.split('T')[0]}" }
+                filter: { date_geq: "${sinceStr}", date_leq: "${untilStr}" }
                 orderBy: [sum_requests_DESC]
               ) {
                 dimensions {
-                  clientRequestHTTPHost
                   clientRequestPath
                 }
                 sum {
@@ -222,7 +222,7 @@ const generateCloudflareSnapshot = async () => {
             zones(filter: { zoneTag: "${zoneId}" }) {
               httpRequests1dGroups(
                 limit: 10000
-                filter: { date_geq: "${sinceStr.split('T')[0]}", date_lt: "${untilStr.split('T')[0]}" }
+                filter: { date_geq: "${sinceStr}", date_leq: "${untilStr}" }
                 orderBy: [sum_requests_DESC]
               ) {
                 dimensions {
