@@ -3,14 +3,14 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, Rss, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react';
 import { getPosts, searchPosts, getAllCategories } from '@/services/posts';
-import { Post } from '../types';
+import { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ShareModal } from '../components/ShareModal';
 
 const ALL_CATEGORY = '全部';
 
-const sortPosts = (posts: Post[], sortOrder: 'newest' | 'oldest') => {
+const sortPosts = (posts: PostMetadata[], sortOrder: 'newest' | 'oldest') => {
   const pinnedPosts = posts
     .filter((post) => post.top !== undefined)
     .sort((a, b) => (a.top ?? 0) - (b.top ?? 0));
@@ -27,7 +27,7 @@ const sortPosts = (posts: Post[], sortOrder: 'newest' | 'oldest') => {
 };
 
 const filterAndSortPosts = (
-  posts: Post[],
+  posts: PostMetadata[],
   selectedCategory: string,
   sortOrder: 'newest' | 'oldest'
 ) => {
@@ -39,7 +39,7 @@ const filterAndSortPosts = (
   return sortPosts(filteredPosts, sortOrder);
 };
 
-const PostCard: React.FC<{ post: Post; index: number; featured?: boolean; onShare: (post: Post) => void }> = ({ post, index, featured, onShare }) => {
+const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean; onShare: (post: PostMetadata) => void }> = ({ post, index, featured, onShare }) => {
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut", delay: index * 0.05 } }
@@ -191,15 +191,15 @@ const Hero = ({ onSearch, searchQuery, onClearSearch }: { onSearch: (val: string
 };
 
 export const Home = () => {
-  const [allPosts, setAllPosts] = useState<Post[]>([]);
-  const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
+  const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
+  const [displayedPosts, setDisplayedPosts] = useState<PostMetadata[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [postsPerPage, setPostsPerPage] = useState(9);
-  const [sharePost, setSharePost] = useState<Post | null>(null);
+  const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
