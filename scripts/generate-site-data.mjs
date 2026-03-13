@@ -115,8 +115,13 @@ const generateCloudflareSnapshot = async () => {
     const now = new Date();
     const since = new Date(now);
     since.setDate(since.getDate() - days);
+    
+    // date_lt 不包含结束日期，所以需要加1天
+    const until = new Date(now);
+    until.setDate(until.getDate() + 1);
+    
     const sinceStr = since.toISOString().split('T')[0];
-    const untilStr = now.toISOString().split('T')[0];
+    const untilStr = until.toISOString().split('T')[0];
 
     try {
       // Fetch analytics totals
@@ -126,7 +131,7 @@ const generateCloudflareSnapshot = async () => {
             zones(filter: { zoneTag: "${zoneId}" }) {
               httpRequests1dGroups(
                 limit: ${days + 1}
-                filter: { date_geq: "${sinceStr}", date_leq: "${untilStr}" }
+                filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
               ) {
                 sum {
                   requests
@@ -172,7 +177,7 @@ const generateCloudflareSnapshot = async () => {
             zones(filter: { zoneTag: "${zoneId}" }) {
               httpRequests1dGroups(
                 limit: 10000
-                filter: { date_geq: "${sinceStr}", date_leq: "${untilStr}" }
+                filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
                 orderBy: [sum_requests_DESC]
               ) {
                 dimensions {
@@ -222,7 +227,7 @@ const generateCloudflareSnapshot = async () => {
             zones(filter: { zoneTag: "${zoneId}" }) {
               httpRequests1dGroups(
                 limit: 10000
-                filter: { date_geq: "${sinceStr}", date_leq: "${untilStr}" }
+                filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
                 orderBy: [sum_requests_DESC]
               ) {
                 dimensions {
