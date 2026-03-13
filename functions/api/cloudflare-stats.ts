@@ -53,7 +53,11 @@ const fetchAnalyticsForDays = async (
           zones(filter: { zoneTag: "${zoneId}" }) {
             httpRequests1dGroups(
               limit: ${days + 1}
-              filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
+              filter: { 
+                date_geq: "${sinceStr}", 
+                date_lt: "${untilStr}",
+                clientRequestHTTPHost: "blog.pldduck.com"
+              }
             ) {
               sum {
                 requests
