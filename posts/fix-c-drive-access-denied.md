@@ -3,6 +3,7 @@ id: fix-c-drive-access-denied
 title: 电脑C盘0x80070005打开C盘拒绝访问，打开exe提示网络错误，更改所有者卡死没反应的解决方法
 excerpt: 解决Windows C盘权限异常、0x80070005错误、拒绝访问等问题的完整教程
 date: 2026-01-30
+updatedAt: 2026-01-30
 category: 技术
 tags:
   - C盘
@@ -10,8 +11,8 @@ tags:
   - 权限异常
   - 0x80070005
   - C盘拒绝访问
-readTime: 5分钟阅读
 coverImage: /posts-img/1033012711.png
+author: 跑路的duck
 ---
 
 # 电脑C盘0x80070005打开C盘拒绝访问，打开exe提示网络错误，更改所有者卡死没反应的解决方法

@@ -3,13 +3,14 @@ id: about-dblog
 title: 关于D-blog
 excerpt: 跑路的duck的胡言乱语
 date: 2026-01-24
+updatedAt: 2026-01-24
 category: 随笔
 tags:
   - D-blog
   - D博客
   - 跑路的duck
-readTime: 1分钟阅读
 coverImage: /posts-img/881e8c20019687c8fcf8737643a769a0.png
+author: 跑路的duck
 featured: true
 top: 1
 ---

@@ -54,37 +54,44 @@ if (!fs.existsSync(POSTS_FILE)) {
 }
 const posts = JSON.parse(fs.readFileSync(POSTS_FILE, 'utf-8'));
 
-// Helper to write file
-const writeHtml = (relativePath, title, description) => {
-  const filePath = path.join(DIST_DIR, relativePath, 'index.html');
-  const dir = path.dirname(filePath);
-  
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+const injectSeoMeta = (htmlTemplate, title, description) => {
+  let html = htmlTemplate.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
 
-  let html = template;
-  
-  // Replace Title
-  // Using regex to match <title>...</title>
-  html = html.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
-  
-  // Replace Description
   if (description) {
-    // Escape quotes in description
     const safeDesc = description.replace(/"/g, '&quot;');
     const metaDescTag = `<meta name="description" content="${safeDesc}">`;
-    
+
     if (html.includes('<meta name="description"')) {
       html = html.replace(/<meta name="description" content=".*?">/, metaDescTag);
     } else {
-      // Insert after title if not exists
       html = html.replace('</title>', `</title>\n    ${metaDescTag}`);
     }
   }
 
+  return html;
+};
+
+// Helper to write route file
+const writeHtml = (relativePath, title, description) => {
+  const filePath = path.join(DIST_DIR, relativePath, 'index.html');
+  const dir = path.dirname(filePath);
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  const html = injectSeoMeta(template, title, description);
+
   fs.writeFileSync(filePath, html);
   console.log(`✅ Generated: ${relativePath}/index.html`);
+};
+
+const writeStandaloneHtml = (filename, title, description) => {
+  const filePath = path.join(DIST_DIR, filename);
+  const html = injectSeoMeta(template, title, description);
+
+  fs.writeFileSync(filePath, html);
+  console.log(`✅ Generated: ${filename}`);
 };
 
 console.log('🚀 Starting Pre-rendering...');
@@ -110,4 +117,6 @@ staticPages.forEach(page => {
   writeHtml(page.path, page.title, page.description);
 });
 
-console.log(`✨ Prerendering complete! Generated ${posts.length + staticPages.length} pages.`);
+writeStandaloneHtml('404.html', `页面不存在 - ${SITE_SUFFIX}`, '你访问的页面不存在，可能已经移动或删除。');
+
+console.log(`✨ Prerendering complete! Generated ${posts.length + staticPages.length + 1} pages.`);

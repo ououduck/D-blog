@@ -3,13 +3,14 @@ id: D-pxxdns-index
 title: D-pxxdns-index
 excerpt: 为PXXDNS定制的企业级首页模板
 date: 2026-02-22
+updatedAt: 2026-02-22
 category: 分享
 tags:
   - 派小星DNS
   - PXXDNS
   - 模板
-readTime: 1分钟阅读
 coverImage: /posts-img/61b1546526fe56be9cfd49ee286268f9.png
+author: 跑路的duck
 ---
 
 # D-pxxdns-index

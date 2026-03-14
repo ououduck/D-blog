@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, Rss, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react';
+import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react';
 import { getPosts, getAllCategories } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
@@ -228,10 +228,6 @@ const Hero = ({ onSearch, searchQuery, onClearSearch }: { onSearch: (val: string
             </button>
           )}
         </div>
-        <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-5 py-2 text-xs font-bold uppercase tracking-wider text-orange-600 shadow-sm transition-all duration-300 hover:scale-105 hover:bg-orange-100 dark:border-orange-900/50 dark:bg-orange-950/30 dark:text-orange-400 dark:hover:bg-orange-900/50">
-          <Rss size={14} />
-          <span>订阅 RSS</span>
-        </a>
       </motion.div>
     </div>
   );

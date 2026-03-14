@@ -12,6 +12,7 @@ import { ArchivePage } from './pages/Archive';
 import { Stats } from './pages/Stats';
 import { Friends } from './pages/Friends';
 import { Tags } from './pages/Tags';
+import { NotFound } from './pages/NotFound';
 
 const LoadingScreen = () => {
   const letterVariants = {
@@ -61,6 +62,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/stats" element={<Stats />} />
         <Route path="/friends" element={<Friends />} />
         <Route path="/about" element={<About />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>
   );

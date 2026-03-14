@@ -14,6 +14,8 @@ import { ImageViewer } from '../components/ImageViewer';
 import { ShareModal } from '../components/ShareModal';
 import { TableOfContents } from '../components/TableOfContents';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
+import { NotFoundState } from '@/components/NotFoundState';
+import { ReadingProgressBadge } from '@/components/ReadingProgressBadge';
 
 type BlockCodeProps = {
   isBlock?: boolean;
@@ -240,6 +242,7 @@ export const Post = () => {
   const [remarkPlugins, setRemarkPlugins] = useState<MarkdownPlugin[]>([remarkGfm]);
   const [rehypePlugins, setRehypePlugins] = useState<MarkdownPlugin[]>([]);
   const [mermaidRenderer, setMermaidRenderer] = useState<MermaidRenderer | null>(null);
+  const articleBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -386,6 +389,16 @@ export const Post = () => {
 
   if (!post) {
     return (
+      <NotFoundState
+        title="未找到这篇文章"
+        description="这篇文章可能还在草稿中、已经被删除，或者链接地址已经发生变化。"
+        debugLabel={`Post ID: ${id || 'unknown'}`}
+      />
+    );
+  }
+
+  if (!post) {
+    return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
         <Seo title="404 Not Found" />
         <div className="mb-4 text-9xl font-serif font-bold text-zinc-200 dark:text-zinc-800">404</div>
@@ -405,6 +418,7 @@ export const Post = () => {
   return (
     <>
       <ImageViewer src={previewImage?.src || null} alt={previewImage?.alt} onClose={() => setPreviewImage(null)} />
+      <ReadingProgressBadge targetRef={articleBodyRef} />
 
       <motion.article initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
         <Seo title={post.title} description={post.excerpt} image={post.coverImage} type="article" publishedTime={post.date} modifiedTime={post.updatedAt || post.date} authors={authors.map((author) => author.name)} />
@@ -471,7 +485,7 @@ export const Post = () => {
           </motion.div>
         )}
 
-        <div className="flex gap-8">
+        <div ref={articleBodyRef} className="flex gap-8">
           <div className="max-w-3xl flex-1 px-4 pb-20 md:pb-32">
             <div className="prose prose-base max-w-none prose-stone dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white prose-p:font-sans prose-p:text-base prose-p:leading-relaxed md:prose-p:text-lg prose-a:break-words prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-strong:font-bold prose-strong:text-ink dark:prose-strong:text-white prose-img:my-6 prose-img:h-auto prose-img:w-full prose-img:max-w-full prose-img:cursor-zoom-in prose-img:rounded-xl prose-img:shadow-lg prose-img:transition-transform hover:prose-img:scale-[1.01] dark:prose-img:rounded-2xl md:prose-img:my-12 md:prose-img:rounded-2xl prose-blockquote:rounded-r-xl prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 prose-blockquote:px-4 prose-blockquote:py-3 prose-blockquote:font-serif prose-blockquote:not-italic prose-blockquote:text-base dark:prose-blockquote:bg-zinc-900 md:prose-blockquote:rounded-r-2xl md:prose-blockquote:px-8 md:prose-blockquote:py-6 md:prose-blockquote:text-xl prose-code:font-mono prose-code:text-xs md:prose-code:text-sm prose-pre:overflow-hidden prose-pre:rounded-xl prose-pre:border prose-pre:border-zinc-800 prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:shadow-xl md:prose-pre:rounded-2xl">
               <ReactMarkdown
