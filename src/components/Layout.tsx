@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box, Monitor, Rss } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { siteConfig } from '@config/site.config';
@@ -239,9 +239,25 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
         <div className="hidden items-center space-x-8 md:flex">
           <div className="mr-4 flex space-x-6">
             {navItems.map((item) => (
-              <Link key={item.path} to={item.path} className="relative px-2 py-1 text-sm font-semibold uppercase tracking-wider text-zinc-500 transition-colors hover:text-ink dark:text-zinc-400 dark:hover:text-white">
-                {item.label}
-                {location.pathname === item.path && <motion.div layoutId="nav-underline" className="absolute -bottom-1 left-0 right-0 h-0.5 bg-accent" />}
+              <Link
+                key={item.path}
+                to={item.path}
+                aria-current={location.pathname === item.path ? 'page' : undefined}
+                className={`group relative inline-flex h-10 items-center px-2 py-1 text-sm font-semibold uppercase tracking-wider transition-colors ${
+                  location.pathname === item.path
+                    ? 'text-ink dark:text-white'
+                    : 'text-zinc-500 hover:text-ink dark:text-zinc-400 dark:hover:text-white'
+                }`}
+              >
+                <span className="relative z-10">{item.label}</span>
+                <span
+                  aria-hidden="true"
+                  className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-full bg-gradient-to-r from-sky-400 via-sky-500 to-sky-400 transition-all duration-250 ${
+                    location.pathname === item.path
+                      ? 'scale-x-100 opacity-100 shadow-[0_0_16px_rgba(14,165,233,0.45)]'
+                      : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+                  }`}
+                />
               </Link>
             ))}
           </div>
@@ -414,22 +430,12 @@ const Footer = () => {
   );
 };
 
-const ScrollProgress = () => {
-  const { scrollYProgress } = useScroll();
-  const scaleX = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001
-  });
-
-  return <motion.div className="fixed left-0 right-0 top-0 z-[100] h-1 origin-left bg-accent" style={{ scaleX }} />;
-};
-
 const Background = () => {
   return (
     <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden">
-      <div className="absolute left-[-10%] top-[-10%] h-[50%] w-[50%] animate-float rounded-full bg-zinc-200/40 blur-[120px] mix-blend-multiply dark:bg-zinc-800/20 dark:mix-blend-overlay" />
-      <div className="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] animate-float rounded-full bg-zinc-300/40 blur-[120px] mix-blend-multiply dark:bg-zinc-800/20 dark:mix-blend-overlay" style={{ animationDelay: '2s' }} />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.07),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(24,24,27,0.08),_transparent_34%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.10),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(161,161,170,0.08),_transparent_34%)]" />
+      <div className="absolute left-[-8%] top-[-6%] hidden h-[34rem] w-[34rem] rounded-full bg-zinc-200/30 blur-[96px] xl:block dark:bg-zinc-800/18" />
+      <div className="absolute bottom-[-10%] right-[-8%] hidden h-[30rem] w-[30rem] rounded-full bg-zinc-300/25 blur-[90px] xl:block dark:bg-zinc-800/16" />
     </div>
   );
 };
@@ -466,7 +472,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="relative flex min-h-screen flex-col selection:bg-accent selection:text-white">
-      <ScrollProgress />
       <Background />
       <Navbar onSearchClick={openSearch} />
       <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />

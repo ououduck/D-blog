@@ -486,7 +486,7 @@ export const Post = () => {
           </motion.div>
         )}
 
-        <div ref={articleBodyRef} className="flex gap-8">
+        <div ref={articleBodyRef} className="flex flex-col gap-8 lg:flex-row lg:items-start">
           <div className="max-w-3xl flex-1 px-4 pb-20 md:pb-32">
             <div className="prose prose-base max-w-none prose-stone dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white prose-p:font-sans prose-p:text-base prose-p:leading-relaxed md:prose-p:text-lg prose-a:break-words prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-strong:font-bold prose-strong:text-ink dark:prose-strong:text-white prose-img:my-6 prose-img:h-auto prose-img:w-full prose-img:max-w-full prose-img:cursor-zoom-in prose-img:rounded-xl prose-img:shadow-lg prose-img:transition-transform hover:prose-img:scale-[1.01] dark:prose-img:rounded-2xl md:prose-img:my-12 md:prose-img:rounded-2xl prose-blockquote:rounded-r-xl prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 prose-blockquote:px-4 prose-blockquote:py-3 prose-blockquote:font-serif prose-blockquote:not-italic prose-blockquote:text-base dark:prose-blockquote:bg-zinc-900 md:prose-blockquote:rounded-r-2xl md:prose-blockquote:px-8 md:prose-blockquote:py-6 md:prose-blockquote:text-xl prose-code:font-mono prose-code:text-xs md:prose-code:text-sm prose-pre:overflow-hidden prose-pre:rounded-xl prose-pre:border prose-pre:border-zinc-800 prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:shadow-xl md:prose-pre:rounded-2xl">
               <ReactMarkdown
@@ -533,7 +533,7 @@ export const Post = () => {
             </div>
           </div>
 
-          <div className="hidden flex-shrink-0 lg:block">
+          <div className="lg:w-72 lg:flex-shrink-0">
             <TableOfContents content={post.content} />
           </div>
         </div>
