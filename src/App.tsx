@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Layout } from './components/Layout';
@@ -44,6 +44,25 @@ const LoadingScreen = () => {
         </motion.div>
       </div>
     </motion.div>
+  );
+};
+
+const AppRoutes: React.FC = () => {
+  const location = useLocation();
+  const routeKey = `${location.pathname}${location.search}${location.hash}`;
+
+  return (
+    <Layout>
+      <Routes location={location} key={routeKey}>
+        <Route path="/" element={<Home />} />
+        <Route path="/post/:id" element={<Post />} />
+        <Route path="/archive" element={<ArchivePage />} />
+        <Route path="/tags" element={<Tags />} />
+        <Route path="/stats" element={<Stats />} />
+        <Route path="/friends" element={<Friends />} />
+        <Route path="/about" element={<About />} />
+      </Routes>
+    </Layout>
   );
 };
 
@@ -97,17 +116,7 @@ const App: React.FC = () => {
   return (
     <HelmetProvider>
       <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/post/:id" element={<Post />} />
-            <Route path="/archive" element={<ArchivePage />} />
-            <Route path="/tags" element={<Tags />} />
-            <Route path="/stats" element={<Stats />} />
-            <Route path="/friends" element={<Friends />} />
-            <Route path="/about" element={<About />} />
-          </Routes>
-        </Layout>
+        <AppRoutes />
         <AnimatePresence>{showLoadingScreen && <LoadingScreen />}</AnimatePresence>
       </Router>
     </HelmetProvider>
