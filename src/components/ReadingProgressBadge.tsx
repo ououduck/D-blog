@@ -56,7 +56,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = ({ targ
         scale: isVisible ? 1 : 0.96
       }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className="pointer-events-none fixed bottom-5 right-4 z-40 sm:bottom-7 sm:right-6"
+      className="pointer-events-none fixed bottom-24 right-4 z-40 sm:bottom-28 sm:right-6"
       aria-hidden={!isVisible}
     >
       <div className="min-w-[9.5rem] rounded-2xl border border-zinc-200/80 bg-white/88 px-4 py-3 shadow-[0_20px_60px_-28px_rgba(24,24,27,0.35)] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/82">
