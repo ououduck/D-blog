@@ -48,22 +48,22 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, 
       {isOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-void/60 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6 z-10">
-            <button onClick={onClose} className="absolute top-4 right-4 p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative z-10 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
+            <button onClick={onClose} className="absolute right-4 top-4 rounded-lg p-1 text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800">
               <X size={20} />
             </button>
-            <h3 className="text-xl font-serif font-bold text-ink dark:text-white mb-4">分享文章</h3>
-            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-xl mb-6 border border-zinc-100 dark:border-zinc-800">
-              <h4 className="font-bold text-ink dark:text-white mb-2 line-clamp-2">{title}</h4>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3 line-clamp-3">{excerpt}</p>
-              <div className="text-xs text-accent break-all bg-accent/5 p-2 rounded border border-accent/10">{url}</div>
+            <h3 className="mb-4 text-xl font-serif font-bold text-ink dark:text-white">分享文章</h3>
+            <div className="mb-6 rounded-xl border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/50">
+              <h4 className="mb-2 line-clamp-2 font-bold text-ink dark:text-white">{title}</h4>
+              <p className="mb-3 line-clamp-3 text-sm text-zinc-500 dark:text-zinc-400">{excerpt}</p>
+              <div className="break-all rounded border border-accent/10 bg-accent/5 p-2 text-xs text-accent">{url}</div>
             </div>
             <div className="flex gap-3">
-              <button onClick={handleCopyAll} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-ink dark:bg-white text-white dark:text-ink rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
+              <button onClick={handleCopyAll} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-ink py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 dark:bg-white dark:text-ink">
                 {copiedType === 'all' ? <Check size={16} /> : <Copy size={16} />}
                 {copiedType === 'all' ? '已复制' : '复制全部'}
               </button>
-              <button onClick={handleCopyLink} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-zinc-100 dark:bg-zinc-800 text-ink dark:text-white rounded-xl font-bold text-sm hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+              <button onClick={handleCopyLink} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-zinc-100 py-2.5 text-sm font-bold text-ink transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700">
                 {copiedType === 'link' ? <Check size={16} /> : <LinkIcon size={16} />}
                 {copiedType === 'link' ? '已复制' : '纯链接'}
               </button>

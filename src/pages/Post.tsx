@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
@@ -12,7 +12,7 @@ import mermaid from 'mermaid';
 if (typeof window !== 'undefined') {
   import('highlight.js/styles/github-dark.css');
   import('katex/dist/katex.min.css');
-  
+
   mermaid.initialize({
     startOnLoad: false,
     theme: 'dark',
@@ -22,10 +22,11 @@ if (typeof window !== 'undefined') {
       primaryBorderColor: '#ea580c',
       lineColor: '#71717a',
       secondaryColor: '#27272a',
-      tertiaryColor: '#18181b',
-    },
+      tertiaryColor: '#18181b'
+    }
   });
 }
+
 import { ArrowLeft, Clock, Calendar, Shield, Share2, Copy, Check } from 'lucide-react';
 import { getPostById } from '@/services/posts';
 import { Post as PostType } from '../types';
@@ -40,58 +41,65 @@ type BlockCodeProps = {
 };
 
 const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>) => {
-  const preRef = React.useRef<HTMLPreElement>(null);
+  const preRef = useRef<HTMLPreElement>(null);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    if (preRef.current) {
-      const code = preRef.current.innerText.replace(/\n$/, '');
-      try {
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(code);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } else {
-            throw new Error('Clipboard API not available');
-        }
-      } catch {
-        const textArea = document.createElement("textarea");
-        textArea.value = code;
-        textArea.style.position = "fixed";
-        textArea.style.left = "-9999px";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-          document.execCommand('copy');
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        } catch (e) {
-          console.error('Copy failed', e);
-        }
-        document.body.removeChild(textArea);
+    if (!preRef.current) {
+      return;
+    }
+
+    const code = preRef.current.innerText.replace(/\n$/, '');
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(code);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
       }
+
+      throw new Error('Clipboard API not available');
+    } catch {
+      const textArea = document.createElement('textarea');
+      textArea.value = code;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (error) {
+        console.error('Copy failed', error);
+      }
+
+      document.body.removeChild(textArea);
     }
   };
 
-  const childrenWithProps = React.Children.map(children, child => {
+  const childrenWithProps = React.Children.map(children, (child) => {
     if (React.isValidElement(child)) {
       return React.cloneElement(child as React.ReactElement<BlockCodeProps>, { isBlock: true });
     }
+
     return child;
   });
 
   return (
-    <div className="relative group my-6 md:my-8">
+    <div className="group relative my-6 md:my-8">
       <button
         onClick={handleCopy}
-        className="absolute top-3 right-3 p-2 rounded-lg bg-zinc-700/80 hover:bg-zinc-600/80 text-zinc-300 hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 z-10 backdrop-blur-sm"
+        className="absolute right-3 top-3 z-10 rounded-lg bg-zinc-700/80 p-2 text-zinc-300 opacity-100 backdrop-blur-sm transition-all hover:bg-zinc-600/80 hover:text-white md:opacity-0 md:group-hover:opacity-100"
         title="复制代码"
         aria-label="复制代码"
       >
         {copied ? <Check size={16} /> : <Copy size={16} />}
       </button>
-      <pre ref={preRef} {...props} className={`${props.className || ''} !my-0 !p-3 md:!p-6 overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-transparent touch-pan-x`}>
+      <pre ref={preRef} {...props} className={`${props.className || ''} !my-0 overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-600 touch-pan-x !p-3 md:!p-6`}>
         {childrenWithProps}
       </pre>
     </div>
@@ -99,20 +107,29 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
 };
 
 const MermaidBlock = ({ children }: { children: string }) => {
-  const [svg, setSvg] = useState<string>('');
-  const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+  const [svg, setSvg] = useState('');
+  const mermaidIdRef = useRef(`mermaid-${Math.random().toString(36).slice(2, 11)}`);
 
   useEffect(() => {
+    let cancelled = false;
+
     const renderDiagram = async () => {
       try {
-        const { svg } = await mermaid.render(id, children);
-        setSvg(svg);
+        const { svg: renderedSvg } = await mermaid.render(mermaidIdRef.current, children);
+        if (!cancelled) {
+          setSvg(renderedSvg);
+        }
       } catch (error) {
         console.error('Mermaid render error:', error);
       }
     };
-    renderDiagram();
-  }, [children, id]);
+
+    void renderDiagram();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [children]);
 
   return (
     <div className="my-8 flex justify-center overflow-x-auto rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900/50">
@@ -122,13 +139,7 @@ const MermaidBlock = ({ children }: { children: string }) => {
 };
 
 const markdownComponents: Components = {
-  img: ({ ...props }) => (
-    <img
-      {...props}
-      loading="lazy"
-      className="cursor-zoom-in rounded-2xl shadow-lg my-12"
-    />
-  ),
+  img: ({ ...props }) => <img {...props} loading="lazy" className="my-12 cursor-zoom-in rounded-2xl shadow-lg" />,
   pre: PreBlock,
   code: ({ className, children, ...props }) => {
     const { isBlock, ...restProps } = props as React.HTMLAttributes<HTMLElement> & BlockCodeProps;
@@ -147,10 +158,7 @@ const markdownComponents: Components = {
     }
 
     return (
-      <code
-        className="text-accent dark:text-accent-light bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded-md font-bold before:content-none after:content-none"
-        {...restProps}
-      >
+      <code className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-bold text-accent before:content-none after:content-none dark:bg-zinc-900 dark:text-accent-light" {...restProps}>
         {children}
       </code>
     );
@@ -173,14 +181,15 @@ export const Post = () => {
   const { id } = useParams<{ id: string }>();
   const [post, setPost] = useState<PostType | null>(null);
   const [loading, setLoading] = useState(true);
-  const [previewImage, setPreviewImage] = useState<{src: string, alt?: string} | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt?: string } | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
     if (id) {
       setLoading(true);
-      getPostById(id).then(data => {
+      getPostById(id).then((data) => {
         setPost(data || null);
         setLoading(false);
       });
@@ -189,37 +198,31 @@ export const Post = () => {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto pt-10 animate-pulse">
-        {/* Header Skeleton */}
-        <div className="text-center mb-16">
-           <div className="inline-block w-20 h-4 bg-zinc-200 dark:bg-zinc-800 rounded mb-10"></div>
-           
-           <div className="flex flex-col items-center gap-4 mb-8">
-              <div className="w-16 h-6 bg-zinc-200 dark:bg-zinc-800 rounded-full"></div>
-           </div>
-           
-           <div className="h-12 md:h-16 bg-zinc-200 dark:bg-zinc-800 rounded-lg w-3/4 mx-auto mb-8"></div>
-           
-           <div className="flex justify-center space-x-6">
-              <div className="w-24 h-4 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
-              <div className="w-24 h-4 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
-              <div className="w-16 h-4 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
-           </div>
+      <div className="mx-auto max-w-4xl animate-pulse pt-10">
+        <div className="mb-16 text-center">
+          <div className="mb-10 inline-block h-4 w-20 rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="mb-8 flex flex-col items-center gap-4">
+            <div className="h-6 w-16 rounded-full bg-zinc-200 dark:bg-zinc-800" />
+          </div>
+          <div className="mx-auto mb-8 h-12 w-3/4 rounded-lg bg-zinc-200 dark:bg-zinc-800 md:h-16" />
+          <div className="flex justify-center space-x-6">
+            <div className="h-4 w-24 rounded bg-zinc-200 dark:bg-zinc-800" />
+            <div className="h-4 w-24 rounded bg-zinc-200 dark:bg-zinc-800" />
+            <div className="h-4 w-16 rounded bg-zinc-200 dark:bg-zinc-800" />
+          </div>
         </div>
 
-        {/* Image Skeleton */}
-        <div className="mb-20 rounded-3xl bg-zinc-200 dark:bg-zinc-800 aspect-[21/9] w-full shadow-sm"></div>
+        <div className="mb-20 aspect-[21/9] w-full rounded-3xl bg-zinc-200 shadow-sm dark:bg-zinc-800" />
 
-        {/* Content Skeleton */}
-        <div className="max-w-3xl mx-auto space-y-6 pb-32">
-           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-full"></div>
-           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-11/12"></div>
-           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-full"></div>
-           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4"></div>
-           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-5/6"></div>
-           <div className="h-32 bg-zinc-200 dark:bg-zinc-800 rounded-xl w-full my-8"></div>
-           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-full"></div>
-           <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-4/5"></div>
+        <div className="mx-auto max-w-3xl space-y-6 pb-32">
+          <div className="h-4 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-4 w-11/12 rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-4 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-4 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-4 w-5/6 rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="my-8 h-32 w-full rounded-xl bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-4 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-4 w-4/5 rounded bg-zinc-200 dark:bg-zinc-800" />
         </div>
       </div>
     );
@@ -227,15 +230,13 @@ export const Post = () => {
 
   if (!post) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
         <Seo title="404 Not Found" />
-        <div className="text-9xl font-serif font-bold text-zinc-200 dark:text-zinc-800 mb-4">404</div>
-        <h2 className="text-3xl font-serif font-bold mb-4 text-ink dark:text-white">未找到文章</h2>
-        <p className="text-zinc-500 mb-8 max-w-md">很抱歉，您访问的文章可能已被删除、移动或不存在。</p>
-        <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-mono text-zinc-500 mb-8">
-            Debug Info: ID="{id}"
-        </div>
-        <Link to="/" className="px-6 py-3 bg-ink dark:bg-white text-white dark:text-ink rounded-full font-bold tracking-wide hover:scale-105 transition-transform">
+        <div className="mb-4 text-9xl font-serif font-bold text-zinc-200 dark:text-zinc-800">404</div>
+        <h2 className="mb-4 font-serif text-3xl font-bold text-ink dark:text-white">未找到文章</h2>
+        <p className="mb-8 max-w-md text-zinc-500">很抱歉，您访问的文章可能已被删除、移动或不存在。</p>
+        <div className="mb-8 rounded-lg bg-zinc-100 p-4 font-mono text-xs text-zinc-500 dark:bg-zinc-800">Debug Info: ID=&quot;{id}&quot;</div>
+        <Link to="/" className="rounded-full bg-ink px-6 py-3 font-bold tracking-wide text-white transition-transform hover:scale-105 dark:bg-white dark:text-ink">
           返回首页
         </Link>
       </div>
@@ -245,33 +246,37 @@ export const Post = () => {
   return (
     <>
       <ImageViewer src={previewImage?.src || null} alt={previewImage?.alt} onClose={() => setPreviewImage(null)} />
-      
-      <motion.article initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
+
+      <motion.article initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
         <Seo title={post.title} description={post.excerpt} image={post.coverImage} type="article" />
 
-        <header className="max-w-4xl mx-auto pt-6 md:pt-10 mb-10 md:mb-16 text-center">
-          <Link to="/" className="inline-flex items-center text-zinc-500 hover:text-accent transition-colors mb-6 md:mb-10 group font-bold text-xs tracking-widest uppercase">
-            <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" />
+        <header className="mx-auto mb-10 max-w-4xl pt-6 text-center md:mb-16 md:pt-10">
+          <Link to="/" className="group mb-6 inline-flex items-center text-xs font-bold uppercase tracking-widest text-zinc-500 transition-colors hover:text-accent md:mb-10">
+            <ArrowLeft size={16} className="mr-2 transition-transform group-hover:-translate-x-1" />
             返回文章
           </Link>
-          
+
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <div className="flex flex-col items-center gap-4 mb-8">
-              <span className="px-4 py-1.5 text-xs font-bold tracking-widest uppercase bg-accent/10 text-accent rounded-full border border-accent/20">
-                  {post.category}
+            <div className="mb-8 flex flex-col items-center gap-4">
+              <span className="rounded-full border border-accent/20 bg-accent/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-accent">
+                {post.category}
               </span>
             </div>
-            
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif font-bold mb-6 md:mb-8 text-ink dark:text-white leading-[1.2]">
+
+            <h1 className="mb-6 font-serif text-3xl font-bold leading-[1.2] text-ink dark:text-white md:mb-8 md:text-5xl lg:text-6xl">
               {post.title}
             </h1>
-            
-            <div className="flex items-center justify-center space-x-4 md:space-x-6 text-zinc-500 dark:text-zinc-400 font-bold text-xs tracking-wide uppercase">
-              <span className="flex items-center"><Calendar size={14} className="mr-2" /> {post.date}</span>
-              <span className="w-1 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full"></span>
-              <span className="flex items-center"><Clock size={14} className="mr-2" /> {post.readTime}</span>
-              <span className="w-1 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full"></span>
-              <button onClick={() => setShareModalOpen(true)} className="flex items-center hover:text-accent transition-colors">
+
+            <div className="flex items-center justify-center space-x-4 text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 md:space-x-6">
+              <span className="flex items-center">
+                <Calendar size={14} className="mr-2" /> {post.date}
+              </span>
+              <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+              <span className="flex items-center">
+                <Clock size={14} className="mr-2" /> {post.readTime}
+              </span>
+              <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+              <button onClick={() => setShareModalOpen(true)} className="flex items-center transition-colors hover:text-accent">
                 <Share2 size={14} className="mr-1.5" /> 分享
               </button>
             </div>
@@ -279,81 +284,75 @@ export const Post = () => {
         </header>
 
         {post.coverImage && (
-          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="mb-10 md:mb-20 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl shadow-zinc-200/50 dark:shadow-none mx-auto max-w-6xl aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] cursor-zoom-in px-4 md:px-0" onClick={() => setPreviewImage({ src: post.coverImage!, alt: post.title })}>
-            <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" loading="eager" decoding="async" fetchpriority="high" />
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="mx-auto mb-10 aspect-[4/3] max-w-6xl cursor-zoom-in overflow-hidden rounded-2xl px-4 shadow-2xl shadow-zinc-200/50 dark:shadow-none sm:aspect-[16/9] md:mb-20 md:aspect-[21/9] md:rounded-3xl md:px-0" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })}>
+            <img src={post.coverImage} alt={post.title} className="h-full w-full object-cover" loading="eager" decoding="async" fetchpriority="high" />
           </motion.div>
         )}
 
         <div className="flex gap-8">
           <div className="max-w-3xl flex-1 px-4 pb-20 md:pb-32">
-            <div className="prose prose-base md:prose-lg prose-stone dark:prose-invert max-w-none
-              prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white prose-headings:scroll-mt-24
-              prose-p:font-sans prose-p:text-base md:prose-p:text-lg prose-p:leading-relaxed
-              prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-a:break-words
-              prose-strong:text-ink dark:prose-strong:text-white prose-strong:font-bold
-              prose-img:rounded-xl md:prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-6 md:prose-img:my-12 prose-img:cursor-zoom-in prose-img:transition-transform hover:prose-img:scale-[1.01] prose-img:w-full prose-img:h-auto prose-img:max-w-full
-              prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 dark:prose-blockquote:bg-zinc-900 prose-blockquote:py-3 prose-blockquote:px-4 md:prose-blockquote:py-6 md:prose-blockquote:px-8 prose-blockquote:rounded-r-xl md:prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:font-serif prose-blockquote:text-base md:prose-blockquote:text-xl
-              prose-code:font-mono prose-code:text-xs md:prose-code:text-sm
-              prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:rounded-xl md:prose-pre:rounded-2xl prose-pre:shadow-xl prose-pre:overflow-hidden prose-pre:border prose-pre:border-zinc-800">
+            <div className="prose prose-base max-w-none prose-stone dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white prose-p:font-sans prose-p:text-base prose-p:leading-relaxed md:prose-p:text-lg prose-a:break-words prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-strong:font-bold prose-strong:text-ink dark:prose-strong:text-white prose-img:my-6 prose-img:h-auto prose-img:w-full prose-img:max-w-full prose-img:cursor-zoom-in prose-img:rounded-xl prose-img:shadow-lg prose-img:transition-transform hover:prose-img:scale-[1.01] dark:prose-img:rounded-2xl md:prose-img:my-12 md:prose-img:rounded-2xl prose-blockquote:rounded-r-xl prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 prose-blockquote:px-4 prose-blockquote:py-3 prose-blockquote:font-serif prose-blockquote:not-italic prose-blockquote:text-base dark:prose-blockquote:bg-zinc-900 md:prose-blockquote:rounded-r-2xl md:prose-blockquote:px-8 md:prose-blockquote:py-6 md:prose-blockquote:text-xl prose-code:font-mono prose-code:text-xs md:prose-code:text-sm prose-pre:overflow-hidden prose-pre:rounded-xl prose-pre:border prose-pre:border-zinc-800 prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:shadow-xl md:prose-pre:rounded-2xl">
               <ReactMarkdown
-                 remarkPlugins={[remarkGfm, remarkMath]}
-                 rehypePlugins={[rehypeHighlight, rehypeKatex]}
-                 components={{
-                   ...markdownComponents,
-                   img: ({ ...props }) => (
-                     <img
-                       {...props}
-                       loading="lazy"
-                       onClick={() => setPreviewImage({ src: props.src || '', alt: props.alt })}
-                       className="cursor-zoom-in rounded-2xl shadow-lg my-12"
-                     />
-                   )
-                 }}
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeHighlight, rehypeKatex]}
+                components={{
+                  ...markdownComponents,
+                  img: ({ ...props }) => (
+                    <img
+                      {...props}
+                      loading="lazy"
+                      onClick={() => setPreviewImage({ src: props.src || '', alt: props.alt })}
+                      className="my-12 cursor-zoom-in rounded-2xl shadow-lg"
+                    />
+                  )
+                }}
               >
                 {post.content}
               </ReactMarkdown>
             </div>
-          
-          <div className="mt-16 md:mt-20 p-6 md:p-8 rounded-xl md:rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm relative overflow-hidden group">
-            <div className="absolute -top-6 -right-6 text-zinc-200 dark:text-zinc-800 transform rotate-12 group-hover:rotate-0 transition-transform duration-500 opacity-50"><Shield size={120} strokeWidth={0.5} /></div>
-            <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start">
-               <div className="flex-shrink-0">
-                  <div className="w-12 h-12 rounded-full border-2 border-accent/30 flex items-center justify-center text-accent bg-accent/5"><span className="font-serif font-bold text-xl">CC</span></div>
-               </div>
-               <div>
-                  <h3 className="text-lg font-serif font-bold text-ink dark:text-white mb-2">CC BY-SA 4.0 许可协议</h3>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-3">
-                    本文由 <strong className="text-ink dark:text-zinc-200">{siteConfig.author.name}</strong> 原创。除非另有声明，本站文章采用 
-                    <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium mx-1">CC BY-SA 4.0</a>协议进行授权。
-                  </p>
-                  <div className="text-xs text-zinc-500 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-950/50 p-3 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 inline-block">
-                    <strong>协议含义：</strong> 您可以自由复制、传播、修改本作品，但必须<span className="text-accent">署名作者</span>且<span className="text-accent">以相同许可协议发布</span>衍生作品。
+
+            <div className="group relative mt-16 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/80 p-6 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/50 md:mt-20 md:rounded-2xl md:p-8">
+              <div className="absolute -right-6 -top-6 rotate-12 text-zinc-200 opacity-50 transition-transform duration-500 group-hover:rotate-0 dark:text-zinc-800">
+                <Shield size={120} strokeWidth={0.5} />
+              </div>
+              <div className="relative z-10 flex flex-col items-start gap-6 md:flex-row">
+                <div className="flex-shrink-0">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-accent/30 bg-accent/5 text-accent">
+                    <span className="font-serif text-xl font-bold">CC</span>
                   </div>
-               </div>
+                </div>
+                <div>
+                  <h3 className="mb-2 text-lg font-serif font-bold text-ink dark:text-white">CC BY-SA 4.0 许可协议</h3>
+                  <p className="mb-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                    本文由 <strong className="text-ink dark:text-zinc-200">{siteConfig.author.name}</strong> 原创。除非另有声明，本站文章采用
+                    <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="noopener noreferrer" className="mx-1 font-medium text-accent hover:underline">
+                      CC BY-SA 4.0
+                    </a>
+                    协议进行授权。
+                  </p>
+                  <div className="inline-block rounded-lg border border-zinc-200/50 bg-zinc-100 p-3 text-xs text-zinc-500 dark:border-zinc-800/50 dark:bg-zinc-950/50 dark:text-zinc-500">
+                    <strong>协议含义：</strong>
+                    您可以自由复制、传播、修改本作品，但必须 <span className="text-accent">署名作者</span>，并 <span className="text-accent">以相同许可协议发布</span> 衍生作品。
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-10 flex items-center justify-between border-t border-zinc-200 pt-10 dark:border-zinc-800">
+              <div>
+                <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-400">作者</span>
+                <span className="font-serif text-lg font-bold text-ink dark:text-white">{siteConfig.author.name}</span>
+              </div>
             </div>
           </div>
 
-          <div className="mt-10 pt-10 border-t border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
-               <div>
-                  <span className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">作者</span>
-                  <span className="font-serif text-lg font-bold text-ink dark:text-white">{siteConfig.author.name}</span>
-               </div>
+          <div className="hidden flex-shrink-0 lg:block">
+            <TableOfContents content={post.content} />
           </div>
         </div>
-
-        <div className="hidden lg:block flex-shrink-0">
-          <TableOfContents content={post.content} />
-        </div>
-      </div>
       </motion.article>
 
-      <ShareModal 
-        isOpen={shareModalOpen} 
-        onClose={() => setShareModalOpen(false)} 
-        title={post.title} 
-        excerpt={post.excerpt} 
-        url={`${window.location.origin}/post/${post.id}`} 
-      />
+      <ShareModal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} title={post.title} excerpt={post.excerpt} url={`${window.location.origin}/post/${post.id}`} />
     </>
   );
 };

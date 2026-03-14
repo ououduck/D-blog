@@ -52,10 +52,6 @@ export const Tags = () => {
   }, []);
 
   const tags = buildTagList(results);
-  const handleClearSearch = () => {
-    clearSearch();
-  };
-
   const selectedTagInfo = selectedTag ? tags.find((tag) => tag.name === selectedTag) : null;
   const maxCount = Math.max(...tags.map((tag) => tag.count), 1);
 
@@ -67,52 +63,42 @@ export const Tags = () => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      className="pb-10 md:pb-20"
-    >
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="pb-10 md:pb-20">
       <Seo title="标签" description="按标签浏览文章" />
 
-      <section className="relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white via-zinc-50 to-white p-8 md:p-12 dark:border-zinc-800 dark:from-zinc-900 dark:via-zinc-900/50 dark:to-zinc-900 mb-10">
+      <section className="relative mb-10 overflow-hidden rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white via-zinc-50 to-white p-8 dark:border-zinc-800 dark:from-zinc-900 dark:via-zinc-900/50 dark:to-zinc-900 md:p-12">
         <div className="absolute right-6 top-6 rounded-full border border-accent/20 bg-accent/10 p-3 text-accent">
           <Tag size={22} />
         </div>
         <div className="max-w-3xl">
           <p className="mb-4 text-xs font-bold uppercase tracking-[0.35em] text-accent">Tags Collection</p>
-          <h1 className="mb-6 font-serif text-4xl font-bold tracking-tight text-ink dark:text-white md:text-6xl">
-            标签云
-          </h1>
+          <h1 className="mb-6 font-serif text-4xl font-bold tracking-tight text-ink dark:text-white md:text-6xl">标签集合</h1>
           <p className="max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 md:text-base">
-            共 {tags.length} 个标签，{tags.reduce((sum, t) => sum + t.count, 0)} 篇文章
+            共 {tags.length} 个标签，{tags.reduce((sum, tag) => sum + tag.count, 0)} 篇文章
           </p>
         </div>
       </section>
 
       {loading || isSearching ? (
         <div className="flex items-center justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
         </div>
       ) : (
         <>
           <div className="mb-8">
-            <div className="relative max-w-md group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="text-zinc-400 group-focus-within:text-accent transition-colors" size={18} />
+            <div className="group relative max-w-md">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                <Search className="text-zinc-400 transition-colors group-focus-within:text-accent" size={18} />
               </div>
-              <input 
-                type="text" 
-                placeholder="搜索标签或文章..." 
+              <input
+                type="text"
+                placeholder="搜索标签或文章..."
                 value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)} 
-                className="w-full pl-11 pr-11 py-3 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:border-accent dark:focus:border-accent outline-none transition-all duration-300 text-ink dark:text-white placeholder:text-zinc-400 text-sm focus:ring-4 ring-accent/10" 
+                onChange={(event) => handleSearch(event.target.value)}
+                className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-11 pr-11 text-sm text-ink outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-accent focus:ring-4 ring-accent/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-accent"
               />
               {searchQuery && (
-                <button 
-                  onClick={handleClearSearch}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-zinc-400 hover:text-accent transition-colors"
-                >
+                <button onClick={clearSearch} className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-accent">
                   <X size={16} />
                 </button>
               )}
@@ -125,7 +111,7 @@ export const Tags = () => {
           </div>
 
           {!selectedTag ? (
-            <div className="rounded-2xl border border-zinc-200 bg-white/80 p-8 md:p-12 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/50">
+            <div className="rounded-2xl border border-zinc-200 bg-white/80 p-8 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/50 md:p-12">
               <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
                 {tags.map((tag, index) => (
                   <motion.button
@@ -147,7 +133,7 @@ export const Tags = () => {
               <div className="mb-8 flex items-center justify-between">
                 <h2 className="font-serif text-2xl font-bold text-ink dark:text-white md:text-3xl">
                   标签: {selectedTag}
-                  <span className="ml-3 text-base text-zinc-400">({selectedTagInfo?.count} 篇)</span>
+                  <span className="ml-3 text-base text-zinc-400">({selectedTagInfo?.count ?? 0} 篇)</span>
                 </h2>
                 <button
                   onClick={() => setSearchParams({})}
@@ -159,16 +145,8 @@ export const Tags = () => {
 
               <div className="grid gap-6 md:grid-cols-2">
                 {selectedTagInfo?.posts.map((post, index) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Link
-                      to={`/post/${post.id}`}
-                      className="group block rounded-2xl border border-zinc-200 bg-white p-6 transition-all hover:border-zinc-300 hover:shadow-xl dark:border-zinc-800 dark:bg-zinc-900/40 dark:hover:border-zinc-700"
-                    >
+                  <motion.div key={post.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
+                    <Link to={`/post/${post.id}`} className="group block rounded-2xl border border-zinc-200 bg-white p-6 transition-all hover:border-zinc-300 hover:shadow-xl dark:border-zinc-800 dark:bg-zinc-900/40 dark:hover:border-zinc-700">
                       <div className="mb-3 flex items-center gap-2">
                         <span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-accent">
                           {post.category}
@@ -177,9 +155,7 @@ export const Tags = () => {
                       <h3 className="mb-3 font-serif text-xl font-bold text-ink transition-colors group-hover:text-accent dark:text-white dark:group-hover:text-accent">
                         {post.title}
                       </h3>
-                      <p className="mb-4 line-clamp-2 text-sm text-zinc-500 dark:text-zinc-400">
-                        {post.excerpt}
-                      </p>
+                      <p className="mb-4 line-clamp-2 text-sm text-zinc-500 dark:text-zinc-400">{post.excerpt}</p>
                       <div className="flex items-center gap-4 text-xs text-zinc-400">
                         <span className="flex items-center gap-1">
                           <Calendar size={12} />
@@ -193,11 +169,13 @@ export const Tags = () => {
                     </Link>
                   </motion.div>
                 ))}
+
                 {selectedTagInfo && selectedTagInfo.posts.length === 0 && (
                   <div className="rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
                     当前筛选条件下没有文章。
                   </div>
                 )}
+
                 {!selectedTagInfo && (
                   <div className="rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
                     当前标签在搜索结果中不可用，请清除搜索或查看全部标签。

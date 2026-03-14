@@ -24,7 +24,7 @@ export const TableOfContents: React.FC<{ content: string }> = ({ content }) => {
         .toLowerCase()
         .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
         .replace(/^-+|-+$/g, '');
-      
+
       return { id, text, level };
     });
 

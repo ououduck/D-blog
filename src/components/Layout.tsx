@@ -19,17 +19,18 @@ const TEXT = {
   themeSystem: '\u8ddf\u968f\u7cfb\u7edf',
   navPosts: '\u6587\u7ae0',
   navArchive: '\u5f52\u6863',
+  navTags: '\u6807\u7b7e',
   navStats: '\u7edf\u8ba1',
   navFriends: '\u53cb\u94fe',
   navAbout: '\u5173\u4e8e',
-  sourceCode: '\u9879\u76ee\u6e90\u7801'
+  sourceCode: '\u9879\u76ee\u6e90\u7801',
+  resultsSuffix: '\u6761\u7ed3\u679c'
 };
 
 const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const { searchQuery, isSearching, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch();
-  const query = searchQuery;
   const visibleResults = results.slice(0, 8);
 
   useEffect(() => {
@@ -59,20 +60,8 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-24">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-void/60 backdrop-blur-sm"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            transition={{ type: 'spring', duration: 0.5 }}
-            className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-void/60 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: -20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -20 }} transition={{ type: 'spring', duration: 0.5 }} className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
             <div className="flex items-center border-b border-zinc-100 p-4 dark:border-zinc-800">
               <Search className="mr-3 text-zinc-400" size={20} />
               <input
@@ -81,7 +70,7 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
                 placeholder={TEXT.searchPlaceholder}
                 className="w-full bg-transparent text-xl text-ink outline-none placeholder:text-zinc-400 dark:text-white"
                 value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(event) => handleSearch(event.target.value)}
                 onKeyDown={handleInputKeyDown}
               />
               <button onClick={onClose} className="rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800">
@@ -97,18 +86,12 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
               ) : visibleResults.length > 0 ? (
                 <div className="p-2">
                   <div className="px-3 pt-3 text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
-                    {results.length} 条结果
+                    {results.length} {TEXT.resultsSuffix}
                   </div>
                   {visibleResults.map((post) => (
-                    <button
-                      key={post.id}
-                      onClick={() => handleSelect(post.id)}
-                      className="group block w-full rounded-xl p-4 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                    >
+                    <button key={post.id} onClick={() => handleSelect(post.id)} className="group block w-full rounded-xl p-4 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                       <div className="mb-1 flex items-center gap-2">
-                        <span className="rounded-md border border-accent/20 bg-accent/5 px-1.5 py-0.5 text-xs font-bold text-accent">
-                          {post.category}
-                        </span>
+                        <span className="rounded-md border border-accent/20 bg-accent/5 px-1.5 py-0.5 text-xs font-bold text-accent">{post.category}</span>
                       </div>
                       <h4 className="text-lg font-semibold text-ink transition-colors group-hover:text-accent dark:text-gray-100 dark:group-hover:text-accent-light">
                         {post.title}
@@ -119,7 +102,7 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
                 </div>
               ) : hasSearchQuery ? (
                 <div className="p-12 text-center text-zinc-400">
-                  <p>{`${TEXT.notFoundPrefix} “${query}” ${TEXT.notFoundSuffix}`}</p>
+                  <p>{`${TEXT.notFoundPrefix} “${searchQuery}” ${TEXT.notFoundSuffix}`}</p>
                 </div>
               ) : (
                 <div className="p-12 text-center text-zinc-400">
@@ -213,7 +196,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const navItems = [
     { path: '/', label: TEXT.navPosts },
     { path: '/archive', label: TEXT.navArchive },
-    { path: '/tags', label: '标签' },
+    { path: '/tags', label: TEXT.navTags },
     { path: '/stats', label: TEXT.navStats },
     { path: '/friends', label: TEXT.navFriends },
     { path: '/about', label: TEXT.navAbout }
@@ -228,7 +211,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
         <Link to="/" className="group z-50 flex items-center space-x-3">
           <div className="relative">
-            <div className="absolute inset-0 bg-accent opacity-20 blur-md transition-opacity group-hover:opacity-40"></div>
+            <div className="absolute inset-0 bg-accent opacity-20 blur-md transition-opacity group-hover:opacity-40" />
             <img src={siteConfig.logo} alt="Logo" className="relative h-10 w-10 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105" />
           </div>
           <span className="font-serif text-2xl font-bold tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
@@ -268,12 +251,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: '100vh' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: 'easeInOut' }} className="fixed inset-0 top-0 z-40 overflow-hidden bg-paper/95 px-6 pt-24 backdrop-blur-xl dark:bg-void/95 md:hidden">
             <div className="flex flex-col items-center space-y-8 text-center">
               {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  onClick={() => setIsOpen(false)}
-                  to={item.path}
-                  className="text-4xl font-serif font-bold text-ink transition-colors hover:text-accent dark:text-white"
-                >
+                <Link key={item.path} onClick={() => setIsOpen(false)} to={item.path} className="text-4xl font-serif font-bold text-ink transition-colors hover:text-accent dark:text-white">
                   {item.label}
                 </Link>
               ))}
@@ -313,7 +291,7 @@ const Footer = () => {
 
   return (
     <footer className="relative mt-12 overflow-hidden border-t border-zinc-200 bg-paper py-12 dark:border-zinc-800 dark:bg-void md:mt-32">
-      <div className="absolute left-1/2 top-0 h-px w-full -translate-x-1/2 bg-gradient-to-r from-transparent via-accent to-transparent opacity-30"></div>
+      <div className="absolute left-1/2 top-0 h-px w-full -translate-x-1/2 bg-gradient-to-r from-transparent via-accent to-transparent opacity-30" />
       <div className="mx-auto max-w-7xl px-6">
         <div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-3">
           <div className="flex flex-col items-center space-y-4 md:items-start">
@@ -349,8 +327,8 @@ const Footer = () => {
             <div className="flex w-full flex-col gap-4">
               <div className="flex items-center justify-center gap-2 text-xs font-bold text-zinc-500 md:justify-end">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
                 </span>
                 <span>All Systems Normal</span>
               </div>
@@ -364,7 +342,7 @@ const Footer = () => {
               )}
               <div className="flex items-center justify-center gap-2 text-xs text-zinc-400 md:justify-end">
                 <Coffee size={14} className="text-amber-700 dark:text-amber-600" />
-                <span>Fueled by Coffee & Code</span>
+                <span>Fueled by Coffee &amp; Code</span>
               </div>
             </div>
           </div>
@@ -379,7 +357,7 @@ const Footer = () => {
               <span className="text-sm font-bold text-ink dark:text-white">{TEXT.sourceCode}</span>
               <span className="text-xs text-zinc-500 dark:text-zinc-400">Open Source on GitHub</span>
             </div>
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-accent/0 via-accent/5 to-accent/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-accent/0 via-accent/5 to-accent/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           </a>
         </div>
 
@@ -413,8 +391,8 @@ const ScrollProgress = () => {
 const Background = () => {
   return (
     <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden">
-      <div className="absolute left-[-10%] top-[-10%] h-[50%] w-[50%] animate-float rounded-full bg-zinc-200/40 blur-[120px] mix-blend-multiply dark:bg-zinc-800/20 dark:mix-blend-overlay"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] animate-float rounded-full bg-zinc-300/40 blur-[120px] mix-blend-multiply dark:bg-zinc-800/20 dark:mix-blend-overlay" style={{ animationDelay: '2s' }}></div>
+      <div className="absolute left-[-10%] top-[-10%] h-[50%] w-[50%] animate-float rounded-full bg-zinc-200/40 blur-[120px] mix-blend-multiply dark:bg-zinc-800/20 dark:mix-blend-overlay" />
+      <div className="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] animate-float rounded-full bg-zinc-300/40 blur-[120px] mix-blend-multiply dark:bg-zinc-800/20 dark:mix-blend-overlay" style={{ animationDelay: '2s' }} />
     </div>
   );
 };
@@ -428,13 +406,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+        event.preventDefault();
         setIsSearchOpen(true);
       }
 
-      if (e.key === 'Escape') {
+      if (event.key === 'Escape') {
         setIsSearchOpen(false);
       }
     };

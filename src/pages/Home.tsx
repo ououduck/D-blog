@@ -43,18 +43,18 @@ const filterAndSortPosts = (
 const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean; onShare: (post: PostMetadata) => void }> = ({ post, index, featured, onShare }) => {
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut", delay: index * 0.05 } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut', delay: index * 0.05 } }
   };
 
   const CategoryBadge = ({ text }: { text: string }) => (
-    <span className="backdrop-blur-md bg-white/80 dark:bg-black/60 border border-white/20 dark:border-white/10 text-ink dark:text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm z-10 transition-transform group-hover:scale-105">
+    <span className="z-10 rounded-full border border-white/20 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-ink shadow-sm backdrop-blur-md transition-transform group-hover:scale-105 dark:border-white/10 dark:bg-black/60 dark:text-white">
       {text}
     </span>
   );
 
-  const handleShareClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleShareClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
     onShare(post);
   };
 
@@ -62,31 +62,47 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
     return (
       <motion.div variants={cardVariants} className="col-span-full w-full">
         <Link to={`/post/${post.id}`} className="group block h-full">
-          <div className="relative overflow-hidden rounded-[2rem] bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 transition-all duration-500 hover:shadow-2xl hover:shadow-accent/10 dark:hover:border-zinc-700 flex flex-col md:flex-row h-auto md:h-[480px]">
-            <div className="relative w-full md:w-7/12 h-64 md:h-full overflow-hidden">
-              <div className="absolute inset-0 bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
+          <div className="relative flex h-auto flex-col overflow-hidden rounded-[2rem] border border-zinc-200 bg-white transition-all duration-500 hover:shadow-2xl hover:shadow-accent/10 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700 md:h-[480px] md:flex-row">
+            <div className="relative h-64 w-full overflow-hidden md:h-full md:w-7/12">
+              <div className="absolute inset-0 animate-pulse bg-zinc-200 dark:bg-zinc-800" />
               {post.coverImage ? (
-                <motion.img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
+                <motion.img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800"><Sparkles className="text-zinc-300 w-16 h-16" /></div>
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+                  <Sparkles className="h-16 w-16 text-zinc-300" />
+                </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-60" />
-              <div className="absolute top-6 left-6"><CategoryBadge text={post.category} /></div>
+              <div className="absolute left-6 top-6">
+                <CategoryBadge text={post.category} />
+              </div>
             </div>
-            <div className="relative w-full md:w-5/12 p-6 md:p-12 flex flex-col justify-center bg-white dark:bg-zinc-900/80 backdrop-blur-sm">
-               {post.top !== undefined && (
-                <div className="absolute top-6 right-6 text-accent bg-accent/5 border border-accent/10 p-2 rounded-full">
+            <div className="relative flex w-full flex-col justify-center bg-white p-6 backdrop-blur-sm dark:bg-zinc-900/80 md:w-5/12 md:p-12">
+              {post.top !== undefined && (
+                <div className="absolute right-6 top-6 rounded-full border border-accent/10 bg-accent/5 p-2 text-accent">
                   <Pin size={16} fill="currentColor" />
                 </div>
               )}
-              <div className="mb-4 md:mb-6"><span className="text-xs font-bold tracking-[0.2em] uppercase text-accent">Featured Post</span></div>
-              <h2 className="text-xl md:text-4xl font-serif font-bold text-ink dark:text-white mb-4 md:mb-6 leading-[1.1] group-hover:text-accent transition-colors duration-300">{post.title}</h2>
-              <p className="text-sm md:text-base text-zinc-500 dark:text-zinc-400 line-clamp-3 mb-6 md:mb-8 font-sans leading-relaxed">{post.excerpt}</p>
-              <div className="flex items-center text-zinc-400 text-xs font-bold tracking-wider gap-4 mt-auto">
-                <div className="flex items-center gap-2"><Calendar size={14} /><span>{post.date}</span></div>
-                <div className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></div>
-                <div className="flex items-center gap-2"><Clock size={14} /><span>{post.readTime}</span></div>
-                <button onClick={handleShareClick} className="ml-auto p-2 hover:text-accent hover:bg-accent/10 rounded-full transition-colors"><Share2 size={16} /></button>
+              <div className="mb-4 md:mb-6">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Featured Post</span>
+              </div>
+              <h2 className="mb-4 font-serif text-xl font-bold leading-[1.1] text-ink transition-colors duration-300 group-hover:text-accent dark:text-white md:mb-6 md:text-4xl">
+                {post.title}
+              </h2>
+              <p className="mb-6 font-sans text-sm leading-relaxed text-zinc-500 line-clamp-3 dark:text-zinc-400 md:mb-8 md:text-base">{post.excerpt}</p>
+              <div className="mt-auto flex items-center gap-4 text-xs font-bold tracking-wider text-zinc-400">
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} />
+                  <span>{post.date}</span>
+                </div>
+                <div className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+                <div className="flex items-center gap-2">
+                  <Clock size={14} />
+                  <span>{post.readTime}</span>
+                </div>
+                <button onClick={handleShareClick} className="ml-auto rounded-full p-2 transition-colors hover:bg-accent/10 hover:text-accent">
+                  <Share2 size={16} />
+                </button>
               </div>
             </div>
           </div>
@@ -96,34 +112,47 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
   }
 
   return (
-    <motion.div variants={cardVariants} className="flex flex-col h-full">
-      <Link to={`/post/${post.id}`} className="group relative flex flex-col h-full bg-white dark:bg-zinc-900/40 backdrop-blur-md rounded-2xl md:rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-2xl hover:shadow-zinc-200/50 dark:hover:shadow-accent/5 transition-all duration-500">
+    <motion.div variants={cardVariants} className="flex h-full flex-col">
+      <Link to={`/post/${post.id}`} className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white backdrop-blur-md transition-all duration-500 hover:border-zinc-300 hover:shadow-2xl hover:shadow-zinc-200/50 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:hover:border-zinc-700 dark:hover:shadow-accent/5 md:rounded-3xl">
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
           {post.coverImage ? (
-             <motion.img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-110" />
+            <motion.img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-110" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-300">
               <Sparkles className="h-10 w-10 opacity-50" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="absolute top-2 left-2 md:top-4 md:left-4"><CategoryBadge text={post.category} /></div>
-          <div className="absolute top-2 right-2 md:top-4 md:right-4 z-10">
-             {post.top !== undefined ? (
-               <div className="bg-accent text-white p-1 md:p-1.5 rounded-full shadow-lg shadow-accent/20"><Pin size={12} className="md:w-3.5 md:h-3.5" fill="currentColor" /></div>
-             ) : (
-               <div className="bg-white/90 dark:bg-black/80 backdrop-blur rounded-full p-2 md:p-2.5 opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-lg"><ArrowUpRight size={14} className="md:w-4 md:h-4 text-ink dark:text-white" /></div>
-             )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+          <div className="absolute left-2 top-2 md:left-4 md:top-4">
+            <CategoryBadge text={post.category} />
+          </div>
+          <div className="absolute right-2 top-2 z-10 md:right-4 md:top-4">
+            {post.top !== undefined ? (
+              <div className="rounded-full bg-accent p-1 text-white shadow-lg shadow-accent/20 md:p-1.5">
+                <Pin size={12} className="md:h-3.5 md:w-3.5" fill="currentColor" />
+              </div>
+            ) : (
+              <div className="rounded-full bg-white/90 p-2 opacity-0 shadow-lg backdrop-blur transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 dark:bg-black/80 md:p-2.5">
+                <ArrowUpRight size={14} className="text-ink dark:text-white md:h-4 md:w-4" />
+              </div>
+            )}
           </div>
         </div>
-        <div className="flex flex-col flex-grow p-4 md:p-7">
-          <h3 className="text-sm md:text-xl font-serif font-bold mb-2 md:mb-3 text-ink dark:text-gray-100 leading-tight group-hover:text-accent dark:group-hover:text-accent-light transition-colors line-clamp-2">{post.title}</h3>
-          <p className="hidden md:block text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed line-clamp-2 mb-6 flex-grow">{post.excerpt}</p>
-          <div className="pt-3 md:pt-5 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center text-[10px] md:text-xs text-zinc-400 font-bold tracking-wide mt-auto">
+        <div className="flex flex-grow flex-col p-4 md:p-7">
+          <h3 className="mb-2 line-clamp-2 text-sm font-serif font-bold leading-tight text-ink transition-colors group-hover:text-accent dark:text-gray-100 dark:group-hover:text-accent-light md:mb-3 md:text-xl">
+            {post.title}
+          </h3>
+          <p className="mb-6 hidden flex-grow line-clamp-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 md:block">{post.excerpt}</p>
+          <div className="mt-auto flex items-center justify-between border-t border-zinc-100 pt-3 text-[10px] font-bold tracking-wide text-zinc-400 dark:border-zinc-800 md:pt-5 md:text-xs">
             <div className="flex items-center gap-2 md:gap-3">
-              <div className="flex items-center gap-1 md:gap-1.5"><Calendar size={12} className="md:w-[13px] md:h-[13px]" /><span>{post.date}</span></div>
+              <div className="flex items-center gap-1 md:gap-1.5">
+                <Calendar size={12} className="md:h-[13px] md:w-[13px]" />
+                <span>{post.date}</span>
+              </div>
             </div>
-            <button onClick={handleShareClick} className="p-1.5 hover:text-accent hover:bg-accent/10 rounded-md transition-colors"><Share2 size={12} className="md:w-[14px] md:h-[14px]" /></button>
+            <button onClick={handleShareClick} className="rounded-md p-1.5 transition-colors hover:bg-accent/10 hover:text-accent">
+              <Share2 size={12} className="md:h-[14px] md:w-[14px]" />
+            </button>
           </div>
         </div>
       </Link>
@@ -141,51 +170,67 @@ interface FilterBarProps {
 
 const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, sortOrder, onToggleSort }) => {
   return (
-    <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-12 px-2">
-        <div className="overflow-x-auto pb-2 md:pb-0 no-scrollbar w-full md:w-auto -mx-4 md:mx-0 px-4 md:px-0">
-          <div className="flex space-x-2">
-            {[ALL_CATEGORY, ...categories].map((cat) => (
-              <button key={cat} onClick={() => onSelect(cat)} className={`px-5 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all duration-300 border whitespace-nowrap ${selected === cat ? 'bg-ink text-white border-ink dark:bg-white dark:text-ink dark:border-white shadow-lg transform scale-105' : 'bg-transparent text-zinc-500 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-ink dark:hover:text-white'}`}>{cat}</button>
-            ))}
-          </div>
+    <div className="mb-12 flex flex-col items-center justify-between gap-4 px-2 md:flex-row">
+      <div className="-mx-4 w-full overflow-x-auto px-4 pb-2 no-scrollbar md:mx-0 md:w-auto md:px-0 md:pb-0">
+        <div className="flex space-x-2">
+          {[ALL_CATEGORY, ...categories].map((category) => (
+            <button
+              key={category}
+              onClick={() => onSelect(category)}
+              className={`whitespace-nowrap rounded-full border px-5 py-2.5 text-sm font-bold tracking-wide transition-all duration-300 ${
+                selected === category
+                  ? 'scale-105 transform border-ink bg-ink text-white shadow-lg dark:border-white dark:bg-white dark:text-ink'
+                  : 'border-zinc-200 bg-transparent text-zinc-500 hover:border-zinc-400 hover:text-ink dark:border-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
         </div>
-        <button onClick={onToggleSort} className="flex items-center space-x-2 px-5 py-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-ink dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-300 text-sm font-bold tracking-wide w-full md:w-auto justify-center">
-           {sortOrder === 'newest' ? <ArrowDownWideNarrow size={16} /> : <ArrowUpWideNarrow size={16} />}
-           <span>{sortOrder === 'newest' ? '最新' : '最早'}</span>
-        </button>
+      </div>
+      <button onClick={onToggleSort} className="flex w-full items-center justify-center space-x-2 rounded-full border border-zinc-200 px-5 py-2.5 text-sm font-bold tracking-wide text-zinc-500 transition-all duration-300 hover:border-zinc-400 hover:text-ink dark:border-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white md:w-auto">
+        {sortOrder === 'newest' ? <ArrowDownWideNarrow size={16} /> : <ArrowUpWideNarrow size={16} />}
+        <span>{sortOrder === 'newest' ? '最新' : '最早'}</span>
+      </button>
     </div>
   );
 };
 
 const Hero = ({ onSearch, searchQuery, onClearSearch }: { onSearch: (val: string) => void; searchQuery: string; onClearSearch: () => void }) => {
   return (
-    <div className="py-20 md:py-32 flex flex-col items-center text-center relative z-10 px-4">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8 relative">
-           <span className="text-accent font-bold tracking-[0.3em] uppercase text-xs md:text-sm relative z-10">{siteConfig.subtitle}</span>
-           <div className="absolute -inset-4 bg-accent/5 blur-xl rounded-full z-0"></div>
+    <div className="relative z-10 flex flex-col items-center px-4 py-20 text-center md:py-32">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="relative mb-8">
+        <span className="relative z-10 text-xs font-bold uppercase tracking-[0.3em] text-accent md:text-sm">{siteConfig.subtitle}</span>
+        <div className="absolute -inset-4 rounded-full bg-accent/5 blur-xl" />
       </motion.div>
-      <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.8, ease: "easeOut" }} className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold text-ink dark:text-white mb-8 tracking-tight leading-[1.1]">{siteConfig.title}</motion.h1>
-      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="text-base md:text-xl text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-12 font-sans">{siteConfig.description}</motion.p>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="w-full flex flex-col items-center gap-6">
-         <div className="relative w-full max-w-sm md:max-w-md group">
-           <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><Search className="text-zinc-400 group-focus-within:text-accent transition-colors" size={20} /></div>
-           <input 
-             type="text" 
-             placeholder="搜索文章..." 
-             value={searchQuery}
-             onChange={(e) => onSearch(e.target.value)} 
-             className="w-full pl-12 pr-12 py-4 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:border-accent dark:focus:border-accent outline-none shadow-xl shadow-zinc-200/20 dark:shadow-none transition-all duration-300 text-ink dark:text-white placeholder:text-zinc-400 text-base focus:ring-4 ring-accent/10" 
-           />
-           {searchQuery && (
-             <button 
-               onClick={onClearSearch}
-               className="absolute inset-y-0 right-0 pr-5 flex items-center text-zinc-400 hover:text-accent transition-colors"
-             >
-               <X size={18} />
-             </button>
-           )}
-         </div>
-         <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900/50 hover:bg-orange-100 dark:hover:bg-orange-900/50 hover:scale-105 transition-all duration-300 text-xs font-bold tracking-wider uppercase shadow-sm"><Rss size={14} /><span>订阅 RSS</span></a>
+      <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.8, ease: 'easeOut' }} className="mb-8 font-serif text-5xl font-bold leading-[1.1] tracking-tight text-ink dark:text-white md:text-7xl lg:text-8xl">
+        {siteConfig.title}
+      </motion.h1>
+      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="mx-auto mb-12 max-w-2xl font-sans text-base leading-relaxed text-zinc-500 dark:text-zinc-400 md:text-xl">
+        {siteConfig.description}
+      </motion.p>
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="flex w-full flex-col items-center gap-6">
+        <div className="group relative w-full max-w-sm md:max-w-md">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5">
+            <Search className="text-zinc-400 transition-colors group-focus-within:text-accent" size={20} />
+          </div>
+          <input
+            type="text"
+            placeholder="搜索文章..."
+            value={searchQuery}
+            onChange={(event) => onSearch(event.target.value)}
+            className="w-full rounded-full border border-zinc-200 bg-white py-4 pl-12 pr-12 text-base text-ink outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-accent focus:ring-4 ring-accent/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-accent"
+          />
+          {searchQuery && (
+            <button onClick={onClearSearch} className="absolute inset-y-0 right-0 flex items-center pr-5 text-zinc-400 transition-colors hover:text-accent">
+              <X size={18} />
+            </button>
+          )}
+        </div>
+        <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-5 py-2 text-xs font-bold uppercase tracking-wider text-orange-600 shadow-sm transition-all duration-300 hover:scale-105 hover:bg-orange-100 dark:border-orange-900/50 dark:bg-orange-950/30 dark:text-orange-400 dark:hover:bg-orange-900/50">
+          <Rss size={14} />
+          <span>订阅 RSS</span>
+        </a>
       </motion.div>
     </div>
   );
@@ -205,16 +250,16 @@ export const Home = () => {
   });
 
   useEffect(() => {
-    Promise.all([getPosts(), getAllCategories()]).then(([posts, cats]) => {
+    Promise.all([getPosts(), getAllCategories()]).then(([posts, categoryList]) => {
       setAllPosts(posts);
-      setCategories(cats);
+      setCategories(categoryList);
       setLoading(false);
     });
 
     const handleResize = () => {
       setPostsPerPage(window.innerWidth < 768 ? 5 : 9);
     };
-    
+
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -245,72 +290,68 @@ export const Home = () => {
     <motion.div initial="initial" animate="animate" exit="exit" className="pb-10 md:pb-20">
       <Seo title="首页" />
       <Hero onSearch={handleSearch} searchQuery={searchQuery} onClearSearch={handleClearSearch} />
-      
+
       {!loading && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
           {hasSearchQuery && (
             <div className="mb-6 px-2">
               <div className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
                 <Search size={16} className="text-accent" />
-                <span>搜索 "<span className="font-bold text-accent">{searchQuery}</span>" 找到 {displayedPosts.length} 篇文章</span>
-                <button 
-                  onClick={handleClearSearch}
-                  className="ml-auto text-xs px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 hover:border-accent hover:text-accent transition-colors"
-                >
+                <span>
+                  搜索 "<span className="font-bold text-accent">{searchQuery}</span>" 找到 {displayedPosts.length} 篇文章
+                </span>
+                <button onClick={handleClearSearch} className="ml-auto rounded-full border border-zinc-200 px-3 py-1.5 text-xs transition-colors hover:border-accent hover:text-accent dark:border-zinc-800">
                   清除搜索
                 </button>
               </div>
             </div>
           )}
-          <FilterBar categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} sortOrder={sortOrder} onToggleSort={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')} />
+          <FilterBar categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} sortOrder={sortOrder} onToggleSort={() => setSortOrder((previous) => (previous === 'newest' ? 'oldest' : 'newest'))} />
         </motion.div>
       )}
 
       <div id="posts-grid" className="scroll-mt-32">
         {loading || isSearching ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1, 2, 3].map(i => <div key={i} className="h-80 bg-zinc-100 dark:bg-zinc-800 rounded-3xl animate-pulse"></div>)}
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="h-80 animate-pulse rounded-3xl bg-zinc-100 dark:bg-zinc-800" />
+            ))}
           </div>
         ) : (
           <div className="space-y-16">
-            <motion.div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8" variants={{ animate: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible" key={`${selectedCategory}-${sortOrder}-${currentPage}-${searchQuery}`}>
+            <motion.div className="grid grid-cols-2 gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3" variants={{ animate: { transition: { staggerChildren: 0.1 } } }} initial="hidden" animate="visible" key={`${selectedCategory}-${sortOrder}-${currentPage}-${searchQuery}`}>
               {currentPosts.length > 0 ? (
-                  currentPosts.map((post, index) => <PostCard key={post.id} post={post} index={index} featured={!!post.featured} onShare={setSharePost} />)
+                currentPosts.map((post, index) => <PostCard key={post.id} post={post} index={index} featured={!!post.featured} onShare={setSharePost} />)
               ) : (
-                  <div className="col-span-full text-center py-32">
-                    <p className="text-xl text-zinc-400 font-serif mb-2">
-                      {hasSearchQuery ? '未找到匹配的文章' : '暂无相关文章'}
-                    </p>
-                    {hasSearchQuery && (
-                      <button 
-                        onClick={handleClearSearch}
-                        className="mt-4 text-sm text-accent hover:underline"
-                      >
-                        清除搜索条件
-                      </button>
-                    )}
-                  </div>
+                <div className="col-span-full py-32 text-center">
+                  <p className="mb-2 font-serif text-xl text-zinc-400">{hasSearchQuery ? '未找到匹配的文章' : '暂无相关文章'}</p>
+                  {hasSearchQuery && (
+                    <button onClick={handleClearSearch} className="mt-4 text-sm text-accent hover:underline">
+                      清除搜索条件
+                    </button>
+                  )}
+                </div>
               )}
             </motion.div>
 
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-8 md:mt-16">
-                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="p-3 rounded-full border border-zinc-200 dark:border-zinc-800 hover:border-accent hover:text-accent disabled:opacity-30 disabled:hover:border-zinc-200 transition-colors"><ChevronLeft size={20} /></button>
-                <span className="text-sm font-bold text-zinc-500 font-mono">{currentPage} / {totalPages}</span>
-                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="p-3 rounded-full border border-zinc-200 dark:border-zinc-800 hover:border-accent hover:text-accent disabled:opacity-30 disabled:hover:border-zinc-200 transition-colors"><ChevronRight size={20} /></button>
+              <div className="mt-8 flex items-center justify-center gap-4 md:mt-16">
+                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="rounded-full border border-zinc-200 p-3 transition-colors hover:border-accent hover:text-accent disabled:opacity-30 disabled:hover:border-zinc-200 dark:border-zinc-800">
+                  <ChevronLeft size={20} />
+                </button>
+                <span className="font-mono text-sm font-bold text-zinc-500">
+                  {currentPage} / {totalPages}
+                </span>
+                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="rounded-full border border-zinc-200 p-3 transition-colors hover:border-accent hover:text-accent disabled:opacity-30 disabled:hover:border-zinc-200 dark:border-zinc-800">
+                  <ChevronRight size={20} />
+                </button>
               </div>
             )}
           </div>
         )}
       </div>
 
-      <ShareModal 
-        isOpen={!!sharePost} 
-        onClose={() => setSharePost(null)} 
-        title={sharePost?.title || ''} 
-        excerpt={sharePost?.excerpt || ''} 
-        url={sharePost ? `${window.location.origin}/post/${sharePost.id}` : ''} 
-      />
+      <ShareModal isOpen={!!sharePost} onClose={() => setSharePost(null)} title={sharePost?.title || ''} excerpt={sharePost?.excerpt || ''} url={sharePost ? `${window.location.origin}/post/${sharePost.id}` : ''} />
     </motion.div>
   );
 };

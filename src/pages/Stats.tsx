@@ -26,9 +26,7 @@ const formatDateTime = (dateText: string | null) => {
   }).format(new Date(dateText));
 };
 
-const formatValue = (value: number) => {
-  return new Intl.NumberFormat('zh-CN').format(value);
-};
+const formatValue = (value: number) => new Intl.NumberFormat('zh-CN').format(value);
 
 const formatBytes = (bytes: number) => {
   if (bytes === 0) return '0 B';
@@ -38,16 +36,16 @@ const formatBytes = (bytes: number) => {
   return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
 };
 
-const SummaryCard = ({ 
-  icon: Icon, 
-  title, 
-  value, 
-  detail 
-}: { 
-  icon: React.ElementType; 
-  title: string; 
-  value: string | number; 
-  detail: string 
+const SummaryCard = ({
+  icon: Icon,
+  title,
+  value,
+  detail
+}: {
+  icon: React.ElementType;
+  title: string;
+  value: string | number;
+  detail: string;
 }) => (
   <div className="rounded-2xl border border-white/60 bg-white/70 p-5 backdrop-blur dark:border-white/10 dark:bg-white/5">
     <div className="mb-3 flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
@@ -71,7 +69,7 @@ export const Stats = () => {
     } else {
       setLoading(true);
     }
-    
+
     try {
       const data = await getCloudflareSnapshot(forceRefresh);
       setSnapshot(data);
@@ -87,28 +85,16 @@ export const Stats = () => {
     loadData();
   }, []);
 
-  const handleRefresh = () => {
-    loadData(true);
-  };
-
-  const currentTimeWindow = snapshot.timeWindows.find(tw => tw.days === selectedDays) || snapshot.timeWindows[0] || null;
+  const currentTimeWindow = snapshot.timeWindows.find((timeWindow) => timeWindow.days === selectedDays) || snapshot.timeWindows[0] || null;
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 24 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      exit={{ opacity: 0, y: -24 }} 
-      className="pb-10 md:pb-20"
-    >
-      <Seo
-        title="统计"
-        description="基于 Cloudflare Analytics API 生成的站点统计面板，数据在构建期拉取，不暴露 API Token。"
-      />
+    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }} className="pb-10 md:pb-20">
+      <Seo title="统计" description="基于 Cloudflare Analytics API 生成的站点统计面板，数据在构建期拉取，不暴露 API Token。" />
 
-      <section className="relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.12),_transparent_38%),linear-gradient(135deg,_rgba(255,255,255,0.96),_rgba(244,244,245,0.9))] p-8 md:p-12 dark:border-zinc-800 dark:bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.2),_transparent_40%),linear-gradient(135deg,_rgba(24,24,27,0.96),_rgba(9,9,11,0.96))]">
+      <section className="relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.12),_transparent_38%),linear-gradient(135deg,_rgba(255,255,255,0.96),_rgba(244,244,245,0.9))] p-8 dark:border-zinc-800 dark:bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.2),_transparent_40%),linear-gradient(135deg,_rgba(24,24,27,0.96),_rgba(9,9,11,0.96))] md:p-12">
         <div className="absolute right-6 top-6 flex gap-2">
           <button
-            onClick={handleRefresh}
+            onClick={() => loadData(true)}
             disabled={refreshing}
             className="rounded-full border border-accent/20 bg-accent/10 p-3 text-accent transition-all hover:bg-accent/20 disabled:opacity-50"
             title="刷新数据"
@@ -119,13 +105,12 @@ export const Stats = () => {
             <BarChart3 size={22} />
           </div>
         </div>
+
         <div className="max-w-3xl">
           <p className="mb-4 text-xs font-bold uppercase tracking-[0.35em] text-accent">Analytics Dashboard</p>
-          <h1 className="mb-6 font-serif text-4xl font-bold tracking-tight text-ink dark:text-white md:text-6xl">
-            站点访问统计
-          </h1>
+          <h1 className="mb-6 font-serif text-4xl font-bold tracking-tight text-ink dark:text-white md:text-6xl">站点访问统计</h1>
           <p className="max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 md:text-base">
-            基于 Cloudflare Analytics 的实时访问数据分析，每5分钟自动更新，展示关键指标与详细数据。
+            基于 Cloudflare Analytics 的实时访问数据分析，每 5 分钟自动更新，展示关键指标与详细数据。
           </p>
         </div>
 
@@ -139,17 +124,17 @@ export const Stats = () => {
         {!loading && snapshot.enabled && snapshot.timeWindows.length > 0 && (
           <>
             <div className="mt-8 flex flex-wrap gap-2">
-              {snapshot.timeWindows.map((tw) => (
+              {snapshot.timeWindows.map((timeWindow) => (
                 <button
-                  key={tw.days}
-                  onClick={() => setSelectedDays(tw.days)}
+                  key={timeWindow.days}
+                  onClick={() => setSelectedDays(timeWindow.days)}
                   className={`rounded-full px-4 py-2 text-sm font-bold transition-all ${
-                    selectedDays === tw.days
+                    selectedDays === timeWindow.days
                       ? 'border-2 border-accent bg-accent text-white'
                       : 'border-2 border-white/60 bg-white/70 text-zinc-600 hover:border-accent/40 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300'
                   }`}
                 >
-                  最近 {tw.days} 天
+                  最近 {timeWindow.days} 天
                 </button>
               ))}
             </div>
@@ -157,30 +142,10 @@ export const Stats = () => {
             {currentTimeWindow && (
               <>
                 <div className="mt-10 grid gap-4 md:grid-cols-4">
-                  <SummaryCard
-                    icon={Eye}
-                    title="页面浏览"
-                    value={formatValue(currentTimeWindow.data.pageViews)}
-                    detail={`最近 ${selectedDays} 天的浏览量`}
-                  />
-                  <SummaryCard
-                    icon={Users}
-                    title="独立访客"
-                    value={formatValue(currentTimeWindow.data.uniques)}
-                    detail="唯一访客数量"
-                  />
-                  <SummaryCard
-                    icon={TrendingUp}
-                    title="请求总数"
-                    value={formatValue(currentTimeWindow.data.requests)}
-                    detail="HTTP 请求统计"
-                  />
-                  <SummaryCard
-                    icon={HardDrive}
-                    title="流量消耗"
-                    value={formatBytes(currentTimeWindow.data.bandwidth)}
-                    detail="总带宽使用量"
-                  />
+                  <SummaryCard icon={Eye} title="页面浏览" value={formatValue(currentTimeWindow.data.pageViews)} detail={`最近 ${selectedDays} 天的浏览量`} />
+                  <SummaryCard icon={Users} title="独立访客" value={formatValue(currentTimeWindow.data.uniques)} detail="唯一访客数量" />
+                  <SummaryCard icon={TrendingUp} title="请求总数" value={formatValue(currentTimeWindow.data.requests)} detail="HTTP 请求统计" />
+                  <SummaryCard icon={HardDrive} title="流量消耗" value={formatBytes(currentTimeWindow.data.bandwidth)} detail="总带宽使用量" />
                 </div>
 
                 {currentTimeWindow.error && (
@@ -198,7 +163,7 @@ export const Stats = () => {
             <ShieldCheck size={48} className="mx-auto mb-4 text-zinc-400" />
             <h3 className="mb-2 font-serif text-xl font-bold text-ink dark:text-white">未配置 Cloudflare API</h3>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              请在环境变量中配置 CLOUDFLARE_API_TOKEN 和 CLOUDFLARE_ZONE_ID 后重新构建
+              请在环境变量中配置 CLOUDFLARE_API_TOKEN 和 CLOUDFLARE_ZONE_ID 后重新构建。
             </p>
           </div>
         )}
@@ -229,9 +194,7 @@ export const Stats = () => {
               </div>
               <div>
                 <div className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-400">更新时间</div>
-                <div className="mt-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                  {formatDateTime(snapshot.fetchedAt)}
-                </div>
+                <div className="mt-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">{formatDateTime(snapshot.fetchedAt)}</div>
               </div>
             </div>
           </div>
