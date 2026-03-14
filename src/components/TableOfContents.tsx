@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { List, X } from 'lucide-react';
 
@@ -7,88 +7,7 @@ import type { MarkdownHeading } from '@/utils/headings';
 const formatIndex = (value: number) => String(value).padStart(2, '0');
 
 export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ headings }) => {
-  const [activeId, setActiveId] = useState<string>('');
   const [isOpen, setIsOpen] = useState(false);
-  const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-
-  useEffect(() => {
-    setActiveId('');
-    setIsOpen(false);
-    itemRefs.current = {};
-  }, [headings]);
-
-  useEffect(() => {
-    if (headings.length === 0) {
-      return;
-    }
-
-    const headingElements = headings
-      .map(({ id }) => document.getElementById(id))
-      .filter((element): element is HTMLElement => Boolean(element));
-
-    if (headingElements.length === 0) {
-      return;
-    }
-
-    const activationOffset = 120;
-    let ticking = false;
-
-    const updateActiveId = () => {
-      const viewportBottom = window.scrollY + window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-
-      if (viewportBottom >= documentHeight - 24) {
-        setActiveId(headingElements[headingElements.length - 1].id);
-        return;
-      }
-
-      let nextActiveId = headingElements[0].id;
-      let closestDistance = Number.POSITIVE_INFINITY;
-
-      for (const heading of headingElements) {
-        const currentDistance = Math.abs(heading.getBoundingClientRect().top - activationOffset);
-
-        if (currentDistance < closestDistance) {
-          closestDistance = currentDistance;
-          nextActiveId = heading.id;
-        }
-      }
-
-      setActiveId(nextActiveId);
-    };
-
-    const onScroll = () => {
-      if (ticking) {
-        return;
-      }
-
-      ticking = true;
-      window.requestAnimationFrame(() => {
-        updateActiveId();
-        ticking = false;
-      });
-    };
-
-    updateActiveId();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-    };
-  }, [headings]);
-
-  useEffect(() => {
-    if (!activeId) {
-      return;
-    }
-
-    itemRefs.current[activeId]?.scrollIntoView({
-      block: 'nearest',
-      behavior: 'smooth'
-    });
-  }, [activeId]);
 
   const scrollToHeading = (id: string) => {
     const element = document.getElementById(id);
@@ -105,7 +24,6 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
       behavior: 'smooth'
     });
 
-    setActiveId(id);
     setIsOpen(false);
   };
 
@@ -139,41 +57,23 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
       <nav aria-label={'\u76ee\u5f55'} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1 no-scrollbar">
         <ol className="space-y-2">
           {headings.map((item, index) => {
-            const isActive = activeId === item.id;
             const isSubLevel = item.level > 1;
 
             return (
               <li key={item.id} style={{ marginLeft: `${(item.level - 1) * 12}px` }}>
                 <button
-                  ref={(element) => {
-                    itemRefs.current[item.id] = element;
-                  }}
                   type="button"
                   onClick={() => scrollToHeading(item.id)}
-                  className={`group relative flex w-full items-start gap-3 rounded-[1.1rem] border px-3.5 py-3 text-left transition-all duration-300 ${
-                    isActive
-                      ? 'border-accent/20 bg-accent/[0.08] text-ink shadow-[0_16px_36px_-30px_rgba(192,57,43,0.45)] dark:bg-accent/[0.12] dark:text-white'
-                      : 'border-transparent bg-transparent text-zinc-500 hover:border-zinc-200/80 hover:bg-white/80 hover:text-ink dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800/70 dark:hover:text-white'
-                  }`}
+                  className="group relative flex w-full items-start gap-3 rounded-[1.1rem] border border-transparent bg-transparent px-3.5 py-3 text-left text-zinc-500 transition-all duration-300 hover:border-zinc-200/80 hover:bg-white/80 hover:text-ink dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800/70 dark:hover:text-white"
                 >
                   <span
-                    className={`mt-1 inline-flex min-w-[2.2rem] justify-center rounded-full px-2 py-1 font-mono text-[10px] font-semibold tracking-[0.18em] transition-colors ${
-                      isActive
-                        ? 'bg-accent text-white'
-                        : 'bg-zinc-100 text-zinc-400 group-hover:bg-accent/8 group-hover:text-accent dark:bg-zinc-800 dark:text-zinc-500'
-                    }`}
+                    className="mt-1 inline-flex min-w-[2.2rem] justify-center rounded-full bg-zinc-100 px-2 py-1 font-mono text-[10px] font-semibold tracking-[0.18em] text-zinc-400 transition-colors group-hover:bg-accent/8 group-hover:text-accent dark:bg-zinc-800 dark:text-zinc-500"
                   >
                     {formatIndex(index + 1)}
                   </span>
 
                   <span
-                    className={`block flex-1 leading-6 ${
-                      isActive
-                        ? 'text-[14px] font-semibold text-ink dark:text-white'
-                        : isSubLevel
-                          ? 'text-[13px] text-zinc-500 dark:text-zinc-400'
-                          : 'text-[13.5px]'
-                    }`}
+                    className={`block flex-1 leading-6 ${isSubLevel ? 'text-[13px] text-zinc-500 dark:text-zinc-400' : 'text-[13.5px]'}`}
                   >
                     {item.text}
                   </span>
