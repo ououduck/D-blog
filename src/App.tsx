@@ -34,23 +34,24 @@ const LoadingScreen = () => {
 
   return (
     <motion.div
-      className="pointer-events-none fixed inset-0 z-[90] flex items-center justify-center overflow-hidden bg-ink/92 text-white backdrop-blur-sm dark:bg-black/92"
+      className="pointer-events-none fixed inset-0 z-[90] flex items-center justify-center overflow-hidden bg-white/10 backdrop-blur-2xl dark:bg-black/10"
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.45, ease: 'easeOut' } }}
       aria-hidden="true"
     >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.18),_transparent_45%)] dark:bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_45%)]" />
       <div className="relative flex flex-col items-center">
         <div className="flex overflow-hidden pb-2">
           {siteConfig.title.split('').map((char, index) => (
-            <motion.span key={`${char}-${index}`} custom={index} variants={letterVariants} initial="initial" animate="animate" className="font-serif text-5xl font-bold tracking-tighter md:text-7xl">
+            <motion.span key={`${char}-${index}`} custom={index} variants={letterVariants} initial="initial" animate="animate" className="font-serif text-5xl font-bold tracking-tighter text-white mix-blend-difference md:text-7xl">
               {char}
             </motion.span>
           ))}
         </div>
-        <motion.div initial={{ scaleX: 0, opacity: 0 }} animate={{ scaleX: 1, opacity: 1 }} transition={{ delay: 0.45, duration: 0.5 }} className="relative mt-5 h-[2px] w-44 overflow-hidden rounded-full bg-zinc-700 md:w-60">
+        <motion.div initial={{ scaleX: 0, opacity: 0 }} animate={{ scaleX: 1, opacity: 1 }} transition={{ delay: 0.45, duration: 0.5 }} className="relative mt-5 h-[2px] w-44 overflow-hidden rounded-full bg-white/35 mix-blend-difference md:w-60">
           <motion.div className="absolute inset-y-0 left-0 w-full bg-accent" initial={{ x: '-100%' }} animate={{ x: '100%' }} transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }} />
         </motion.div>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.72 }} transition={{ delay: 0.6 }} className="mt-5 text-[10px] font-light uppercase tracking-[0.55em]">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.8 }} transition={{ delay: 0.6 }} className="mt-5 text-[10px] font-light uppercase tracking-[0.55em] text-white mix-blend-difference">
           Loading
         </motion.div>
       </div>
@@ -68,19 +69,17 @@ const AnimatedRoutes = () => {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait">
-      <Suspense fallback={<PageLoader />}>
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<Home />} />
-          <Route path="/post/:id" element={<Post />} />
-          <Route path="/archive" element={<ArchivePage />} />
-          <Route path="/tags" element={<Tags />} />
-          <Route path="/stats" element={<Stats />} />
-          <Route path="/friends" element={<Friends />} />
-          <Route path="/about" element={<About />} />
-        </Routes>
-      </Suspense>
-    </AnimatePresence>
+    <Suspense fallback={<PageLoader />}>
+      <Routes location={location}>
+        <Route path="/" element={<Home />} />
+        <Route path="/post/:id" element={<Post />} />
+        <Route path="/archive" element={<ArchivePage />} />
+        <Route path="/tags" element={<Tags />} />
+        <Route path="/stats" element={<Stats />} />
+        <Route path="/friends" element={<Friends />} />
+        <Route path="/about" element={<About />} />
+      </Routes>
+    </Suspense>
   );
 };
 
