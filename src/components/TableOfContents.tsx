@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { List, X } from 'lucide-react';
 
@@ -21,6 +21,7 @@ export const TableOfContents: React.FC<{ content: string }> = ({ content }) => {
   const [toc, setToc] = useState<TocItem[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [isOpen, setIsOpen] = useState(false);
+  const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   useEffect(() => {
     const headings = content.match(/^#{1,3}\s+.+$/gm);
@@ -50,32 +51,72 @@ export const TableOfContents: React.FC<{ content: string }> = ({ content }) => {
       return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries.filter((entry) => entry.isIntersecting);
+    const headingElements = toc
+      .map(({ id }) => document.getElementById(id))
+      .filter((element): element is HTMLElement => Boolean(element));
 
-        if (visibleEntries.length === 0) {
-          return;
+    if (headingElements.length === 0) {
+      return;
+    }
+
+    const activationOffset = 120;
+    let ticking = false;
+
+    const updateActiveId = () => {
+      const viewportBottom = window.scrollY + window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+
+      if (viewportBottom >= documentHeight - 24) {
+        setActiveId(headingElements[headingElements.length - 1].id);
+        return;
+      }
+
+      let nextActiveId = headingElements[0].id;
+
+      for (const heading of headingElements) {
+        if (heading.getBoundingClientRect().top <= activationOffset) {
+          nextActiveId = heading.id;
+          continue;
         }
 
-        const closestEntry = visibleEntries.sort(
-          (entryA, entryB) => Math.abs(entryA.boundingClientRect.top) - Math.abs(entryB.boundingClientRect.top)
-        )[0];
-
-        setActiveId(closestEntry.target.id);
-      },
-      { rootMargin: '-96px 0px -65% 0px', threshold: [0, 0.25, 0.5, 1] }
-    );
-
-    toc.forEach(({ id }) => {
-      const element = document.getElementById(id);
-      if (element) {
-        observer.observe(element);
+        break;
       }
-    });
 
-    return () => observer.disconnect();
+      setActiveId(nextActiveId);
+    };
+
+    const onScroll = () => {
+      if (ticking) {
+        return;
+      }
+
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        updateActiveId();
+        ticking = false;
+      });
+    };
+
+    updateActiveId();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
   }, [toc]);
+
+  useEffect(() => {
+    if (!activeId) {
+      return;
+    }
+
+    itemRefs.current[activeId]?.scrollIntoView({
+      block: 'nearest',
+      behavior: 'smooth'
+    });
+  }, [activeId]);
 
   const scrollToHeading = (id: string) => {
     const element = document.getElementById(id);
@@ -92,6 +133,7 @@ export const TableOfContents: React.FC<{ content: string }> = ({ content }) => {
       behavior: 'smooth'
     });
 
+    setActiveId(id);
     setIsOpen(false);
   };
 
@@ -133,6 +175,10 @@ export const TableOfContents: React.FC<{ content: string }> = ({ content }) => {
             return (
               <li key={item.id} style={{ marginLeft: `${(item.level - 1) * 12}px` }}>
                 <button
+                  ref={(element) => {
+                    itemRefs.current[item.id] = element;
+                  }}
+                  type="button"
                   onClick={() => scrollToHeading(item.id)}
                   className={`group relative flex w-full items-start gap-3 rounded-[1.1rem] border px-3.5 py-3 text-left transition-all duration-300 ${
                     isActive
