@@ -43,14 +43,15 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
       }
 
       let nextActiveId = headingElements[0].id;
+      let closestDistance = Number.POSITIVE_INFINITY;
 
       for (const heading of headingElements) {
-        if (heading.getBoundingClientRect().top <= activationOffset) {
-          nextActiveId = heading.id;
-          continue;
-        }
+        const currentDistance = Math.abs(heading.getBoundingClientRect().top - activationOffset);
 
-        break;
+        if (currentDistance < closestDistance) {
+          closestDistance = currentDistance;
+          nextActiveId = heading.id;
+        }
       }
 
       setActiveId(nextActiveId);
