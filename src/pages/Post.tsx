@@ -16,6 +16,7 @@ import { TableOfContents } from '../components/TableOfContents';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { NotFoundState } from '@/components/NotFoundState';
 import { ReadingProgressBadge } from '@/components/ReadingProgressBadge';
+import { extractTextFromReactNode, slugifyHeading } from '@/utils/headings';
 
 type BlockCodeProps = {
   isBlock?: boolean;
@@ -220,15 +221,15 @@ const createMarkdownComponents = (
     );
   },
   h1: ({ children, ...props }) => {
-    const id = String(children).toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-').replace(/^-+|-+$/g, '');
+    const id = slugifyHeading(extractTextFromReactNode(children));
     return <h1 id={id} {...props}>{children}</h1>;
   },
   h2: ({ children, ...props }) => {
-    const id = String(children).toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-').replace(/^-+|-+$/g, '');
+    const id = slugifyHeading(extractTextFromReactNode(children));
     return <h2 id={id} {...props}>{children}</h2>;
   },
   h3: ({ children, ...props }) => {
-    const id = String(children).toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-').replace(/^-+|-+$/g, '');
+    const id = slugifyHeading(extractTextFromReactNode(children));
     return <h3 id={id} {...props}>{children}</h3>;
   }
 });

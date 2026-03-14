@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { List, X } from 'lucide-react';
+import { slugifyHeading, stripInlineMarkdown } from '@/utils/headings';
 
 interface TocItem {
   id: string;
@@ -24,11 +25,8 @@ export const TableOfContents: React.FC<{ content: string }> = ({ content }) => {
 
     const tocItems = headings.map((heading) => {
       const level = heading.match(/^#+/)?.[0].length || 1;
-      const text = heading.replace(/^#+\s+/, '');
-      const id = text
-        .toLowerCase()
-        .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
-        .replace(/^-+|-+$/g, '');
+      const text = stripInlineMarkdown(heading.replace(/^#+\s+/, ''));
+      const id = slugifyHeading(text);
 
       return { id, text, level };
     });
