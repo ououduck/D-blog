@@ -384,6 +384,8 @@ server {
    CLOUDFLARE_ZONE_ID=your_zone_id
    ```
 
+说明：由于 Cloudflare Zone ID 统计以主域名为单位，当前统计页统一使用 `pldduck.com` 的 Zone 数据，并仅展示稳定可获取的核心指标。
+
 本地开发时可参考 `.env.example` 配置环境变量。
 
 ## 📄 License

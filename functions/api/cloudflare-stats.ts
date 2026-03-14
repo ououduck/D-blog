@@ -5,22 +5,9 @@ interface CloudflareAnalyticsData {
   bandwidth: number;
 }
 
-interface CloudflareTopItem {
-  path: string;
-  requests: number;
-  pageViews: number;
-}
-
-interface CloudflareCountryItem {
-  country: string;
-  requests: number;
-}
-
 interface CloudflareTimeWindow {
   days: number;
   data: CloudflareAnalyticsData;
-  topPages: CloudflareTopItem[];
-  topCountries: CloudflareCountryItem[];
   error: string | null;
 }
 
@@ -116,16 +103,12 @@ const fetchAnalyticsForDays = async (
     return {
       days,
       data: totals,
-      topPages: [],
-      topCountries: [],
       error: null
     };
   } catch (error) {
     return {
       days,
       data: { requests: 0, pageViews: 0, bandwidth: 0, uniques: 0 },
-      topPages: [],
-      topCountries: [],
       error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
@@ -141,7 +124,7 @@ export async function onRequest(context: CloudflareRequestContext) {
     return new Response(JSON.stringify({
       enabled: false,
       fetchedAt: null,
-      domain: 'blog.pldduck.com',
+      domain: 'pldduck.com',
       timeWindows: []
     }), {
       status: 200,
@@ -155,7 +138,7 @@ export async function onRequest(context: CloudflareRequestContext) {
   const snapshot: CloudflareSnapshot = {
     enabled: true,
     fetchedAt: new Date().toISOString(),
-    domain: 'blog.pldduck.com',
+    domain: 'pldduck.com',
     timeWindows: []
   };
 

@@ -115,7 +115,7 @@ const generateCloudflareSnapshot = async () => {
     const emptySnapshot = {
       enabled: false,
       fetchedAt: null,
-      domain: 'blog.pldduck.com',
+      domain: 'pldduck.com',
       timeWindows: []
     };
     writeCloudflareSnapshot(emptySnapshot);
@@ -126,7 +126,7 @@ const generateCloudflareSnapshot = async () => {
   const snapshot = {
     enabled: true,
     fetchedAt: new Date().toISOString(),
-    domain: 'blog.pldduck.com',
+    domain: 'pldduck.com',
     timeWindows: []
   };
 
@@ -192,116 +192,18 @@ const generateCloudflareSnapshot = async () => {
         { requests: 0, pageViews: 0, bandwidth: 0, uniques: 0 }
       );
 
-      const pagesQuery = `
-        query {
-          viewer {
-            zones(filter: { zoneTag: "${zoneId}" }) {
-              httpRequests1dGroups(
-                limit: 10000
-                filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
-                orderBy: [sum_requests_DESC]
-              ) {
-                dimensions {
-                  clientRequestPath
-                }
-                sum {
-                  requests
-                  pageViews
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      const pagesResponse = await fetch('https://api.cloudflare.com/client/v4/graphql', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ query: pagesQuery })
-      });
-
-      const pagesData = await pagesResponse.json();
-      const pagesGroups = pagesData?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
-
-      const pathMap = new Map();
-      pagesGroups.forEach((group) => {
-        const requestPath = group.dimensions?.clientRequestPath || '/';
-        const existing = pathMap.get(requestPath) || { requests: 0, pageViews: 0 };
-        pathMap.set(requestPath, {
-          requests: existing.requests + (group.sum?.requests || 0),
-          pageViews: existing.pageViews + (group.sum?.pageViews || 0)
-        });
-      });
-
-      const topPages = Array.from(pathMap.entries())
-        .map(([requestPath, data]) => ({ path: requestPath, ...data }))
-        .sort((a, b) => b.pageViews - a.pageViews)
-        .slice(0, 20);
-
-      const countriesQuery = `
-        query {
-          viewer {
-            zones(filter: { zoneTag: "${zoneId}" }) {
-              httpRequests1dGroups(
-                limit: 10000
-                filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
-                orderBy: [sum_requests_DESC]
-              ) {
-                dimensions {
-                  clientCountryName
-                }
-                sum {
-                  requests
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      const countriesResponse = await fetch('https://api.cloudflare.com/client/v4/graphql', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ query: countriesQuery })
-      });
-
-      const countriesData = await countriesResponse.json();
-      const countriesGroups = countriesData?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
-
-      const countryMap = new Map();
-      countriesGroups.forEach((group) => {
-        const country = group.dimensions?.clientCountryName || 'Unknown';
-        const existing = countryMap.get(country) || 0;
-        countryMap.set(country, existing + (group.sum?.requests || 0));
-      });
-
-      const topCountries = Array.from(countryMap.entries())
-        .map(([country, requests]) => ({ country, requests }))
-        .sort((a, b) => b.requests - a.requests)
-        .slice(0, 20);
-
       snapshot.timeWindows.push({
         days,
         data: totals,
-        topPages,
-        topCountries,
         error: null
       });
 
-      console.log(`Cloudflare data fetched for ${days} days: ${totals.pageViews} page views, ${topPages.length} pages`);
+      console.log(`Cloudflare data fetched for ${days} days: ${totals.pageViews} page views`);
     } catch (error) {
       console.warn(`Cloudflare Analytics failed for ${days} days: ${error.message}`);
       snapshot.timeWindows.push({
         days,
         data: { requests: 0, pageViews: 0, bandwidth: 0, uniques: 0 },
-        topPages: [],
-        topCountries: [],
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }

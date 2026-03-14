@@ -31,22 +31,9 @@ export interface CloudflareAnalyticsData {
   bandwidth: number;
 }
 
-export interface CloudflareTopItem {
-  path: string;
-  requests: number;
-  pageViews: number;
-}
-
-export interface CloudflareCountryItem {
-  country: string;
-  requests: number;
-}
-
 export interface CloudflareTimeWindow {
   days: number;
   data: CloudflareAnalyticsData;
-  topPages: CloudflareTopItem[];
-  topCountries: CloudflareCountryItem[];
   error: string | null;
 }
 
