@@ -252,9 +252,9 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                 <span className="relative z-10">{item.label}</span>
                 <span
                   aria-hidden="true"
-                  className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-full bg-gradient-to-r from-sky-400 via-sky-500 to-sky-400 transition-all duration-250 ${
+                  className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-full bg-gradient-to-r from-accent-light via-accent to-accent-dark transition-all duration-250 ${
                     location.pathname === item.path
-                      ? 'scale-x-100 opacity-100 shadow-[0_0_16px_rgba(14,165,233,0.45)]'
+                      ? 'scale-x-100 opacity-100 shadow-[0_0_16px_rgba(192,57,43,0.4)]'
                       : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
                   }`}
                 />
