@@ -8,6 +8,15 @@ const INLINE_MARKDOWN_PATTERNS: Array<[RegExp, string]> = [
   [/(\*\*|__|\*|_|~~)/g, ''],
   [/\\([\\`*_[\]{}()#+\-.!>])/g, '$1']
 ];
+const MARKDOWN_HEADING_PATTERN = /^(#{1,3})\s+(.+)$/gm;
+const TOC_EMOJI_PATTERN = /[\p{Extended_Pictographic}\p{Emoji_Modifier}\uFE0F\u200D\u20E3]/gu;
+
+export interface MarkdownHeading {
+  id: string;
+  level: number;
+  rawText: string;
+  text: string;
+}
 
 export const stripInlineMarkdown = (text: string) => {
   return INLINE_MARKDOWN_PATTERNS.reduce(
@@ -24,6 +33,43 @@ export const slugifyHeading = (text: string) => {
     .toLowerCase()
     .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
     .replace(/^-+|-+$/g, '');
+};
+
+export const stripEmojiFromHeadingText = (text: string) => {
+  return text
+    .replace(TOC_EMOJI_PATTERN, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+};
+
+const createUniqueHeadingId = (baseId: string, seenIds: Map<string, number>) => {
+  const normalizedBaseId = baseId || 'section';
+  const duplicateCount = (seenIds.get(normalizedBaseId) ?? 0) + 1;
+
+  seenIds.set(normalizedBaseId, duplicateCount);
+
+  return duplicateCount === 1 ? normalizedBaseId : `${normalizedBaseId}-${duplicateCount}`;
+};
+
+export const extractMarkdownHeadings = (content: string): MarkdownHeading[] => {
+  const seenIds = new Map<string, number>();
+  const headings: MarkdownHeading[] = [];
+
+  for (const match of content.matchAll(MARKDOWN_HEADING_PATTERN)) {
+    const level = match[1]?.length ?? 1;
+    const rawText = stripInlineMarkdown(match[2] ?? '');
+    const text = stripEmojiFromHeadingText(rawText) || rawText;
+    const id = createUniqueHeadingId(slugifyHeading(rawText) || slugifyHeading(text), seenIds);
+
+    headings.push({
+      id,
+      level,
+      rawText,
+      text
+    });
+  }
+
+  return headings;
 };
 
 export const extractTextFromReactNode = (node: React.ReactNode): string => {

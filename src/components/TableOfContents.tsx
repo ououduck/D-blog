@@ -2,56 +2,27 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { List, X } from 'lucide-react';
 
-import { slugifyHeading, stripInlineMarkdown } from '@/utils/headings';
-
-interface TocItem {
-  id: string;
-  text: string;
-  level: number;
-}
+import type { MarkdownHeading } from '@/utils/headings';
 
 const formatIndex = (value: number) => String(value).padStart(2, '0');
-const stripEmojiFromTocText = (value: string) =>
-  value
-    .replace(/[\p{Extended_Pictographic}\p{Emoji_Modifier}\uFE0F\u200D\u20E3]/gu, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
 
-export const TableOfContents: React.FC<{ content: string }> = ({ content }) => {
-  const [toc, setToc] = useState<TocItem[]>([]);
+export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ headings }) => {
   const [activeId, setActiveId] = useState<string>('');
   const [isOpen, setIsOpen] = useState(false);
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   useEffect(() => {
-    const headings = content.match(/^#{1,3}\s+.+$/gm);
-
-    if (!headings) {
-      setToc([]);
-      setActiveId('');
-      setIsOpen(false);
-      return;
-    }
-
-    const tocItems = headings.map((heading) => {
-      const level = heading.match(/^#+/)?.[0].length || 1;
-      const rawText = stripInlineMarkdown(heading.replace(/^#+\s+/, ''));
-      const text = stripEmojiFromTocText(rawText) || rawText;
-      const id = slugifyHeading(text);
-
-      return { id, text, level };
-    });
-
-    setToc(tocItems);
     setActiveId('');
-  }, [content]);
+    setIsOpen(false);
+    itemRefs.current = {};
+  }, [headings]);
 
   useEffect(() => {
-    if (toc.length === 0) {
+    if (headings.length === 0) {
       return;
     }
 
-    const headingElements = toc
+    const headingElements = headings
       .map(({ id }) => document.getElementById(id))
       .filter((element): element is HTMLElement => Boolean(element));
 
@@ -105,7 +76,7 @@ export const TableOfContents: React.FC<{ content: string }> = ({ content }) => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
     };
-  }, [toc]);
+  }, [headings]);
 
   useEffect(() => {
     if (!activeId) {
@@ -137,11 +108,9 @@ export const TableOfContents: React.FC<{ content: string }> = ({ content }) => {
     setIsOpen(false);
   };
 
-  if (toc.length === 0) {
+  if (headings.length === 0) {
     return null;
   }
-
-  const activeIndex = toc.findIndex((item) => item.id === activeId);
 
   const panelContent = (
     <div className="relative overflow-hidden rounded-[30px] border border-zinc-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,244,241,0.94))] p-5 shadow-[0_24px_64px_-36px_rgba(24,24,27,0.26)] dark:border-zinc-800/80 dark:bg-[linear-gradient(180deg,rgba(24,24,27,0.94),rgba(12,12,14,0.9))] dark:shadow-none">
@@ -162,13 +131,13 @@ export const TableOfContents: React.FC<{ content: string }> = ({ content }) => {
         </div>
 
         <div className="rounded-full border border-zinc-200/80 bg-white/90 px-3 py-1 font-mono text-xs text-zinc-400 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500">
-          {formatIndex(toc.length)}
+          {formatIndex(headings.length)}
         </div>
       </div>
 
       <nav aria-label={'\u76ee\u5f55'} className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1 no-scrollbar">
         <ol className="space-y-2">
-          {toc.map((item, index) => {
+          {headings.map((item, index) => {
             const isActive = activeId === item.id;
             const isSubLevel = item.level > 1;
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
@@ -16,7 +16,8 @@ import { TableOfContents } from '../components/TableOfContents';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { NotFoundState } from '@/components/NotFoundState';
 import { ReadingProgressBadge } from '@/components/ReadingProgressBadge';
-import { extractTextFromReactNode, slugifyHeading } from '@/utils/headings';
+import { extractMarkdownHeadings, extractTextFromReactNode, slugifyHeading } from '@/utils/headings';
+import type { MarkdownHeading } from '@/utils/headings';
 
 type BlockCodeProps = {
   isBlock?: boolean;
@@ -186,53 +187,79 @@ const MermaidBlock = ({ children, renderer }: { children: string; renderer: Merm
 
 const createMarkdownComponents = (
   onPreviewImage: (image: { src: string; alt?: string }) => void,
-  mermaidRenderer: MermaidRenderer | null
-): Components => ({
-  img: ({ ...props }) => (
-    <ProgressiveImage
-      {...props}
-      loading="lazy"
-      onClick={() => onPreviewImage({ src: props.src || '', alt: props.alt })}
-      wrapperClassName="my-12 rounded-2xl"
-      className="cursor-zoom-in rounded-2xl shadow-lg"
-    />
-  ),
-  pre: PreBlock,
-  code: ({ className, children, ...props }) => {
-    const { isBlock, ...restProps } = props as React.HTMLAttributes<HTMLElement> & BlockCodeProps;
-    const isBlockCode = Boolean(isBlock) || /language-(\w+)/.test(className || '');
+  mermaidRenderer: MermaidRenderer | null,
+  headings: MarkdownHeading[]
+): Components => {
+  let headingCursor = 0;
+  const fallbackHeadingIds = new Map<string, number>();
 
-    if (className?.includes('language-mermaid')) {
-      return <MermaidBlock renderer={mermaidRenderer}>{String(children)}</MermaidBlock>;
+  const resolveHeadingId = (level: number, children: React.ReactNode) => {
+    const rawText = extractTextFromReactNode(children);
+
+    for (let index = headingCursor; index < headings.length; index += 1) {
+      const heading = headings[index];
+
+      if (heading.level === level && heading.rawText === rawText) {
+        headingCursor = index + 1;
+        return heading.id;
+      }
     }
 
-    if (isBlockCode) {
+    const fallbackBaseId = slugifyHeading(rawText) || 'section';
+    const duplicateCount = (fallbackHeadingIds.get(fallbackBaseId) ?? 0) + 1;
+
+    fallbackHeadingIds.set(fallbackBaseId, duplicateCount);
+
+    return duplicateCount === 1 ? fallbackBaseId : `${fallbackBaseId}-${duplicateCount}`;
+  };
+
+  return {
+    img: ({ ...props }) => (
+      <ProgressiveImage
+        {...props}
+        loading="lazy"
+        onClick={() => onPreviewImage({ src: props.src || '', alt: props.alt })}
+        wrapperClassName="my-12 rounded-2xl"
+        className="cursor-zoom-in rounded-2xl shadow-lg"
+      />
+    ),
+    pre: PreBlock,
+    code: ({ className, children, ...props }) => {
+      const { isBlock, ...restProps } = props as React.HTMLAttributes<HTMLElement> & BlockCodeProps;
+      const isBlockCode = Boolean(isBlock) || /language-(\w+)/.test(className || '');
+
+      if (className?.includes('language-mermaid')) {
+        return <MermaidBlock renderer={mermaidRenderer}>{String(children)}</MermaidBlock>;
+      }
+
+      if (isBlockCode) {
+        return (
+          <code className={className} {...restProps}>
+            {children}
+          </code>
+        );
+      }
+
       return (
-        <code className={className} {...restProps}>
+        <code className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-bold text-accent before:content-none after:content-none dark:bg-zinc-900 dark:text-accent-light" {...restProps}>
           {children}
         </code>
       );
+    },
+    h1: ({ children, ...props }) => {
+      const id = resolveHeadingId(1, children);
+      return <h1 id={id} {...props}>{children}</h1>;
+    },
+    h2: ({ children, ...props }) => {
+      const id = resolveHeadingId(2, children);
+      return <h2 id={id} {...props}>{children}</h2>;
+    },
+    h3: ({ children, ...props }) => {
+      const id = resolveHeadingId(3, children);
+      return <h3 id={id} {...props}>{children}</h3>;
     }
-
-    return (
-      <code className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-bold text-accent before:content-none after:content-none dark:bg-zinc-900 dark:text-accent-light" {...restProps}>
-        {children}
-      </code>
-    );
-  },
-  h1: ({ children, ...props }) => {
-    const id = slugifyHeading(extractTextFromReactNode(children));
-    return <h1 id={id} {...props}>{children}</h1>;
-  },
-  h2: ({ children, ...props }) => {
-    const id = slugifyHeading(extractTextFromReactNode(children));
-    return <h2 id={id} {...props}>{children}</h2>;
-  },
-  h3: ({ children, ...props }) => {
-    const id = slugifyHeading(extractTextFromReactNode(children));
-    return <h3 id={id} {...props}>{children}</h3>;
-  }
-});
+  };
+};
 
 export const Post = () => {
   const { id } = useParams<{ id: string }>();
@@ -354,7 +381,8 @@ export const Post = () => {
     };
   }, [post?.content]);
 
-  const markdownComponents = createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer);
+  const headings = useMemo(() => extractMarkdownHeadings(post?.content ?? ''), [post?.content]);
+  const markdownComponents = createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, headings);
 
   if (loading) {
     return (
@@ -534,7 +562,7 @@ export const Post = () => {
           </div>
 
           <div className="lg:sticky lg:top-24 lg:w-72 lg:flex-shrink-0 lg:self-start">
-            <TableOfContents content={post.content} />
+            <TableOfContents headings={headings} />
           </div>
         </div>
       </motion.article>
