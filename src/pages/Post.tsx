@@ -5,14 +5,15 @@ import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion } from 'framer-motion';
 
-import { ArrowLeft, Clock, Calendar, Shield, Share2, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, ChevronRight, Shield, Share2, Copy, Check, Users, ExternalLink } from 'lucide-react';
 import { getPostById } from '@/services/posts';
-import { Post as PostType } from '../types';
+import { Post as PostType, PostAuthor } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ImageViewer } from '../components/ImageViewer';
 import { ShareModal } from '../components/ShareModal';
 import { TableOfContents } from '../components/TableOfContents';
+import { ProgressiveImage } from '@/components/ProgressiveImage';
 
 type BlockCodeProps = {
   isBlock?: boolean;
@@ -41,6 +42,33 @@ const MERMAID_CONFIG = {
 const hasCodeBlocks = (content: string) => /```[\w-]*\s*[\r\n]/.test(content);
 const hasMathExpressions = (content: string) => /(^|[\r\n])\$\$[\s\S]*?\$\$|\\\(|\\\[/.test(content);
 const hasMermaidDiagrams = (content: string) => /```mermaid\b/.test(content);
+
+const formatMetaDate = (dateText?: string) => {
+  if (!dateText) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date(dateText));
+};
+
+const getDisplayAuthors = (post: PostType): PostAuthor[] => {
+  if (post.authors && post.authors.length > 0) {
+    return post.authors;
+  }
+
+  return [
+    {
+      name: siteConfig.author.name,
+      avatar: siteConfig.author.avatar,
+      role: siteConfig.author.role,
+      bio: siteConfig.author.bio
+    }
+  ];
+};
 
 const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>) => {
   const preRef = useRef<HTMLPreElement>(null);
@@ -158,11 +186,12 @@ const createMarkdownComponents = (
   mermaidRenderer: MermaidRenderer | null
 ): Components => ({
   img: ({ ...props }) => (
-    <img
+    <ProgressiveImage
       {...props}
       loading="lazy"
       onClick={() => onPreviewImage({ src: props.src || '', alt: props.alt })}
-      className="my-12 cursor-zoom-in rounded-2xl shadow-lg"
+      wrapperClassName="my-12 rounded-2xl"
+      className="cursor-zoom-in rounded-2xl shadow-lg"
     />
   ),
   pre: PreBlock,
@@ -370,14 +399,28 @@ export const Post = () => {
     );
   }
 
+  const authors = getDisplayAuthors(post);
+  const authorsLabel = authors.map((author) => author.name).join('\u3001');
+
   return (
     <>
       <ImageViewer src={previewImage?.src || null} alt={previewImage?.alt} onClose={() => setPreviewImage(null)} />
 
       <motion.article initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
-        <Seo title={post.title} description={post.excerpt} image={post.coverImage} type="article" />
+        <Seo title={post.title} description={post.excerpt} image={post.coverImage} type="article" publishedTime={post.date} modifiedTime={post.updatedAt || post.date} authors={authors.map((author) => author.name)} />
 
         <header className="mx-auto mb-10 max-w-4xl pt-6 text-center md:mb-16 md:pt-10">
+          <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-400 md:mb-6">
+            <Link to="/" className="transition-colors hover:text-accent">
+              首页
+            </Link>
+            <ChevronRight size={14} className="text-zinc-300 dark:text-zinc-600" />
+            <Link to={`/?category=${encodeURIComponent(post.category)}`} className="transition-colors hover:text-accent">
+              {post.category}
+            </Link>
+            <ChevronRight size={14} className="text-zinc-300 dark:text-zinc-600" />
+            <span className="max-w-[14rem] truncate text-zinc-500 dark:text-zinc-400 md:max-w-xl">{post.title}</span>
+          </nav>
           <Link to="/" className="group mb-6 inline-flex items-center text-xs font-bold uppercase tracking-widest text-zinc-500 transition-colors hover:text-accent md:mb-10">
             <ArrowLeft size={16} className="mr-2 transition-transform group-hover:-translate-x-1" />
             返回文章
@@ -394,15 +437,27 @@ export const Post = () => {
               {post.title}
             </h1>
 
-            <div className="flex items-center justify-center space-x-4 text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 md:space-x-6">
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 md:gap-x-6">
               <span className="flex items-center">
-                <Calendar size={14} className="mr-2" /> {post.date}
+                <Users size={14} className="mr-2" /> {authorsLabel}
               </span>
-              <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+              <span className="hidden h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700 md:block" />
+              <span className="flex items-center">
+                <Calendar size={14} className="mr-2" /> 发布于 {formatMetaDate(post.date)}
+              </span>
+              {post.updatedAt && post.updatedAt !== post.date && (
+                <>
+                  <span className="hidden h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700 md:block" />
+                  <span className="flex items-center">
+                    <Calendar size={14} className="mr-2" /> 最后更新 {formatMetaDate(post.updatedAt)}
+                  </span>
+                </>
+              )}
+              <span className="hidden h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700 md:block" />
               <span className="flex items-center">
                 <Clock size={14} className="mr-2" /> {post.readTime}
               </span>
-              <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+              <span className="hidden h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700 md:block" />
               <button onClick={() => setShareModalOpen(true)} className="flex items-center transition-colors hover:text-accent">
                 <Share2 size={14} className="mr-1.5" /> 分享
               </button>
@@ -412,7 +467,7 @@ export const Post = () => {
 
         {post.coverImage && (
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="mx-auto mb-10 aspect-[4/3] max-w-6xl cursor-zoom-in overflow-hidden rounded-2xl px-4 shadow-2xl shadow-zinc-200/50 dark:shadow-none sm:aspect-[16/9] md:mb-20 md:aspect-[21/9] md:rounded-3xl md:px-0" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })}>
-            <img src={post.coverImage} alt={post.title} className="h-full w-full object-cover" loading="eager" decoding="async" fetchpriority="high" />
+            <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
           </motion.div>
         )}
 
@@ -441,7 +496,7 @@ export const Post = () => {
                 <div>
                   <h3 className="mb-2 text-lg font-serif font-bold text-ink dark:text-white">CC BY-SA 4.0 许可协议</h3>
                   <p className="mb-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                    本文由 <strong className="text-ink dark:text-zinc-200">{siteConfig.author.name}</strong> 原创。除非另有声明，本站文章采用
+                    本文由 <strong className="text-ink dark:text-zinc-200">{authorsLabel}</strong> 原创。除非另有声明，本站文章采用
                     <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="noopener noreferrer" className="mx-1 font-medium text-accent hover:underline">
                       CC BY-SA 4.0
                     </a>
@@ -455,10 +510,10 @@ export const Post = () => {
               </div>
             </div>
 
-            <div className="mt-10 flex items-center justify-between border-t border-zinc-200 pt-10 dark:border-zinc-800">
+            <div className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
               <div>
                 <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-400">作者</span>
-                <span className="font-serif text-lg font-bold text-ink dark:text-white">{siteConfig.author.name}</span>
+                <span className="font-serif text-lg font-bold text-ink dark:text-white">{authorsLabel}</span>
               </div>
             </div>
           </div>

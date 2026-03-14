@@ -7,9 +7,20 @@
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
+    color-scheme: light;
+    transition: background-color 240ms ease, color 240ms ease;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   /* Layout optimization */
+  body,
+  #root {
+    transition: background-color 240ms ease, color 240ms ease;
+  }
+
   body {
     cursor: default;
   }
@@ -19,6 +30,21 @@
     outline: 2px solid #c0392b;
     outline-offset: 4px;
   }
+}
+
+html.theme-switching,
+html.theme-switching body,
+html.theme-switching #root,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition:
+    background-color 240ms ease,
+    border-color 240ms ease,
+    color 240ms ease,
+    fill 240ms ease,
+    stroke 240ms ease,
+    box-shadow 240ms ease !important;
 }
 
 @layer utilities {

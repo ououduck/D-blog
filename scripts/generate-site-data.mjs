@@ -36,6 +36,69 @@ const markdownToSearchText = (markdown) =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const calculateReadTime = (markdown) => {
+  const plainText = markdownToSearchText(markdown);
+  const hanCharacters = (plainText.match(/[\u4e00-\u9fff]/g) || []).length;
+  const latinWords = (plainText.replace(/[\u4e00-\u9fff]/g, ' ').match(/[A-Za-z0-9_]+/g) || []).length;
+  const readingUnits = hanCharacters + latinWords;
+  const minutes = Math.max(1, Math.ceil(readingUnits / 300));
+
+  return `${minutes}分钟阅读`;
+};
+
+const normalizeAuthor = (value) => {
+  if (typeof value === 'string') {
+    const name = value.trim();
+    return name ? { name } : null;
+  }
+
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  if (typeof value.name !== 'string' || value.name.trim() === '') {
+    return null;
+  }
+
+  return {
+    name: value.name.trim(),
+    avatar: typeof value.avatar === 'string' && value.avatar.trim() ? value.avatar.trim() : undefined,
+    role: typeof value.role === 'string' && value.role.trim() ? value.role.trim() : undefined,
+    bio: typeof value.bio === 'string' && value.bio.trim() ? value.bio.trim() : undefined,
+    url: typeof value.url === 'string' && value.url.trim() ? value.url.trim() : undefined
+  };
+};
+
+const normalizeAuthors = (author, authors) => {
+  const rawAuthors = [
+    ...(Array.isArray(authors) ? authors : authors ? [authors] : []),
+    ...(author ? [author] : [])
+  ];
+
+  const normalizedAuthors = rawAuthors
+    .map((entry) => normalizeAuthor(entry))
+    .filter(Boolean);
+
+  return normalizedAuthors.length > 0
+    ? normalizedAuthors.filter((entry, index, collection) => collection.findIndex((candidate) => candidate.name === entry.name) === index)
+    : undefined;
+};
+
+const formatFrontmatterDate = (value) => {
+  if (!value) {
+    return undefined;
+  }
+
+  if (value instanceof Date) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  return String(value);
+};
+
 const writeCloudflareSnapshot = (snapshot) => {
   fs.writeFileSync(CLOUDFLARE_FILE, JSON.stringify(snapshot, null, 2));
 };
@@ -46,25 +109,34 @@ const posts = files
     const filePath = path.join(POSTS_DIR, filename);
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     const { data, content } = matter(fileContent);
+    const { draft, readTime, author, authors, updatedAt, ...restData } = data;
 
     const id = data.id || filename.replace(/\.md$/, '');
 
-    let formattedDate = data.date;
-    if (data.date instanceof Date) {
-      const year = data.date.getFullYear();
-      const month = String(data.date.getMonth() + 1).padStart(2, '0');
-      const day = String(data.date.getDate()).padStart(2, '0');
-      formattedDate = `${year}-${month}-${day}`;
+    const formattedDate = formatFrontmatterDate(data.date);
+    const formattedUpdatedAt = formatFrontmatterDate(updatedAt);
+    const normalizedAuthors = normalizeAuthors(author, authors);
+
+    if (!formattedDate) {
+      throw new Error(`Post "${filename}" is missing a valid date field.`);
+    }
+
+    if (draft === true) {
+      return null;
     }
 
     return {
-      ...data,
+      ...restData,
       date: formattedDate,
+      updatedAt: formattedUpdatedAt,
+      authors: normalizedAuthors,
       id,
       filePath: `/posts/${filename}`,
+      readTime: calculateReadTime(content),
       searchText: markdownToSearchText(content)
     };
   })
+  .filter(Boolean)
   .sort((a, b) => new Date(b.date) - new Date(a.date));
 
 fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'posts.json'), JSON.stringify(posts, null, 2));
@@ -233,7 +305,7 @@ const generateSitemap = () => {
       (post) => `
   <url>
     <loc>${SITE_URL}/post/${post.id}</loc>
-    <lastmod>${new Date(post.date).toISOString().split('T')[0]}</lastmod>
+    <lastmod>${new Date(post.updatedAt || post.date).toISOString().split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>`
@@ -246,6 +318,11 @@ const generateSitemap = () => {
 };
 
 const generateRss = () => {
+  const latestUpdate = posts[0] ? new Date(posts.reduce((latest, post) => {
+    const current = new Date(post.updatedAt || post.date);
+    return current > latest ? current : latest;
+  }, new Date(posts[0].updatedAt || posts[0].date))) : new Date();
+
   const rssContent = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
@@ -253,6 +330,7 @@ const generateRss = () => {
     <link>${SITE_URL}</link>
     <description>${SITE_DESCRIPTION}</description>
     <language>zh-CN</language>
+    <lastBuildDate>${latestUpdate.toUTCString()}</lastBuildDate>
     <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml" />
     ${posts
       .map(

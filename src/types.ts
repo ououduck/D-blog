@@ -1,8 +1,18 @@
+export interface PostAuthor {
+  name: string;
+  avatar?: string;
+  role?: string;
+  bio?: string;
+  url?: string;
+}
+
 export interface PostMetadata {
   id: string;
   title: string;
   excerpt: string;
   date: string;
+  updatedAt?: string;
+  authors?: PostAuthor[];
   tags: string[];
   category: string;
   filePath: string;

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Github, Mail, Code, Terminal } from 'lucide-react';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
+import { ProgressiveImage } from '@/components/ProgressiveImage';
 
 export const About = () => {
   return (
@@ -18,7 +19,7 @@ export const About = () => {
         <div className="group relative">
           <div className="absolute inset-0 rounded-full bg-accent opacity-20 blur-xl transition-opacity group-hover:opacity-40" />
           <div className="relative z-10 h-32 w-32 overflow-hidden rounded-full border-4 border-white shadow-2xl dark:border-zinc-800 md:h-40 md:w-40">
-            <img src={siteConfig.author.avatar} alt="Avatar" className="h-full w-full object-cover" />
+            <ProgressiveImage src={siteConfig.author.avatar} alt="Avatar" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
           </div>
         </div>
 

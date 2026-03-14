@@ -7,8 +7,10 @@ interface UsePostSearchOptions {
   debounceMs?: number;
 }
 
+const DEFAULT_EMPTY_RESULTS: PostMetadata[] = [];
+
 export const usePostSearch = ({
-  emptyResults = [],
+  emptyResults = DEFAULT_EMPTY_RESULTS,
   debounceMs = 300
 }: UsePostSearchOptions = {}) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,7 +68,7 @@ export const usePostSearch = ({
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [debounceMs, emptyResults, searchQuery]);
+  }, [debounceMs, searchQuery]);
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);

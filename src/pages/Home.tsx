@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, Rss, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react';
 import { getPosts, getAllCategories } from '@/services/posts';
 import { PostMetadata } from '../types';
@@ -8,6 +8,7 @@ import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ShareModal } from '../components/ShareModal';
 import { usePostSearch } from '@/hooks/usePostSearch';
+import { ProgressiveImage } from '@/components/ProgressiveImage';
 
 const ALL_CATEGORY = '全部';
 
@@ -66,7 +67,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
             <div className="relative h-64 w-full overflow-hidden md:h-full md:w-7/12">
               <div className="absolute inset-0 animate-pulse bg-zinc-200 dark:bg-zinc-800" />
               {post.coverImage ? (
-                <motion.img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
+                <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" wrapperClassName="absolute inset-0" className="h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
                   <Sparkles className="h-16 w-16 text-zinc-300" />
@@ -116,7 +117,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
       <Link to={`/post/${post.id}`} className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white backdrop-blur-md transition-all duration-500 hover:border-zinc-300 hover:shadow-2xl hover:shadow-zinc-200/50 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:hover:border-zinc-700 dark:hover:shadow-accent/5 md:rounded-3xl">
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
           {post.coverImage ? (
-            <motion.img src={post.coverImage} alt={post.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-110" />
+            <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" wrapperClassName="h-full w-full" className="h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-110" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-300">
               <Sparkles className="h-10 w-10 opacity-50" />
@@ -237,9 +238,11 @@ const Hero = ({ onSearch, searchQuery, onClearSearch }: { onSearch: (val: string
 };
 
 export const Home = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryFromUrl = searchParams.get('category');
   const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
+  const [selectedCategory, setSelectedCategory] = useState(() => categoryFromUrl || ALL_CATEGORY);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -286,10 +289,46 @@ export const Home = () => {
   }, []);
 
   useEffect(() => {
+    if (!categoryFromUrl) {
+      setSelectedCategory(ALL_CATEGORY);
+      return;
+    }
+
+    if (categories.includes(categoryFromUrl)) {
+      setSelectedCategory(categoryFromUrl);
+      return;
+    }
+
+    if (categories.length > 0) {
+      setSearchParams((previous) => {
+        const nextParams = new URLSearchParams(previous);
+        nextParams.delete('category');
+        return nextParams;
+      }, { replace: true });
+      setSelectedCategory(ALL_CATEGORY);
+    }
+  }, [categories, categoryFromUrl, setSearchParams]);
+
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedCategory, sortOrder]);
 
   const displayedPosts = filterAndSortPosts(results, selectedCategory, sortOrder);
+
+  const handleSelectCategory = (category: string) => {
+    setSelectedCategory(category);
+    setSearchParams((previous) => {
+      const nextParams = new URLSearchParams(previous);
+
+      if (category === ALL_CATEGORY) {
+        nextParams.delete('category');
+      } else {
+        nextParams.set('category', category);
+      }
+
+      return nextParams;
+    });
+  };
 
   const handleClearSearch = () => {
     clearSearch();
@@ -326,7 +365,7 @@ export const Home = () => {
               </div>
             </div>
           )}
-          <FilterBar categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} sortOrder={sortOrder} onToggleSort={() => setSortOrder((previous) => (previous === 'newest' ? 'oldest' : 'newest'))} />
+          <FilterBar categories={categories} selected={selectedCategory} onSelect={handleSelectCategory} sortOrder={sortOrder} onToggleSort={() => setSortOrder((previous) => (previous === 'newest' ? 'oldest' : 'newest'))} />
         </motion.div>
       )}
 

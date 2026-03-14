@@ -5,6 +5,7 @@ import { siteConfig } from '@config/site.config';
 import { getFriends } from '@/services/friends';
 import { Seo } from '../components/Seo';
 import { Friend } from '../types';
+import { ProgressiveImage } from '@/components/ProgressiveImage';
 
 export const Friends = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -89,7 +90,7 @@ export const Friends = () => {
               </div>
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full border border-zinc-100 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
-                  <img src={friend.avatar} alt={friend.name} className="h-full w-full object-cover" />
+                  <ProgressiveImage src={friend.avatar} alt={friend.name} wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
                 </div>
                 <div>
                   <h3 className="mb-1 font-serif text-lg font-bold text-ink transition-colors group-hover:text-accent dark:text-white">{friend.name}</h3>
@@ -142,7 +143,7 @@ export const Friends = () => {
                 <div>
                   <h4 className="mb-3 text-sm font-bold text-ink dark:text-white">本站信息（提交前请先添加本站友链）</h4>
                   <div className="flex flex-col items-start gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50 sm:flex-row sm:items-center">
-                    <img src={siteInfo.avatar} alt={siteInfo.name} className="h-16 w-16 flex-shrink-0 rounded-full border border-zinc-200 bg-white dark:border-zinc-600" />
+                    <ProgressiveImage src={siteInfo.avatar} alt={siteInfo.name} wrapperClassName="h-16 w-16 flex-shrink-0 rounded-full border border-zinc-200 bg-white dark:border-zinc-600" className="h-16 w-16 rounded-full object-cover" />
                     <div className="w-full flex-1 space-y-1">
                       <div className="font-bold text-ink dark:text-white">{siteInfo.name}</div>
                       <div className="text-sm text-zinc-500 dark:text-zinc-400">{siteInfo.description}</div>

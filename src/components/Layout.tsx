@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box, Monitor } from 'lucide-react';
+import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box, Monitor, Rss } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { siteConfig } from '@config/site.config';
 import { BackToTop } from './BackToTop';
 import { usePostSearch } from '@/hooks/usePostSearch';
+import { ProgressiveImage } from './ProgressiveImage';
 
 const TEXT = {
   searchPlaceholder: '\u641c\u7d22\u6587\u7ae0...',
@@ -24,7 +25,9 @@ const TEXT = {
   navFriends: '\u53cb\u94fe',
   navAbout: '\u5173\u4e8e',
   sourceCode: '\u9879\u76ee\u6e90\u7801',
-  resultsSuffix: '\u6761\u7ed3\u679c'
+  resultsSuffix: '\u6761\u7ed3\u679c',
+  rssFeed: 'RSS \u8ba2\u9605',
+  rssHint: '\u901a\u8fc7 RSS \u8ffd\u8e2a\u6700\u65b0\u66f4\u65b0'
 };
 
 const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
@@ -136,6 +139,7 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
 
 const ThemeToggle = () => {
   type Theme = 'light' | 'dark' | 'system';
+  const hasInitializedThemeRef = useRef(false);
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('theme') as Theme;
@@ -149,6 +153,11 @@ const ThemeToggle = () => {
     const systemQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
     const applyTheme = (nextTheme: Theme) => {
+      if (hasInitializedThemeRef.current) {
+        root.classList.add('theme-switching');
+        window.setTimeout(() => root.classList.remove('theme-switching'), 260);
+      }
+
       if (nextTheme === 'dark' || (nextTheme === 'system' && systemQuery.matches)) {
         root.classList.add('dark');
       } else {
@@ -157,6 +166,7 @@ const ThemeToggle = () => {
     };
 
     applyTheme(theme);
+    hasInitializedThemeRef.current = true;
     localStorage.setItem('theme', theme);
 
     const handleSystemChange = () => {
@@ -221,7 +231,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
         <Link to="/" className="group z-50 flex items-center space-x-3">
           <div className="relative">
             <div className="absolute inset-0 bg-accent opacity-20 blur-md transition-opacity group-hover:opacity-40" />
-            <img src={siteConfig.logo} alt="Logo" className="relative h-10 w-10 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105" />
+            <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-10 w-10 rounded-lg bg-white/10" className="h-10 w-10 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105" />
           </div>
           <span className="font-serif text-2xl font-bold tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
         </Link>
@@ -241,6 +251,10 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
               <Search size={16} />
               <span className="text-xs font-medium opacity-70 group-hover:opacity-100">Ctrl+K</span>
             </button>
+            <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex items-center space-x-2 rounded-lg bg-orange-50 px-3 py-2 text-orange-600 transition-colors hover:bg-orange-100 dark:bg-orange-950/40 dark:text-orange-300 dark:hover:bg-orange-950/70">
+              <Rss size={16} />
+              <span className="text-xs font-medium">{TEXT.rssFeed}</span>
+            </a>
             <ThemeToggle />
           </div>
         </div>
@@ -269,6 +283,10 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                 <span className="text-lg font-medium text-zinc-500">{TEXT.theme}</span>
                 <ThemeToggle />
               </div>
+              <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 rounded-full border border-orange-200 bg-orange-50 px-5 py-2.5 text-sm font-bold tracking-wide text-orange-600 transition-colors hover:bg-orange-100 dark:border-orange-900/50 dark:bg-orange-950/30 dark:text-orange-300 dark:hover:bg-orange-950/50">
+                <Rss size={16} />
+                <span>{TEXT.rssFeed}</span>
+              </a>
             </div>
           </motion.div>
         )}
@@ -357,7 +375,17 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="flex justify-center pb-6 pt-8">
+        <div className="flex flex-col items-center justify-center gap-4 pb-6 pt-8 md:flex-row">
+          <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 rounded-xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-3 transition-all duration-300 hover:border-orange-300 hover:shadow-lg hover:shadow-orange-100 dark:border-orange-900/60 dark:from-orange-950/40 dark:to-amber-950/20 dark:hover:border-orange-700">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 transition-transform duration-300 group-hover:scale-110">
+              <Rss size={18} className="text-white" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-ink dark:text-white">{TEXT.rssFeed}</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">{TEXT.rssHint}</span>
+            </div>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-400/0 via-orange-300/10 to-orange-400/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          </a>
           <a href={siteConfig.friendsPage.repoUrl} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 rounded-xl border border-zinc-200 bg-gradient-to-r from-zinc-100 to-zinc-50 px-6 py-3 transition-all duration-300 hover:border-accent/50 hover:shadow-lg hover:shadow-accent/10 dark:border-zinc-700 dark:from-zinc-800 dark:to-zinc-900 dark:hover:border-accent/50">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black transition-transform duration-300 group-hover:scale-110 dark:bg-white">
               <Github size={18} className="text-white dark:text-black" />
