@@ -533,7 +533,7 @@ export const Post = () => {
             </div>
           </div>
 
-          <div className="lg:w-72 lg:flex-shrink-0">
+          <div className="lg:sticky lg:top-24 lg:w-72 lg:flex-shrink-0 lg:self-start">
             <TableOfContents content={post.content} />
           </div>
         </div>
