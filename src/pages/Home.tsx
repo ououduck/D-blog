@@ -243,26 +243,46 @@ export const Home = () => {
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [postsPerPage, setPostsPerPage] = useState(9);
+  const [postsPerPage, setPostsPerPage] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 768 ? 5 : 9));
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
   const { searchQuery, isSearching, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch({
     emptyResults: allPosts
   });
 
   useEffect(() => {
-    Promise.all([getPosts(), getAllCategories()]).then(([posts, categoryList]) => {
-      setAllPosts(posts);
-      setCategories(categoryList);
-      setLoading(false);
-    });
+    let cancelled = false;
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
 
-    const handleResize = () => {
-      setPostsPerPage(window.innerWidth < 768 ? 5 : 9);
+    const syncPostsPerPage = () => {
+      setPostsPerPage(mediaQuery.matches ? 5 : 9);
     };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const loadHomeData = async () => {
+      try {
+        const [posts, categoryList] = await Promise.all([getPosts(), getAllCategories()]);
+        if (cancelled) {
+          return;
+        }
+
+        setAllPosts(posts);
+        setCategories(categoryList);
+      } catch (error) {
+        console.error('Failed to load home data:', error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadHomeData();
+    syncPostsPerPage();
+    mediaQuery.addEventListener('change', syncPostsPerPage);
+
+    return () => {
+      cancelled = true;
+      mediaQuery.removeEventListener('change', syncPostsPerPage);
+    };
   }, []);
 
   useEffect(() => {

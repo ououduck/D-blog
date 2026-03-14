@@ -15,6 +15,11 @@ export const usePostSearch = ({
   const [results, setResults] = useState<PostMetadata[]>(emptyResults);
   const [isSearching, setIsSearching] = useState(false);
   const searchRequestIdRef = useRef(0);
+  const emptyResultsRef = useRef<PostMetadata[]>(emptyResults);
+
+  useEffect(() => {
+    emptyResultsRef.current = emptyResults;
+  }, [emptyResults]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -28,7 +33,7 @@ export const usePostSearch = ({
     const requestId = ++searchRequestIdRef.current;
 
     if (!normalizedQuery) {
-      setResults(emptyResults);
+      setResults(emptyResultsRef.current);
       setIsSearching(false);
       return;
     }
@@ -36,14 +41,26 @@ export const usePostSearch = ({
     setIsSearching(true);
 
     const timeoutId = window.setTimeout(async () => {
-      const searchedPosts = await searchPosts(normalizedQuery);
+      try {
+        const searchedPosts = await searchPosts(normalizedQuery);
 
-      if (requestId !== searchRequestIdRef.current) {
-        return;
+        if (requestId !== searchRequestIdRef.current) {
+          return;
+        }
+
+        setResults(searchedPosts);
+      } catch (error) {
+        if (requestId !== searchRequestIdRef.current) {
+          return;
+        }
+
+        console.error('Search failed:', error);
+        setResults([]);
+      } finally {
+        if (requestId === searchRequestIdRef.current) {
+          setIsSearching(false);
+        }
       }
-
-      setResults(searchedPosts);
-      setIsSearching(false);
     }, debounceMs);
 
     return () => {
@@ -58,9 +75,9 @@ export const usePostSearch = ({
   const clearSearch = useCallback(() => {
     searchRequestIdRef.current += 1;
     setSearchQuery('');
-    setResults(emptyResults);
+    setResults(emptyResultsRef.current);
     setIsSearching(false);
-  }, [emptyResults]);
+  }, []);
 
   return {
     searchQuery,

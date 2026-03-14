@@ -15,7 +15,12 @@ export const TableOfContents: React.FC<{ content: string }> = ({ content }) => {
 
   useEffect(() => {
     const headings = content.match(/^#{1,3}\s+.+$/gm);
-    if (!headings) return;
+    if (!headings) {
+      setToc([]);
+      setActiveId('');
+      setIsOpen(false);
+      return;
+    }
 
     const tocItems = headings.map((heading) => {
       const level = heading.match(/^#+/)?.[0].length || 1;
@@ -29,6 +34,7 @@ export const TableOfContents: React.FC<{ content: string }> = ({ content }) => {
     });
 
     setToc(tocItems);
+    setActiveId('');
   }, [content]);
 
   useEffect(() => {

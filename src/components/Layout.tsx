@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box, Monitor } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -29,6 +29,7 @@ const TEXT = {
 
 const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
   const { searchQuery, isSearching, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch();
   const visibleResults = results.slice(0, 8);
@@ -44,6 +45,14 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
       clearSearch();
     }
   }, [clearSearch, isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      onClose();
+    }
+    // Only react to route changes; including isOpen here would close immediately on open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const handleSelect = (id: string) => {
     navigate(`/post/${id}`);
@@ -404,6 +413,8 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const location = useLocation();
+  const openSearch = useCallback(() => setIsSearchOpen(true), []);
+  const closeSearch = useCallback(() => setIsSearchOpen(false), []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -429,8 +440,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="relative flex min-h-screen flex-col selection:bg-accent selection:text-white">
       <ScrollProgress />
       <Background />
-      <Navbar onSearchClick={() => setIsSearchOpen(true)} />
-      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <Navbar onSearchClick={openSearch} />
+      <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
       <main className="relative flex-grow px-4 pt-32 sm:px-6">
         <div className="mx-auto max-w-7xl">{children}</div>
       </main>

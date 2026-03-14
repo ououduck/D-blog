@@ -99,6 +99,10 @@ export const getPosts = async (): Promise<PostMetadata[]> => {
   return loadPostsData();
 };
 
+export const preloadPosts = async (): Promise<void> => {
+  await loadPostsData();
+};
+
 export const getPostById = async (id: string): Promise<Post | undefined> => {
   const allPosts = await loadPostsData();
   const meta = allPosts.find((post) => post.id === id);
@@ -204,6 +208,10 @@ export const searchPosts = async (query: string): Promise<PostMetadata[]> => {
 
   searchResultsCache.set(normalizedQuery, resolvedResults);
   return resolvedResults;
+};
+
+export const preloadPostSearch = async (): Promise<void> => {
+  await loadPostsSearchIndex();
 };
 
 export const getAllCategories = async (): Promise<string[]> => {

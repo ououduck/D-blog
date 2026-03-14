@@ -3,29 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeKatex from 'rehype-katex';
 import { motion } from 'framer-motion';
-import mermaid from 'mermaid';
-
-if (typeof window !== 'undefined') {
-  import('highlight.js/styles/github-dark.css');
-  import('katex/dist/katex.min.css');
-
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: 'dark',
-    themeVariables: {
-      primaryColor: '#f97316',
-      primaryTextColor: '#fff',
-      primaryBorderColor: '#ea580c',
-      lineColor: '#71717a',
-      secondaryColor: '#27272a',
-      tertiaryColor: '#18181b'
-    }
-  });
-}
 
 import { ArrowLeft, Clock, Calendar, Shield, Share2, Copy, Check } from 'lucide-react';
 import { getPostById } from '@/services/posts';
@@ -39,6 +17,30 @@ import { TableOfContents } from '../components/TableOfContents';
 type BlockCodeProps = {
   isBlock?: boolean;
 };
+
+type MarkdownPlugin = unknown;
+
+type MermaidRenderer = {
+  initialize: (config: Record<string, unknown>) => void;
+  render: (id: string, text: string) => Promise<{ svg: string }>;
+};
+
+const MERMAID_CONFIG = {
+  startOnLoad: false,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#f97316',
+    primaryTextColor: '#fff',
+    primaryBorderColor: '#ea580c',
+    lineColor: '#71717a',
+    secondaryColor: '#27272a',
+    tertiaryColor: '#18181b'
+  }
+} satisfies Record<string, unknown>;
+
+const hasCodeBlocks = (content: string) => /```[\w-]*\s*[\r\n]/.test(content);
+const hasMathExpressions = (content: string) => /(^|[\r\n])\$\$[\s\S]*?\$\$|\\\(|\\\[/.test(content);
+const hasMermaidDiagrams = (content: string) => /```mermaid\b/.test(content);
 
 const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>) => {
   const preRef = useRef<HTMLPreElement>(null);
@@ -106,16 +108,21 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
   );
 };
 
-const MermaidBlock = ({ children }: { children: string }) => {
+const MermaidBlock = ({ children, renderer }: { children: string; renderer: MermaidRenderer | null }) => {
   const [svg, setSvg] = useState('');
   const mermaidIdRef = useRef(`mermaid-${Math.random().toString(36).slice(2, 11)}`);
 
   useEffect(() => {
+    if (!renderer) {
+      setSvg('');
+      return;
+    }
+
     let cancelled = false;
 
     const renderDiagram = async () => {
       try {
-        const { svg: renderedSvg } = await mermaid.render(mermaidIdRef.current, children);
+        const { svg: renderedSvg } = await renderer.render(mermaidIdRef.current, children);
         if (!cancelled) {
           setSvg(renderedSvg);
         }
@@ -129,7 +136,15 @@ const MermaidBlock = ({ children }: { children: string }) => {
     return () => {
       cancelled = true;
     };
-  }, [children]);
+  }, [children, renderer]);
+
+  if (!renderer && !svg) {
+    return (
+      <pre className="my-8 overflow-x-auto rounded-2xl border border-zinc-800 bg-[#0d1117] p-4 text-sm text-zinc-300">
+        <code>{children}</code>
+      </pre>
+    );
+  }
 
   return (
     <div className="my-8 flex justify-center overflow-x-auto rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900/50">
@@ -138,15 +153,25 @@ const MermaidBlock = ({ children }: { children: string }) => {
   );
 };
 
-const markdownComponents: Components = {
-  img: ({ ...props }) => <img {...props} loading="lazy" className="my-12 cursor-zoom-in rounded-2xl shadow-lg" />,
+const createMarkdownComponents = (
+  onPreviewImage: (image: { src: string; alt?: string }) => void,
+  mermaidRenderer: MermaidRenderer | null
+): Components => ({
+  img: ({ ...props }) => (
+    <img
+      {...props}
+      loading="lazy"
+      onClick={() => onPreviewImage({ src: props.src || '', alt: props.alt })}
+      className="my-12 cursor-zoom-in rounded-2xl shadow-lg"
+    />
+  ),
   pre: PreBlock,
   code: ({ className, children, ...props }) => {
     const { isBlock, ...restProps } = props as React.HTMLAttributes<HTMLElement> & BlockCodeProps;
     const isBlockCode = Boolean(isBlock) || /language-(\w+)/.test(className || '');
 
     if (className?.includes('language-mermaid')) {
-      return <MermaidBlock>{String(children)}</MermaidBlock>;
+      return <MermaidBlock renderer={mermaidRenderer}>{String(children)}</MermaidBlock>;
     }
 
     if (isBlockCode) {
@@ -175,7 +200,7 @@ const markdownComponents: Components = {
     const id = String(children).toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-').replace(/^-+|-+$/g, '');
     return <h3 id={id} {...props}>{children}</h3>;
   }
-};
+});
 
 export const Post = () => {
   const { id } = useParams<{ id: string }>();
@@ -183,18 +208,120 @@ export const Post = () => {
   const [loading, setLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt?: string } | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [remarkPlugins, setRemarkPlugins] = useState<MarkdownPlugin[]>([remarkGfm]);
+  const [rehypePlugins, setRehypePlugins] = useState<MarkdownPlugin[]>([]);
+  const [mermaidRenderer, setMermaidRenderer] = useState<MermaidRenderer | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     window.scrollTo(0, 0);
 
-    if (id) {
-      setLoading(true);
-      getPostById(id).then((data) => {
-        setPost(data || null);
-        setLoading(false);
-      });
+    if (!id) {
+      setPost(null);
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
     }
+
+    setLoading(true);
+    setPost(null);
+
+    getPostById(id)
+      .then((data) => {
+        if (cancelled) {
+          return;
+        }
+
+        setPost(data || null);
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        console.error('Failed to load post:', error);
+        setPost(null);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
+
+  useEffect(() => {
+    if (!post?.content) {
+      setRemarkPlugins([remarkGfm]);
+      setRehypePlugins([]);
+      setMermaidRenderer(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadMarkdownEnhancements = async () => {
+      const nextRemarkPlugins: MarkdownPlugin[] = [remarkGfm];
+      const nextRehypePlugins: MarkdownPlugin[] = [];
+      let nextMermaidRenderer: MermaidRenderer | null = null;
+      const tasks: Promise<void>[] = [];
+
+      if (hasCodeBlocks(post.content)) {
+        tasks.push((async () => {
+          const [{ default: rehypeHighlight }] = await Promise.all([
+            import('rehype-highlight'),
+            import('highlight.js/styles/github-dark.css')
+          ]);
+
+          nextRehypePlugins.push(rehypeHighlight);
+        })());
+      }
+
+      if (hasMathExpressions(post.content)) {
+        tasks.push((async () => {
+          const [{ default: remarkMath }, { default: rehypeKatex }] = await Promise.all([
+            import('remark-math'),
+            import('rehype-katex'),
+            import('katex/dist/katex.min.css')
+          ]);
+
+          nextRemarkPlugins.push(remarkMath);
+          nextRehypePlugins.push(rehypeKatex);
+        })());
+      }
+
+      if (hasMermaidDiagrams(post.content)) {
+        tasks.push((async () => {
+          const { default: mermaid } = await import('mermaid');
+          mermaid.initialize(MERMAID_CONFIG);
+          nextMermaidRenderer = mermaid as MermaidRenderer;
+        })());
+      }
+
+      await Promise.all(tasks);
+
+      if (cancelled) {
+        return;
+      }
+
+      setRemarkPlugins(nextRemarkPlugins);
+      setRehypePlugins(nextRehypePlugins);
+      setMermaidRenderer(nextMermaidRenderer);
+    };
+
+    void loadMarkdownEnhancements();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [post?.content]);
+
+  const markdownComponents = createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer);
 
   if (loading) {
     return (
@@ -293,19 +420,9 @@ export const Post = () => {
           <div className="max-w-3xl flex-1 px-4 pb-20 md:pb-32">
             <div className="prose prose-base max-w-none prose-stone dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white prose-p:font-sans prose-p:text-base prose-p:leading-relaxed md:prose-p:text-lg prose-a:break-words prose-a:text-accent prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-strong:font-bold prose-strong:text-ink dark:prose-strong:text-white prose-img:my-6 prose-img:h-auto prose-img:w-full prose-img:max-w-full prose-img:cursor-zoom-in prose-img:rounded-xl prose-img:shadow-lg prose-img:transition-transform hover:prose-img:scale-[1.01] dark:prose-img:rounded-2xl md:prose-img:my-12 md:prose-img:rounded-2xl prose-blockquote:rounded-r-xl prose-blockquote:border-l-accent prose-blockquote:bg-zinc-50 prose-blockquote:px-4 prose-blockquote:py-3 prose-blockquote:font-serif prose-blockquote:not-italic prose-blockquote:text-base dark:prose-blockquote:bg-zinc-900 md:prose-blockquote:rounded-r-2xl md:prose-blockquote:px-8 md:prose-blockquote:py-6 md:prose-blockquote:text-xl prose-code:font-mono prose-code:text-xs md:prose-code:text-sm prose-pre:overflow-hidden prose-pre:rounded-xl prose-pre:border prose-pre:border-zinc-800 prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:shadow-xl md:prose-pre:rounded-2xl">
               <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeHighlight, rehypeKatex]}
-                components={{
-                  ...markdownComponents,
-                  img: ({ ...props }) => (
-                    <img
-                      {...props}
-                      loading="lazy"
-                      onClick={() => setPreviewImage({ src: props.src || '', alt: props.alt })}
-                      className="my-12 cursor-zoom-in rounded-2xl shadow-lg"
-                    />
-                  )
-                }}
+                remarkPlugins={remarkPlugins}
+                rehypePlugins={rehypePlugins}
+                components={markdownComponents}
               >
                 {post.content}
               </ReactMarkdown>
