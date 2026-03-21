@@ -48,7 +48,7 @@ author: 跑路的duck
 
 只要数据中心收入还在以这种级别增长，所谓“AI 投资退潮”的说法就很难站得住。
 
-![NVIDIA Rubin 平台页面截图](/posts-img/nvidia-rubin.jpg)
+![NVIDIA 官方财报配图](/posts-img/nvidia-q4-hq.jpg)
 
 ---
 
