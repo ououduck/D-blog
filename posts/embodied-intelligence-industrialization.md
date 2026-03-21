@@ -11,7 +11,7 @@ tags:
   - 机器人产业
   - 工业智能
   - AI随笔
-coverImage: /posts-img/ai-embodied-cover.svg
+coverImage: /posts-img/embodied-news-cover.png
 author: 跑路的duck
 ---
 

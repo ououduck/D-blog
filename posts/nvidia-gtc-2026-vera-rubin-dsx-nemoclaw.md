@@ -57,7 +57,7 @@ GTC 2026 真正值得盯的，不只是芯片本身，而是 NVIDIA 正在把自
 
 而 Rubin 的叙事，正是冲着这件事去的。
 
-![NVIDIA Rubin 官方页面截图](/posts-img/nvidia-rubin.jpg)
+![NVIDIA Rubin 中文页面截图](/posts-img/nvidia-rubin-cn.jpg)
 
 ---
 

@@ -11,7 +11,7 @@ tags:
   - AI治理
   - OpenClaw
   - AI随笔
-coverImage: /posts-img/ai-agent-cover.svg
+coverImage: /posts-img/ai-agent-news-cover.png
 author: 跑路的duck
 ---
 

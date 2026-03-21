@@ -11,7 +11,7 @@ tags:
   - 国产AI
   - AI生态
   - AI随笔
-coverImage: /posts-img/ai-deepseek-cover.svg
+coverImage: /posts-img/deepseek-news-cover.png
 author: 跑路的duck
 ---
 

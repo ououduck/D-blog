@@ -11,7 +11,7 @@ tags:
   - 新药研发
   - 科学智能
   - AI随笔
-coverImage: /posts-img/ai-drug-cover.svg
+coverImage: /posts-img/ai-drug-news-cover.png
 author: 跑路的duck
 ---
 

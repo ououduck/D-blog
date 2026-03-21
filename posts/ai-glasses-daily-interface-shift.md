@@ -11,7 +11,7 @@ tags:
   - 端侧AI
   - 可穿戴设备
   - AI随笔
-coverImage: /posts-img/ai-glasses-cover.svg
+coverImage: /posts-img/ai-glasses-news-cover.png
 author: 跑路的duck
 ---
 
