@@ -13,11 +13,11 @@ const MOBILE_TOC_TRIGGER_STYLE = {
 } as const;
 const DESKTOP_TOC_TRIGGER_STYLE = {
   right: '1.5rem',
-  bottom: '8rem'
+  bottom: '10rem'
 } as const;
 const DESKTOP_TOC_POPOVER_STYLE = {
   right: '1.5rem',
-  bottom: '12.75rem'
+  bottom: '14.75rem'
 } as const;
 const MOBILE_TOC_SHEET_STYLE = {
   left: 'max(0.6rem, calc(env(safe-area-inset-left) + 0.6rem))',
