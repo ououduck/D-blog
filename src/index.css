@@ -163,20 +163,51 @@ html.theme-switching *::after {
       repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,.02) 2px, rgba(255,255,255,.02) 4px);
   }
 
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  * {
+    scrollbar-color: rgba(168, 162, 158, 0.55) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: rgba(82, 82, 91, 0.7) transparent;
+  }
+
+  ::selection {
+    background: rgba(192, 57, 43, 0.18);
+    color: #1c1917;
+  }
+
+  .dark ::selection {
+    background: rgba(231, 76, 60, 0.3);
+    color: #fafaf9;
+  }
+
   /* Custom scrollbar */
   ::-webkit-scrollbar {
-    width: 4px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
     background: transparent; 
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(168, 162, 158, 0.5); 
-    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(168, 162, 158, 0.58), rgba(120, 113, 108, 0.48));
+    border-radius: 999px;
+    border: 1px solid transparent;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(120, 113, 108, 0.78), rgba(87, 83, 78, 0.7));
   }
   .dark ::-webkit-scrollbar-thumb {
-    background: rgba(64, 64, 64, 0.5); 
+    background: linear-gradient(180deg, rgba(82, 82, 91, 0.72), rgba(63, 63, 70, 0.62));
   }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(113, 113, 122, 0.86), rgba(82, 82, 91, 0.8));
+  }
+
   
   /* Premium text effects */
   .text-glow {
@@ -191,3 +222,4 @@ html.theme-switching *::after {
     scrollbar-width: none;  /* Firefox */
   }
 }
+

@@ -30,32 +30,82 @@ const TEXT = {
   rssHint: '\u901a\u8fc7 RSS \u8ffd\u8e2a\u6700\u65b0\u66f4\u65b0'
 };
 
+const isEditableTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tagName = target.tagName.toLowerCase();
+  return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+};
+
 const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
   const { searchQuery, isSearching, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch();
   const visibleResults = results.slice(0, 8);
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
     if (!isOpen) {
       clearSearch();
+      previousActiveElementRef.current?.focus?.();
+      previousActiveElementRef.current = null;
+      return;
     }
+
+    previousActiveElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const timerId = window.setTimeout(() => inputRef.current?.focus(), 100);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
   }, [clearSearch, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
       onClose();
     }
-    // Only react to route changes; including isOpen here would close immediately on open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const focusableElements = [inputRef.current, closeButtonRef.current].filter(Boolean) as HTMLElement[];
+      if (focusableElements.length === 0) {
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const handleSelect = (id: string) => {
     navigate(`/post/${id}`);
@@ -73,7 +123,7 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-24">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-void/60 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, scale: 0.95, y: -20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -20 }} transition={{ type: 'spring', duration: 0.5 }} className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: -20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -20 }} transition={{ type: 'spring', duration: 0.5 }} className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
             <div className="flex items-center border-b border-zinc-100 p-4 dark:border-zinc-800">
               <Search className="mr-3 text-zinc-400" size={20} />
               <input
@@ -84,8 +134,9 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
                 value={searchQuery}
                 onChange={(event) => handleSearch(event.target.value)}
                 onKeyDown={handleInputKeyDown}
+                aria-labelledby="site-search-title"
               />
-              <button onClick={onClose} className="rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+              <button ref={closeButtonRef} onClick={onClose} className="rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="关闭站内搜索">
                 <X size={20} className="text-zinc-400" />
               </button>
             </div>
@@ -97,11 +148,11 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
                 </div>
               ) : visibleResults.length > 0 ? (
                 <div className="p-2">
-                  <div className="px-3 pt-3 text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+                  <div id="site-search-title" className="px-3 pt-3 text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
                     {results.length} {TEXT.resultsSuffix}
                   </div>
                   {visibleResults.map((post) => (
-                    <button key={post.id} onClick={() => handleSelect(post.id)} className="group block w-full rounded-xl p-4 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                    <button key={post.id} onClick={() => handleSelect(post.id)} className="group block w-full rounded-xl p-4 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50" aria-label={`打开文章：${post.title}`}>
                       <div className="mb-1 flex items-center gap-2">
                         <span className="rounded-md border border-accent/20 bg-accent/5 px-1.5 py-0.5 text-xs font-bold text-accent">{post.category}</span>
                       </div>
@@ -124,7 +175,7 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
             </div>
 
             <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50 p-3 text-xs text-zinc-400 dark:border-zinc-800 dark:bg-zinc-950/50">
-              <span>{TEXT.searchHint}</span>
+              <span id="site-search-desc">{TEXT.searchHint}</span>
               <div className="flex items-center gap-2">
                 <kbd className="rounded border border-zinc-200 bg-white px-2 py-0.5 font-mono dark:border-zinc-700 dark:bg-zinc-800">esc</kbd>
                 <span>{TEXT.close}</span>
@@ -165,18 +216,28 @@ const ThemeToggle = () => {
       }
     };
 
-    applyTheme(theme);
-    hasInitializedThemeRef.current = true;
-    localStorage.setItem('theme', theme);
-
     const handleSystemChange = () => {
       if (theme === 'system') {
         applyTheme('system');
       }
     };
 
-    systemQuery.addEventListener('change', handleSystemChange);
-    return () => systemQuery.removeEventListener('change', handleSystemChange);
+    const attachSystemListener = () => {
+      if (typeof systemQuery.addEventListener === 'function') {
+        systemQuery.addEventListener('change', handleSystemChange);
+        return () => systemQuery.removeEventListener('change', handleSystemChange);
+      }
+
+      systemQuery.addListener(handleSystemChange);
+      return () => systemQuery.removeListener(handleSystemChange);
+    };
+
+    applyTheme(theme);
+    hasInitializedThemeRef.current = true;
+    localStorage.setItem('theme', theme);
+
+    const detachSystemListener = attachSystemListener();
+    return () => detachSystemListener();
   }, [theme]);
 
   const toggleTheme = () => {
@@ -194,7 +255,7 @@ const ThemeToggle = () => {
   };
 
   return (
-    <button onClick={toggleTheme} className="group relative rounded-full bg-zinc-100 p-2.5 text-ink transition-all duration-300 hover:ring-2 ring-accent/20 dark:bg-zinc-800 dark:text-amber-300" aria-label="\u5207\u6362\u4e3b\u9898">
+    <button onClick={toggleTheme} className="group relative rounded-full bg-zinc-100 p-2.5 text-ink transition-all duration-300 hover:ring-2 ring-accent/20 dark:bg-zinc-800 dark:text-amber-300" aria-label="切换主题">
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={theme} initial={{ y: -10, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 10, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
           {theme === 'light' && <Sun size={18} />}
@@ -226,7 +287,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   }, [location]);
 
   return (
-    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/50 bg-paper/80 backdrop-blur-lg transition-all duration-500 supports-[backdrop-filter]:bg-paper/60 dark:border-zinc-800/50 dark:bg-void/80">
+    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/65 bg-paper/80 shadow-[0_18px_48px_-38px_rgba(28,25,23,0.45)] backdrop-blur-xl transition-all duration-500 supports-[backdrop-filter]:bg-paper/64 dark:border-zinc-800/65 dark:bg-void/80">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
         <Link to="/" className="group z-50 flex items-center space-x-3">
           <div className="relative">
@@ -263,7 +324,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           </div>
 
           <div className="flex items-center space-x-3 border-l border-zinc-300 pl-6 dark:border-zinc-700">
-            <button onClick={onSearchClick} className="group flex items-center space-x-2 rounded-lg bg-zinc-100 px-3 py-2 text-zinc-500 transition-colors hover:text-accent dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-accent-light">
+            <button onClick={onSearchClick} className="group flex items-center space-x-2 rounded-lg border border-transparent bg-zinc-100/90 px-3 py-2 text-zinc-500 transition-all duration-300 hover:border-zinc-200 hover:bg-white hover:text-accent dark:bg-zinc-800/90 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800" aria-label="打开站内搜索">
               <Search size={16} />
               <span className="text-xs font-medium opacity-70 group-hover:opacity-100">Ctrl+K</span>
             </button>
@@ -276,10 +337,10 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
         </div>
 
         <div className="flex items-center space-x-4 md:hidden">
-          <button onClick={onSearchClick} className="p-2 text-zinc-600 transition-transform active:scale-95 dark:text-zinc-300">
+          <button onClick={onSearchClick} className="p-2 text-zinc-600 transition-transform active:scale-95 dark:text-zinc-300" aria-label="打开站内搜索">
             <Search size={22} />
           </button>
-          <button onClick={() => setIsOpen(!isOpen)} className="z-50 p-2 text-ink transition-transform active:scale-95 dark:text-white">
+          <button onClick={() => setIsOpen(!isOpen)} className="z-50 p-2 text-ink transition-transform active:scale-95 dark:text-white" aria-label={isOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isOpen}>
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
@@ -333,7 +394,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="relative mt-12 overflow-hidden border-t border-zinc-200 bg-paper py-12 dark:border-zinc-800 dark:bg-void md:mt-32">
+    <footer className="relative mt-12 overflow-hidden border-t border-zinc-200/90 bg-paper/88 py-12 dark:border-zinc-800/90 dark:bg-void/92 md:mt-32">
       <div className="absolute left-1/2 top-0 h-px w-full -translate-x-1/2 bg-gradient-to-r from-transparent via-accent to-transparent opacity-30" />
       <div className="mx-auto max-w-7xl px-6">
         <div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-3">
@@ -344,10 +405,10 @@ const Footer = () => {
             </div>
             <p className="text-center text-sm leading-relaxed text-zinc-400 md:text-left">{siteConfig.description}</p>
             <div className="flex items-center gap-4 pt-2">
-              <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="rounded-full bg-zinc-100 p-2 text-zinc-500 transition-all duration-300 hover:bg-black hover:text-white dark:bg-zinc-800 dark:hover:bg-accent">
+              <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="rounded-full bg-zinc-100 p-2 text-zinc-500 transition-all duration-300 hover:bg-black hover:text-white dark:bg-zinc-800 dark:hover:bg-accent" aria-label="打开 GitHub 主页">
                 <Github size={18} />
               </a>
-              <a href={siteConfig.social.email} className="rounded-full bg-zinc-100 p-2 text-zinc-500 transition-all duration-300 hover:bg-black hover:text-white dark:bg-zinc-800 dark:hover:bg-accent">
+              <a href={siteConfig.social.email} className="rounded-full bg-zinc-100 p-2 text-zinc-500 transition-all duration-300 hover:bg-black hover:text-white dark:bg-zinc-800 dark:hover:bg-accent" aria-label="发送邮件">
                 <Mail size={18} />
               </a>
             </div>
@@ -437,7 +498,7 @@ const Background = () => {
     <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden">
       <motion.div
         aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.07),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(24,24,27,0.08),_transparent_34%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.10),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(161,161,170,0.08),_transparent_34%)]"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.08),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(24,24,27,0.08),_transparent_34%),linear-gradient(180deg,_rgba(255,255,255,0.55),_transparent_45%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.12),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(161,161,170,0.08),_transparent_34%),linear-gradient(180deg,_rgba(255,255,255,0.04),_transparent_35%)]"
         animate={shouldReduceMotion ? undefined : { scale: [1, 1.03, 1], opacity: [0.92, 1, 0.92] }}
         transition={shouldReduceMotion ? undefined : { duration: 14, repeat: Infinity, ease: 'easeInOut' }}
       />
@@ -493,23 +554,29 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        if (isEditableTarget(event.target)) {
+          return;
+        }
+
         event.preventDefault();
         setIsSearchOpen(true);
+        return;
       }
 
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && isSearchOpen) {
+        event.preventDefault();
         setIsSearchOpen(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isSearchOpen]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   return (
     <div className="relative flex min-h-screen flex-col selection:bg-accent selection:text-white">
@@ -518,7 +585,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
       <main className="relative flex-grow px-4 pt-32 sm:px-6">
         <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={location.pathname} variants={routeShellVariants} initial="initial" animate="animate" exit="exit" className="mx-auto max-w-7xl will-change-transform">
+          <motion.div key={`${location.pathname}${location.search}`} variants={routeShellVariants} initial="initial" animate="animate" exit="exit" className="mx-auto max-w-7xl will-change-transform">
             {children}
           </motion.div>
         </AnimatePresence>

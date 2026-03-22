@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface ProgressiveImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   wrapperClassName?: string;
@@ -14,10 +14,17 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
   onLoad,
   onError,
   decoding = 'async',
+  src,
+  alt,
   ...props
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(false);
+    setHasError(false);
+  }, [src]);
 
   return (
     <div className={mergeClassName('relative overflow-hidden', wrapperClassName)}>
@@ -36,24 +43,33 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
           isLoaded || hasError ? 'opacity-0' : 'opacity-100'
         )}
       />
-      <img
-        {...props}
-        decoding={decoding}
-        className={mergeClassName(
-          'relative transition-all duration-700 ease-out will-change-transform',
-          isLoaded ? 'scale-100 blur-0 opacity-100' : 'scale-[1.03] blur-xl opacity-0',
-          className
-        )}
-        onLoad={(event) => {
-          setIsLoaded(true);
-          setHasError(false);
-          onLoad?.(event);
-        }}
-        onError={(event) => {
-          setHasError(true);
-          onError?.(event);
-        }}
-      />
+      {hasError ? (
+        <div className="relative flex min-h-[6rem] items-center justify-center rounded-inherit bg-zinc-100/90 px-4 py-6 text-center text-sm text-zinc-500 dark:bg-zinc-900/80 dark:text-zinc-400">
+          图片加载失败{alt ? `：${alt}` : ''}
+        </div>
+      ) : (
+        <img
+          {...props}
+          src={src}
+          alt={alt}
+          decoding={decoding}
+          className={mergeClassName(
+            'relative transition-all duration-700 ease-out will-change-transform',
+            isLoaded ? 'scale-100 blur-0 opacity-100' : 'scale-[1.03] blur-xl opacity-0',
+            className
+          )}
+          onLoad={(event) => {
+            setIsLoaded(true);
+            setHasError(false);
+            onLoad?.(event);
+          }}
+          onError={(event) => {
+            setHasError(true);
+            onError?.(event);
+          }}
+        />
+      )}
     </div>
   );
 };
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Copy, Check, Link as LinkIcon } from 'lucide-react';
 
@@ -12,11 +12,66 @@ interface ShareModalProps {
 
 export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, excerpt, url }) => {
   const [copiedType, setCopiedType] = useState<'all' | 'link' | null>(null);
+  const [copyError, setCopyError] = useState<string | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
+  const resetTimerRef = useRef<number | null>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+
+  const clearResetTimer = () => {
+    if (resetTimerRef.current !== null) {
+      window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+  };
+
+  const scheduleReset = () => {
+    clearResetTimer();
+    resetTimerRef.current = window.setTimeout(() => {
+      setCopiedType(null);
+      setCopyError(null);
+    }, 2000);
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      clearResetTimer();
+      setCopiedType(null);
+      setCopyError(null);
+      previousActiveElementRef.current?.focus?.();
+      previousActiveElementRef.current = null;
+      return;
+    }
+
+    previousActiveElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    window.setTimeout(() => closeButtonRef.current?.focus(), 0);
+
+    return () => {
+      clearResetTimer();
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const writeToClipboard = async (value: string) => {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(value);
-      return;
+      return true;
     }
 
     const textArea = document.createElement('textarea');
@@ -26,21 +81,35 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, 
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
+
+    let copied = false;
+    try {
+      copied = document.execCommand('copy');
+    } finally {
+      document.body.removeChild(textArea);
+    }
+
+    return copied;
   };
 
-  const handleCopyAll = async () => {
-    const text = `标题：${title}\n简介：${excerpt}\n链接：${url}`;
-    await writeToClipboard(text);
-    setCopiedType('all');
-    setTimeout(() => setCopiedType(null), 2000);
-  };
+  const handleCopy = async (type: 'all' | 'link') => {
+    const text = type === 'all' ? `标题：${title}\n简介：${excerpt}\n链接：${url}` : url;
 
-  const handleCopyLink = async () => {
-    await writeToClipboard(url);
-    setCopiedType('link');
-    setTimeout(() => setCopiedType(null), 2000);
+    try {
+      const copied = await writeToClipboard(text);
+      if (!copied) {
+        throw new Error('Copy command was rejected');
+      }
+
+      setCopiedType(type);
+      setCopyError(null);
+      scheduleReset();
+    } catch (error) {
+      console.error('Copy failed:', error);
+      setCopiedType(null);
+      setCopyError('复制失败，请手动复制链接。');
+      scheduleReset();
+    }
   };
 
   return (
@@ -48,29 +117,31 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, 
       {isOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-void/60 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative z-10 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
-            <button onClick={onClose} className="absolute right-4 top-4 rounded-lg p-1 text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800">
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative z-10 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900" role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}>
+            <button ref={closeButtonRef} onClick={onClose} className="absolute right-4 top-4 rounded-lg p-1 text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="关闭分享弹窗">
               <X size={20} />
             </button>
-            <h3 className="mb-4 text-xl font-serif font-bold text-ink dark:text-white">分享文章</h3>
+            <h3 id={titleId} className="mb-4 text-xl font-serif font-bold text-ink dark:text-white">分享文章</h3>
             <div className="mb-6 rounded-xl border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/50">
               <h4 className="mb-2 line-clamp-2 font-bold text-ink dark:text-white">{title}</h4>
-              <p className="mb-3 line-clamp-3 text-sm text-zinc-500 dark:text-zinc-400">{excerpt}</p>
+              <p id={descriptionId} className="mb-3 line-clamp-3 text-sm text-zinc-500 dark:text-zinc-400">{excerpt}</p>
               <div className="break-all rounded border border-accent/10 bg-accent/5 p-2 text-xs text-accent">{url}</div>
             </div>
             <div className="flex gap-3">
-              <button onClick={handleCopyAll} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-ink py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 dark:bg-white dark:text-ink">
+              <button onClick={() => handleCopy('all')} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-ink py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 dark:bg-white dark:text-ink" aria-label="复制标题、简介和链接">
                 {copiedType === 'all' ? <Check size={16} /> : <Copy size={16} />}
                 {copiedType === 'all' ? '已复制' : '复制全部'}
               </button>
-              <button onClick={handleCopyLink} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-zinc-100 py-2.5 text-sm font-bold text-ink transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700">
+              <button onClick={() => handleCopy('link')} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-zinc-100 py-2.5 text-sm font-bold text-ink transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700" aria-label="仅复制文章链接">
                 {copiedType === 'link' ? <Check size={16} /> : <LinkIcon size={16} />}
                 {copiedType === 'link' ? '已复制' : '纯链接'}
               </button>
             </div>
+            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400" aria-live="polite">{copyError ?? (copiedType ? '复制成功。' : '可复制完整分享文案或单独链接。')}</p>
           </motion.div>
         </div>
       )}
     </AnimatePresence>
   );
 };
+

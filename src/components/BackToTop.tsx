@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ArrowUp } from 'lucide-react';
 
 const MOBILE_OFFSET_STYLE = {
@@ -9,6 +9,7 @@ const MOBILE_OFFSET_STYLE = {
 
 export const BackToTop = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     const toggleVisibility = () => {
@@ -19,14 +20,14 @@ export const BackToTop = () => {
       }
     };
 
-    window.addEventListener('scroll', toggleVisibility);
+    window.addEventListener('scroll', toggleVisibility, { passive: true });
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth',
+      behavior: shouldReduceMotion ? 'auto' : 'smooth'
     });
   };
 
@@ -34,13 +35,13 @@ export const BackToTop = () => {
     <AnimatePresence>
       {isVisible && (
         <motion.button
-          initial={{ opacity: 0, scale: 0.5 }}
+          initial={{ opacity: 0, scale: shouldReduceMotion ? 1 : 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.5 }}
+          exit={{ opacity: 0, scale: shouldReduceMotion ? 1 : 0.5 }}
           onClick={scrollToTop}
           style={MOBILE_OFFSET_STYLE}
-          className="fixed z-40 rounded-full border border-zinc-200/80 bg-white/94 p-3 text-ink shadow-[0_18px_40px_-26px_rgba(28,25,23,0.3)] backdrop-blur-xl transition-all duration-300 hover:scale-110 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/94 dark:text-white dark:hover:bg-zinc-700 md:bottom-8 md:right-8 group"
-          aria-label="Back to Top"
+          className="group fixed z-40 rounded-full border border-zinc-200/80 bg-white/94 p-3 text-ink shadow-[0_18px_40px_-26px_rgba(28,25,23,0.3)] backdrop-blur-xl transition-all duration-300 hover:scale-110 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/94 dark:text-white dark:hover:bg-zinc-700 md:bottom-8 md:right-8"
+          aria-label="返回顶部"
         >
           <ArrowUp size={20} className="transition-transform group-hover:-translate-y-1" />
         </motion.button>

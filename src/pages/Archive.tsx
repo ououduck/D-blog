@@ -6,6 +6,7 @@ import { getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
 import { usePostSearch } from '@/hooks/usePostSearch';
+import { formatDate, getDateTimestamp } from '@/utils/date';
 
 interface ArchiveGroup {
   year: string;
@@ -15,33 +16,27 @@ interface ArchiveGroup {
   posts: PostMetadata[];
 }
 
-const formatMonth = (dateText: string) => {
-  const date = new Date(dateText);
-  return `${date.getMonth() + 1}月`;
-};
+const formatMonth = (dateText: string) => formatDate(dateText, 'zh-CN', { month: 'numeric' }) + '月';
 
-const formatDay = (dateText: string) => {
-  const date = new Date(dateText);
-  return `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-};
+const formatDay = (dateText: string) => formatDate(dateText, 'zh-CN', {
+  month: '2-digit',
+  day: '2-digit'
+}).replace('/', '-');
 
-const formatFullDate = (dateText: string) => {
-  const date = new Date(dateText);
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }).format(date);
-};
+const formatFullDate = (dateText: string) => formatDate(dateText, 'zh-CN', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+});
 
 const buildArchiveGroups = (posts: PostMetadata[]) => {
   const groups = new Map<string, ArchiveGroup>();
 
   posts
     .slice()
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a, b) => getDateTimestamp(b.date) - getDateTimestamp(a.date))
     .forEach((post) => {
-      const year = String(new Date(post.date).getFullYear());
+      const year = formatDate(post.date, 'zh-CN', { year: 'numeric' });
       const existing = groups.get(year);
 
       if (!existing) {
@@ -80,6 +75,7 @@ const buildArchiveGroups = (posts: PostMetadata[]) => {
 export const ArchivePage = () => {
   const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const latestDate = allPosts[0]?.date || '';
   const { searchQuery, isSearching, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch({
     emptyResults: allPosts
@@ -95,10 +91,12 @@ export const ArchivePage = () => {
         }
 
         setAllPosts(posts);
+        setLoadError(null);
       })
       .catch((error) => {
         if (!cancelled) {
           console.error('Failed to load archive posts:', error);
+          setLoadError('归档数据加载失败，请稍后刷新重试。');
         }
       })
       .finally(() => {
@@ -170,9 +168,10 @@ export const ArchivePage = () => {
               value={searchQuery}
               onChange={(event) => handleSearch(event.target.value)}
               className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-11 pr-11 text-sm text-ink outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-accent focus:ring-4 ring-accent/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-accent"
+              aria-label="搜索归档文章"
             />
             {searchQuery && (
-              <button onClick={clearSearch} className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-accent">
+              <button onClick={clearSearch} className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-accent" aria-label="清除搜索">
                 <X size={16} />
               </button>
             )}
@@ -189,6 +188,10 @@ export const ArchivePage = () => {
             {Array.from({ length: 3 }).map((_, index) => (
               <div key={index} className="h-32 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-900" />
             ))}
+          </div>
+        ) : loadError ? (
+          <div className="rounded-2xl border border-dashed border-red-200 bg-red-50/80 p-8 text-sm text-red-500 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+            {loadError}
           </div>
         ) : (
           <div className="relative">
@@ -257,3 +260,4 @@ export const ArchivePage = () => {
     </motion.div>
   );
 };
+

@@ -18,6 +18,7 @@ import { NotFoundState } from '@/components/NotFoundState';
 import { ReadingProgressBadge } from '@/components/ReadingProgressBadge';
 import { extractMarkdownHeadings, extractTextFromReactNode, slugifyHeading } from '@/utils/headings';
 import type { MarkdownHeading } from '@/utils/headings';
+import { formatDate } from '@/utils/date';
 
 type BlockCodeProps = {
   isBlock?: boolean;
@@ -52,11 +53,11 @@ const formatMetaDate = (dateText?: string) => {
     return '';
   }
 
-  return new Intl.DateTimeFormat('zh-CN', {
+  return formatDate(dateText, 'zh-CN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
-  }).format(new Date(dateText));
+  });
 };
 
 const getDisplayAuthors = (post: PostType): PostAuthor[] => {
@@ -77,6 +78,22 @@ const getDisplayAuthors = (post: PostType): PostAuthor[] => {
 const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>) => {
   const preRef = useRef<HTMLPreElement>(null);
   const [copied, setCopied] = useState(false);
+  const resetTimerRef = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (resetTimerRef.current !== null) {
+      window.clearTimeout(resetTimerRef.current);
+    }
+  }, []);
+
+  const markCopied = () => {
+    if (resetTimerRef.current !== null) {
+      window.clearTimeout(resetTimerRef.current);
+    }
+
+    setCopied(true);
+    resetTimerRef.current = window.setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleCopy = async () => {
     if (!preRef.current) {
@@ -88,8 +105,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(code);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        markCopied();
         return;
       }
 
@@ -104,9 +120,12 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
       textArea.select();
 
       try {
-        document.execCommand('copy');
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        const copiedSuccessfully = document.execCommand('copy');
+        if (!copiedSuccessfully) {
+          throw new Error('Copy command was rejected');
+        }
+
+        markCopied();
       } catch (error) {
         console.error('Copy failed', error);
       }
@@ -215,13 +234,19 @@ const createMarkdownComponents = (
 
   return {
     img: ({ ...props }) => (
-      <ProgressiveImage
-        {...props}
-        loading="lazy"
+      <button
+        type="button"
         onClick={() => onPreviewImage({ src: props.src || '', alt: props.alt })}
-        wrapperClassName="my-12 rounded-2xl"
-        className="cursor-zoom-in rounded-2xl shadow-lg"
-      />
+        className="my-12 block w-full rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+        aria-label={props.alt ? `预览图片：${props.alt}` : '预览图片'}
+      >
+        <ProgressiveImage
+          {...props}
+          loading="lazy"
+          wrapperClassName="rounded-2xl"
+          className="cursor-zoom-in rounded-2xl shadow-lg"
+        />
+      </button>
     ),
     pre: PreBlock,
     code: ({ className, children, ...props }) => {
@@ -519,7 +544,7 @@ export const Post = () => {
                 <Clock size={14} className="mr-2" /> {post.readTime}
               </span>
               <span className="hidden h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700 md:block" />
-              <button onClick={() => setShareModalOpen(true)} className="flex items-center transition-colors hover:text-accent">
+              <button onClick={() => setShareModalOpen(true)} className="flex items-center transition-colors hover:text-accent" aria-label={`分享文章：${post.title}`}>
                 <Share2 size={14} className="mr-1.5" /> 分享
               </button>
             </div>
@@ -527,9 +552,11 @@ export const Post = () => {
         </header>
 
         {post.coverImage && (
-          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="mx-auto mb-10 aspect-[4/3] max-w-6xl cursor-zoom-in overflow-hidden rounded-2xl px-4 shadow-2xl shadow-zinc-200/50 dark:shadow-none sm:aspect-[16/9] md:mb-20 md:aspect-[21/9] md:rounded-3xl md:px-0" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })}>
-            <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="auto" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
-          </motion.div>
+          <button type="button" className="mx-auto block w-full max-w-6xl px-4 md:px-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="mb-10 aspect-[4/3] cursor-zoom-in overflow-hidden rounded-2xl shadow-2xl shadow-zinc-200/50 dark:shadow-none sm:aspect-[16/9] md:mb-20 md:aspect-[21/9] md:rounded-3xl">
+              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="auto" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
+            </motion.div>
+          </button>
         )}
 
         <div ref={articleBodyRef} className="mx-auto flex max-w-3xl flex-col gap-8 px-4 pb-20 md:px-0 md:pb-32">
@@ -585,3 +612,4 @@ export const Post = () => {
     </>
   );
 };
+

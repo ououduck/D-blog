@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Tag, Calendar, Clock, Search, X } from 'lucide-react';
@@ -6,6 +6,7 @@ import { getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
 import { usePostSearch } from '@/hooks/usePostSearch';
+import { getDateTimestamp } from '@/utils/date';
 
 interface TagInfo {
   name: string;
@@ -30,29 +31,58 @@ const buildTagList = (posts: PostMetadata[]) => {
     .map(([name, taggedPosts]) => ({
       name,
       count: taggedPosts.length,
-      posts: taggedPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      posts: taggedPosts.sort((a, b) => getDateTimestamp(b.date) - getDateTimestamp(a.date))
     }))
-    .sort((a, b) => b.count - a.count);
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'));
 };
 
 export const Tags = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const selectedTag = searchParams.get('tag');
   const { searchQuery, isSearching, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch({
     emptyResults: allPosts
   });
 
   useEffect(() => {
-    getPosts().then((posts) => {
-      setAllPosts(posts);
-      setLoading(false);
-    });
+    let cancelled = false;
+
+    getPosts()
+      .then((posts) => {
+        if (cancelled) {
+          return;
+        }
+
+        setAllPosts(posts);
+        setLoadError(null);
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        console.error('Failed to load tags posts:', error);
+        setLoadError('标签数据加载失败，请稍后刷新重试。');
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const tags = buildTagList(results);
-  const selectedTagInfo = selectedTag ? tags.find((tag) => tag.name === selectedTag) : null;
+  const tags = useMemo(() => buildTagList(results), [results]);
+  const allTags = useMemo(() => buildTagList(allPosts), [allPosts]);
+  const selectedTagInfo = selectedTag ? allTags.find((tag) => tag.name === selectedTag) ?? null : null;
+  const filteredSelectedTagPosts = selectedTagInfo
+    ? selectedTagInfo.posts.filter((post) => results.some((result) => result.id === post.id))
+    : [];
   const maxCount = Math.max(...tags.map((tag) => tag.count), 1);
 
   const getTagSize = (count: number) => {
@@ -60,6 +90,20 @@ export const Tags = () => {
     if (ratio > 0.7) return 'text-2xl md:text-3xl';
     if (ratio > 0.4) return 'text-xl md:text-2xl';
     return 'text-base md:text-lg';
+  };
+
+  const updateTagParam = (nextTag?: string) => {
+    setSearchParams((previous) => {
+      const nextParams = new URLSearchParams(previous);
+
+      if (nextTag) {
+        nextParams.set('tag', nextTag);
+      } else {
+        nextParams.delete('tag');
+      }
+
+      return nextParams;
+    });
   };
 
   return (
@@ -74,7 +118,7 @@ export const Tags = () => {
           <p className="mb-4 text-xs font-bold uppercase tracking-[0.35em] text-accent">Tags Collection</p>
           <h1 className="mb-6 font-serif text-4xl font-bold tracking-tight text-ink dark:text-white md:text-6xl">标签集合</h1>
           <p className="max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 md:text-base">
-            共 {tags.length} 个标签，{tags.reduce((sum, tag) => sum + tag.count, 0)} 篇文章
+            共 {allTags.length} 个标签，{allTags.reduce((sum, tag) => sum + tag.count, 0)} 篇文章
           </p>
         </div>
       </section>
@@ -82,6 +126,10 @@ export const Tags = () => {
       {loading || isSearching ? (
         <div className="flex items-center justify-center py-20">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
+        </div>
+      ) : loadError ? (
+        <div className="rounded-2xl border border-dashed border-red-200 bg-red-50/80 p-8 text-sm text-red-500 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+          {loadError}
         </div>
       ) : (
         <>
@@ -96,9 +144,10 @@ export const Tags = () => {
                 value={searchQuery}
                 onChange={(event) => handleSearch(event.target.value)}
                 className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-11 pr-11 text-sm text-ink outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-accent focus:ring-4 ring-accent/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-accent"
+                aria-label="搜索标签或文章"
               />
               {searchQuery && (
-                <button onClick={clearSearch} className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-accent">
+                <button onClick={clearSearch} className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-accent" aria-label="清除搜索">
                   <X size={16} />
                 </button>
               )}
@@ -119,8 +168,9 @@ export const Tags = () => {
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.03 }}
-                    onClick={() => setSearchParams({ tag: tag.name })}
+                    onClick={() => updateTagParam(tag.name)}
                     className={`${getTagSize(tag.count)} group relative rounded-full border-2 border-zinc-200 bg-white px-5 py-2.5 font-bold text-zinc-700 transition-all hover:scale-110 hover:border-accent hover:text-accent dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-accent dark:hover:text-accent`}
+                    aria-label={`查看标签 ${tag.name}，共 ${tag.count} 篇文章`}
                   >
                     {tag.name}
                     <span className="ml-2 text-xs opacity-60">({tag.count})</span>
@@ -136,7 +186,7 @@ export const Tags = () => {
                   <span className="ml-3 text-base text-zinc-400">({selectedTagInfo?.count ?? 0} 篇)</span>
                 </h2>
                 <button
-                  onClick={() => setSearchParams({})}
+                  onClick={() => updateTagParam()}
                   className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-bold text-zinc-600 transition-colors hover:border-accent hover:text-accent dark:border-zinc-800 dark:text-zinc-400"
                 >
                   查看全部
@@ -144,7 +194,7 @@ export const Tags = () => {
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
-                {selectedTagInfo?.posts.map((post, index) => (
+                {filteredSelectedTagPosts.map((post, index) => (
                   <motion.div key={post.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
                     <Link to={`/post/${post.id}`} className="group block rounded-2xl border border-zinc-200 bg-white p-6 transition-all hover:border-zinc-300 hover:shadow-xl dark:border-zinc-800 dark:bg-zinc-900/40 dark:hover:border-zinc-700">
                       <div className="mb-3 flex items-center gap-2">
@@ -170,15 +220,15 @@ export const Tags = () => {
                   </motion.div>
                 ))}
 
-                {selectedTagInfo && selectedTagInfo.posts.length === 0 && (
+                {selectedTagInfo && filteredSelectedTagPosts.length === 0 && (
                   <div className="rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
-                    当前筛选条件下没有文章。
+                    当前标签存在，但在当前搜索条件下没有匹配文章。你可以清除搜索后查看完整列表。
                   </div>
                 )}
 
                 {!selectedTagInfo && (
                   <div className="rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
-                    当前标签在搜索结果中不可用，请清除搜索或查看全部标签。
+                    当前标签不存在或已失效，请返回查看全部标签。
                   </div>
                 )}
               </div>
@@ -189,3 +239,4 @@ export const Tags = () => {
     </motion.div>
   );
 };
+
