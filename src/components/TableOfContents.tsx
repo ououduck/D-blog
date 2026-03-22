@@ -11,6 +11,14 @@ const MOBILE_TOC_TRIGGER_STYLE = {
   right: 'max(1rem, calc(env(safe-area-inset-right) + 1rem))',
   bottom: 'max(9.5rem, calc(env(safe-area-inset-bottom) + 9.5rem))'
 } as const;
+const DESKTOP_TOC_TRIGGER_STYLE = {
+  right: '1.5rem',
+  bottom: '8rem'
+} as const;
+const DESKTOP_TOC_POPOVER_STYLE = {
+  right: '1.5rem',
+  bottom: '12.75rem'
+} as const;
 const MOBILE_TOC_SHEET_STYLE = {
   left: 'max(0.6rem, calc(env(safe-area-inset-left) + 0.6rem))',
   right: 'max(0.6rem, calc(env(safe-area-inset-right) + 0.6rem))',
@@ -123,7 +131,10 @@ const getRootBranchId = (id: string | null, parentMap: Map<string, string | null
   return null;
 };
 
-export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ headings }) => {
+export const TableOfContents: React.FC<{ headings: MarkdownHeading[]; showTrigger?: boolean }> = ({
+  headings,
+  showTrigger = true
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(headings[0]?.id ?? null);
@@ -543,7 +554,7 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
       : null;
 
   const mobileTrigger =
-    isClient
+    isClient && isMobileViewport && showTrigger
       ? createPortal(
           <button
             type="button"
@@ -563,15 +574,55 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
         )
       : null;
 
+  const desktopPopover =
+    isClient && !isMobileViewport && showTrigger
+      ? createPortal(
+          <AnimatePresence>
+            {isOpen ? (
+              <motion.aside
+                initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.98 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                style={DESKTOP_TOC_POPOVER_STYLE}
+                className="fixed z-[70] hidden h-[min(26rem,60vh)] w-[min(22rem,calc(100vw-3rem))] md:block"
+              >
+                {panelContent}
+              </motion.aside>
+            ) : null}
+          </AnimatePresence>,
+          document.body
+        )
+      : null;
+
+  const desktopTrigger =
+    isClient && !isMobileViewport && showTrigger
+      ? createPortal(
+          <button
+            type="button"
+            onClick={() => setIsOpen((value) => !value)}
+            style={DESKTOP_TOC_TRIGGER_STYLE}
+            className="fixed z-[60] hidden items-center gap-2 rounded-full border border-zinc-200/80 bg-white/96 px-4 py-2.5 text-sm font-medium text-ink shadow-[0_16px_42px_-26px_rgba(28,25,23,0.36)] backdrop-blur-xl transition-all duration-300 hover:border-accent/20 hover:text-accent dark:border-zinc-700 dark:bg-zinc-900/94 dark:text-zinc-100 md:inline-flex"
+            aria-label={isOpen ? '关闭目录' : '打开目录'}
+            aria-expanded={isOpen}
+          >
+            {isOpen ? <X size={16} /> : <List size={16} />}
+            <span className="leading-none">目录</span>
+            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+              {headings.length}
+            </span>
+          </button>,
+          document.body
+        )
+      : null;
+
   return (
     <>
       {mobileTrigger}
+      {desktopTrigger}
 
       {mobileSheet}
-
-      <aside className="hidden w-72 lg:block xl:w-80">
-        {panelContent}
-      </aside>
+      {desktopPopover}
     </>
   );
 };
