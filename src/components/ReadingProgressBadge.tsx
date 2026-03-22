@@ -14,6 +14,10 @@ const MOBILE_BADGE_STYLE = {
   bottom: 'max(4.4rem, calc(env(safe-area-inset-bottom) + 4.4rem))',
   width: 'min(calc(100vw - 2rem), 12.5rem)'
 } as const;
+const DESKTOP_BADGE_STYLE = {
+  right: '1.5rem',
+  bottom: '11.5rem'
+} as const;
 
 export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = ({ targetRef, onVisibilityChange }) => {
   const [progress, setProgress] = useState(0);
@@ -86,6 +90,37 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = ({ targ
         )
       : null;
 
+  const desktopBadge =
+    isVisible
+      ? createPortal(
+          <div
+            style={DESKTOP_BADGE_STYLE}
+            className="pointer-events-none fixed z-[50] hidden md:block"
+            aria-hidden={!isVisible}
+          >
+            <div className="min-w-[9.5rem] rounded-2xl border border-zinc-200/80 bg-white/90 px-4 py-3 shadow-[0_18px_48px_-30px_rgba(24,24,27,0.35)] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/84">
+              <div className="mb-2 flex items-center justify-between gap-3 md:mb-2.5">
+                <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">
+                  <BookOpenCheck size={14} className="text-accent" />
+                  阅读进度
+                </span>
+                <span className="font-serif text-lg font-bold text-ink dark:text-white">
+                  {percentage}%
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-accent/70 via-accent to-amber-400"
+                  animate={{ width: `${percentage}%` }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
     <motion.div
       initial={false}
@@ -98,27 +133,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = ({ targ
       aria-hidden={!isVisible}
     >
       {mobileBadge}
-
-      <div className="pointer-events-none fixed bottom-28 right-6 z-30 hidden md:block" aria-hidden={!isVisible}>
-        <div className="min-w-[9.5rem] rounded-2xl border border-zinc-200/80 bg-white/90 px-4 py-3 shadow-[0_18px_48px_-30px_rgba(24,24,27,0.35)] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/84">
-          <div className="mb-2 flex items-center justify-between gap-3 md:mb-2.5">
-            <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">
-              <BookOpenCheck size={14} className="text-accent" />
-              阅读进度
-            </span>
-            <span className="font-serif text-lg font-bold text-ink dark:text-white">
-              {percentage}%
-            </span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-accent/70 via-accent to-amber-400"
-              animate={{ width: `${percentage}%` }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-            />
-          </div>
-        </div>
-      </div>
+      {desktopBadge}
     </motion.div>
   );
 };
