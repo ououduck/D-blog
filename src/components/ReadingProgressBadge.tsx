@@ -16,7 +16,7 @@ const MOBILE_BADGE_STYLE = {
 } as const;
 const DESKTOP_BADGE_STYLE = {
   right: '1.5rem',
-  bottom: '11.5rem'
+  bottom: '4.75rem'
 } as const;
 
 export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = ({ targetRef, onVisibilityChange }) => {
