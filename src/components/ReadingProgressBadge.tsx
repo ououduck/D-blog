@@ -8,9 +8,8 @@ interface ReadingProgressBadgeProps {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 const MOBILE_BADGE_STYLE = {
-  left: '50%',
-  top: 'max(5rem, calc(env(safe-area-inset-top) + 5rem))',
-  transform: 'translateX(-50%)',
+  right: 'max(1rem, calc(env(safe-area-inset-right) + 1rem))',
+  bottom: 'max(5.5rem, calc(env(safe-area-inset-bottom) + 5.5rem))',
   width: 'min(calc(100vw - 1.5rem), 18rem)'
 } as const;
 
