@@ -578,6 +578,7 @@ export const Post = () => {
               </div>
             </div>
           </div>
+        </div>
       </motion.article>
 
       <ShareModal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} title={post.title} excerpt={post.excerpt} url={`${typeof window !== 'undefined' ? window.location.origin : siteConfig.url}/post/${post.id}`} />
