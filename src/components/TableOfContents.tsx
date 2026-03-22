@@ -419,11 +419,11 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
             />
 
             <motion.aside
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 24 }}
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 24 }}
               transition={{ duration: 0.22, ease: 'easeOut' }}
-              className="fixed inset-y-4 right-4 z-40 w-[min(19rem,calc(100vw-1.5rem))] lg:hidden"
+              className="fixed inset-x-3 bottom-3 z-40 max-h-[min(70vh,36rem)] lg:hidden"
             >
               {panelContent}
             </motion.aside>
