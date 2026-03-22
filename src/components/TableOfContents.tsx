@@ -542,22 +542,30 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
         )
       : null;
 
+  const mobileTrigger =
+    isClient
+      ? createPortal(
+          <button
+            type="button"
+            onClick={() => setIsOpen((value) => !value)}
+            style={MOBILE_TOC_TRIGGER_STYLE}
+            className="fixed z-[60] inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white/96 px-4 py-2.5 text-sm font-medium text-ink shadow-[0_16px_42px_-26px_rgba(28,25,23,0.36)] backdrop-blur-xl transition-all duration-300 hover:border-accent/20 hover:text-accent dark:border-zinc-700 dark:bg-zinc-900/94 dark:text-zinc-100 lg:hidden"
+            aria-label={isOpen ? '关闭目录' : '打开目录'}
+            aria-expanded={isOpen}
+          >
+            {isOpen ? <X size={16} /> : <List size={16} />}
+            <span className="leading-none">目录</span>
+            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+              {headings.length}
+            </span>
+          </button>,
+          document.body
+        )
+      : null;
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsOpen((value) => !value)}
-        style={MOBILE_TOC_TRIGGER_STYLE}
-        className="fixed z-[60] inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white/96 px-4 py-2.5 text-sm font-medium text-ink shadow-[0_16px_42px_-26px_rgba(28,25,23,0.36)] backdrop-blur-xl transition-all duration-300 hover:border-accent/20 hover:text-accent dark:border-zinc-700 dark:bg-zinc-900/94 dark:text-zinc-100 lg:hidden"
-        aria-label={isOpen ? '关闭目录' : '打开目录'}
-        aria-expanded={isOpen}
-      >
-        {isOpen ? <X size={16} /> : <List size={16} />}
-        <span className="leading-none">目录</span>
-        <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
-          {headings.length}
-        </span>
-      </button>
+      {mobileTrigger}
 
       {mobileSheet}
 

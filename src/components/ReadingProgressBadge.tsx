@@ -1,4 +1,5 @@
 import React, { RefObject, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { BookOpenCheck } from 'lucide-react';
 
@@ -52,6 +53,34 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = ({ targ
 
   const percentage = Math.round(progress * 100);
 
+  const mobileBadge =
+    isVisible
+      ? createPortal(
+          <div
+            style={MOBILE_BADGE_STYLE}
+            className="pointer-events-none fixed z-40 rounded-2xl border border-zinc-200/80 bg-white/92 px-3 py-2.5 shadow-[0_16px_34px_-24px_rgba(24,24,27,0.28)] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/84 md:hidden"
+          >
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
+                <BookOpenCheck size={12} className="text-accent" />
+                进度
+              </span>
+              <span className="font-serif text-sm font-bold text-ink dark:text-white">
+                {percentage}%
+              </span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-accent/70 via-accent to-amber-400"
+                animate={{ width: `${percentage}%` }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+              />
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
     <motion.div
       initial={false}
@@ -63,27 +92,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = ({ targ
       transition={{ duration: 0.22, ease: 'easeOut' }}
       aria-hidden={!isVisible}
     >
-      <div
-        style={MOBILE_BADGE_STYLE}
-        className="pointer-events-none fixed z-40 rounded-2xl border border-zinc-200/80 bg-white/92 px-3 py-2.5 shadow-[0_16px_34px_-24px_rgba(24,24,27,0.28)] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/84 md:hidden"
-      >
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
-            <BookOpenCheck size={12} className="text-accent" />
-            进度
-          </span>
-          <span className="font-serif text-sm font-bold text-ink dark:text-white">
-            {percentage}%
-          </span>
-        </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
-          <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-accent/70 via-accent to-amber-400"
-            animate={{ width: `${percentage}%` }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-          />
-        </div>
-      </div>
+      {mobileBadge}
 
       <div className="pointer-events-none fixed bottom-28 right-6 z-30 hidden md:block" aria-hidden={!isVisible}>
         <div className="min-w-[9.5rem] rounded-2xl border border-zinc-200/80 bg-white/90 px-4 py-3 shadow-[0_18px_48px_-30px_rgba(24,24,27,0.35)] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/84">
