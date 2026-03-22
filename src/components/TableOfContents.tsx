@@ -6,6 +6,10 @@ import { siteConfig } from '@config/site.config';
 import type { MarkdownHeading } from '@/utils/headings';
 
 const formatIndex = (value: number) => String(value).padStart(2, '0');
+const MOBILE_TOC_TRIGGER_STYLE = {
+  right: 'max(1rem, calc(env(safe-area-inset-right) + 1rem))',
+  bottom: 'max(1rem, calc(env(safe-area-inset-bottom) + 1rem))'
+} as const;
 
 type TocNode = MarkdownHeading & {
   index: number;
@@ -396,7 +400,8 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
       <button
         type="button"
         onClick={() => setIsOpen((value) => !value)}
-        className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-accent/15 bg-white/92 text-ink shadow-[0_18px_44px_rgba(28,25,23,0.16)] backdrop-blur-xl transition-all duration-300 hover:scale-105 hover:border-accent/30 hover:text-accent dark:border-zinc-700 dark:bg-zinc-900/92 dark:text-zinc-100 lg:hidden"
+        style={MOBILE_TOC_TRIGGER_STYLE}
+        className="fixed z-40 flex h-12 w-12 items-center justify-center rounded-full border border-accent/15 bg-white/94 text-ink shadow-[0_18px_44px_rgba(28,25,23,0.16)] backdrop-blur-xl transition-all duration-300 hover:scale-105 hover:border-accent/30 hover:text-accent dark:border-zinc-700 dark:bg-zinc-900/94 dark:text-zinc-100 lg:hidden"
         aria-label={isOpen ? '关闭目录' : '打开目录'}
       >
         {isOpen ? <X size={18} /> : <List size={18} />}
@@ -409,7 +414,7 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-30 bg-black/35 backdrop-blur-sm lg:hidden"
               onClick={() => setIsOpen(false)}
             />
 
@@ -417,8 +422,8 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 24 }}
-              transition={{ duration: 0.24, ease: 'easeOut' }}
-              className="fixed inset-y-4 right-4 z-40 w-[min(20rem,calc(100vw-2rem))] lg:hidden"
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              className="fixed inset-y-4 right-4 z-40 w-[min(19rem,calc(100vw-1.5rem))] lg:hidden"
             >
               {panelContent}
             </motion.aside>
