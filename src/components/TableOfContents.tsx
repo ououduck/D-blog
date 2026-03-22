@@ -10,6 +10,12 @@ const MOBILE_TOC_TRIGGER_STYLE = {
   right: 'max(1rem, calc(env(safe-area-inset-right) + 1rem))',
   bottom: 'max(1rem, calc(env(safe-area-inset-bottom) + 1rem))'
 } as const;
+const MOBILE_TOC_SHEET_STYLE = {
+  left: 'max(0.75rem, calc(env(safe-area-inset-left) + 0.75rem))',
+  right: 'max(0.75rem, calc(env(safe-area-inset-right) + 0.75rem))',
+  bottom: 'max(0.75rem, calc(env(safe-area-inset-bottom) + 0.75rem))',
+  top: 'max(5.75rem, calc(env(safe-area-inset-top) + 5.75rem))'
+} as const;
 
 type TocNode = MarkdownHeading & {
   index: number;
@@ -272,7 +278,7 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
 
   const renderNodes = (nodes: TocNode[], depth = 0) => {
     return (
-      <ol className={depth === 0 ? 'space-y-2' : 'mt-2 space-y-2 border-l border-zinc-200/70 pl-4 dark:border-zinc-800'}>
+      <ol className={depth === 0 ? 'space-y-1.5' : 'mt-1.5 space-y-1.5 border-l border-zinc-200/80 pl-3.5 dark:border-zinc-800'}>
         {nodes.map((item) => {
           const hasChildren = item.children.length > 0;
           const isExpanded = (expandedMap[item.id] ?? false) || activeAncestorIds.includes(item.id);
@@ -283,19 +289,19 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
           return (
             <li key={item.id} ref={isActive ? activeItemRef : undefined}>
               <div
-                className={`group relative overflow-hidden rounded-[1.1rem] border transition-all duration-300 ${
+                className={`rounded-2xl transition-colors duration-200 ${
                   isActive
-                    ? 'border-accent/25 bg-accent/[0.08] shadow-[0_18px_40px_-30px_rgba(249,115,22,0.6)] dark:border-accent/25 dark:bg-accent/[0.14]'
+                    ? 'bg-accent/[0.08] dark:bg-accent/[0.14]'
                     : isInActiveBranch
-                      ? 'border-zinc-200/80 bg-white/80 dark:border-zinc-700 dark:bg-zinc-800/70'
-                      : `border-transparent hover:border-zinc-200/80 hover:bg-white/80 dark:hover:border-zinc-700 dark:hover:bg-zinc-800/70 ${depth > 0 ? 'bg-zinc-50/55 dark:bg-zinc-900/35' : ''}`
+                      ? 'bg-zinc-100/80 dark:bg-zinc-900/70'
+                      : 'bg-transparent hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60'
                 }`}
               >
-                <div className="flex items-start gap-2 px-3.5 py-3">
+                <div className="flex items-start gap-1.5 px-2.5 py-2">
                   <button
                     type="button"
                     onClick={() => scrollToHeading(item.id)}
-                    className={`flex min-w-0 flex-1 items-start gap-3 text-left transition-colors duration-300 ${
+                    className={`flex min-w-0 flex-1 items-start gap-2.5 rounded-xl px-1 py-1 text-left transition-colors duration-200 ${
                       isActive
                         ? 'text-ink dark:text-white'
                         : isInActiveBranch
@@ -305,19 +311,19 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
                     aria-current={isActive ? 'location' : undefined}
                   >
                     <span
-                      className={`mt-1 inline-flex min-w-[2.2rem] justify-center rounded-full px-2 py-1 font-mono text-[10px] font-semibold tracking-[0.18em] transition-colors ${
+                      className={`mt-[0.15rem] inline-flex min-w-[1.9rem] justify-center rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-[0.14em] transition-colors ${
                         isActive
                           ? 'bg-accent text-white'
                           : isInActiveBranch
                             ? 'bg-accent/10 text-accent dark:bg-accent/15'
-                            : 'bg-zinc-100 text-zinc-400 group-hover:bg-accent/8 group-hover:text-accent dark:bg-zinc-800 dark:text-zinc-500'
+                            : 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500'
                       }`}
                     >
                       {formatIndex(item.index + 1)}
                     </span>
 
                     <span
-                      className={`block flex-1 leading-6 ${isSubLevel ? 'text-[13px]' : 'text-[13.5px]'} ${
+                      className={`block flex-1 leading-6 ${isSubLevel ? 'text-[12.5px]' : 'text-[13px]'} ${
                         isActive ? 'font-semibold' : isInActiveBranch ? 'font-medium' : ''
                       }`}
                     >
@@ -329,17 +335,17 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
                     <button
                       type="button"
                       onClick={() => toggleNode(item.id)}
-                      className={`mt-0.5 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
+                      className={`mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
                         isInActiveBranch
-                          ? 'border-accent/20 bg-accent/[0.08] text-accent dark:border-accent/20 dark:bg-accent/[0.14]'
-                          : 'border-zinc-200/80 bg-white/90 text-zinc-400 hover:border-accent/20 hover:text-accent dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500'
+                          ? 'bg-accent/10 text-accent dark:bg-accent/15'
+                          : 'text-zinc-400 hover:bg-zinc-200/80 hover:text-accent dark:text-zinc-500 dark:hover:bg-zinc-800'
                       }`}
                       aria-label={isExpanded ? '折叠子目录' : '展开子目录'}
                       aria-expanded={isExpanded}
                     >
                       <ChevronDown
-                        size={15}
-                        className={`transition-transform duration-300 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
+                        size={14}
+                        className={`transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
                       />
                     </button>
                   )}
@@ -351,8 +357,8 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.22, ease: 'easeOut' }}
-                      className="overflow-hidden px-3.5 pb-3"
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      className="overflow-hidden px-2.5 pb-2"
                     >
                       {renderNodes(item.children, depth + 1)}
                     </motion.div>
@@ -367,29 +373,29 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
   };
 
   const panelContent = (
-    <div className="relative overflow-hidden rounded-[30px] border border-zinc-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,244,241,0.94))] p-5 shadow-[0_24px_64px_-36px_rgba(24,24,27,0.26)] dark:border-zinc-800/80 dark:bg-[linear-gradient(180deg,rgba(24,24,27,0.94),rgba(12,12,14,0.9))] dark:shadow-none">
-      <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
-      <div className="pointer-events-none absolute right-[-3.5rem] top-[-3.5rem] h-28 w-28 rounded-full bg-accent/8 blur-3xl dark:bg-accent/12" />
-
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-[1.15rem] border border-accent/10 bg-accent/[0.06] text-accent dark:border-accent/15 dark:bg-accent/[0.08]">
-            <List size={18} />
+    <div className="relative flex h-full flex-col overflow-hidden rounded-[24px] border border-zinc-200/80 bg-white/95 p-4 shadow-[0_20px_56px_-36px_rgba(24,24,27,0.28)] backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/92 dark:shadow-none sm:p-4.5">
+      <div className="mb-3.5 flex items-center justify-between gap-3 border-b border-zinc-200/80 pb-3 dark:border-zinc-800/80">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl bg-accent/[0.08] text-accent dark:bg-accent/[0.12]">
+            <List size={16} />
           </span>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-zinc-400 dark:text-zinc-500">
-              ARTICLE GUIDE
-            </p>
-            <h3 className="mt-1 font-serif text-[1.32rem] font-semibold text-ink dark:text-white">目录</h3>
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-semibold text-ink dark:text-white">文章目录</h3>
+            <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">共 {headings.length} 个章节</p>
           </div>
         </div>
 
-        <div className="rounded-full border border-zinc-200/80 bg-white/90 px-3 py-1 font-mono text-xs text-zinc-400 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500">
-          {formatIndex(headings.length)}
-        </div>
+        <button
+          type="button"
+          onClick={() => setIsOpen(false)}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-ink dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white lg:hidden"
+          aria-label="关闭目录"
+        >
+          <X size={16} />
+        </button>
       </div>
 
-      <nav ref={navRef} aria-label="目录" className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-1 no-scrollbar">
+      <nav ref={navRef} aria-label="目录" className="min-h-0 flex-1 overflow-y-auto pr-1 no-scrollbar">
         {renderNodes(headingTree)}
       </nav>
     </div>
@@ -401,10 +407,12 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
         type="button"
         onClick={() => setIsOpen((value) => !value)}
         style={MOBILE_TOC_TRIGGER_STYLE}
-        className="fixed z-40 flex h-12 w-12 items-center justify-center rounded-full border border-accent/15 bg-white/94 text-ink shadow-[0_18px_44px_rgba(28,25,23,0.16)] backdrop-blur-xl transition-all duration-300 hover:scale-105 hover:border-accent/30 hover:text-accent dark:border-zinc-700 dark:bg-zinc-900/94 dark:text-zinc-100 lg:hidden"
+        className="fixed z-40 inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white/95 px-3.5 py-2.5 text-sm font-medium text-ink shadow-[0_16px_38px_-24px_rgba(28,25,23,0.3)] backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] hover:border-accent/20 hover:text-accent dark:border-zinc-700 dark:bg-zinc-900/94 dark:text-zinc-100 lg:hidden"
         aria-label={isOpen ? '关闭目录' : '打开目录'}
+        aria-expanded={isOpen}
       >
-        {isOpen ? <X size={18} /> : <List size={18} />}
+        {isOpen ? <X size={16} /> : <List size={16} />}
+        <span className="leading-none">目录</span>
       </button>
 
       <AnimatePresence>
@@ -419,11 +427,12 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
             />
 
             <motion.aside
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 24 }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
-              className="fixed inset-x-3 bottom-3 z-40 max-h-[min(70vh,36rem)] lg:hidden"
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              style={MOBILE_TOC_SHEET_STYLE}
+              className="fixed z-40 lg:hidden"
             >
               {panelContent}
             </motion.aside>
@@ -431,7 +440,7 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[] }> = ({ hea
         )}
       </AnimatePresence>
 
-      <aside className="hidden w-72 lg:block">
+      <aside className="hidden w-72 lg:block xl:w-80">
         {panelContent}
       </aside>
     </>

@@ -13,7 +13,7 @@ export const siteConfig = {
   },
   author: {
     name: '跑路的duck',
-    avatar: 'http://q1.qlogo.cn/g?b=qq&nk=2472652060&s=100',
+    avatar: 'https://q1.qlogo.cn/g?b=qq&nk=2472652060&s=100',
     role: '前端菜鸟',
     bio: '你好！我是跑路的duck，感谢你能来光临 D-blog。这个博客完全构建于 React 生态之上，旨在探索极致的静态页面体验。'
   },

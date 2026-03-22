@@ -47,9 +47,99 @@ html.theme-switching *::after {
     box-shadow 240ms ease !important;
 }
 
+@keyframes grain {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-1.5%, 1%);
+  }
+  40% {
+    transform: translate(1%, -1.5%);
+  }
+  60% {
+    transform: translate(-1%, 1.5%);
+  }
+  80% {
+    transform: translate(1.5%, -1%);
+  }
+}
+
+@keyframes soft-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-130%);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateX(130%);
+    opacity: 0;
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.16);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(192, 57, 43, 0);
+  }
+}
+
 @layer utilities {
-  /* Noise texture overlay - 使用 CSS 生成，避免外部请求 */
+  .animate-soft-float {
+    animation: soft-float 6s ease-in-out infinite;
+  }
+
+  .animate-soft-pulse {
+    animation: soft-pulse 3.8s ease-in-out infinite;
+  }
+
+  .shimmer-mask {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shimmer-mask::after {
+    content: '';
+    position: absolute;
+    inset: -20%;
+    background: linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, 0.42) 48%, transparent 76%);
+    transform: translateX(-130%);
+    animation: shimmer 3.8s ease-in-out infinite;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  .dark .shimmer-mask::after {
+    background: linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, 0.14) 48%, transparent 76%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-soft-float,
+    .animate-soft-pulse,
+    .shimmer-mask::after,
+    .bg-noise {
+      animation: none !important;
+    }
+  }
+
   .bg-noise {
+
     position: fixed;
     top: -50%;
     left: -50%;

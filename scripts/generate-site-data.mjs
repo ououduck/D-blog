@@ -286,7 +286,7 @@ const generateCloudflareSnapshot = async () => {
 };
 
 const generateSitemap = () => {
-  const staticPages = ['', 'archive', 'stats', 'friends', 'about'];
+  const staticPages = ['', 'archive', 'tags', 'stats', 'friends', 'about'];
 
   const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

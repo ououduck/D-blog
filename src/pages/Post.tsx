@@ -450,7 +450,17 @@ export const Post = () => {
       <ReadingProgressBadge targetRef={articleBodyRef} />
 
       <motion.article initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
-        <Seo title={post.title} description={post.excerpt} image={post.coverImage} type="article" publishedTime={post.date} modifiedTime={post.updatedAt || post.date} authors={authors.map((author) => author.name)} />
+        <Seo
+          title={post.title}
+          description={post.excerpt}
+          image={post.coverImage}
+          url={`/post/${post.id}`}
+          type="article"
+          publishedTime={post.date}
+          modifiedTime={post.updatedAt || post.date}
+          authors={authors.map((author) => author.name)}
+          structuredData={postStructuredData}
+        />
 
         <header className="mx-auto mb-10 max-w-4xl pt-6 text-center md:mb-16 md:pt-10">
           <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-400 md:mb-6">

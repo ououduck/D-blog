@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box, Monitor, Rss } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { siteConfig } from '@config/site.config';
@@ -431,11 +431,28 @@ const Footer = () => {
 };
 
 const Background = () => {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.07),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(24,24,27,0.08),_transparent_34%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.10),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(161,161,170,0.08),_transparent_34%)]" />
-      <div className="absolute left-[-8%] top-[-6%] hidden h-[34rem] w-[34rem] rounded-full bg-zinc-200/30 blur-[96px] xl:block dark:bg-zinc-800/18" />
-      <div className="absolute bottom-[-10%] right-[-8%] hidden h-[30rem] w-[30rem] rounded-full bg-zinc-300/25 blur-[90px] xl:block dark:bg-zinc-800/16" />
+      <motion.div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.07),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(24,24,27,0.08),_transparent_34%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.10),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(161,161,170,0.08),_transparent_34%)]"
+        animate={shouldReduceMotion ? undefined : { scale: [1, 1.03, 1], opacity: [0.92, 1, 0.92] }}
+        transition={shouldReduceMotion ? undefined : { duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="absolute left-[-8%] top-[-6%] hidden h-[34rem] w-[34rem] rounded-full bg-zinc-200/30 blur-[96px] xl:block dark:bg-zinc-800/18"
+        animate={shouldReduceMotion ? undefined : { x: [-18, 22, -10], y: [0, 20, -12], scale: [1, 1.08, 0.96] }}
+        transition={shouldReduceMotion ? undefined : { duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="absolute bottom-[-10%] right-[-8%] hidden h-[30rem] w-[30rem] rounded-full bg-zinc-300/25 blur-[90px] xl:block dark:bg-zinc-800/16"
+        animate={shouldReduceMotion ? undefined : { x: [16, -20, 12], y: [0, -18, 14], scale: [1, 0.94, 1.05] }}
+        transition={shouldReduceMotion ? undefined : { duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+      />
     </div>
   );
 };
@@ -443,6 +460,30 @@ const Background = () => {
 interface LayoutProps {
   children: React.ReactNode;
 }
+
+const routeShellVariants = {
+  initial: { opacity: 0, y: 22, scale: 0.992, filter: 'blur(12px)' },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: 'blur(0px)',
+    transition: {
+      duration: 0.55,
+      ease: [0.22, 1, 0.36, 1]
+    }
+  },
+  exit: {
+    opacity: 0,
+    y: -14,
+    scale: 0.995,
+    filter: 'blur(8px)',
+    transition: {
+      duration: 0.28,
+      ease: [0.4, 0, 1, 1]
+    }
+  }
+} as const;
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -476,10 +517,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Navbar onSearchClick={openSearch} />
       <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
       <main className="relative flex-grow px-4 pt-32 sm:px-6">
-        <div className="mx-auto max-w-7xl">{children}</div>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={location.pathname} variants={routeShellVariants} initial="initial" animate="animate" exit="exit" className="mx-auto max-w-7xl will-change-transform">
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
       <BackToTop />
       <Footer />
     </div>
   );
 };
+
