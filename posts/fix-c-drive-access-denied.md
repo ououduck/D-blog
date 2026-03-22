@@ -9,7 +9,7 @@ tags:
   - C盘
   - 电脑异常
   - 权限异常
-  - 0x80070005
+  - "0x80070005"
   - C盘拒绝访问
 coverImage: /posts-img/fix-c-drive-access-denied-cover.png
 author: 跑路的duck
