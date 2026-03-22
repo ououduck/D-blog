@@ -1,4 +1,4 @@
-const SW_VERSION = 'dblog-v1';
+const SW_VERSION = 'dblog-v2';
 const CORE_CACHE = `${SW_VERSION}-core`;
 const PAGE_CACHE = `${SW_VERSION}-pages`;
 const ASSET_CACHE = `${SW_VERSION}-assets`;
