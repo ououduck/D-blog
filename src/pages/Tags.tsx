@@ -18,13 +18,16 @@ const buildTagList = (posts: PostMetadata[]) => {
   const tagMap = new Map<string, PostMetadata[]>();
 
   posts.forEach((post) => {
-    post.tags.forEach((tag) => {
-      if (!tagMap.has(tag)) {
-        tagMap.set(tag, []);
-      }
+    (Array.isArray(post.tags) ? post.tags : [])
+      .map((tag) => (typeof tag === 'string' ? tag.trim() : ''))
+      .filter(Boolean)
+      .forEach((tag) => {
+        if (!tagMap.has(tag)) {
+          tagMap.set(tag, []);
+        }
 
-      tagMap.get(tag)!.push(post);
-    });
+        tagMap.get(tag)!.push(post);
+      });
   });
 
   return Array.from(tagMap.entries())
