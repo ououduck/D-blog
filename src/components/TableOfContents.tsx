@@ -9,7 +9,7 @@ import type { MarkdownHeading } from '@/utils/headings';
 const formatIndex = (value: number) => String(value).padStart(2, '0');
 const MOBILE_TOC_TRIGGER_STYLE = {
   right: 'max(1rem, calc(env(safe-area-inset-right) + 1rem))',
-  bottom: 'max(1rem, calc(env(safe-area-inset-bottom) + 1rem))'
+  bottom: 'max(9.5rem, calc(env(safe-area-inset-bottom) + 9.5rem))'
 } as const;
 const MOBILE_TOC_SHEET_STYLE = {
   left: 'max(0.6rem, calc(env(safe-area-inset-left) + 0.6rem))',

@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
-  <rect width="1600" height="900" fill="#071018"/>
-  <text x="100" y="120" font-size="62" font-family="Segoe UI, Microsoft YaHei, Arial" fill="#ffffff" font-weight="700">从模型到生态的判断</text>
-  <rect x="130" y="210" width="1340" height="520" rx="30" fill="#0f1d2c" stroke="#54c4ff"/>
-  <text x="180" y="330" font-size="42" font-family="Segoe UI, Microsoft YaHei, Arial" fill="#7cf7c9">模型强 ≠ 生态强</text>
-  <text x="180" y="410" font-size="34" font-family="Segoe UI, Microsoft YaHei, Arial" fill="#e4f1ff">真正的扩散路径是：低成本 → 开源 → 接入门槛下降 → 行业微调 → 生态外溢</text>
-  <text x="180" y="510" font-size="34" font-family="Segoe UI, Microsoft YaHei, Arial" fill="#e4f1ff">当运营商、云厂商、终端和政务系统都能快速接住它，模型才从“爆款”变成“基础设施”。</text>
-  <text x="180" y="610" font-size="34" font-family="Segoe UI, Microsoft YaHei, Arial" fill="#e4f1ff">这也是这篇文章真正想说的：DeepSeek 被热议，不只是因为它强，而是因为它开始带动更多人能用得起、接得住、改得动。</text>
-</svg>

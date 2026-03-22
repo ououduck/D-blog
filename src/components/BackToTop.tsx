@@ -4,7 +4,7 @@ import { ArrowUp } from 'lucide-react';
 
 const MOBILE_OFFSET_STYLE = {
   right: 'max(1rem, calc(env(safe-area-inset-right) + 1rem))',
-  bottom: 'max(5.75rem, calc(env(safe-area-inset-bottom) + 5.75rem))'
+  bottom: 'max(1rem, calc(env(safe-area-inset-bottom) + 1rem))'
 } as const;
 
 export const BackToTop = () => {
