@@ -1,6 +1,7 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Copy, Check, Link as LinkIcon } from 'lucide-react';
+import { useModalOverlay } from '@/hooks/useModalOverlay';
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -14,10 +15,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, 
   const [copiedType, setCopiedType] = useState<'all' | 'link' | null>(null);
   const [copyError, setCopyError] = useState<string | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const previousActiveElementRef = useRef<HTMLElement | null>(null);
   const resetTimerRef = useRef<number | null>(null);
   const titleId = useId();
   const descriptionId = useId();
+
+  useModalOverlay({ isOpen, onClose, initialFocusRef: closeButtonRef });
 
   const clearResetTimer = () => {
     if (resetTimerRef.current !== null) {
@@ -34,39 +36,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, 
     }, 2000);
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isOpen) {
       clearResetTimer();
       setCopiedType(null);
       setCopyError(null);
-      previousActiveElementRef.current?.focus?.();
-      previousActiveElementRef.current = null;
-      return;
     }
-
-    previousActiveElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    window.setTimeout(() => closeButtonRef.current?.focus(), 0);
-
-    return () => {
-      clearResetTimer();
-    };
   }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   const writeToClipboard = async (value: string) => {
     if (navigator.clipboard && window.isSecureContext) {
@@ -115,9 +91,27 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-void/60 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative z-10 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900" role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}>
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            onClick={onClose} 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm dark:bg-black/80" 
+          />
+          <div className="sr-only" aria-live="polite">遮罩层已开启</div>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+            animate={{ opacity: 1, scale: 1, y: 0 }} 
+            exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="relative z-10 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby={titleId} 
+            aria-describedby={descriptionId}
+          >
             <button ref={closeButtonRef} onClick={onClose} className="absolute right-4 top-4 rounded-lg p-1 text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="关闭分享弹窗">
               <X size={20} />
             </button>

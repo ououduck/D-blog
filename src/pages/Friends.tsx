@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink, X, Copy, Check, GitPullRequest, Shuffle } from 'lucide-react';
 import { siteConfig } from '@config/site.config';
@@ -6,12 +6,22 @@ import { getFriends } from '@/services/friends';
 import { Seo } from '../components/Seo';
 import { Friend } from '../types';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
+import { useModalOverlay } from '@/hooks/useModalOverlay';
 
 export const Friends = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+
+  useModalOverlay({ 
+    isOpen: isModalOpen, 
+    onClose: () => setIsModalOpen(false),
+    initialFocusRef: closeButtonRef
+  });
 
   useEffect(() => {
     getFriends()
@@ -124,12 +134,29 @@ export const Friends = () => {
 
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-void/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              onClick={() => setIsModalOpen(false)} 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm dark:bg-black/80" 
+            />
+            <div className="sr-only" aria-live="polite">遮罩层已开启</div>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+            >
               <div className="flex items-center justify-between border-b border-zinc-100 p-5 dark:border-zinc-800">
-                <h3 className="text-xl font-serif font-bold text-ink dark:text-white">申请友链</h3>
-                <button onClick={() => setIsModalOpen(false)} className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                <h3 id={titleId} className="text-xl font-serif font-bold text-ink dark:text-white">申请友链</h3>
+                <button ref={closeButtonRef} onClick={() => setIsModalOpen(false)} className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="关闭申请友链弹窗">
                   <X size={20} />
                 </button>
               </div>
