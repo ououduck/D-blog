@@ -119,14 +119,14 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, title, 
             <div className="mb-6 rounded-xl border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/50">
               <h4 className="mb-2 line-clamp-2 font-bold text-ink dark:text-white">{title}</h4>
               <p id={descriptionId} className="mb-3 line-clamp-3 text-sm text-zinc-500 dark:text-zinc-400">{excerpt}</p>
-              <div className="break-all rounded border border-accent/10 bg-accent/5 p-2 text-xs text-accent">{url}</div>
+              <div className="break-all rounded border border-zinc-200 bg-white p-3 text-sm font-mono text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">{url}</div>
             </div>
-            <div className="flex gap-3">
-              <button onClick={() => handleCopy('all')} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-ink py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 dark:bg-white dark:text-ink" aria-label="复制标题、简介和链接">
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => handleCopy('all')} className="flex items-center justify-center gap-2 rounded-xl bg-ink py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 dark:bg-white dark:text-ink" aria-label="复制标题、简介和链接">
                 {copiedType === 'all' ? <Check size={16} /> : <Copy size={16} />}
                 {copiedType === 'all' ? '已复制' : '复制全部'}
               </button>
-              <button onClick={() => handleCopy('link')} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-zinc-100 py-2.5 text-sm font-bold text-ink transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700" aria-label="仅复制文章链接">
+              <button onClick={() => handleCopy('link')} className="flex items-center justify-center gap-2 rounded-xl bg-zinc-100 py-2.5 text-sm font-bold text-ink transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700" aria-label="仅复制文章链接">
                 {copiedType === 'link' ? <Check size={16} /> : <LinkIcon size={16} />}
                 {copiedType === 'link' ? '已复制' : '纯链接'}
               </button>

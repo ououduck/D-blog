@@ -100,10 +100,10 @@ export const Friends = () => {
               </div>
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full border border-zinc-100 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800">
-                  <ProgressiveImage src={friend.avatar} alt={friend.name} wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
+                  <ProgressiveImage src={friend.avatar} alt={friend.name} wrapperClassName="h-full w-full" className="h-full w-full object-cover object-center" />
                 </div>
-                <div>
-                  <h3 className="mb-1 font-serif text-lg font-bold text-ink transition-colors group-hover:text-accent dark:text-white">{friend.name}</h3>
+                <div className="min-w-0 flex-1">
+                  <h3 className="mb-1 truncate font-serif text-lg font-bold text-ink transition-colors group-hover:text-accent dark:text-white">{friend.name}</h3>
                   <p className="line-clamp-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">{friend.description}</p>
                 </div>
               </div>
@@ -170,12 +170,12 @@ export const Friends = () => {
                 <div>
                   <h4 className="mb-2 text-sm font-bold text-ink dark:text-white">本站信息（提交前请先添加本站友链）</h4>
                   <div className="flex flex-col items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/50 sm:flex-row sm:items-center">
-                    <ProgressiveImage src={siteInfo.avatar} alt={siteInfo.name} wrapperClassName="h-14 w-14 flex-shrink-0 rounded-full border border-zinc-200 bg-white dark:border-zinc-600" className="h-14 w-14 rounded-full object-cover" />
+                    <ProgressiveImage src={siteInfo.avatar} alt={siteInfo.name} wrapperClassName="h-14 w-14 flex-shrink-0 rounded-full border border-zinc-200 bg-white dark:border-zinc-600" className="h-14 w-14 rounded-full object-cover object-center" />
                     <div className="w-full flex-1 space-y-1">
                       <div className="font-bold text-ink dark:text-white">{siteInfo.name}</div>
                       <div className="text-sm text-zinc-500 dark:text-zinc-400">{siteInfo.description}</div>
-                      <div className="break-all pt-1 font-mono text-xs text-accent select-all">链接：{siteInfo.url}</div>
-                      <div className="break-all font-mono text-xs text-accent select-all">LOGO：{siteInfo.avatar}</div>
+                      <div className="break-all pt-1 font-mono text-xs text-zinc-600 dark:text-zinc-300 select-all">链接：{siteInfo.url}</div>
+                      <div className="break-all font-mono text-xs text-zinc-600 dark:text-zinc-300 select-all">LOGO：{siteInfo.avatar}</div>
                     </div>
                   </div>
                 </div>
