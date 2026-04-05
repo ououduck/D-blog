@@ -70,13 +70,13 @@ const SummaryCard = ({
   value: string | number;
   detail: string;
 }) => (
-  <div className="rounded-[1.4rem] border border-zinc-200/80 bg-white/92 p-4 shadow-[0_18px_48px_-28px_rgba(24,24,27,0.22)] dark:border-zinc-800/90 dark:bg-zinc-950/72 dark:shadow-none sm:p-5">
-    <div className="mb-3 flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+  <div className="rounded-[1.25rem] border border-zinc-200/80 bg-white/92 p-3.5 shadow-[0_18px_48px_-28px_rgba(24,24,27,0.22)] dark:border-zinc-800/90 dark:bg-zinc-950/72 dark:shadow-none sm:rounded-[1.4rem] sm:p-5">
+    <div className="mb-2.5 flex items-center gap-2 text-zinc-500 dark:text-zinc-400 sm:mb-3">
       <Icon size={16} />
-      <span className="text-[11px] font-bold uppercase tracking-[0.24em]">{title}</span>
+      <span className="text-[10px] font-bold uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.24em]">{title}</span>
     </div>
-    <div className="text-2xl font-bold leading-none text-ink dark:text-white sm:text-3xl">{value}</div>
-    <div className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{detail}</div>
+    <div className="text-xl font-bold leading-none text-ink dark:text-white sm:text-3xl">{value}</div>
+    <div className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400 sm:text-sm sm:leading-6">{detail}</div>
   </div>
 );
 
@@ -89,10 +89,10 @@ const InfoCard = ({
   value: string;
   icon: React.ElementType;
 }) => (
-  <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/92 p-4 dark:border-zinc-800 dark:bg-zinc-950/60">
-    <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-400">{title}</div>
-    <div className="mt-2 flex items-start gap-2 text-sm font-semibold leading-6 text-ink dark:text-white">
-      <Icon size={16} className="mt-1 flex-shrink-0 text-accent" />
+  <div className="rounded-[1.15rem] border border-zinc-200/80 bg-zinc-50/92 p-3.5 dark:border-zinc-800 dark:bg-zinc-950/60 sm:rounded-2xl sm:p-4">
+    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 sm:text-[11px] sm:tracking-[0.24em]">{title}</div>
+    <div className="mt-2 flex min-w-0 items-start gap-2 text-sm font-semibold leading-5 text-ink dark:text-white sm:leading-6">
+      <Icon size={16} className="mt-0.5 flex-shrink-0 text-accent sm:mt-1" />
       <span className="break-all">{value}</span>
     </div>
   </div>
@@ -191,36 +191,39 @@ export const Stats = () => {
     >
       <Seo title="统计" description="基于 Cloudflare Analytics 生成的站点访问统计页，仅展示当前稳定可用的核心指标。" />
 
-      <section className="relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.12),_transparent_34%),linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(244,244,245,0.96))] p-5 dark:border-zinc-800 dark:bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.18),_transparent_36%),linear-gradient(135deg,_rgba(24,24,27,0.96),_rgba(9,9,11,0.98))] sm:p-7 md:p-10 lg:p-12">
+      <section className="relative overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.12),_transparent_34%),linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(244,244,245,0.96))] p-4 dark:border-zinc-800 dark:bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.18),_transparent_36%),linear-gradient(135deg,_rgba(24,24,27,0.96),_rgba(9,9,11,0.98))] sm:rounded-[2rem] sm:p-7 md:p-10 lg:p-12">
         <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent opacity-70" />
         <div className="pointer-events-none absolute -right-10 top-10 h-32 w-32 rounded-full bg-accent/8 blur-2xl dark:bg-accent/14" />
 
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
-            <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.35em] text-accent sm:text-xs">Analytics Dashboard</p>
-            <h1 className="max-w-2xl font-serif text-3xl font-bold tracking-tight text-ink dark:text-white sm:text-4xl md:text-5xl lg:text-6xl">
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.28em] text-accent sm:mb-4 sm:text-xs sm:tracking-[0.35em]">Analytics Dashboard</p>
+            <h1 className="max-w-2xl font-serif text-2xl font-bold tracking-tight text-ink dark:text-white sm:text-4xl md:text-5xl lg:text-6xl">
               站点访问统计
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-300 md:text-base">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300 md:mt-4 md:text-base md:leading-7">
               这里展示 Cloudflare 当前能稳定返回的聚合统计数据。页面保留最近一次成功结果，避免刷新或切换时整块闪烁。
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col lg:items-end">
             <button
               type="button"
               onClick={() => void loadCloudflareData(cloudflareLoadedRef.current)}
               disabled={cloudflareLoading}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-accent/25 bg-accent/10 px-4 py-3 text-sm font-semibold text-accent transition-all hover:bg-accent/15 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-accent/25 bg-accent/10 px-4 py-3 text-sm font-semibold text-accent transition-all hover:bg-accent/15 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               title={cloudflareRequested ? '刷新 Cloudflare 统计数据' : '获取 Cloudflare 统计数据'}
             >
               <RefreshCw size={18} className={cloudflareLoading ? 'animate-spin' : ''} />
-              <span>
+              <span className="sm:hidden">
+                {cloudflareLoading ? '获取中...' : cloudflareRequested ? '刷新数据' : '获取数据'}
+              </span>
+              <span className="hidden sm:inline">
                 {cloudflareLoading ? '获取中...' : cloudflareRequested ? '刷新 Cloudflare 数据' : '获取 Cloudflare 访问数据'}
               </span>
             </button>
 
-            <div className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-zinc-200/80 bg-white/92 px-4 py-3 text-sm font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/70 dark:text-zinc-300">
+            <div className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-zinc-200/80 bg-white/92 px-4 py-3 text-sm font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/70 dark:text-zinc-300 sm:w-auto">
               <BarChart3 size={18} className="text-accent" />
               <span>
                 {cloudflareRequested
@@ -233,25 +236,25 @@ export const Stats = () => {
           </div>
         </div>
 
-        <div className="relative mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-[1.4rem] border border-zinc-200/80 bg-white/92 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950/72">
-            <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-400">数据源</div>
+        <div className="relative mt-6 grid gap-3 sm:mt-8 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-[1.15rem] border border-zinc-200/80 bg-white/92 px-3.5 py-3 dark:border-zinc-800 dark:bg-zinc-950/72 sm:rounded-[1.4rem] sm:px-4 sm:py-4">
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 sm:text-[11px] sm:tracking-[0.24em]">数据源</div>
             <div className="mt-2 break-all text-sm font-semibold text-ink dark:text-white">{snapshot.domain || 'pldduck.com'}</div>
           </div>
-          <div className="rounded-[1.4rem] border border-zinc-200/80 bg-white/92 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950/72">
-            <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-400">最近更新</div>
+          <div className="rounded-[1.15rem] border border-zinc-200/80 bg-white/92 px-3.5 py-3 dark:border-zinc-800 dark:bg-zinc-950/72 sm:rounded-[1.4rem] sm:px-4 sm:py-4">
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 sm:text-[11px] sm:tracking-[0.24em]">最近更新</div>
             <div className="mt-2 text-sm font-semibold text-ink dark:text-white">
               {cloudflareRequested ? formatDateTime(snapshot.fetchedAt) : '尚未请求'}
             </div>
           </div>
-          <div className="rounded-[1.4rem] border border-zinc-200/80 bg-white/92 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950/72">
-            <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-400">时间窗口</div>
+          <div className="rounded-[1.15rem] border border-zinc-200/80 bg-white/92 px-3.5 py-3 dark:border-zinc-800 dark:bg-zinc-950/72 sm:rounded-[1.4rem] sm:px-4 sm:py-4">
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 sm:text-[11px] sm:tracking-[0.24em]">时间窗口</div>
             <div className="mt-2 text-sm font-semibold text-ink dark:text-white">
               {cloudflareRequested ? `${snapshot.timeWindows.length} 个可选区间` : '点击后加载'}
             </div>
           </div>
-          <div className="rounded-[1.4rem] border border-zinc-200/80 bg-white/92 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950/72">
-            <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-400">访问状态</div>
+          <div className="rounded-[1.15rem] border border-zinc-200/80 bg-white/92 px-3.5 py-3 dark:border-zinc-800 dark:bg-zinc-950/72 sm:rounded-[1.4rem] sm:px-4 sm:py-4">
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 sm:text-[11px] sm:tracking-[0.24em]">访问状态</div>
             <div className="mt-2 text-sm font-semibold text-ink dark:text-white">
               {cloudflareRequested ? (snapshot.enabled ? '数据可用' : '等待配置') : '未请求'}
             </div>
@@ -267,13 +270,13 @@ export const Stats = () => {
 
         {!cloudflareLoading && cloudflareRequested && snapshot.enabled && snapshot.timeWindows.length > 0 && (
           <>
-            <div className="-mx-1 mt-8 flex gap-2 overflow-x-auto px-1 pb-2 no-scrollbar">
+            <div className="-mx-1 mt-6 flex gap-2 overflow-x-auto px-1 pb-2 no-scrollbar sm:mt-8">
               {snapshot.timeWindows.map((timeWindow) => (
                 <button
                   key={timeWindow.days}
                   type="button"
                   onClick={() => setSelectedDays(timeWindow.days)}
-                  className={`flex-shrink-0 rounded-full border px-4 py-2.5 text-sm font-semibold transition-all ${
+                  className={`flex-shrink-0 rounded-full border px-3.5 py-2 text-sm font-semibold transition-all sm:px-4 sm:py-2.5 ${
                     selectedDays === timeWindow.days
                       ? 'border-accent bg-accent text-white shadow-lg shadow-accent/15'
                       : 'border-zinc-200/80 bg-white/92 text-zinc-600 hover:border-accent/35 hover:text-accent dark:border-zinc-800 dark:bg-zinc-950/72 dark:text-zinc-300 dark:hover:border-accent/40'
@@ -286,7 +289,7 @@ export const Stats = () => {
 
             {currentTimeWindow && (
               <>
-                <div className="mt-8 grid gap-4 min-[480px]:grid-cols-2 xl:grid-cols-4">
+                <div className="mt-6 grid gap-3 sm:mt-8 sm:gap-4 min-[480px]:grid-cols-2 xl:grid-cols-4">
                   <SummaryCard icon={Eye} title="页面浏览" value={formatValue(currentTimeWindow.data.pageViews)} detail={`最近 ${currentTimeWindow.days} 天总浏览量`} />
                   <SummaryCard icon={Users} title="独立访客" value={formatValue(currentTimeWindow.data.uniques)} detail="去重后的访问人数" />
                   <SummaryCard icon={TrendingUp} title="请求总数" value={formatValue(currentTimeWindow.data.requests)} detail="所有 HTTP 请求总量" />
@@ -328,13 +331,13 @@ export const Stats = () => {
         )}
       </section>
 
-      <section className="mt-10 rounded-[1.75rem] border border-zinc-200 bg-white/92 p-5 shadow-[0_20px_52px_-30px_rgba(24,24,27,0.22)] dark:border-zinc-800 dark:bg-zinc-950/72 dark:shadow-none md:mt-14 md:p-6">
+      <section className="mt-8 rounded-[1.5rem] border border-zinc-200 bg-white/92 p-4 shadow-[0_20px_52px_-30px_rgba(24,24,27,0.22)] dark:border-zinc-800 dark:bg-zinc-950/72 dark:shadow-none sm:rounded-[1.75rem] sm:p-5 md:mt-14 md:p-6">
         <div className="mb-5 flex items-center gap-2">
           <Database size={18} className="text-accent" />
           <h2 className="font-serif text-xl font-bold text-ink dark:text-white">站点概览</h2>
         </div>
 
-        <div className="grid gap-4 min-[480px]:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-3 sm:gap-4 min-[480px]:grid-cols-2 xl:grid-cols-5">
           <SummaryCard icon={FileText} title="当前文章数" value={formatValue(siteStats.totalPosts)} detail="已公开发布的文章总数" />
           <SummaryCard icon={Type} title="总字数" value={formatValue(siteStats.totalWords)} detail="按正文内容累计的总阅读字数" />
           <SummaryCard icon={FolderTree} title="总分类数" value={formatValue(siteStats.totalCategories)} detail="当前启用的文章分类数量" />
@@ -343,9 +346,9 @@ export const Stats = () => {
         </div>
       </section>
 
-      <section className="mt-10 space-y-6 md:mt-14">
+      <section className="mt-8 space-y-5 md:mt-14 md:space-y-6">
         {!cloudflareLoading && cloudflareRequested && hasData && currentTimeWindow && (
-          <div className="rounded-[1.75rem] border border-zinc-200 bg-white/92 p-5 shadow-[0_20px_52px_-30px_rgba(24,24,27,0.22)] dark:border-zinc-800 dark:bg-zinc-950/72 dark:shadow-none md:p-6">
+          <div className="rounded-[1.5rem] border border-zinc-200 bg-white/92 p-4 shadow-[0_20px_52px_-30px_rgba(24,24,27,0.22)] dark:border-zinc-800 dark:bg-zinc-950/72 dark:shadow-none sm:rounded-[1.75rem] sm:p-5 md:p-6">
             <div className="mb-5 flex items-center gap-2">
               <Database size={18} className="text-accent" />
               <h2 className="font-serif text-xl font-bold text-ink dark:text-white">数据说明</h2>
@@ -357,7 +360,7 @@ export const Stats = () => {
               )}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <InfoCard title="统计域名" value={snapshot.domain || 'pldduck.com'} icon={Database} />
               <InfoCard title="统计窗口" value={`最近 ${currentTimeWindow.days} 天`} icon={BarChart3} />
               <InfoCard title="更新时间" value={formatDateTime(snapshot.fetchedAt)} icon={Clock3} />

@@ -128,7 +128,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         <div className="break-all rounded border border-zinc-200 bg-white p-3 text-sm font-mono text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">{url}</div>
       </div>
       
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <button 
           onClick={() => handleCopy('all')} 
           className="flex items-center justify-center gap-2 rounded-xl bg-ink py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 dark:bg-white dark:text-ink" 

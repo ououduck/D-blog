@@ -239,7 +239,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
         </Link>
         <div className="flex flex-grow flex-col p-4 md:p-7">
           <Link to={`/post/${post.id}`} className="group/text" aria-label={`阅读文章：${post.title}`}>
-            <h3 className="mb-2 line-clamp-2 text-sm font-serif font-bold leading-tight text-ink transition-colors group-hover/text:text-accent dark:text-gray-100 dark:group-hover/text:text-accent-light md:mb-3 md:text-xl">
+            <h3 className="mb-2 line-clamp-2 text-base font-serif font-bold leading-tight text-ink transition-colors group-hover/text:text-accent dark:text-gray-100 dark:group-hover/text:text-accent-light md:mb-3 md:text-xl">
               {post.title}
             </h3>
           </Link>
@@ -322,7 +322,7 @@ const Hero = ({ onSearch, searchQuery, onClearSearch }: { onSearch: (val: string
           transition={shouldReduceMotion ? undefined : { duration: 8.6, repeat: Infinity, ease: 'easeInOut' }}
         />
       </motion.div>
-      <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.82, ease: [0.16, 1, 0.3, 1] }} className="mb-8 font-serif text-5xl font-bold leading-[1.1] tracking-tight text-ink dark:text-white md:text-7xl lg:text-8xl">
+      <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.82, ease: [0.16, 1, 0.3, 1] }} className="mb-6 font-serif text-4xl font-bold leading-[1.1] tracking-tight text-ink dark:text-white sm:text-5xl md:mb-8 md:text-7xl lg:text-8xl">
         {siteConfig.title}
       </motion.h1>
       <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16, duration: 0.72, ease: [0.16, 1, 0.3, 1] }} className="mx-auto mb-12 max-w-2xl font-sans text-base leading-relaxed text-zinc-500 dark:text-zinc-400 md:text-xl">
@@ -466,8 +466,8 @@ export const Home = () => {
   const pinnedPosts = displayedPosts.filter(post => post.top !== undefined);
   const regularPosts = displayedPosts.filter(post => post.top === undefined);
 
-  // 计算顶置文章占用的位置：移动端每个顶置文章占2个位置，大屏端占3个位置
-  const pinnedPostsSlots = pinnedPosts.length * (isMobile ? 2 : 3);
+  // 计算顶置文章占用的位置：移动端单列展示占 1 个位置，大屏端占 3 个位置
+  const pinnedPostsSlots = pinnedPosts.length * (isMobile ? 1 : 3);
   // 总位置数 = 顶置文章占用的位置 + 普通文章数量
   const totalSlots = pinnedPostsSlots + regularPosts.length;
   const totalPages = Math.max(1, Math.ceil(totalSlots / postsPerPage));
@@ -510,7 +510,7 @@ export const Home = () => {
 
     // 先处理顶置文章
     for (const post of pinnedPosts) {
-      const postSlots = isMobile ? 2 : 3;
+      const postSlots = isMobile ? 1 : 3;
       const postEndSlot = currentSlot + postSlots;
 
       // 如果这个顶置文章的任何一个位置在当前页范围内，就显示它
@@ -596,7 +596,7 @@ export const Home = () => {
             <AnimatePresence mode="wait">
               <motion.div
                 key={`${selectedCategory}-${sortOrder}-${currentPage}-${searchQuery}`}
-                className="grid grid-cols-2 gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3"
+                className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3"
                 variants={listContainerVariants}
                 initial="hidden"
                 animate="visible"

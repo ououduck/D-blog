@@ -142,7 +142,7 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-24">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-16 sm:pt-24">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.26, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/60 backdrop-blur-sm" />
           <motion.div initial={{ opacity: 0, scale: 0.975, y: -12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.982, y: -8 }} transition={{ duration: 0.34, ease: modalEase }} className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
             <div className="flex items-center border-b border-zinc-100 p-4 dark:border-zinc-800">
@@ -622,7 +622,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   return (
     <>
       <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/65 bg-paper/80 shadow-[0_18px_48px_-38px_rgba(28,25,23,0.45)] backdrop-blur-xl transition-all duration-500 supports-[backdrop-filter]:bg-paper/64 dark:border-zinc-800/65 dark:bg-void/80">
-        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 md:h-20">
           <Link to="/" className="group z-50 flex items-center space-x-3">
             <div className="relative">
               <motion.div
@@ -630,9 +630,9 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                 animate={{ opacity: [0.18, 0.3, 0.18], scale: [0.96, 1.04, 0.96] }}
                 transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
               />
-              <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-10 w-10 rounded-lg bg-white/10" className="h-10 w-10 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105" />
+              <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-9 w-9 rounded-lg bg-white/10 sm:h-10 sm:w-10" className="h-9 w-9 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105 sm:h-10 sm:w-10" />
             </div>
-            <span className="font-serif text-2xl font-bold tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
+            <span className="font-serif text-xl font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
           </Link>
 
           <div className="hidden items-center space-x-8 md:flex">
@@ -677,11 +677,11 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             </motion.div>
           </div>
 
-          <div className="flex items-center space-x-4 md:hidden">
-            <button onClick={onSearchClick} className="p-2 text-zinc-600 transition-transform active:scale-95 dark:text-zinc-300" aria-label="打开站内搜索">
+          <div className="flex items-center space-x-1 sm:space-x-2 md:hidden">
+            <button onClick={onSearchClick} className="rounded-full p-2 text-zinc-600 transition-transform active:scale-95 dark:text-zinc-300" aria-label="打开站内搜索">
               <Search size={22} />
             </button>
-            <button onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className="z-50 p-2 text-ink transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white" aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
+            <button onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className="z-50 rounded-full p-2 text-ink transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white" aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
               {isMobileNavOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
@@ -710,13 +710,13 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             onTouchEnd={handleMobilePanelTouchEnd}
             onTouchCancel={handleMobilePanelTouchEnd}
           >
-            <div className="flex h-20 items-center justify-between border-b border-zinc-200/70 px-6 dark:border-zinc-800/70">
+            <div className="flex h-16 items-center justify-between border-b border-zinc-200/70 px-4 sm:h-20 sm:px-6 dark:border-zinc-800/70">
               <button type="button" onClick={() => handleMobileNavItemSelect('/')} disabled={isMobileNavAnimating} className="group flex items-center space-x-3 text-left disabled:cursor-not-allowed disabled:opacity-60" aria-label="返回首页">
                 <div className="relative">
                   <div className="absolute inset-0 bg-accent/20 blur-md transition-opacity group-hover:opacity-40" />
-                  <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-10 w-10 rounded-lg bg-white/10" className="h-10 w-10 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105" />
+                  <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-9 w-9 rounded-lg bg-white/10 sm:h-10 sm:w-10" className="h-9 w-9 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105 sm:h-10 sm:w-10" />
                 </div>
-                <span className="font-serif text-2xl font-bold tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
+                <span className="font-serif text-xl font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
               </button>
 
               <button type="button" onClick={() => requestCloseMobileNav()} disabled={isMobileNavAnimating} className="rounded-full border border-zinc-200/80 bg-white/80 p-2 text-zinc-500 transition-colors hover:border-zinc-300 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700/80 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-white" aria-label="关闭导航菜单">
@@ -1004,7 +1004,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Background />
       <Navbar onSearchClick={openSearch} />
       <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
-      <main className="relative flex-grow px-4 pt-32 sm:px-6">
+      <main className="relative flex-grow px-4 pt-24 sm:px-6 md:pt-32">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={`${location.pathname}${location.search}`} variants={routeShellVariants} initial="initial" animate="animate" exit="exit" className="mx-auto max-w-7xl will-change-transform">
             {children}
