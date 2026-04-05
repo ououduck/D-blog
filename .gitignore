@@ -40,3 +40,4 @@ lerna-debug.log*
 
 public/feed.xml
 public/sitemap.xml
+.claude/
