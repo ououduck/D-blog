@@ -134,14 +134,14 @@ export const Friends = () => {
 
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
+          <div className="fixed inset-0 z-[110] flex items-center justify-center">
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }} 
               transition={{ duration: 0.25, ease: 'easeOut' }}
               onClick={() => setIsModalOpen(false)} 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm dark:bg-black/80" 
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm dark:bg-black/80" 
             />
             <div className="sr-only" aria-live="polite">遮罩层已开启</div>
             <motion.div 
@@ -149,7 +149,7 @@ export const Friends = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }} 
               exit={{ opacity: 0, scale: 0.95, y: 20 }} 
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="relative z-10 flex max-h-[70vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
+              className="relative z-10 mx-4 flex max-h-[70vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 sm:mx-6"
               role="dialog"
               aria-modal="true"
               aria-labelledby={titleId}
