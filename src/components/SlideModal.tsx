@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface SlideModalProps {
   isOpen: boolean;
@@ -153,7 +154,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
     };
   }, []);
 
-  if (!isVisible) {
+  if (!isVisible || typeof document === 'undefined') {
     return null;
   }
 
@@ -177,7 +178,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
     transform: isAnimating ? 'translate(-50%, -200%)' : 'translate(-50%, -50%)',
   } : {};
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[110] flex items-center justify-center"
       role="dialog"
@@ -193,8 +194,8 @@ export const SlideModal: React.FC<SlideModalProps> = ({
           ${isAnimating ? 'opacity-100' : 'opacity-0'}
         `}
         style={{
-          transition: reducedMotion 
-            ? 'opacity 150ms ease' 
+          transition: reducedMotion
+            ? 'opacity 150ms ease'
             : `opacity ${mobileDuration}ms ease`,
         }}
         onClick={onClose}
@@ -203,7 +204,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
       <div className="sr-only" aria-live="polite">
         {isOpen ? '弹窗已打开' : '弹窗已关闭'}
       </div>
-      
+
       {isMobile ? (
         <div
           ref={modalRef}
@@ -229,9 +230,9 @@ export const SlideModal: React.FC<SlideModalProps> = ({
             ...mobileStyles,
           }}
         >
-          <div 
-            className="overflow-y-auto" 
-            style={{ 
+          <div
+            className="overflow-y-auto"
+            style={{
               maxHeight: 'calc(80vh - 32px)',
               padding: '16px',
             }}
@@ -264,9 +265,9 @@ export const SlideModal: React.FC<SlideModalProps> = ({
             ...desktopStyles,
           }}
         >
-          <div 
-            className="overflow-y-auto" 
-            style={{ 
+          <div
+            className="overflow-y-auto"
+            style={{
               maxHeight: 'calc(80vh - 32px)',
               padding: '16px',
             }}
@@ -275,6 +276,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -610,6 +610,14 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     '--mobile-nav-duration': `${mobileNavDuration}ms`,
     '--mobile-nav-drag-offset': `${dragOffsetY}px`
   } as React.CSSProperties;
+  const mobileNavPanelStyle = {
+    ...mobileNavStyle,
+    touchAction: 'pan-y',
+    paddingTop: 'env(safe-area-inset-top, 0px)',
+    paddingRight: 'env(safe-area-inset-right, 0px)',
+    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+    paddingLeft: 'env(safe-area-inset-left, 0px)'
+  } as React.CSSProperties;
 
   return (
     <>
@@ -696,7 +704,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             data-interaction-locked={isMobileNavAnimating}
             data-locked={isMobileNavAnimating}
             className="mobile-nav-panel fixed inset-0 z-[80] flex flex-col bg-paper/95 text-ink backdrop-blur-xl dark:bg-void/95 dark:text-white"
-            style={{ ...mobileNavStyle, touchAction: 'pan-y' }}
+            style={mobileNavPanelStyle}
             onTouchStart={handleMobilePanelTouchStart}
             onTouchMove={handleMobilePanelTouchMove}
             onTouchEnd={handleMobilePanelTouchEnd}
