@@ -223,3 +223,44 @@ html.theme-switching *::after {
   }
 }
 
+.mobile-nav-backdrop,
+.mobile-nav-panel {
+  transition-property: opacity, transform;
+  transition-duration: var(--mobile-nav-duration, 340ms);
+  transition-timing-function: ease-out;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+}
+
+.mobile-nav-backdrop[data-open='false'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mobile-nav-backdrop[data-open='true'] {
+  opacity: 1;
+}
+
+.mobile-nav-backdrop[data-locked='true'],
+.mobile-nav-panel[data-locked='true'] {
+  pointer-events: none;
+}
+
+.mobile-nav-panel {
+  transform: translate3d(0, calc(-100% + var(--mobile-nav-drag-offset, 0px)), 0);
+  pointer-events: none;
+}
+
+.mobile-nav-panel[data-open='true'] {
+  transform: translate3d(0, var(--mobile-nav-drag-offset, 0px), 0);
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav-backdrop,
+  .mobile-nav-panel {
+    transition-duration: 1ms;
+  }
+}
+

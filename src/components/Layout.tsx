@@ -318,9 +318,29 @@ const ThemeToggle = () => {
   );
 };
 
-const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
-  const [isOpen, setIsOpen] = useState(false);
+type MobileNavPhase = 'closed' | 'opening' | 'open' | 'closing';
+
+export const MOBILE_NAV_ANIMATION_DURATION_MS = 340;
+export const MOBILE_NAV_SWIPE_CLOSE_THRESHOLD = 84;
+const MOBILE_NAV_MAX_DRAG_OFFSET = 56;
+const MOBILE_NAV_SWIPE_VELOCITY_THRESHOLD = 0.4;
+
+export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
+  const [mobileNavPhase, setMobileNavPhase] = useState<MobileNavPhase>('closed');
+  const [isMobileNavMounted, setIsMobileNavMounted] = useState(false);
+  const [dragOffsetY, setDragOffsetY] = useState(0);
   const location = useLocation();
+  const navigate = useNavigate();
+  const shouldReduceMotion = useReducedMotion();
+  const animationFrameRef = useRef<number | null>(null);
+  const transitionTimerRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const touchStartTimeRef = useRef<number | null>(null);
+  const touchDeltaYRef = useRef(0);
+  const afterCloseActionRef = useRef<(() => void) | null>(null);
+  const mobileNavDuration = shouldReduceMotion ? 1 : MOBILE_NAV_ANIMATION_DURATION_MS;
+  const isMobileNavOpen = mobileNavPhase === 'open' || mobileNavPhase === 'opening';
+  const isMobileNavAnimating = mobileNavPhase === 'opening' || mobileNavPhase === 'closing';
   const navItems = [
     { path: '/', label: TEXT.navPosts },
     { path: '/archive', label: TEXT.navArchive },
@@ -350,9 +370,246 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     }
   };
 
+  const clearAnimationFrame = useCallback(() => {
+    if (animationFrameRef.current === null) {
+      return;
+    }
+
+    window.cancelAnimationFrame(animationFrameRef.current);
+    animationFrameRef.current = null;
+  }, []);
+
+  const clearTransitionTimer = useCallback(() => {
+    if (transitionTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(transitionTimerRef.current);
+    transitionTimerRef.current = null;
+  }, []);
+
+  const resetTouchState = useCallback(() => {
+    touchStartYRef.current = null;
+    touchStartTimeRef.current = null;
+    touchDeltaYRef.current = 0;
+    setDragOffsetY(0);
+  }, []);
+
+  const finalizeClose = useCallback(() => {
+    clearAnimationFrame();
+    clearTransitionTimer();
+    setIsMobileNavMounted(false);
+    setMobileNavPhase('closed');
+    resetTouchState();
+
+    const afterCloseAction = afterCloseActionRef.current;
+    afterCloseActionRef.current = null;
+    afterCloseAction?.();
+  }, [clearAnimationFrame, clearTransitionTimer, resetTouchState]);
+
+  const requestCloseMobileNav = useCallback((afterClose?: () => void) => {
+    afterCloseActionRef.current = afterClose ?? null;
+
+    if (!isMobileNavMounted && mobileNavPhase === 'closed') {
+      const immediateAction = afterCloseActionRef.current;
+      afterCloseActionRef.current = null;
+      immediateAction?.();
+      return;
+    }
+
+    if (mobileNavPhase === 'opening' || mobileNavPhase === 'closing') {
+      return;
+    }
+
+    clearAnimationFrame();
+    clearTransitionTimer();
+    resetTouchState();
+
+    if (mobileNavDuration <= 1) {
+      finalizeClose();
+      return;
+    }
+
+    setMobileNavPhase('closing');
+    transitionTimerRef.current = window.setTimeout(() => {
+      transitionTimerRef.current = null;
+      finalizeClose();
+    }, mobileNavDuration);
+  }, [clearAnimationFrame, clearTransitionTimer, finalizeClose, isMobileNavMounted, mobileNavDuration, mobileNavPhase, resetTouchState]);
+
+  const openMobileNav = useCallback(() => {
+    if (isMobileNavMounted || mobileNavPhase === 'opening' || mobileNavPhase === 'open') {
+      return;
+    }
+
+    afterCloseActionRef.current = null;
+    clearAnimationFrame();
+    clearTransitionTimer();
+    resetTouchState();
+    setIsMobileNavMounted(true);
+    setMobileNavPhase('closed');
+
+    const beginOpening = () => {
+      animationFrameRef.current = null;
+
+      if (mobileNavDuration <= 1) {
+        setMobileNavPhase('open');
+        return;
+      }
+
+      setMobileNavPhase('opening');
+      transitionTimerRef.current = window.setTimeout(() => {
+        transitionTimerRef.current = null;
+        setMobileNavPhase('open');
+      }, mobileNavDuration);
+    };
+
+    animationFrameRef.current = window.requestAnimationFrame(() => {
+      animationFrameRef.current = window.requestAnimationFrame(beginOpening);
+    });
+  }, [clearAnimationFrame, clearTransitionTimer, isMobileNavMounted, mobileNavDuration, mobileNavPhase, resetTouchState]);
+
+  const handleToggleMobileNav = useCallback(() => {
+    if (isMobileNavAnimating) {
+      return;
+    }
+
+    if (isMobileNavOpen) {
+      requestCloseMobileNav();
+      return;
+    }
+
+    openMobileNav();
+  }, [isMobileNavAnimating, isMobileNavOpen, openMobileNav, requestCloseMobileNav]);
+
+  const handleMobileNavItemSelect = useCallback((path: string) => {
+    if (isMobileNavAnimating) {
+      return;
+    }
+
+    if (location.pathname === path) {
+      requestCloseMobileNav();
+      return;
+    }
+
+    requestCloseMobileNav(() => navigate(path));
+  }, [isMobileNavAnimating, location.pathname, navigate, requestCloseMobileNav]);
+
+  const handleMobileSearchClick = useCallback(() => {
+    if (isMobileNavAnimating) {
+      return;
+    }
+
+    requestCloseMobileNav(onSearchClick);
+  }, [isMobileNavAnimating, onSearchClick, requestCloseMobileNav]);
+
+  const handleMobilePanelTouchStart = useCallback((event: React.TouchEvent<HTMLElement>) => {
+    if (isMobileNavAnimating) {
+      return;
+    }
+
+    touchStartYRef.current = event.touches[0]?.clientY ?? null;
+    touchStartTimeRef.current = Date.now();
+    touchDeltaYRef.current = 0;
+  }, [isMobileNavAnimating]);
+
+  const handleMobilePanelTouchMove = useCallback((event: React.TouchEvent<HTMLElement>) => {
+    if (isMobileNavAnimating || touchStartYRef.current === null) {
+      return;
+    }
+
+    const currentY = event.touches[0]?.clientY ?? touchStartYRef.current;
+    const deltaY = Math.max(0, currentY - touchStartYRef.current);
+    touchDeltaYRef.current = deltaY;
+    setDragOffsetY(Math.min(deltaY * 0.32, MOBILE_NAV_MAX_DRAG_OFFSET));
+  }, [isMobileNavAnimating]);
+
+  const handleMobilePanelTouchEnd = useCallback(() => {
+    if (touchStartYRef.current === null) {
+      resetTouchState();
+      return;
+    }
+
+    const elapsed = Math.max(Date.now() - (touchStartTimeRef.current ?? Date.now()), 1);
+    const swipeVelocity = touchDeltaYRef.current / elapsed;
+    const shouldClose = touchDeltaYRef.current >= MOBILE_NAV_SWIPE_CLOSE_THRESHOLD || swipeVelocity >= MOBILE_NAV_SWIPE_VELOCITY_THRESHOLD;
+
+    resetTouchState();
+
+    if (shouldClose) {
+      requestCloseMobileNav();
+    }
+  }, [requestCloseMobileNav, resetTouchState]);
+
   useEffect(() => {
-    setIsOpen(false);
-  }, [location]);
+    if (!isMobileNavMounted) {
+      return;
+    }
+
+    const htmlOverflow = document.documentElement.style.overflow;
+    const bodyOverflow = document.body.style.overflow;
+    const htmlOverscrollBehavior = document.documentElement.style.overscrollBehavior;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.documentElement.style.overflow = htmlOverflow;
+      document.documentElement.style.overscrollBehavior = htmlOverscrollBehavior;
+      document.body.style.overflow = bodyOverflow;
+    };
+  }, [isMobileNavMounted]);
+
+  useEffect(() => {
+    if (!isMobileNavMounted) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      event.preventDefault();
+      requestCloseMobileNav();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileNavMounted, requestCloseMobileNav]);
+
+  const locationKey = `${location.pathname}${location.search}`;
+  const previousLocationKeyRef = useRef(locationKey);
+
+  useEffect(() => {
+    if (previousLocationKeyRef.current === locationKey) {
+      return;
+    }
+
+    previousLocationKeyRef.current = locationKey;
+
+    if (!isMobileNavMounted) {
+      return;
+    }
+
+    clearAnimationFrame();
+    clearTransitionTimer();
+    afterCloseActionRef.current = null;
+    setIsMobileNavMounted(false);
+    setMobileNavPhase('closed');
+    resetTouchState();
+  }, [clearAnimationFrame, clearTransitionTimer, isMobileNavMounted, locationKey, resetTouchState]);
+
+  useEffect(() => () => {
+    clearAnimationFrame();
+    clearTransitionTimer();
+  }, [clearAnimationFrame, clearTransitionTimer]);
+
+  const mobileNavStyle = {
+    '--mobile-nav-duration': `${mobileNavDuration}ms`,
+    '--mobile-nav-drag-offset': `${dragOffsetY}px`
+  } as React.CSSProperties;
 
   return (
     <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/65 bg-paper/80 shadow-[0_18px_48px_-38px_rgba(28,25,23,0.45)] backdrop-blur-xl transition-all duration-500 supports-[backdrop-filter]:bg-paper/64 dark:border-zinc-800/65 dark:bg-void/80">
@@ -415,36 +672,102 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           <button onClick={onSearchClick} className="p-2 text-zinc-600 transition-transform active:scale-95 dark:text-zinc-300" aria-label="打开站内搜索">
             <Search size={22} />
           </button>
-          <button onClick={() => setIsOpen(!isOpen)} className="z-50 p-2 text-ink transition-transform active:scale-95 dark:text-white" aria-label={isOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isOpen}>
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          <button onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className="z-50 p-2 text-ink transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white" aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
+            {isMobileNavOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </motion.div>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div initial={{ opacity: 0, height: 0, clipPath: 'inset(0 0 100% 0 round 0px)' }} animate={{ opacity: 1, height: 'auto', clipPath: 'inset(0 0 0% 0 round 0px)' }} exit={{ opacity: 0, height: 0, clipPath: 'inset(0 0 100% 0 round 0px)' }} transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }} className="absolute left-0 right-0 top-full z-40 overflow-hidden bg-paper/95 px-6 py-8 backdrop-blur-xl dark:bg-void/95 md:hidden">
-            <motion.div className="flex flex-col items-center space-y-8 text-center" variants={navListVariants} initial="hidden" animate="visible" exit="hidden">
-              {navItems.map((item) => (
-                <motion.div key={item.path} variants={navItemVariants}>
-                  <Link onClick={() => setIsOpen(false)} to={item.path} className="text-4xl font-serif font-bold text-ink transition-colors hover:text-accent dark:text-white">
-                    {item.label}
-                  </Link>
-                </motion.div>
-              ))}
-              <motion.div variants={navItemVariants} className="my-4 h-px w-12 bg-zinc-200 dark:bg-zinc-800" />
-              <motion.div variants={navItemVariants} className="flex items-center gap-4">
-                <span className="text-lg font-medium text-zinc-500">{TEXT.theme}</span>
-                <ThemeToggle />
-              </motion.div>
-              <motion.a variants={navItemVariants} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 rounded-full border border-orange-200 bg-orange-50 px-5 py-2.5 text-sm font-bold tracking-wide text-orange-600 transition-colors hover:bg-orange-100 dark:border-orange-900/50 dark:bg-orange-950/30 dark:text-orange-300 dark:hover:bg-orange-950/50">
-                <Rss size={16} />
-                <span>{TEXT.rssFeed}</span>
-              </motion.a>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {isMobileNavMounted && (
+        <div className="mobile-nav-root md:hidden">
+          <div data-testid="mobile-nav-backdrop" data-open={isMobileNavOpen} data-locked={isMobileNavAnimating} className="mobile-nav-backdrop fixed inset-0 z-[70] bg-void/72 backdrop-blur-md" style={mobileNavStyle} onClick={() => requestCloseMobileNav()} />
+
+          <aside
+            id="mobile-navigation-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="移动端导航菜单"
+            aria-busy={isMobileNavAnimating}
+            data-testid="mobile-nav-panel"
+            data-open={isMobileNavOpen}
+            data-state={mobileNavPhase}
+            data-interaction-locked={isMobileNavAnimating}
+            data-locked={isMobileNavAnimating}
+            className="mobile-nav-panel fixed inset-0 z-[80] flex flex-col bg-paper/95 text-ink backdrop-blur-xl dark:bg-void/95 dark:text-white"
+            style={{ ...mobileNavStyle, touchAction: 'pan-y' }}
+            onTouchStart={handleMobilePanelTouchStart}
+            onTouchMove={handleMobilePanelTouchMove}
+            onTouchEnd={handleMobilePanelTouchEnd}
+            onTouchCancel={handleMobilePanelTouchEnd}
+          >
+            <div className="flex h-20 items-center justify-between border-b border-zinc-200/70 px-6 dark:border-zinc-800/70">
+              <button type="button" onClick={() => handleMobileNavItemSelect('/')} disabled={isMobileNavAnimating} className="group flex items-center space-x-3 text-left disabled:cursor-not-allowed disabled:opacity-60" aria-label="返回首页">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-accent/20 blur-md transition-opacity group-hover:opacity-40" />
+                  <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-10 w-10 rounded-lg bg-white/10" className="h-10 w-10 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105" />
+                </div>
+                <span className="font-serif text-2xl font-bold tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
+              </button>
+
+              <button type="button" onClick={() => requestCloseMobileNav()} disabled={isMobileNavAnimating} className="rounded-full border border-zinc-200/80 bg-white/80 p-2 text-zinc-500 transition-colors hover:border-zinc-300 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700/80 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-white" aria-label="关闭导航菜单">
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="flex flex-1 flex-col overflow-y-auto px-6 pb-10 pt-5">
+              <div className="mb-6 flex justify-center">
+                <span className="h-1.5 w-16 rounded-full bg-zinc-300/90 dark:bg-zinc-700/90" />
+              </div>
+
+              <div className="flex flex-1 flex-col justify-between gap-10">
+                <div className="space-y-3">
+                  {navItems.map((item) => {
+                    const isActive = location.pathname === item.path;
+
+                    return (
+                      <button
+                        key={item.path}
+                        type="button"
+                        onClick={() => handleMobileNavItemSelect(item.path)}
+                        disabled={isMobileNavAnimating}
+                        className={`flex w-full items-center justify-between rounded-[28px] border px-5 py-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                          isActive
+                            ? 'border-accent/25 bg-accent/[0.08] text-accent dark:border-accent/30 dark:bg-accent/[0.12]'
+                            : 'border-zinc-200/80 bg-white/80 text-ink hover:border-zinc-300 hover:bg-white dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:text-white dark:hover:border-zinc-700 dark:hover:bg-zinc-900'
+                        }`}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        <span className="text-4xl font-serif font-bold tracking-tight">{item.label}</span>
+                        <span className="text-xs font-semibold uppercase tracking-[0.28em] text-zinc-400 dark:text-zinc-500">GO</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-4 pb-safe">
+                  <button type="button" onClick={handleMobileSearchClick} disabled={isMobileNavAnimating} className="flex w-full items-center justify-between rounded-2xl border border-zinc-200/80 bg-white/80 px-4 py-3 text-left text-zinc-600 transition-colors hover:border-zinc-300 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white" aria-label="打开站内搜索">
+                    <span className="flex items-center gap-3">
+                      <Search size={18} />
+                      <span className="text-sm font-semibold">站内搜索</span>
+                    </span>
+                    <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Ctrl+K</span>
+                  </button>
+
+                  <div className="flex items-center justify-between rounded-2xl border border-zinc-200/80 bg-white/80 px-4 py-3 dark:border-zinc-800/80 dark:bg-zinc-900/70">
+                    <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">{TEXT.theme}</span>
+                    <ThemeToggle />
+                  </div>
+
+                  <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex w-full items-center justify-center gap-3 rounded-2xl border border-orange-200/80 bg-orange-50 px-5 py-3 text-sm font-bold tracking-wide text-orange-600 transition-colors hover:bg-orange-100 dark:border-orange-900/50 dark:bg-orange-950/30 dark:text-orange-300 dark:hover:bg-orange-950/50">
+                    <Rss size={16} />
+                    <span>{TEXT.rssFeed}</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
     </nav>
   );
 };
