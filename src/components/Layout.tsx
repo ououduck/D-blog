@@ -612,71 +612,73 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   } as React.CSSProperties;
 
   return (
-    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/65 bg-paper/80 shadow-[0_18px_48px_-38px_rgba(28,25,23,0.45)] backdrop-blur-xl transition-all duration-500 supports-[backdrop-filter]:bg-paper/64 dark:border-zinc-800/65 dark:bg-void/80">
-      <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-        <Link to="/" className="group z-50 flex items-center space-x-3">
-          <div className="relative">
-            <motion.div
-              className="absolute inset-0 bg-accent opacity-20 blur-md transition-opacity group-hover:opacity-40"
-              animate={{ opacity: [0.18, 0.3, 0.18], scale: [0.96, 1.04, 0.96] }}
-              transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
-            />
-            <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-10 w-10 rounded-lg bg-white/10" className="h-10 w-10 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105" />
-          </div>
-          <span className="font-serif text-2xl font-bold tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
-        </Link>
+    <>
+      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/65 bg-paper/80 shadow-[0_18px_48px_-38px_rgba(28,25,23,0.45)] backdrop-blur-xl transition-all duration-500 supports-[backdrop-filter]:bg-paper/64 dark:border-zinc-800/65 dark:bg-void/80">
+        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+          <Link to="/" className="group z-50 flex items-center space-x-3">
+            <div className="relative">
+              <motion.div
+                className="absolute inset-0 bg-accent opacity-20 blur-md transition-opacity group-hover:opacity-40"
+                animate={{ opacity: [0.18, 0.3, 0.18], scale: [0.96, 1.04, 0.96] }}
+                transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-10 w-10 rounded-lg bg-white/10" className="h-10 w-10 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105" />
+            </div>
+            <span className="font-serif text-2xl font-bold tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
+          </Link>
 
-        <div className="hidden items-center space-x-8 md:flex">
-          <motion.div className="mr-4 flex space-x-6" variants={navListVariants} initial="hidden" animate="visible">
-            {navItems.map((item) => (
-              <motion.div key={item.path} variants={navItemVariants}>
-                <Link
-                  to={item.path}
-                  aria-current={location.pathname === item.path ? 'page' : undefined}
-                  className={`group relative inline-flex h-10 items-center px-2 py-1 text-sm font-semibold uppercase tracking-wider transition-colors ${
-                    location.pathname === item.path
-                      ? 'text-ink dark:text-white'
-                      : 'text-zinc-500 hover:text-ink dark:text-zinc-400 dark:hover:text-white'
-                  }`}
-                >
-                  <span className="relative z-10">{item.label}</span>
-                  <span
-                    aria-hidden="true"
-                    className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-full bg-gradient-to-r from-accent-light via-accent to-accent-dark transition-all duration-250 ${
+          <div className="hidden items-center space-x-8 md:flex">
+            <motion.div className="mr-4 flex space-x-6" variants={navListVariants} initial="hidden" animate="visible">
+              {navItems.map((item) => (
+                <motion.div key={item.path} variants={navItemVariants}>
+                  <Link
+                    to={item.path}
+                    aria-current={location.pathname === item.path ? 'page' : undefined}
+                    className={`group relative inline-flex h-10 items-center px-2 py-1 text-sm font-semibold uppercase tracking-wider transition-colors ${
                       location.pathname === item.path
-                        ? 'scale-x-100 opacity-100 shadow-[0_0_16px_rgba(192,57,43,0.4)]'
-                        : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+                        ? 'text-ink dark:text-white'
+                        : 'text-zinc-500 hover:text-ink dark:text-zinc-400 dark:hover:text-white'
                     }`}
-                  />
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <motion.div className="flex items-center space-x-3 border-l border-zinc-300 pl-6 dark:border-zinc-700" variants={navListVariants} initial="hidden" animate="visible">
-            <motion.button variants={navItemVariants} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} onClick={onSearchClick} className="group flex items-center space-x-2 rounded-lg border border-transparent bg-zinc-100/90 px-3 py-2 text-zinc-500 transition-all duration-300 hover:border-zinc-200 hover:bg-white hover:text-accent dark:bg-zinc-800/90 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800" aria-label="打开站内搜索">
-              <Search size={16} />
-              <span className="text-xs font-medium opacity-70 group-hover:opacity-100">Ctrl+K</span>
-            </motion.button>
-            <motion.a variants={navItemVariants} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex items-center space-x-2 rounded-lg bg-orange-50 px-3 py-2 text-orange-600 transition-colors hover:bg-orange-100 dark:bg-orange-950/40 dark:text-orange-300 dark:hover:bg-orange-950/70">
-              <Rss size={16} />
-              <span className="text-xs font-medium">{TEXT.rssFeed}</span>
-            </motion.a>
-            <motion.div variants={navItemVariants}>
-              <ThemeToggle />
+                  >
+                    <span className="relative z-10">{item.label}</span>
+                    <span
+                      aria-hidden="true"
+                      className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-full bg-gradient-to-r from-accent-light via-accent to-accent-dark transition-all duration-250 ${
+                        location.pathname === item.path
+                          ? 'scale-x-100 opacity-100 shadow-[0_0_16px_rgba(192,57,43,0.4)]'
+                          : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+                      }`}
+                    />
+                  </Link>
+                </motion.div>
+              ))}
             </motion.div>
-          </motion.div>
-        </div>
 
-        <div className="flex items-center space-x-4 md:hidden">
-          <button onClick={onSearchClick} className="p-2 text-zinc-600 transition-transform active:scale-95 dark:text-zinc-300" aria-label="打开站内搜索">
-            <Search size={22} />
-          </button>
-          <button onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className="z-50 p-2 text-ink transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white" aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
-            {isMobileNavOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-      </motion.div>
+            <motion.div className="flex items-center space-x-3 border-l border-zinc-300 pl-6 dark:border-zinc-700" variants={navListVariants} initial="hidden" animate="visible">
+              <motion.button variants={navItemVariants} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} onClick={onSearchClick} className="group flex items-center space-x-2 rounded-lg border border-transparent bg-zinc-100/90 px-3 py-2 text-zinc-500 transition-all duration-300 hover:border-zinc-200 hover:bg-white hover:text-accent dark:bg-zinc-800/90 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800" aria-label="打开站内搜索">
+                <Search size={16} />
+                <span className="text-xs font-medium opacity-70 group-hover:opacity-100">Ctrl+K</span>
+              </motion.button>
+              <motion.a variants={navItemVariants} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex items-center space-x-2 rounded-lg bg-orange-50 px-3 py-2 text-orange-600 transition-colors hover:bg-orange-100 dark:bg-orange-950/40 dark:text-orange-300 dark:hover:bg-orange-950/70">
+                <Rss size={16} />
+                <span className="text-xs font-medium">{TEXT.rssFeed}</span>
+              </motion.a>
+              <motion.div variants={navItemVariants}>
+                <ThemeToggle />
+              </motion.div>
+            </motion.div>
+          </div>
+
+          <div className="flex items-center space-x-4 md:hidden">
+            <button onClick={onSearchClick} className="p-2 text-zinc-600 transition-transform active:scale-95 dark:text-zinc-300" aria-label="打开站内搜索">
+              <Search size={22} />
+            </button>
+            <button onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className="z-50 p-2 text-ink transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white" aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
+              {isMobileNavOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+        </motion.div>
+      </nav>
 
       {isMobileNavMounted && (
         <div className="mobile-nav-root md:hidden">
@@ -768,7 +770,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           </aside>
         </div>
       )}
-    </nav>
+    </>
   );
 };
 
