@@ -178,6 +178,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
   const mobileStyles = isMobile ? {
     ...getTransitionStyle(mobileDuration),
     transform: isAnimating ? 'translateY(0)' : 'translateY(100%)',
+    opacity: isAnimating ? 1 : 0,
   } : {};
 
   const desktopStyles = !isMobile ? {
@@ -188,7 +189,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center"
+      className={`fixed inset-0 z-[110] flex justify-center ${isMobile ? 'items-end' : 'items-center'}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby={ariaLabelledby}
@@ -219,30 +220,34 @@ export const SlideModal: React.FC<SlideModalProps> = ({
           className={`
             relative z-10
             w-full
-            max-h-[80vh]
+            max-h-[85vh]
             overflow-hidden
-            rounded-b-3xl
-            border-t
-            border-zinc-200
-            bg-white
-            shadow-2xl
-            dark:border-zinc-800
-            dark:bg-zinc-900
+            rounded-t-[28px]
+            border border-b-0
+            border-zinc-200/80
+            bg-white/95
+            shadow-[0_-24px_80px_rgba(15,23,42,0.18)]
+            backdrop-blur-xl
+            dark:border-zinc-800/80
+            dark:bg-zinc-900/95
+            dark:shadow-[0_-24px_80px_rgba(0,0,0,0.45)]
             will-change-transform
             ${className}
           `}
           style={{
-            top: 0,
             paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
-            maxHeight: '80vh',
+            maxHeight: '85vh',
             ...mobileStyles,
           }}
         >
+          <div className="flex justify-center px-4 pt-3">
+            <div className="h-1.5 w-14 rounded-full bg-zinc-300/80 dark:bg-zinc-700/80" />
+          </div>
           <div
             className="overflow-y-auto"
             style={{
-              maxHeight: 'calc(80vh - 32px)',
-              padding: '16px',
+              maxHeight: 'calc(85vh - 40px)',
+              padding: '12px 16px 16px',
             }}
           >
             {children}
@@ -255,16 +260,18 @@ export const SlideModal: React.FC<SlideModalProps> = ({
             relative z-10
             mx-4
             w-full
-            max-w-md
+            max-w-lg
             max-h-[80vh]
             overflow-hidden
-            rounded-2xl
+            rounded-[28px]
             border
-            border-zinc-200
-            bg-white
-            shadow-2xl
-            dark:border-zinc-800
-            dark:bg-zinc-900
+            border-zinc-200/80
+            bg-white/95
+            shadow-[0_32px_100px_rgba(15,23,42,0.22)]
+            backdrop-blur-xl
+            dark:border-zinc-800/80
+            dark:bg-zinc-900/95
+            dark:shadow-[0_32px_100px_rgba(0,0,0,0.45)]
             will-change-transform
             ${className}
           `}
@@ -277,7 +284,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
             className="overflow-y-auto"
             style={{
               maxHeight: 'calc(80vh - 32px)',
-              padding: '16px',
+              padding: '20px',
             }}
           >
             {children}

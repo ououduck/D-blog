@@ -495,14 +495,6 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     requestCloseMobileNav(() => navigate(path));
   }, [isMobileNavAnimating, location.pathname, navigate, requestCloseMobileNav]);
 
-  const handleMobileSearchClick = useCallback(() => {
-    if (isMobileNavAnimating) {
-      return;
-    }
-
-    requestCloseMobileNav(onSearchClick);
-  }, [isMobileNavAnimating, onSearchClick, requestCloseMobileNav]);
-
   const handleMobilePanelTouchStart = useCallback((event: React.TouchEvent<HTMLElement>) => {
     if (isMobileNavAnimating) {
       return;
@@ -757,14 +749,6 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
               </div>
 
               <div className="mt-4 grid gap-3 border-t border-zinc-200/70 pt-4 dark:border-zinc-800/70">
-                <button type="button" onClick={handleMobileSearchClick} disabled={isMobileNavAnimating} className="flex w-full items-center justify-between rounded-2xl border border-zinc-200/80 bg-white/82 px-4 py-3 text-left text-zinc-600 transition-colors hover:border-zinc-300 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white" aria-label="打开站内搜索">
-                  <span className="flex items-center gap-3">
-                    <Search size={18} />
-                    <span className="text-sm font-semibold">站内搜索</span>
-                  </span>
-                  <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Ctrl+K</span>
-                </button>
-
                 <div className="flex items-center justify-between rounded-2xl border border-zinc-200/80 bg-white/82 px-4 py-3 dark:border-zinc-800/80 dark:bg-zinc-900/70">
                   <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">{TEXT.theme}</span>
                   <ThemeToggle />

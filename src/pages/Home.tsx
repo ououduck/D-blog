@@ -322,7 +322,7 @@ const Hero = ({ onSearch, searchQuery, onClearSearch }: { onSearch: (val: string
           transition={shouldReduceMotion ? undefined : { duration: 8.6, repeat: Infinity, ease: 'easeInOut' }}
         />
       </motion.div>
-      <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.82, ease: [0.16, 1, 0.3, 1] }} className="mb-6 font-serif text-4xl font-bold leading-[1.1] tracking-tight text-ink dark:text-white sm:text-5xl md:mb-8 md:text-7xl lg:text-8xl">
+      <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.82, ease: [0.16, 1, 0.3, 1] }} className="mb-6 font-serif text-5xl font-bold leading-[1.05] tracking-tight text-ink drop-shadow-[0_10px_24px_rgba(28,25,23,0.14)] dark:text-white dark:drop-shadow-[0_10px_28px_rgba(255,255,255,0.08)] sm:text-6xl md:mb-8 md:text-7xl lg:text-8xl">
         {siteConfig.title}
       </motion.h1>
       <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16, duration: 0.72, ease: [0.16, 1, 0.3, 1] }} className="mx-auto mb-12 max-w-2xl font-sans text-base leading-relaxed text-zinc-500 dark:text-zinc-400 md:text-xl">
