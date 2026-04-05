@@ -68,10 +68,10 @@ export const SlideModal: React.FC<SlideModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      previousActiveElementRef.current = document.activeElement instanceof HTMLElement 
-        ? document.activeElement 
+      previousActiveElementRef.current = document.activeElement instanceof HTMLElement
+        ? document.activeElement
         : null;
-      
+
       const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
       document.body.style.overflow = 'hidden';
       if (scrollbarWidth > 0) {
@@ -80,37 +80,44 @@ export const SlideModal: React.FC<SlideModalProps> = ({
 
       hasCalledOpenRef.current = false;
       hasCalledCloseRef.current = false;
-      
-      requestAnimationFrame(() => {
-        setIsVisible(true);
+      setIsVisible(true);
+      setIsAnimating(false);
+
+      const frame = requestAnimationFrame(() => {
         setIsAnimating(true);
         handleOpen();
       });
-    } else {
-      if (isVisible) {
-        hasCalledOpenRef.current = false;
-        hasCalledCloseRef.current = false;
-        setIsAnimating(false);
-        
-        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const duration = reducedMotion ? 0 : (isMobile ? 300 : 400);
-        
-        const timer = setTimeout(() => {
-          setIsVisible(false);
-          handleClose();
-          document.body.style.overflow = '';
-          document.body.style.paddingRight = '';
-          
-          if (previousActiveElementRef.current) {
-            requestAnimationFrame(() => {
-              previousActiveElementRef.current?.focus();
-            });
-          }
-        }, duration);
-        
-        return () => clearTimeout(timer);
-      }
+
+      return () => window.cancelAnimationFrame(frame);
     }
+
+    if (!isVisible) {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      return;
+    }
+
+    hasCalledOpenRef.current = false;
+    hasCalledCloseRef.current = false;
+    setIsAnimating(false);
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const duration = reducedMotion ? 0 : (isMobile ? 300 : 400);
+
+    const timer = window.setTimeout(() => {
+      setIsVisible(false);
+      handleClose();
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+
+      if (previousActiveElementRef.current) {
+        requestAnimationFrame(() => {
+          previousActiveElementRef.current?.focus();
+        });
+      }
+    }, duration);
+
+    return () => window.clearTimeout(timer);
   }, [isOpen, isVisible, isMobile, handleOpen, handleClose]);
 
   useEffect(() => {
@@ -170,12 +177,13 @@ export const SlideModal: React.FC<SlideModalProps> = ({
 
   const mobileStyles = isMobile ? {
     ...getTransitionStyle(mobileDuration),
-    transform: isAnimating ? 'translateY(100%)' : 'translateY(0)',
+    transform: isAnimating ? 'translateY(0)' : 'translateY(100%)',
   } : {};
 
   const desktopStyles = !isMobile ? {
     ...getTransitionStyle(desktopDuration),
-    transform: isAnimating ? 'translate(-50%, -200%)' : 'translate(-50%, -50%)',
+    transform: isAnimating ? 'translateY(0)' : 'translateY(24px)',
+    opacity: isAnimating ? 1 : 0,
   } : {};
 
   return createPortal(

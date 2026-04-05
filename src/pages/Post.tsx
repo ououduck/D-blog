@@ -480,7 +480,11 @@ export const Post = () => {
     <>
       <ImageViewer src={previewImage?.src || null} alt={previewImage?.alt} onClose={() => setPreviewImage(null)} />
       <ReadingProgressBadge targetRef={articleBodyRef} onVisibilityChange={setMobileFloatingVisible} />
-      <TableOfContents headings={headings} showTrigger={mobileFloatingVisible} />
+      <TableOfContents
+        headings={headings}
+        mobileShowTrigger={mobileFloatingVisible}
+        desktopShowTrigger={headings.length > 0}
+      />
 
       <motion.article initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
         <Seo

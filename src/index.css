@@ -227,10 +227,9 @@ html.theme-switching *::after {
 .mobile-nav-panel {
   transition-property: opacity, transform;
   transition-duration: var(--mobile-nav-duration, 340ms);
-  transition-timing-function: ease-out;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform, opacity;
   backface-visibility: hidden;
-  transform: translate3d(0, 0, 0);
 }
 
 .mobile-nav-backdrop[data-open='false'] {
@@ -248,12 +247,14 @@ html.theme-switching *::after {
 }
 
 .mobile-nav-panel {
-  transform: translate3d(0, calc(-100% + var(--mobile-nav-drag-offset, 0px)), 0);
+  opacity: 0;
+  transform: translate3d(0, calc(-18px + var(--mobile-nav-drag-offset, 0px)), 0) scale(0.98);
   pointer-events: none;
 }
 
 .mobile-nav-panel[data-open='true'] {
-  transform: translate3d(0, var(--mobile-nav-drag-offset, 0px), 0);
+  opacity: 1;
+  transform: translate3d(0, var(--mobile-nav-drag-offset, 0px), 0) scale(1);
   pointer-events: auto;
 }
 

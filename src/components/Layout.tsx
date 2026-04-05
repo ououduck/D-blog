@@ -321,9 +321,9 @@ const ThemeToggle = () => {
 type MobileNavPhase = 'closed' | 'opening' | 'open' | 'closing';
 
 export const MOBILE_NAV_ANIMATION_DURATION_MS = 340;
-export const MOBILE_NAV_SWIPE_CLOSE_THRESHOLD = 84;
-const MOBILE_NAV_MAX_DRAG_OFFSET = 56;
-const MOBILE_NAV_SWIPE_VELOCITY_THRESHOLD = 0.4;
+export const MOBILE_NAV_SWIPE_CLOSE_THRESHOLD = 64;
+const MOBILE_NAV_MAX_DRAG_OFFSET = 48;
+const MOBILE_NAV_SWIPE_VELOCITY_THRESHOLD = 0.32;
 
 export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const [mobileNavPhase, setMobileNavPhase] = useState<MobileNavPhase>('closed');
@@ -342,12 +342,12 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const isMobileNavOpen = mobileNavPhase === 'open' || mobileNavPhase === 'opening';
   const isMobileNavAnimating = mobileNavPhase === 'opening' || mobileNavPhase === 'closing';
   const navItems = [
-    { path: '/', label: TEXT.navPosts },
-    { path: '/archive', label: TEXT.navArchive },
-    { path: '/tags', label: TEXT.navTags },
-    { path: '/stats', label: TEXT.navStats },
-    { path: '/friends', label: TEXT.navFriends },
-    { path: '/about', label: TEXT.navAbout }
+    { path: '/', label: TEXT.navPosts, hint: '最新内容' },
+    { path: '/archive', label: TEXT.navArchive, hint: '时间归档' },
+    { path: '/tags', label: TEXT.navTags, hint: '主题筛选' },
+    { path: '/stats', label: TEXT.navStats, hint: '站点数据' },
+    { path: '/friends', label: TEXT.navFriends, hint: '友情链接' },
+    { path: '/about', label: TEXT.navAbout, hint: '站点介绍' }
   ];
   const navListVariants = {
     hidden: {},
@@ -621,7 +621,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
   return (
     <>
-      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/65 bg-paper/80 shadow-[0_18px_48px_-38px_rgba(28,25,23,0.45)] backdrop-blur-xl transition-all duration-500 supports-[backdrop-filter]:bg-paper/64 dark:border-zinc-800/65 dark:bg-void/80">
+      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/70 bg-paper/88 shadow-[0_16px_40px_-34px_rgba(28,25,23,0.5)] backdrop-blur-2xl transition-all duration-500 supports-[backdrop-filter]:bg-paper/72 dark:border-zinc-800/70 dark:bg-void/86">
         <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 md:h-20">
           <Link to="/" className="group z-50 flex items-center space-x-3">
             <div className="relative">
@@ -677,12 +677,12 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             </motion.div>
           </div>
 
-          <div className="flex items-center space-x-1 sm:space-x-2 md:hidden">
-            <button onClick={onSearchClick} className="rounded-full p-2 text-zinc-600 transition-transform active:scale-95 dark:text-zinc-300" aria-label="打开站内搜索">
-              <Search size={22} />
+          <div className="flex items-center gap-2 md:hidden">
+            <button onClick={onSearchClick} className="rounded-full border border-zinc-200/70 bg-white/78 p-2.5 text-zinc-600 shadow-sm shadow-zinc-200/30 transition-all active:scale-95 dark:border-zinc-700/70 dark:bg-zinc-900/78 dark:text-zinc-300 dark:shadow-black/20" aria-label="打开站内搜索">
+              <Search size={20} />
             </button>
-            <button onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className="z-50 rounded-full p-2 text-ink transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white" aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
-              {isMobileNavOpen ? <X size={24} /> : <Menu size={24} />}
+            <button onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className="z-50 rounded-full border border-zinc-200/70 bg-white/82 p-2.5 text-ink shadow-sm shadow-zinc-200/30 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700/70 dark:bg-zinc-900/82 dark:text-white dark:shadow-black/20" aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
+              {isMobileNavOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </motion.div>
@@ -690,7 +690,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
       {isMobileNavMounted && (
         <div className="mobile-nav-root md:hidden">
-          <div data-testid="mobile-nav-backdrop" data-open={isMobileNavOpen} data-locked={isMobileNavAnimating} className="mobile-nav-backdrop fixed inset-0 z-[70] bg-void/72 backdrop-blur-md" style={mobileNavStyle} onClick={() => requestCloseMobileNav()} />
+          <div data-testid="mobile-nav-backdrop" data-open={isMobileNavOpen} data-locked={isMobileNavAnimating} className="mobile-nav-backdrop fixed inset-0 z-[70] bg-void/58 backdrop-blur-sm" style={mobileNavStyle} onClick={() => requestCloseMobileNav()} />
 
           <aside
             id="mobile-navigation-panel"
@@ -703,7 +703,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             data-state={mobileNavPhase}
             data-interaction-locked={isMobileNavAnimating}
             data-locked={isMobileNavAnimating}
-            className="mobile-nav-panel fixed inset-0 z-[80] flex flex-col bg-paper/95 text-ink backdrop-blur-xl dark:bg-void/95 dark:text-white"
+            className="mobile-nav-panel fixed inset-x-0 top-0 z-[80] overflow-hidden rounded-b-[2rem] border-b border-zinc-200/70 bg-paper/92 text-ink shadow-[0_24px_60px_-28px_rgba(28,25,23,0.45)] backdrop-blur-2xl dark:border-zinc-800/80 dark:bg-void/92 dark:text-white"
             style={mobileNavPanelStyle}
             onTouchStart={handleMobilePanelTouchStart}
             onTouchMove={handleMobilePanelTouchMove}
@@ -719,60 +719,61 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                 <span className="font-serif text-xl font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
               </button>
 
-              <button type="button" onClick={() => requestCloseMobileNav()} disabled={isMobileNavAnimating} className="rounded-full border border-zinc-200/80 bg-white/80 p-2 text-zinc-500 transition-colors hover:border-zinc-300 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700/80 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-white" aria-label="关闭导航菜单">
-                <X size={22} />
+              <button type="button" onClick={() => requestCloseMobileNav()} disabled={isMobileNavAnimating} className="rounded-full border border-zinc-200/80 bg-white/85 p-2 text-zinc-500 transition-colors hover:border-zinc-300 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700/80 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-white" aria-label="关闭导航菜单">
+                <X size={20} />
               </button>
             </div>
 
-            <div className="flex flex-1 flex-col overflow-y-auto px-6 pb-10 pt-5">
-              <div className="mb-6 flex justify-center">
-                <span className="h-1.5 w-16 rounded-full bg-zinc-300/90 dark:bg-zinc-700/90" />
+            <div className="flex max-h-[min(78vh,40rem)] flex-col overflow-y-auto px-4 pb-6 pt-3 sm:px-6">
+              <div className="mb-4 flex justify-center">
+                <span className="h-1.5 w-14 rounded-full bg-zinc-300/90 dark:bg-zinc-700/90" />
               </div>
 
-              <div className="flex flex-1 flex-col justify-between gap-10">
-                <div className="space-y-3">
-                  {navItems.map((item) => {
-                    const isActive = location.pathname === item.path;
+              <div className="space-y-2.5">
+                {navItems.map((item) => {
+                  const isActive = location.pathname === item.path;
 
-                    return (
-                      <button
-                        key={item.path}
-                        type="button"
-                        onClick={() => handleMobileNavItemSelect(item.path)}
-                        disabled={isMobileNavAnimating}
-                        className={`flex w-full items-center justify-between rounded-[28px] border px-5 py-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                          isActive
-                            ? 'border-accent/25 bg-accent/[0.08] text-accent dark:border-accent/30 dark:bg-accent/[0.12]'
-                            : 'border-zinc-200/80 bg-white/80 text-ink hover:border-zinc-300 hover:bg-white dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:text-white dark:hover:border-zinc-700 dark:hover:bg-zinc-900'
-                        }`}
-                        aria-current={isActive ? 'page' : undefined}
-                      >
-                        <span className="text-4xl font-serif font-bold tracking-tight">{item.label}</span>
-                        <span className="text-xs font-semibold uppercase tracking-[0.28em] text-zinc-400 dark:text-zinc-500">GO</span>
-                      </button>
-                    );
-                  })}
+                  return (
+                    <button
+                      key={item.path}
+                      type="button"
+                      onClick={() => handleMobileNavItemSelect(item.path)}
+                      disabled={isMobileNavAnimating}
+                      className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                        isActive
+                          ? 'border-accent/30 bg-accent/[0.08] text-accent shadow-[0_12px_28px_-24px_rgba(192,57,43,0.7)] dark:border-accent/35 dark:bg-accent/[0.12]'
+                          : 'border-zinc-200/80 bg-white/82 text-ink hover:border-zinc-300 hover:bg-white dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:text-white dark:hover:border-zinc-700 dark:hover:bg-zinc-900'
+                      }`}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      <span className="flex flex-col gap-1">
+                        <span className="text-lg font-semibold tracking-tight">{item.label}</span>
+                        <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500">{item.hint}</span>
+                      </span>
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${isActive ? 'bg-accent/12 text-accent dark:bg-accent/18' : 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500'}`}>{isActive ? '当前' : '进入'}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 grid gap-3 border-t border-zinc-200/70 pt-4 dark:border-zinc-800/70">
+                <button type="button" onClick={handleMobileSearchClick} disabled={isMobileNavAnimating} className="flex w-full items-center justify-between rounded-2xl border border-zinc-200/80 bg-white/82 px-4 py-3 text-left text-zinc-600 transition-colors hover:border-zinc-300 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white" aria-label="打开站内搜索">
+                  <span className="flex items-center gap-3">
+                    <Search size={18} />
+                    <span className="text-sm font-semibold">站内搜索</span>
+                  </span>
+                  <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Ctrl+K</span>
+                </button>
+
+                <div className="flex items-center justify-between rounded-2xl border border-zinc-200/80 bg-white/82 px-4 py-3 dark:border-zinc-800/80 dark:bg-zinc-900/70">
+                  <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">{TEXT.theme}</span>
+                  <ThemeToggle />
                 </div>
 
-                <div className="space-y-4 pb-safe">
-                  <button type="button" onClick={handleMobileSearchClick} disabled={isMobileNavAnimating} className="flex w-full items-center justify-between rounded-2xl border border-zinc-200/80 bg-white/80 px-4 py-3 text-left text-zinc-600 transition-colors hover:border-zinc-300 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white" aria-label="打开站内搜索">
-                    <span className="flex items-center gap-3">
-                      <Search size={18} />
-                      <span className="text-sm font-semibold">站内搜索</span>
-                    </span>
-                    <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Ctrl+K</span>
-                  </button>
-
-                  <div className="flex items-center justify-between rounded-2xl border border-zinc-200/80 bg-white/80 px-4 py-3 dark:border-zinc-800/80 dark:bg-zinc-900/70">
-                    <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">{TEXT.theme}</span>
-                    <ThemeToggle />
-                  </div>
-
-                  <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex w-full items-center justify-center gap-3 rounded-2xl border border-orange-200/80 bg-orange-50 px-5 py-3 text-sm font-bold tracking-wide text-orange-600 transition-colors hover:bg-orange-100 dark:border-orange-900/50 dark:bg-orange-950/30 dark:text-orange-300 dark:hover:bg-orange-950/50">
-                    <Rss size={16} />
-                    <span>{TEXT.rssFeed}</span>
-                  </a>
-                </div>
+                <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex w-full items-center justify-center gap-3 rounded-2xl border border-orange-200/80 bg-orange-50 px-5 py-3 text-sm font-bold tracking-wide text-orange-600 transition-colors hover:bg-orange-100 dark:border-orange-900/50 dark:bg-orange-950/30 dark:text-orange-300 dark:hover:bg-orange-950/50">
+                  <Rss size={16} />
+                  <span>{TEXT.rssFeed}</span>
+                </a>
               </div>
             </div>
           </aside>

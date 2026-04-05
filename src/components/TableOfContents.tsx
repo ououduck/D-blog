@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { ChevronDown, List, X } from 'lucide-react';
+import { ChevronDown, List, Search, X } from 'lucide-react';
+
 
 import { siteConfig } from '@config/site.config';
 import type { MarkdownHeading } from '@/utils/headings';
@@ -131,15 +132,21 @@ const getRootBranchId = (id: string | null, parentMap: Map<string, string | null
   return null;
 };
 
-export const TableOfContents: React.FC<{ headings: MarkdownHeading[]; showTrigger?: boolean }> = ({
+export const TableOfContents: React.FC<{
+  headings: MarkdownHeading[];
+  mobileShowTrigger?: boolean;
+  desktopShowTrigger?: boolean;
+}> = ({
   headings,
-  showTrigger = true
+  mobileShowTrigger = true,
+  desktopShowTrigger = true
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(headings[0]?.id ?? null);
   const [isClient, setIsClient] = useState(false);
   const [dragOffsetY, setDragOffsetY] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const touchStartYRef = useRef<number | null>(null);
   const headingTree = useMemo(() => buildHeadingTree(headings), [headings]);
   const parentMap = useMemo(() => buildParentMap(headingTree), [headingTree]);
@@ -197,6 +204,7 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[]; showTrigge
   useEffect(() => {
     if (!isOpen) {
       setDragOffsetY(0);
+      setSearchQuery('');
       touchStartYRef.current = null;
     }
   }, [isOpen]);
@@ -353,7 +361,7 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[]; showTrigge
       <ol className={depth === 0 ? 'space-y-1.5' : 'mt-1.5 space-y-1.5 border-l border-zinc-200/80 pl-3.5 dark:border-zinc-800'}>
         {nodes.map((item) => {
           const hasChildren = item.children.length > 0;
-          const isExpanded = (expandedMap[item.id] ?? false) || activeAncestorIds.includes(item.id);
+          const isExpanded = shouldForceExpandFilteredTree || (expandedMap[item.id] ?? false) || activeAncestorIds.includes(item.id);
           const isSubLevel = item.level > 1;
           const isActive = activeHeadingId === item.id;
           const isInActiveBranch = activeBranchIds.has(item.id);
@@ -474,7 +482,37 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[]; showTrigge
     setDragOffsetY(0);
     touchStartYRef.current = null;
   };
+  const filteredHeadingTree = useMemo(() => {
+    const keyword = searchQuery.trim().toLowerCase();
+
+    if (!keyword) {
+      return headingTree;
+    }
+
+    const filterNodes = (nodes: TocNode[]): TocNode[] => {
+      return nodes.reduce<TocNode[]>((result, node) => {
+        const filteredChildren = filterNodes(node.children);
+        const matchesKeyword = node.text.toLowerCase().includes(keyword);
+
+        if (matchesKeyword || filteredChildren.length > 0) {
+          result.push({
+            ...node,
+            children: filteredChildren
+          });
+        }
+
+        return result;
+      }, []);
+    };
+
+    return filterNodes(headingTree);
+  }, [headingTree, searchQuery]);
   const rootHeadingsCount = headingTree.length;
+  const visibleHeadingsCount = filteredHeadingTree.reduce((count, node) => {
+    const countNodes = (items: TocNode[]): number => items.reduce((total, current) => total + 1 + countNodes(current.children), 0);
+    return count + countNodes([node]);
+  }, 0);
+  const shouldForceExpandFilteredTree = searchQuery.trim().length > 0;
   const panelContent = (
     <div className="relative flex h-full flex-col overflow-hidden rounded-[26px] border border-zinc-200/80 bg-white/96 p-4 shadow-[0_28px_68px_-42px_rgba(24,24,27,0.34)] backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/94 dark:shadow-none sm:p-4.5">
       <div
@@ -510,13 +548,38 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[]; showTrigge
         </button>
       </div>
 
+      <div className="mb-3.5">
+        <label className="relative block">
+          <span className="pointer-events-none absolute inset-y-0 left-3 inline-flex items-center text-zinc-400 dark:text-zinc-500">
+            <Search size={15} />
+          </span>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="搜索目录标题"
+            className="w-full rounded-2xl border border-zinc-200/80 bg-zinc-50/90 py-2.5 pl-10 pr-4 text-sm text-ink outline-none transition-colors placeholder:text-zinc-400 focus:border-accent/40 focus:bg-white dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-accent/40 dark:focus:bg-zinc-950"
+            aria-label="搜索目录标题"
+          />
+        </label>
+        {searchQuery.trim() ? (
+          <p className="mt-2 px-1 text-[11px] text-zinc-400 dark:text-zinc-500">
+            匹配到 {visibleHeadingsCount} 个目录项
+          </p>
+        ) : null}
+      </div>
+
       <nav
         ref={navRef}
         aria-label="目录"
         style={MOBILE_SCROLL_STYLE}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-1 no-scrollbar"
       >
-        {renderNodes(headingTree)}
+        {filteredHeadingTree.length > 0 ? renderNodes(filteredHeadingTree) : (
+          <div className="flex h-full min-h-[9rem] items-center justify-center rounded-2xl border border-dashed border-zinc-200/80 bg-zinc-50/70 px-4 text-center text-sm text-zinc-400 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:text-zinc-500">
+            没有找到匹配的目录标题
+          </div>
+        )}
       </nav>
     </div>
   );
@@ -554,7 +617,7 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[]; showTrigge
       : null;
 
   const mobileTrigger =
-    isClient && isMobileViewport && showTrigger
+    isClient && isMobileViewport && mobileShowTrigger
       ? createPortal(
           <button
             type="button"
@@ -575,7 +638,7 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[]; showTrigge
       : null;
 
   const desktopPopover =
-    isClient && !isMobileViewport && showTrigger
+    isClient && !isMobileViewport && desktopShowTrigger
       ? createPortal(
           <AnimatePresence>
             {isOpen ? (
@@ -596,7 +659,7 @@ export const TableOfContents: React.FC<{ headings: MarkdownHeading[]; showTrigge
       : null;
 
   const desktopTrigger =
-    isClient && !isMobileViewport && showTrigger
+    isClient && !isMobileViewport && desktopShowTrigger
       ? createPortal(
           <button
             type="button"
