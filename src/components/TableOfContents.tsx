@@ -283,9 +283,26 @@ export const TableOfContents: React.FC<{
         nextState[ancestorId] = true;
       });
 
+      // 大屏端自动展开当前激活节点（如果有子节点）
+      if (!isMobileViewport) {
+        const findNodeById = (nodes: TocNode[], id: string): TocNode | null => {
+          for (const node of nodes) {
+            if (node.id === id) return node;
+            const found = findNodeById(node.children, id);
+            if (found) return found;
+          }
+          return null;
+        };
+
+        const activeNode = findNodeById(headingTree, activeHeadingId);
+        if (activeNode && activeNode.children.length > 0) {
+          nextState[activeHeadingId] = true;
+        }
+      }
+
       return nextState;
     });
-  }, [activeAncestorIds, activeHeadingId, activeRootBranchId, collapseInactiveRootBranches, headingTree]);
+  }, [activeAncestorIds, activeHeadingId, activeRootBranchId, collapseInactiveRootBranches, headingTree, isMobileViewport]);
 
   useEffect(() => {
     const navElement = navRef.current;

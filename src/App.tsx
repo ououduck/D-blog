@@ -13,6 +13,7 @@ const ArchivePage = lazy(() => import('./pages/Archive').then((module) => ({ def
 const Stats = lazy(() => import('./pages/Stats').then((module) => ({ default: module.Stats })));
 const Friends = lazy(() => import('./pages/Friends').then((module) => ({ default: module.Friends })));
 const Tags = lazy(() => import('./pages/Tags').then((module) => ({ default: module.Tags })));
+const CoverGenerator = lazy(() => import('./pages/CoverGenerator').then((module) => ({ default: module.CoverGenerator })));
 const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })));
 
 const LoadingScreen: React.FC = () => {
@@ -73,6 +74,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/stats" element={<Stats />} />
           <Route path="/friends" element={<Friends />} />
           <Route path="/about" element={<About />} />
+          <Route path="/cover" element={<CoverGenerator />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

@@ -97,4 +97,4 @@ CentOS 默认环境中通常不会自带该依赖，因此需要手动安装：
 2. 安装依赖 `yum install brotli-devel`  
 3. 重新安装 Swoole5  
 
-基本都可以解决问题：
+基本都可以解决问题

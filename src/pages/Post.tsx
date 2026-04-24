@@ -608,6 +608,18 @@ export const Post = () => {
                 <span className="font-serif text-lg font-bold text-ink dark:text-white">{authorsLabel}</span>
               </div>
             </div>
+
+            <div className="mt-8 flex items-center justify-center">
+              <a
+                href={`${siteConfig.friendsPage.repoUrl}/blob/main/posts/${post.id}.md`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50/50 px-4 py-2.5 text-sm font-medium text-zinc-600 transition-all hover:border-accent/30 hover:bg-accent/5 hover:text-accent dark:border-zinc-800 dark:bg-zinc-900/30 dark:text-zinc-400 dark:hover:text-accent"
+              >
+                <ExternalLink size={16} className="transition-transform group-hover:scale-110" />
+                <span>此文章有问题？帮助改进！</span>
+              </a>
+            </div>
           </div>
         </div>
       </motion.article>

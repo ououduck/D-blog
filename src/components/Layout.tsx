@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box, Monitor, Rss } from 'lucide-react';
+import { Sun, Moon, Github, Menu, X, Search, Mail, Heart, Zap, Coffee, Code2, Layers, GitBranch, Box, Monitor, Rss, Image } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { siteConfig } from '@config/site.config';
 import { BackToTop } from './BackToTop';
@@ -852,6 +852,16 @@ const Footer = () => {
         </div>
 
         <div className="flex flex-col items-center justify-center gap-4 pb-6 pt-8 md:flex-row">
+          <motion.a whileHover={{ y: -3 }} whileTap={{ scale: 0.985 }} href="/cover" className="group relative inline-flex items-center gap-3 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 px-6 py-3 transition-all duration-300 hover:border-purple-300 hover:shadow-lg hover:shadow-purple-100 dark:border-purple-900/60 dark:from-purple-950/40 dark:to-indigo-950/20 dark:hover:border-purple-700">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500 transition-transform duration-300 group-hover:scale-110">
+              <Image size={18} className="text-white" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-ink dark:text-white">封面生成器</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">快速生成精美封面</span>
+            </div>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-400/0 via-purple-300/10 to-purple-400/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          </motion.a>
           <motion.a whileHover={{ y: -3 }} whileTap={{ scale: 0.985 }} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 rounded-xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-3 transition-all duration-300 hover:border-orange-300 hover:shadow-lg hover:shadow-orange-100 dark:border-orange-900/60 dark:from-orange-950/40 dark:to-amber-950/20 dark:hover:border-orange-700">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 transition-transform duration-300 group-hover:scale-110">
               <Rss size={18} className="text-white" />
