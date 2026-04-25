@@ -219,34 +219,35 @@ export const TableOfContents: React.FC<{
       return;
     }
 
-    const resolveActiveHeading = () => {
-      const offset = 140;
-      let nextActiveId = headings[0]?.id ?? null;
-
-      headings.forEach((heading) => {
-        const element = document.getElementById(heading.id);
-
-        if (!element) {
-          return;
-        }
-
-        const top = element.getBoundingClientRect().top;
-
-        if (top <= offset) {
-          nextActiveId = heading.id;
-        }
-      });
-
-      setActiveHeadingId((current) => (current === nextActiveId ? current : nextActiveId));
+    // 使用 Intersection Observer 替代滚动监听
+    const observerOptions = {
+      rootMargin: '-140px 0px -66% 0px',
+      threshold: 0
     };
 
-    resolveActiveHeading();
-    window.addEventListener('scroll', resolveActiveHeading, { passive: true });
-    window.addEventListener('resize', resolveActiveHeading);
+    const observerCallback: IntersectionObserverCallback = (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveHeadingId(entry.target.id);
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+    // 观察所有标题元素
+    headings.forEach((heading) => {
+      const element = document.getElementById(heading.id);
+      if (element) {
+        observer.observe(element);
+      }
+    });
+
+    // 初始化时设置第一个标题为激活状态
+    setActiveHeadingId(headings[0]?.id ?? null);
 
     return () => {
-      window.removeEventListener('scroll', resolveActiveHeading);
-      window.removeEventListener('resize', resolveActiveHeading);
+      observer.disconnect();
     };
   }, [headings]);
 

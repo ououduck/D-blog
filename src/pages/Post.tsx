@@ -207,7 +207,8 @@ const MermaidBlock = ({ children, renderer }: { children: string; renderer: Merm
 const createMarkdownComponents = (
   onPreviewImage: (image: { src: string; alt?: string }) => void,
   mermaidRenderer: MermaidRenderer | null,
-  headings: MarkdownHeading[]
+  headings: MarkdownHeading[],
+  headingIdMap: Map<string, string>
 ): Components => {
   let headingCursor = 0;
   const fallbackHeadingIds = new Map<string, number>();
@@ -215,6 +216,14 @@ const createMarkdownComponents = (
   const resolveHeadingId = (level: number, children: React.ReactNode) => {
     const rawText = extractTextFromReactNode(children);
 
+    // 先尝试从缓存的 Map 中查找
+    const slugId = slugifyHeading(rawText);
+    const cachedId = headingIdMap.get(slugId);
+    if (cachedId) {
+      return cachedId;
+    }
+
+    // 如果缓存中没有，使用原有逻辑
     for (let index = headingCursor; index < headings.length; index += 1) {
       const heading = headings[index];
 
@@ -224,7 +233,7 @@ const createMarkdownComponents = (
       }
     }
 
-    const fallbackBaseId = slugifyHeading(rawText) || 'section';
+    const fallbackBaseId = slugId || 'section';
     const duplicateCount = (fallbackHeadingIds.get(fallbackBaseId) ?? 0) + 1;
 
     fallbackHeadingIds.set(fallbackBaseId, duplicateCount);
@@ -297,6 +306,9 @@ export const Post = () => {
   const [mermaidRenderer, setMermaidRenderer] = useState<MermaidRenderer | null>(null);
   const [mobileFloatingVisible, setMobileFloatingVisible] = useState(false);
   const articleBodyRef = useRef<HTMLDivElement>(null);
+
+  // 使用 Map 缓存标题映射
+  const headingIdMapRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
@@ -408,7 +420,18 @@ export const Post = () => {
   }, [post?.content]);
 
   const headings = useMemo(() => extractMarkdownHeadings(post?.content ?? ''), [post?.content]);
-  const markdownComponents = createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, headings);
+  
+  // 当标题列表变化时，重建映射缓存
+  useEffect(() => {
+    const newMap = new Map<string, string>();
+    headings.forEach((heading) => {
+      const slugId = slugifyHeading(heading.text);
+      newMap.set(slugId, heading.id);
+    });
+    headingIdMapRef.current = newMap;
+  }, [headings]);
+
+  const markdownComponents = createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, headings, headingIdMapRef.current);
 
   if (loading) {
     return (

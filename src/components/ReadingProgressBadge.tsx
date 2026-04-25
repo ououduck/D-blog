@@ -19,7 +19,7 @@ const DESKTOP_BADGE_STYLE = {
   bottom: '5rem'
 } as const;
 
-export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = ({ targetRef, onVisibilityChange }) => {
+export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.memo(({ targetRef, onVisibilityChange }) => {
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -136,4 +136,4 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = ({ targ
       {desktopBadge}
     </motion.div>
   );
-};
+});

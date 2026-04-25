@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { DBlogLoader } from './DBlogLoader';
 
 interface ProgressiveImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -8,7 +8,7 @@ interface ProgressiveImageProps extends React.ImgHTMLAttributes<HTMLImageElement
 
 const mergeClassName = (...values: Array<string | undefined | false>) => values.filter(Boolean).join(' ');
 
-export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
+export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
   wrapperClassName,
   placeholderClassName,
   className,
@@ -23,28 +23,25 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const syncImageState = useCallback(() => {
+  // 优化：当 src 变化时重置状态并同步图片状态
+  useEffect(() => {
+    setIsLoaded(false);
+    setHasError(false);
+
     const image = imgRef.current;
     if (!image || !src) {
       return;
     }
 
+    // 检查图片是否已经加载完成（来自缓存）
     if (image.complete) {
       if (image.naturalWidth > 0) {
         setIsLoaded(true);
-        setHasError(false);
       } else {
-        setIsLoaded(false);
         setHasError(true);
       }
     }
   }, [src]);
-
-  useEffect(() => {
-    setIsLoaded(false);
-    setHasError(false);
-    syncImageState();
-  }, [src, syncImageState]);
 
   return (
     <div className={mergeClassName('relative overflow-hidden', wrapperClassName)}>
@@ -98,5 +95,5 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
       )}
     </div>
   );
-};
+});
 

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, RefreshCw, Type, Image as ImageIcon, Palette, Sparkles, Upload, X, ZoomIn, ZoomOut, Move } from 'lucide-react';
 import { Seo } from '../components/Seo';
@@ -423,7 +423,7 @@ export const CoverGenerator: React.FC = () => {
     };
     
     await drawIconAndText();
-  }, [leftText, rightText, selectedTemplate, bgImage, bgImageX, bgImageY, bgImageScale, bgBlur, bgOpacity, showIcon, customIcon, iconSize, iconColor, iconBorderRadius, iconBgEnabled, textShadow, textStroke, customFont, fontWeight, fontSize, textColor, spacing, colorSync, autoTextColor, canvasSize]);
+  }, [leftText, rightText, selectedTemplate, bgImage, bgImageX, bgImageY, bgImageScale, bgBlur, bgOpacity, overlayEnabled, overlayBlur, overlayOpacity, showIcon, customIcon, iconSize, iconColor, iconBorderRadius, iconBgEnabled, textShadow, textStroke, customFont, fontWeight, fontSize, textColor, spacing, colorSync, autoTextColor, canvasSize]);
 
   const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
     const words = text.split('');

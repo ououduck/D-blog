@@ -8,7 +8,7 @@ interface DBlogLoaderProps {
 
 const mergeClassName = (...values: Array<string | undefined | false>) => values.filter(Boolean).join(' ');
 
-export const DBlogLoader: React.FC<DBlogLoaderProps> = ({
+export const DBlogLoader: React.FC<DBlogLoaderProps> = React.memo(({
   className,
   label,
   size = 'page'
@@ -101,4 +101,4 @@ export const DBlogLoader: React.FC<DBlogLoaderProps> = ({
       </svg>
     </div>
   );
-};
+});

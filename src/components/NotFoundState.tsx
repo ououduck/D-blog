@@ -12,7 +12,7 @@ interface NotFoundStateProps {
   debugLabel?: string;
 }
 
-export const NotFoundState: React.FC<NotFoundStateProps> = ({
+export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(({
   title,
   description,
   seoTitle = '404 Not Found',
@@ -68,4 +68,4 @@ export const NotFoundState: React.FC<NotFoundStateProps> = ({
       </div>
     </>
   );
-};
+});

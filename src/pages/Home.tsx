@@ -8,6 +8,7 @@ import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ShareModal } from '../components/ShareModal';
 import { usePostSearch } from '@/hooks/usePostSearch';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { getDateTimestamp } from '@/utils/date';
 
@@ -379,29 +380,17 @@ export const Home = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [postsPerPage, setPostsPerPage] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 768 ? 6 : 9));
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
   const { searchQuery, isSearching, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch({
     emptyResults: allPosts
   });
 
+  // 使用自定义 hook 监听媒体查询
+  const isMobile = useMediaQuery('(max-width: 767px)', false);
+  const postsPerPage = isMobile ? 6 : 9;
+
   useEffect(() => {
     let cancelled = false;
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
-
-    const syncPostsPerPage = () => {
-      setPostsPerPage(mediaQuery.matches ? 6 : 9);
-    };
-
-    const attachMediaQueryListener = () => {
-      if (typeof mediaQuery.addEventListener === 'function') {
-        mediaQuery.addEventListener('change', syncPostsPerPage);
-        return () => mediaQuery.removeEventListener('change', syncPostsPerPage);
-      }
-
-      mediaQuery.addListener(syncPostsPerPage);
-      return () => mediaQuery.removeListener(syncPostsPerPage);
-    };
 
     const loadHomeData = async () => {
       try {
@@ -426,12 +415,9 @@ export const Home = () => {
     };
 
     void loadHomeData();
-    syncPostsPerPage();
-    const detachMediaQueryListener = attachMediaQueryListener();
 
     return () => {
       cancelled = true;
-      detachMediaQueryListener();
     };
   }, []);
 
@@ -462,15 +448,21 @@ export const Home = () => {
 
   const displayedPosts = useMemo(() => filterAndSortPosts(results, selectedCategory, sortOrder), [results, selectedCategory, sortOrder]);
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  const pinnedPosts = displayedPosts.filter(post => post.top !== undefined);
-  const regularPosts = displayedPosts.filter(post => post.top === undefined);
+  // 使用 useMemo 缓存分页相关计算
+  const paginationData = useMemo(() => {
+    const pinnedPosts = displayedPosts.filter(post => post.top !== undefined);
+    const regularPosts = displayedPosts.filter(post => post.top === undefined);
+    
+    // 计算顶置文章占用的位置：移动端双列展示占 2 个位置，大屏端占 3 个位置
+    const pinnedPostsSlots = pinnedPosts.length * (isMobile ? 2 : 3);
+    // 总位置数 = 顶置文章占用的位置 + 普通文章数量
+    const totalSlots = pinnedPostsSlots + regularPosts.length;
+    const totalPages = Math.max(1, Math.ceil(totalSlots / postsPerPage));
 
-  // 计算顶置文章占用的位置：移动端双列展示占 2 个位置，大屏端占 3 个位置
-  const pinnedPostsSlots = pinnedPosts.length * (isMobile ? 2 : 3);
-  // 总位置数 = 顶置文章占用的位置 + 普通文章数量
-  const totalSlots = pinnedPostsSlots + regularPosts.length;
-  const totalPages = Math.max(1, Math.ceil(totalSlots / postsPerPage));
+    return { pinnedPosts, regularPosts, totalSlots, totalPages };
+  }, [displayedPosts, isMobile, postsPerPage]);
+
+  const { pinnedPosts, regularPosts, totalPages } = paginationData;
 
   useEffect(() => {
     setCurrentPage((previous) => Math.min(previous, totalPages));
@@ -500,8 +492,8 @@ export const Home = () => {
 
   const activeCategoryLabel = selectedCategory === ALL_CATEGORY ? '全部分类' : selectedCategory;
 
-  // 计算当前页显示的文章
-  const getCurrentPagePosts = () => {
+  // 使用 useMemo 缓存当前页文章计算
+  const currentPosts = useMemo(() => {
     const startSlot = (currentPage - 1) * postsPerPage;
     const endSlot = startSlot + postsPerPage;
 
@@ -540,9 +532,7 @@ export const Home = () => {
     }
 
     return result;
-  };
-
-  const currentPosts = getCurrentPagePosts();
+  }, [currentPage, postsPerPage, pinnedPosts, regularPosts, isMobile]);
 
   const paginate = (pageNumber: number) => {
     const nextPage = Math.min(Math.max(pageNumber, 1), totalPages);
