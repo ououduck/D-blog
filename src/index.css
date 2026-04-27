@@ -31,10 +31,7 @@
     outline-offset: 4px;
   }
 
-  /* Font loading optimization - prevent layout shift */
-  @font-face {
-    font-display: swap;
-  }
+
 }
 
 html.theme-switching,
