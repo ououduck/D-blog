@@ -36,6 +36,7 @@
     "gray-matter": "^4.0.3",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
+    "terser": "^5.36.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vite-plugin-purgecss": "^0.2.13"
