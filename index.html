@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -14,14 +14,18 @@
     <!-- DNS 预解析和预连接优化 -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="dns-prefetch" href="https://cloudflareinsights.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cloudflareinsights.com">
 
     <!-- 预加载关键资源 -->
     <link rel="modulepreload" href="/src/index.tsx">
-
-
-    <!-- 字体加载优化：使用 display=swap 避免阻塞渲染 -->
+    
+    <!-- 预加载关键字体文件 -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap">
+    
+    <!-- 字体加载优化：异步加载避免阻塞渲染 -->
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -32,7 +36,18 @@
     <div id="root"></div>
   <script type="module" src="/src/index.tsx"></script>
 
-  <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "ad23b1b0a66144c388ca10196cc36b7f"}'></script><!-- End Cloudflare Web Analytics -->
+  <!-- Cloudflare Web Analytics: 延迟加载以减少初始网络活动 -->
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        var script = document.createElement('script');
+        script.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+        script.setAttribute('data-cf-beacon', '{"token": "ad23b1b0a66144c388ca10196cc36b7f"}');
+        document.body.appendChild(script);
+      }, 3000);
+    });
+  </script>
+  <!-- End Cloudflare Web Analytics -->
 
 </body>
 </html>

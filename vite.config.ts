@@ -1,4 +1,4 @@
-﻿import { defineConfig } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
@@ -23,16 +23,52 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'animation': ['framer-motion'],
-          'markdown': ['react-markdown', 'remark-gfm'],
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            // React 核心库
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-core';
+            }
+            // 路由
+            if (id.includes('react-router')) {
+              return 'react-router';
+            }
+            // 动画库
+            if (id.includes('framer-motion')) {
+              return 'animation';
+            }
+            // Markdown 相关
+            if (id.includes('react-markdown') || id.includes('remark') || id.includes('rehype')) {
+              return 'markdown';
+            }
+            // 代码高亮和数学公式
+            if (id.includes('highlight.js') || id.includes('katex')) {
+              return 'syntax';
+            }
+            // Mermaid 图表
+            if (id.includes('mermaid')) {
+              return 'mermaid';
+            }
+            // 图标库
+            if (id.includes('lucide-react')) {
+              return 'icons';
+            }
+            // 其他第三方库
+            return 'vendor';
+          }
         },
       },
     },
     cssCodeSplit: true,
-    chunkSizeWarningLimit: 1000,
-    minify: 'esbuild',
+    chunkSizeWarningLimit: 500,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.log'],
+      },
+    },
   },
   publicDir: 'public',
 });

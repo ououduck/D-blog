@@ -216,7 +216,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
       <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white backdrop-blur-md transition-all duration-500 hover:border-zinc-300 hover:shadow-2xl hover:shadow-zinc-200/50 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:hover:border-zinc-700 dark:hover:shadow-accent/5 md:rounded-3xl">
         <Link to={`/post/${post.id}`} className="group/image relative aspect-[16/10] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
-            <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" wrapperClassName="h-full w-full" className="h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover/image:scale-110" />
+            <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" width={1600} height={1000} wrapperClassName="h-full w-full" className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover/image:scale-110" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-300">
               <Sparkles className="h-10 w-10 opacity-50" />

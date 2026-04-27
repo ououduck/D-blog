@@ -44,7 +44,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
   }, [src]);
 
   return (
-    <div className={mergeClassName('relative overflow-hidden', wrapperClassName)}>
+    <div className={mergeClassName('relative overflow-hidden', wrapperClassName)} style={{ minHeight: '1px' }}>
       <div
         aria-hidden="true"
         className={mergeClassName(
@@ -77,8 +77,10 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
           src={src}
           alt={alt}
           decoding={decoding}
+          width={props.width}
+          height={props.height}
           className={mergeClassName(
-            'relative transition-all duration-700 ease-out will-change-transform',
+            'relative transition-all duration-700 ease-out',
             isLoaded ? 'scale-100 blur-0 opacity-100' : 'scale-[1.03] blur-xl opacity-0',
             className
           )}

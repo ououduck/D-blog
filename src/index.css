@@ -30,6 +30,11 @@
     outline: 2px solid #c0392b;
     outline-offset: 4px;
   }
+
+  /* Font loading optimization - prevent layout shift */
+  @font-face {
+    font-display: swap;
+  }
 }
 
 html.theme-switching,
