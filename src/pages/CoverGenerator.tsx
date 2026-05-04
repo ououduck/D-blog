@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, RefreshCw, Type, Image as ImageIcon, Palette, Sparkles, Upload, X, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import { Download, RefreshCw, Type, Image as ImageIcon, Palette, Sparkles, Upload, X, ZoomIn, ZoomOut, Move, Search } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { coverTemplates as templates, type CoverTemplate } from '../config/coverTemplates';
 
@@ -57,6 +57,12 @@ export const CoverGenerator: React.FC = () => {
   const [iconColor, setIconColor] = useState('#ffffff');
   const [iconBorderRadius, setIconBorderRadius] = useState(12);
   const [iconBgEnabled, setIconBgEnabled] = useState(true);
+  
+  // Iconify 搜索状态
+  const [iconifySearch, setIconifySearch] = useState('');
+  const [iconifyResults, setIconifyResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showIconifyModal, setShowIconifyModal] = useState(false);
   
   // 字体状态
   const [customFont, setCustomFont] = useState<string | null>(null);
@@ -180,6 +186,40 @@ export const CoverGenerator: React.FC = () => {
     };
     reader.readAsDataURL(file);
   }, []);
+
+  // Iconify 搜索处理
+  const searchIconify = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setIconifyResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      // 搜索 Iconify 图标
+      const response = await fetch(`https://api.iconify.design/search?query=${encodeURIComponent(query)}&limit=24`);
+      const data = await response.json();
+      
+      if (data.icons && data.icons.length > 0) {
+        setIconifyResults(data.icons);
+      } else {
+        setIconifyResults([]);
+      }
+    } catch (error) {
+      console.error('Failed to search Iconify:', error);
+      setIconifyResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // 选择 Iconify 图标
+  const selectIconifyIcon = useCallback((icon: string) => {
+    // 使用 Iconify API 获取 SVG
+    const iconUrl = `https://api.iconify.design/${icon}.svg?color=${encodeURIComponent(iconColor)}`;
+    setCustomIcon(iconUrl);
+    setShowIconifyModal(false);
+  }, [iconColor]);
 
   // 字体上传处理
   const handleFontUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -405,14 +445,51 @@ export const CoverGenerator: React.FC = () => {
         tempCtx.shadowOffsetY = 0;
       };
       
-      // 左侧文字（图标左边，右对齐）
-      if (leftText) {
-        drawText(leftText, iconX - spacing, 'right');
-      }
-      
-      // 右侧文字（图标右边，左对齐）
-      if (rightText) {
-        drawText(rightText, iconX + iconSize + spacing, 'left');
+      // 根据是否显示图标来决定文字布局
+      if (showIcon && customIcon) {
+        // 显示图标时：左侧文字（图标左边，右对齐）
+        if (leftText) {
+          drawText(leftText, iconX - spacing, 'right');
+        }
+        
+        // 右侧文字（图标右边，左对齐）
+        if (rightText) {
+          drawText(rightText, iconX + iconSize + spacing, 'left');
+        }
+      } else {
+        // 不显示图标时：两侧文字合并居中显示
+        const combinedText = leftText && rightText ? `${leftText}${rightText}` : leftText || rightText;
+        if (combinedText) {
+          tempCtx.textAlign = 'center';
+          tempCtx.textBaseline = 'middle';
+          
+          // 应用文字阴影
+          if (textShadow.opacity > 0) {
+            tempCtx.shadowColor = `${textShadow.color}${Math.round(textShadow.opacity * 255).toString(16).padStart(2, '0')}`;
+            tempCtx.shadowBlur = textShadow.blur;
+            tempCtx.shadowOffsetX = textShadow.x;
+            tempCtx.shadowOffsetY = textShadow.y;
+          }
+          
+          // 绘制描边
+           if (textStroke.enabled && textStroke.width > 0) {
+             tempCtx.strokeStyle = textStroke.color;
+             tempCtx.lineWidth = textStroke.width;
+             tempCtx.lineJoin = 'round';
+             tempCtx.miterLimit = 2;
+             tempCtx.strokeText(combinedText, centerX, centerY);
+           }
+          
+          // 绘制填充文字
+          tempCtx.fillStyle = finalTextColor;
+          tempCtx.fillText(combinedText, centerX, centerY);
+          
+          // 重置阴影
+          tempCtx.shadowColor = 'transparent';
+          tempCtx.shadowBlur = 0;
+          tempCtx.shadowOffsetX = 0;
+          tempCtx.shadowOffsetY = 0;
+        }
       }
 
       // 将临时canvas内容绘制到主canvas
@@ -585,8 +662,15 @@ export const CoverGenerator: React.FC = () => {
 
                 {showIcon && (
                   <div className="space-y-4">
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-zinc-600 dark:text-zinc-400">上传自定义图标</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setShowIconifyModal(true)}
+                        className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:bg-ink/5 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-white dark:hover:bg-white/5"
+                      >
+                        <Search size={16} />
+                        搜索图标
+                      </button>
+                      
                       <input
                         ref={iconInputRef}
                         type="file"
@@ -596,7 +680,7 @@ export const CoverGenerator: React.FC = () => {
                       />
                       <button
                         onClick={() => iconInputRef.current?.click()}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:bg-ink/5 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-white dark:hover:bg-white/5"
+                        className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:bg-ink/5 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-white dark:hover:bg-white/5"
                       >
                         <Upload size={16} />
                         上传图标
@@ -1270,6 +1354,86 @@ export const CoverGenerator: React.FC = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Iconify 搜索弹窗 */}
+      <AnimatePresence>
+        {showIconifyModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            onClick={() => setShowIconifyModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-2xl rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-xl font-bold text-ink dark:text-white">搜索 Iconify 图标</h3>
+                <button
+                  onClick={() => setShowIconifyModal(false)}
+                  className="rounded-lg p-2 text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+                  <input
+                    type="text"
+                    value={iconifySearch}
+                    onChange={(e) => {
+                      setIconifySearch(e.target.value);
+                      searchIconify(e.target.value);
+                    }}
+                    placeholder="搜索图标，例如：home, user, settings..."
+                    className="w-full rounded-lg border border-zinc-200 bg-white py-3 pl-10 pr-4 text-ink outline-none transition-colors focus:border-ink focus:ring-2 focus:ring-ink/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:focus:border-white dark:focus:ring-white/20"
+                  />
+                </div>
+              </div>
+
+              <div className="max-h-96 overflow-y-auto">
+                {isSearching ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="animate-spin text-ink dark:text-white" size={32} />
+                  </div>
+                ) : iconifyResults.length > 0 ? (
+                  <div className="grid grid-cols-6 gap-3">
+                    {iconifyResults.map((icon) => (
+                      <button
+                        key={icon}
+                        onClick={() => selectIconifyIcon(icon)}
+                        className="flex aspect-square items-center justify-center rounded-lg border-2 border-zinc-200 bg-zinc-50 p-3 transition-all hover:border-ink hover:bg-ink/5 dark:border-zinc-700 dark:bg-zinc-800 dark:hoborder-white dark:hover:bg-white/5"
+                        title={icon}
+                      >
+                        <img
+                          src={`https://api.iconify.design/${icon}.svg`}
+                          alt={icon}
+                          className="h-full w-full"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                ) : iconifySearch ? (
+                  <div className="py-12 text-center text-zinc-500 dark:text-zinc-400">
+                    未找到相关图标，请尝试其他关键词
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-zinc-500 dark:text-zinc-400">
+                    输入关键词搜索图标
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
