@@ -263,18 +263,18 @@ export const ArchivePage = () => {
         <div className="mb-8">
           <div className="group relative max-w-md">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-              <Search className="text-zinc-400 transition-colors group-focus-within:text-accent" size={18} />
+              <Search className="text-zinc-400 transition-colors group-focus-within:text-zinc-900 dark:group-focus-within:text-zinc-100" size={18} />
             </div>
             <input
               type="text"
               placeholder="搜索归档文章..."
               value={searchQuery}
               onChange={(event) => handleSearch(event.target.value)}
-              className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-11 pr-11 text-sm text-ink outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-accent focus:ring-4 ring-accent/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-accent"
+              className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-11 pr-11 text-sm text-ink outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-4 ring-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-100 dark:ring-zinc-100/10"
               aria-label="搜索归档文章"
             />
             {searchQuery && (
-              <button onClick={clearSearch} className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-accent" aria-label="清除搜索">
+              <button onClick={clearSearch} className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100" aria-label="清除搜索">
                 <X size={16} />
               </button>
             )}
@@ -293,12 +293,12 @@ export const ArchivePage = () => {
             ))}
           </div>
         ) : loadError ? (
-          <div className="rounded-2xl border border-dashed border-red-200 bg-red-50/80 p-8 text-sm text-red-500 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+          <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-8 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
             {loadError}
           </div>
         ) : (
           <div className="relative">
-            <div className="absolute bottom-0 left-[7px] top-0 w-[2px] bg-gradient-to-b from-accent via-zinc-300 to-transparent dark:via-zinc-700 md:left-[9px]" />
+            <div className="absolute bottom-0 left-[7px] top-0 w-[2px] bg-gradient-to-b from-zinc-900 via-zinc-300 to-transparent dark:from-zinc-100 dark:via-zinc-700 md:left-[9px]" />
 
             <div className="space-y-12">
               {groups.map((group, groupIndex) => {
@@ -318,8 +318,8 @@ export const ArchivePage = () => {
                       aria-expanded={isYearExpanded}
                       aria-label={`${isYearExpanded ? '折叠' : '展开'} ${group.year} 年的文章`}
                     >
-                      <div className="relative z-10 flex h-4 w-4 items-center justify-center rounded-full bg-accent shadow-lg shadow-accent/30 md:h-5 md:w-5">
-                        <div className="h-2 w-2 rounded-full bg-white md:h-2.5 md:w-2.5" />
+                      <div className="relative z-10 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-900 dark:bg-zinc-100 md:h-5 md:w-5">
+                        <div className="h-2 w-2 rounded-full bg-white dark:bg-zinc-900 md:h-2.5 md:w-2.5" />
                       </div>
                       <div className="flex flex-1 flex-wrap items-center gap-3">
                         <div className="flex items-center gap-2">
@@ -329,11 +329,11 @@ export const ArchivePage = () => {
                           >
                             <ChevronDown size={20} className="text-zinc-400" />
                           </motion.div>
-                          <h2 className="font-serif text-2xl font-bold text-ink dark:text-white md:text-3xl">
+                          <h2 className="font-serif text-2xl font-bold text-zinc-900 dark:text-zinc-100 md:text-3xl">
                             {group.year}
                           </h2>
                         </div>
-                        <span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs font-bold text-accent">
+                        <span className="rounded-full border border-zinc-200 bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
                           {group.total} 篇
                         </span>
                         <div className="flex flex-wrap gap-1.5">
@@ -378,14 +378,14 @@ export const ArchivePage = () => {
                                     aria-expanded={isMonthExpanded}
                                     aria-label={`${isMonthExpanded ? '折叠' : '展开'} ${monthGroup.month}的文章`}
                                   >
-                                    <div className="absolute -left-[30px] top-1 h-2 w-2 rounded-full border-2 border-accent/40 bg-white dark:border-accent/60 dark:bg-zinc-900 md:-left-[38px]" />
+                                    <div className="absolute -left-[30px] top-1 h-2 w-2 rounded-full border-2 border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900 md:-left-[38px]" />
                                     <motion.div
                                       animate={{ rotate: isMonthExpanded ? 0 : -90 }}
                                       transition={{ duration: 0.2 }}
                                     >
                                       <ChevronDown size={16} className="text-zinc-400" />
                                     </motion.div>
-                                    <h3 className="font-serif text-lg font-bold text-ink dark:text-white md:text-xl">
+                                    <h3 className="font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100 md:text-xl">
                                       {monthGroup.month}
                                     </h3>
                                     <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
