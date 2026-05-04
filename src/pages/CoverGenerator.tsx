@@ -1454,6 +1454,9 @@ export const CoverGenerator: React.FC = () => {
                           src={`https://api.iconify.design/${icon}.svg`}
                           alt={icon}
                           className="h-full w-full"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       </button>
                     ))}
