@@ -1427,7 +1427,7 @@ export const CoverGenerator: React.FC = () => {
                       <button
                         key={icon}
                         onClick={() => selectIconifyIcon(icon)}
-                        className="flex aspect-square items-center justify-center rounded-lg border-2 border-zinc-200 bg-zinc-50 p-3 transition-all hover:border-ink hover:bg-ink/5 dark:border-zinc-700 dark:bg-zinc-800 dark:hoborder-white dark:hover:bg-white/5"
+                        className="flex aspect-square items-center justify-center rounded-lg border-2 border-zinc-200 bg-zinc-50 p-3 transition-all hover:border-ink hover:bg-ink/5 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-white dark:hover:bg-white/5"
                         title={icon}
                       >
                         <img
