@@ -109,38 +109,48 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       onCloseCallback={onCloseCallback}
       initialFocusRef={closeButtonRef}
       ariaLabelledby={titleId}
-      className="mobile:border-t-0"
     >
-      <div className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+      {/* Windows 风格标题栏 */}
+      <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-5 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+            <div className="h-3 w-3 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+            <div className="h-3 w-3 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+          </div>
+          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">分享文章</span>
+        </div>
         <button
           ref={closeButtonRef}
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 rounded-xl border border-zinc-200 bg-white p-2 text-zinc-400 transition-all hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:text-zinc-300"
+          className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
           aria-label="关闭分享弹窗"
         >
-          <X size={18} />
+          <X size={16} />
         </button>
+      </div>
 
-        <div className="relative pr-12">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Share</p>
-          <h3 id={titleId} className="text-xl font-serif font-bold text-zinc-900 dark:text-zinc-100 sm:text-2xl">分享文章</h3>
-          <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">复制完整分享文案，或者只带走这篇文章的链接。</p>
+      {/* 窗口内容 */}
+      <div className="p-5 sm:p-6">
+        <div className="mb-5">
+          <p className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">SHARE</p>
+          <h3 id={titleId} className="text-lg font-bold text-zinc-900 dark:text-zinc-100">复制完整分享文案，或者只带走这篇文章的链接</h3>
         </div>
 
-        <div className="relative mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-            <LinkIcon size={12} />
-            当前文章
+        <div className="mb-5 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="mb-3 flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <LinkIcon size={14} />
+            <span>当前文章</span>
           </div>
-          <h4 className="mb-2 line-clamp-2 text-base font-bold leading-7 text-zinc-900 dark:text-zinc-100">{title}</h4>
-          <p id={descriptionId} className="mb-4 line-clamp-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{excerpt}</p>
-          <div className="break-all rounded-2xl border border-dashed border-zinc-300 bg-white p-3 text-sm font-mono leading-6 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">{url}</div>
+          <h4 className="mb-2 line-clamp-2 text-base font-bold leading-snug text-zinc-900 dark:text-zinc-100">{title}</h4>
+          <p id={descriptionId} className="mb-3 line-clamp-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{excerpt}</p>
+          <div className="break-all rounded border border-zinc-300 bg-white px-3 py-2 font-mono text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">{url}</div>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <button
             onClick={() => handleCopy('all')}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 py-3 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="flex items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             aria-label="复制标题、简介和链接"
           >
             {copiedType === 'all' ? <Check size={16} /> : <Copy size={16} />}
@@ -148,7 +158,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           </button>
           <button
             onClick={() => handleCopy('link')}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white py-3 text-sm font-bold text-zinc-900 transition-all hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            className="flex items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
             aria-label="仅复制文章链接"
           >
             {copiedType === 'link' ? <Check size={16} /> : <LinkIcon size={16} />}
@@ -156,8 +166,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           </button>
         </div>
 
-        <p className="mt-4 text-xs text-zinc-600 dark:text-zinc-400" aria-live="polite">
-          {copyError ?? (copiedType ? '复制成功。' : '可复制完整分享文案或单独链接。')}
+        <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-400" aria-live="polite">
+          {copyError ?? (copiedType ? '复制成功' : '选择复制方式')}
         </p>
       </div>
     </SlideModal>
