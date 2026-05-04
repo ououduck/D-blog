@@ -9,7 +9,7 @@ tags:
   - 阿里云盘
   - 油猴脚本
   - 工具
-coverImage: /posts-img/youhou-alipan-cover.jpg
+coverImage: /posts-img/youhou-alipan-cover.png
 author: 跑路的duck
 ---
 
