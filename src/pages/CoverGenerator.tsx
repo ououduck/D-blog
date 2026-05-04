@@ -234,7 +234,9 @@ export const CoverGenerator: React.FC = () => {
   // 选择 Iconify 图标
   const selectIconifyIcon = useCallback((icon: string) => {
     // 使用 Iconify API 获取 SVG
-    const iconUrl = `https://api.iconify.design/${icon}.svg?color=${encodeURIComponent(iconColor)}`;
+    // color 参数需要 URL 编码，将 # 转换为 %23
+    const encodedColor = encodeURIComponent(iconColor);
+    const iconUrl = `https://api.iconify.design/${icon}.svg?color=${encodedColor}`;
     setCustomIcon(iconUrl);
     setShowIconifyModal(false);
   }, [iconColor]);
