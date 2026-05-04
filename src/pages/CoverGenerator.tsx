@@ -63,6 +63,7 @@ export const CoverGenerator: React.FC = () => {
   const [iconifyResults, setIconifyResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showIconifyModal, setShowIconifyModal] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   
   // 字体状态
   const [customFont, setCustomFont] = useState<string | null>(null);
@@ -191,10 +192,12 @@ export const CoverGenerator: React.FC = () => {
   const searchIconify = useCallback(async (query: string) => {
     if (!query.trim()) {
       setIconifyResults([]);
+      setSearchError(null);
       return;
     }
     
     setIsSearching(true);
+    setSearchError(null);
     
     // 创建 AbortController 用于超时控制
     const controller = new AbortController();
@@ -221,8 +224,10 @@ export const CoverGenerator: React.FC = () => {
     } catch (error: any) {
       if (error.name === 'AbortError') {
         console.error('搜索超时：请求超过 5 秒未响应');
+        setSearchError('搜索超时，请重试');
       } else {
         console.error('搜索失败:', error);
+        setSearchError('搜索失败，请检查网络连接后重试');
       }
       setIconifyResults([]);
     } finally {
@@ -1416,6 +1421,19 @@ export const CoverGenerator: React.FC = () => {
                     className="w-full rounded-lg border border-zinc-200 bg-white py-3 pl-10 pr-4 text-ink outline-none transition-colors focus:border-ink focus:ring-2 focus:ring-ink/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:focus:border-white dark:focus:ring-white/20"
                   />
                 </div>
+                
+                {/* 错误提示 */}
+                {searchError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mt-2 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                  >
+                    <X size={16} />
+                    <span>{searchError}</span>
+                  </motion.div>
+                )}
               </div>
 
               <div className="max-h-96 overflow-y-auto">
