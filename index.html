@@ -27,24 +27,29 @@
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     </noscript>
+
+    <!-- Clarity Analytics -->
+   <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wloc3f723i");
+</script>
+    <!-- End Clarity Analytics -->
 </head>
   <body class="bg-paper text-ink dark:bg-void dark:text-gray-200 transition-colors duration-1000 ease-in-out overflow-x-hidden">
     <div class="bg-noise"></div>
     <div id="root"></div>
   <script type="module" src="/src/index.tsx"></script>
 
-  <!-- Cloudflare Web Analytics: 延迟加载以减少初始网络活动 -->
-  <script>
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        var script = document.createElement('script');
-        script.src = 'https://static.cloudflareinsights.com/beacon.min.js';
-        script.setAttribute('data-cf-beacon', '{"token": "ad23b1b0a66144c388ca10196cc36b7f"}');
-        document.body.appendChild(script);
-      }, 3000);
-    });
-  </script>
+  <!-- Cloudflare Web Analytics -->
+  <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "ad23b1b0a66144c388ca10196cc36b7f"}'></script>
   <!-- End Cloudflare Web Analytics -->
+
+  <!-- Umami Analytics -->
+   <script defer src="https://cloud.umami.is/script.js" data-website-id="2bacf41e-ec6b-470c-9e91-44c78f392e56"></script>
+   <!-- End Umami Analytics -->
 
 </body>
 </html>
