@@ -657,7 +657,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             <motion.div className="flex items-center space-x-3 border-l border-zinc-300 pl-6 dark:border-zinc-700" variants={navListVariants} initial="hidden" animate="visible">
               <motion.button variants={navItemVariants} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} onClick={onSearchClick} className="group flex items-center space-x-2 rounded-lg border border-transparent bg-zinc-100 px-3 py-2 text-zinc-700 transition-all duration-300 hover:border-zinc-200 hover:bg-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900" aria-label="打开站内搜索">
                 <Search size={16} />
-                <span className="text-xs font-medium opacity-70 group-hover:opacity-100">Ctrl+K</span>
+                <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">Ctrl+K</span>
               </motion.button>
               <motion.a variants={navItemVariants} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex items-center space-x-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800">
                 <Rss size={16} />
