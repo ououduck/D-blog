@@ -20,9 +20,8 @@ import {
 
 import { Seo } from '../components/Seo';
 import { getCloudflareSnapshot } from '../services/cloudflare';
-import { getUmamiSnapshot } from '../services/umami';
 import { getSiteStats, SiteStats } from '../services/siteStats';
-import { CloudflareSnapshot, UmamiSnapshot } from '../types';
+import { CloudflareSnapshot } from '../types';
 
 const EMPTY_SITE_STATS: SiteStats = {
   totalPosts: 0,
@@ -118,9 +117,7 @@ export const Stats = () => {
   const shouldReduceMotion = useReducedMotion();
   const siteStatsLoadedRef = useRef(false);
   const cloudflareLoadedRef = useRef(false);
-  const umamiLoadedRef = useRef(false);
   const requestIdRef = useRef(0);
-  const umamiRequestIdRef = useRef(0);
   const [siteStats, setSiteStats] = useState<SiteStats>(EMPTY_SITE_STATS);
   const [snapshot, setSnapshot] = useState<CloudflareSnapshot>({
     enabled: false,
@@ -128,19 +125,10 @@ export const Stats = () => {
     domain: '',
     timeWindows: []
   });
-  const [umamiSnapshot, setUmamiSnapshot] = useState<UmamiSnapshot>({
-    enabled: false,
-    fetchedAt: null,
-    websiteId: '',
-    timeWindows: []
-  });
   const [siteStatsLoading, setSiteStatsLoading] = useState(true);
   const [cloudflareLoading, setCloudflareLoading] = useState(false);
   const [cloudflareRequested, setCloudflareRequested] = useState(false);
-  const [umamiLoading, setUmamiLoading] = useState(false);
-  const [umamiRequested, setUmamiRequested] = useState(false);
   const [selectedDays, setSelectedDays] = useState(7);
-  const [selectedUmamiDays, setSelectedUmamiDays] = useState(7);
 
   const loadSiteStats = async () => {
     if (siteStatsLoadedRef.current) {
@@ -186,32 +174,6 @@ export const Stats = () => {
     }
   };
 
-  const loadUmamiData = async (forceRefresh = false) => {
-    const requestId = ++umamiRequestIdRef.current;
-
-    setUmamiRequested(true);
-    setUmamiLoading(true);
-
-    try {
-      const umamiData = await getUmamiSnapshot(forceRefresh);
-
-      if (requestId !== umamiRequestIdRef.current) {
-        return;
-      }
-
-      setUmamiSnapshot(umamiData);
-      umamiLoadedRef.current = true;
-    } catch (error) {
-      if (requestId === umamiRequestIdRef.current) {
-        console.error('Failed to load Umami stats:', error);
-      }
-    } finally {
-      if (requestId === umamiRequestIdRef.current) {
-        setUmamiLoading(false);
-      }
-    }
-  };
-
   useEffect(() => {
     void loadSiteStats();
   }, []);
@@ -228,30 +190,12 @@ export const Stats = () => {
     }
   }, [selectedDays, snapshot.timeWindows]);
 
-  useEffect(() => {
-    if (umamiSnapshot.timeWindows.length === 0) {
-      return;
-    }
-
-    const hasSelectedWindow = umamiSnapshot.timeWindows.some((timeWindow) => timeWindow.days === selectedUmamiDays);
-
-    if (!hasSelectedWindow) {
-      setSelectedUmamiDays(umamiSnapshot.timeWindows[0].days);
-    }
-  }, [selectedUmamiDays, umamiSnapshot.timeWindows]);
-
   const currentTimeWindow =
     snapshot.timeWindows.find((timeWindow) => timeWindow.days === selectedDays) ??
     snapshot.timeWindows[0] ??
     null;
 
-  const currentUmamiTimeWindow =
-    umamiSnapshot.timeWindows.find((timeWindow) => timeWindow.days === selectedUmamiDays) ??
-    umamiSnapshot.timeWindows[0] ??
-    null;
-
   const hasData = snapshot.enabled && Boolean(currentTimeWindow);
-  const hasUmamiData = umamiSnapshot.enabled && Boolean(currentUmamiTimeWindow);
 
   return (
     <motion.div
@@ -407,112 +351,37 @@ export const Stats = () => {
               Umami 访问统计
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400 md:mt-4 md:text-base md:leading-7">
-              这里展示 Umami 统计数据，包括访客数、访问次数和浏览量。
+              查看详细的访问统计数据，包括访客数、访问次数和浏览量。
             </p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row lg:flex-col lg:items-end">
-            <button
-              type="button"
-              onClick={() => void loadUmamiData(umamiLoadedRef.current)}
-              disabled={umamiLoading}
-              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-zinc-300 bg-zinc-100 px-4 py-3 text-sm font-semibold text-zinc-900 transition-all hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700 sm:w-auto"
-              title={umamiRequested ? '刷新 Umami 统计数据' : '获取 Umami 统计数据'}
+            <a
+              href="https://cloud.umami.is/share/lbt9NW1ZYgWpm1KO"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-zinc-300 bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-zinc-800 dark:border-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 sm:w-auto"
+              title="查看 Umami 统计数据"
             >
-              <RefreshCw size={18} className={umamiLoading ? 'animate-spin' : ''} />
-              <span className="sm:hidden">
-                {umamiLoading ? '获取中...' : umamiRequested ? '刷新数据' : '获取数据'}
-              </span>
-              <span className="hidden sm:inline">
-                {umamiLoading ? '获取中...' : umamiRequested ? '刷新 Umami 数据' : '获取 Umami 访问数据'}
-              </span>
-            </button>
-
-            <div className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 sm:w-auto">
-              <BarChart3 size={18} className="text-zinc-700 dark:text-zinc-300" />
-              <span>
-                {umamiRequested
-                  ? currentUmamiTimeWindow
-                    ? `最近 ${currentUmamiTimeWindow.days} 天`
-                    : '暂无 Umami 数据'
-                  : '按需加载'}
-              </span>
-            </div>
+              <BarChart3 size={18} />
+              <span className="sm:hidden">查看统计</span>
+              <span className="hidden sm:inline">查看 Umami 统计数据</span>
+            </a>
           </div>
         </div>
 
-        <div className="relative mt-6 grid gap-3 sm:mt-8 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-          <InfoCard title="网站 ID" value={umamiSnapshot.websiteId || '未配置'} icon={Database} />
-          <InfoCard title="最近更新" value={umamiRequested ? formatDateTime(umamiSnapshot.fetchedAt) : '尚未请求'} icon={Clock3} />
-          <InfoCard title="时间窗口" value={umamiRequested ? `${umamiSnapshot.timeWindows.length} 个可选区间` : '点击后加载'} icon={BarChart3} />
-          <InfoCard title="访问状态" value={umamiRequested ? (umamiSnapshot.enabled ? '数据可用' : '等待配置') : '未请求'} icon={ShieldCheck} />
+        <div className="mt-10 flex justify-center">
+          <a
+            href="https://cloud.umami.is/share/lbt9NW1ZYgWpm1KO"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex min-h-16 w-full max-w-xl items-center justify-center gap-3 rounded-2xl border border-zinc-300 bg-zinc-900 px-6 py-5 text-base font-bold text-white transition-all hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:border-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:ring-offset-zinc-950 sm:text-lg"
+            title="查看 Umami 统计数据"
+          >
+            <BarChart3 size={22} />
+            <span>查看 Umami 统计数据</span>
+          </a>
         </div>
-
-        {umamiLoading && (
-          <div className="mt-10 flex min-h-52 flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-white py-14 dark:border-zinc-800 dark:bg-zinc-900">
-            <Loader2 size={44} className="animate-spin text-zinc-700 dark:text-zinc-300" />
-            <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">获取 Umami 统计数据中...</p>
-          </div>
-        )}
-
-        {!umamiLoading && umamiRequested && umamiSnapshot.enabled && umamiSnapshot.timeWindows.length > 0 && (
-          <>
-            <div className="-mx-1 mt-6 flex gap-2 overflow-x-auto px-1 pb-2 no-scrollbar sm:mt-8">
-              {umamiSnapshot.timeWindows.map((timeWindow) => (
-                <button
-                  key={timeWindow.days}
-                  type="button"
-                  onClick={() => setSelectedUmamiDays(timeWindow.days)}
-                  className={`flex-shrink-0 rounded-full border px-3.5 py-2 text-sm font-semibold transition-all sm:px-4 sm:py-2.5 ${
-                    selectedUmamiDays === timeWindow.days
-                      ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'
-                      : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800'
-                  }`}
-                >
-                  最近 {timeWindow.days} 天
-                </button>
-              ))}
-            </div>
-
-            {currentUmamiTimeWindow && (
-              <>
-                <div className="mt-6 grid gap-4 sm:mt-8 sm:gap-5 min-[480px]:grid-cols-2 xl:grid-cols-3">
-                  <SummaryCard icon={Users} title="访客数" value={formatValue(currentUmamiTimeWindow.data.visitors)} detail={`最近 ${currentUmamiTimeWindow.days} 天独立访客`} />
-                  <SummaryCard icon={TrendingUp} title="访问次数" value={formatValue(currentUmamiTimeWindow.data.visits)} detail="总访问会话数" />
-                  <SummaryCard icon={Eye} title="浏览量" value={formatValue(currentUmamiTimeWindow.data.pageviews)} detail="页面浏览总量" />
-                </div>
-                {currentUmamiTimeWindow.error && (
-                  <div className="mt-6 rounded-2xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-700 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-300">
-                    {currentUmamiTimeWindow.error}
-                  </div>
-                )}
-              </>
-            )}
-          </>
-        )}
-
-        {!umamiLoading && umamiRequested && !umamiSnapshot.enabled && (
-          <div className="mt-10 rounded-2xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
-            <ShieldCheck size={44} className="mx-auto mb-4 text-zinc-400" />
-            <h3 className="mb-2 font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100">未配置 Umami API</h3>
-            <p className="mx-auto max-w-xl text-sm leading-7 text-zinc-500 dark:text-zinc-400">
-              请在环境变量中配置 `UMAMI_API_URL`、`UMAMI_API_KEY` 和 `UMAMI_WEBSITE_ID`，然后重新构建站点以生成统计数据。
-            </p>
-          </div>
-        )}
-
-        {!umamiRequested && (
-          <div className="mt-10 flex justify-center">
-            <button    type="button"
-              onClick={() => void loadUmamiData(false)}
-              className="group inline-flex min-h-16 w-full max-w-xl items-center justify-center gap-3 rounded-2xl border border-zinc-300 bg-zinc-900 px-6 py-5 text-base font-bold text-white transition-all hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:border-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:ring-offset-zinc-950 sm:text-lg"
-              title="获取 Umami 访问数据"
-            >
-              <RefreshCw size={22} className="transition-transform duration-300 group-hover:rotate-90" />
-              <span>获取 Umami 访问数据</span>
-            </button>
-          </div>
-        )}
       </section>
 
       <section className="mt-8 space-y-5 md:mt-12 md:space-y-6 lg:mt-14">
@@ -543,30 +412,6 @@ export const Stats = () => {
         {!cloudflareLoading && cloudflareRequested && !snapshot.enabled && (
           <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
             暂无 Cloudflare 统计数据。请配置环境变量后重新执行 `npm run build`。
-          </div>
-        )}
-
-        {!umamiLoading && umamiRequested && hasUmamiData && currentUmamiTimeWindow && (
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:rounded-2xl sm:p-5 md:p-6">
-            <div className="mb-5 flex items-center gap-2.5 md:mb-6">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                <Database size={18} />
-              </div>
-              <h2 className="font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100 md:text-2xl">Umami 数据说明</h2>
-              {umamiLoading && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                  <Loader2 size={12} className="animate-spin" />
-                  同步中
-                </span>
-              )}
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
-              <InfoCard title="网站 ID" value={umamiSnapshot.websiteId} icon={Database} />
-              <InfoCard title="统计窗口" value={`最近 ${currentUmamiTimeWindow.days} 天`} icon={BarChart3} />
-              <InfoCard title="更新时间" value={formatDateTime(umamiSnapshot.fetchedAt)} icon={Clock3} />
-              <InfoCard title="展示范围" value="访客数、访问次数、浏览量" icon={ShieldCheck} />
-            </div>
           </div>
         )}
       </section>

@@ -16,7 +16,6 @@ const FRIENDS_DIR = path.join(__dirname, '../friends');
 const OUTPUT_JSON_DIR = path.join(__dirname, '../generated');
 const PUBLIC_DIR = path.join(__dirname, '../public');
 const CLOUDFLARE_FILE = path.join(OUTPUT_JSON_DIR, 'cloudflare.json');
-const UMAMI_FILE = path.join(OUTPUT_JSON_DIR, 'umami.json');
 
 if (!fs.existsSync(OUTPUT_JSON_DIR)) {
   fs.mkdirSync(OUTPUT_JSON_DIR, { recursive: true });
@@ -161,10 +160,6 @@ const normalizeCategory = (value) => {
 
 const writeCloudflareSnapshot = (snapshot) => {
   fs.writeFileSync(CLOUDFLARE_FILE, JSON.stringify(snapshot, null, 2));
-};
-
-const writeUmamiSnapshot = (snapshot) => {
-  fs.writeFileSync(UMAMI_FILE, JSON.stringify(snapshot, null, 2));
 };
 
 const files = fs.readdirSync(POSTS_DIR).filter((file) => file.endsWith('.md'));
@@ -443,96 +438,6 @@ const generateRss = () => {
   console.log('RSS feed generated');
 };
 
-const generateUmamiSnapshot = async () => {
-  const apiKey = process.env.UMAMI_API_KEY?.trim();
-  const websiteId = process.env.UMAMI_WEBSITE_ID?.trim();
-
-  if (!apiKey || !websiteId) {
-    const emptySnapshot = {
-      enabled: false,
-      fetchedAt: null,
-      websiteId: '',
-      timeWindows: []
-    };
-    writeUmamiSnapshot(emptySnapshot);
-    console.log('Umami Analytics skipped: missing UMAMI_API_KEY or UMAMI_WEBSITE_ID');
-    return;
-  }
-
-  const snapshot = {
-    enabled: true,
-    fetchedAt: new Date().toISOString(),
-    websiteId: websiteId,
-    timeWindows: []
-  };
-
-  const timeWindows = [1, 7, 30];
-
-  for (const days of timeWindows) {
-    const now = new Date();
-    const startAt = new Date(now);
-    startAt.setDate(startAt.getDate() - days);
-
-    const startAtMs = startAt.getTime();
-    const endAtMs = now.getTime();
-
-    try {
-      const url = `https://api.umami.is/v1/websites/${websiteId}/stats?startAt=${startAtMs}&endAt=${endAtMs}`;
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-
-      try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'x-umami-api-key': apiKey,
-            'Content-Type': 'application/json'
-          },
-          signal: controller.signal
-        });
-        clearTimeout(timeout);
-
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        snapshot.timeWindows.push({
-          days,
-          data: {
-            pageviews: data.pageviews?.value || 0,
-            visitors: data.visitors?.value || 0,
-            visits: data.visits?.value || 0
-          },
-          error: null
-        });
-
-        console.log(`Umami data fetched for ${days} days: ${data.pageviews?.value || 0} page views`);
-      } catch (error) {
-        console.warn(`Umami Analytics failed for ${days} days: ${error.message}`);
-        snapshot.timeWindows.push({
-          days,
-          data: { pageviews: 0, visitors: 0, visits: 0 },
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
-    } catch (error) {
-      console.warn(`Umami Analytics failed for ${days} days: ${error.message}`);
-      snapshot.timeWindows.push({
-        days,
-        data: { pageviews: 0, visitors: 0, visits: 0 },
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  }
-
-  writeUmamiSnapshot(snapshot);
-  console.log(`Umami snapshot generated with ${snapshot.timeWindows.length} time windows`);
-};
-
 await generateCloudflareSnapshot();
-await generateUmamiSnapshot();
 generateSitemap();
 generateRss();
