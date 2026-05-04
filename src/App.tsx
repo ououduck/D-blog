@@ -4,6 +4,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Layout } from './components/Layout';
 import { DBlogLoader } from './components/DBlogLoader';
+import { CookieNotice } from './components/CookieNotice';
 import { siteConfig } from '@config/site.config';
 
 const Home = lazy(() => import('./pages/Home').then((module) => ({ default: module.Home })));
@@ -91,6 +92,8 @@ const App: React.FC = () => {
     return sessionStorage.getItem('hasVisited') !== 'true';
   });
 
+  const [showCookieNotice, setShowCookieNotice] = useState(false);
+
   useEffect(() => {
     if (!showLoadingScreen) {
       return;
@@ -99,6 +102,8 @@ const App: React.FC = () => {
     const timer = window.setTimeout(() => {
       sessionStorage.setItem('hasVisited', 'true');
       setShowLoadingScreen(false);
+      // 加载动画结束后显示Cookie通知
+      setShowCookieNotice(true);
     }, 900);
 
     return () => {
@@ -111,6 +116,7 @@ const App: React.FC = () => {
       <Router>
         <AppRoutes />
         <AnimatePresence>{showLoadingScreen && <LoadingScreen />}</AnimatePresence>
+        {showCookieNotice && <CookieNotice />}
       </Router>
     </HelmetProvider>
   );
