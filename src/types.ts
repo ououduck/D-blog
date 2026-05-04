@@ -53,3 +53,22 @@ export interface CloudflareSnapshot {
   domain: string;
   timeWindows: CloudflareTimeWindow[];
 }
+
+export interface UmamiAnalyticsData {
+  visitors: number;
+  visits: number;
+  pageviews: number;
+}
+
+export interface UmamiTimeWindow {
+  days: number;
+  data: UmamiAnalyticsData;
+  error: string | null;
+}
+
+export interface UmamiSnapshot {
+  enabled: boolean;
+  fetchedAt: string | null;
+  websiteId: string;
+  timeWindows: UmamiTimeWindow[];
+}

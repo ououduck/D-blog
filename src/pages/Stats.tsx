@@ -20,8 +20,9 @@ import {
 
 import { Seo } from '../components/Seo';
 import { getCloudflareSnapshot } from '../services/cloudflare';
+import { getUmamiSnapshot } from '../services/umami';
 import { getSiteStats, SiteStats } from '../services/siteStats';
-import { CloudflareSnapshot } from '../types';
+import { CloudflareSnapshot, UmamiSnapshot } from '../types';
 
 const EMPTY_SITE_STATS: SiteStats = {
   totalPosts: 0,
@@ -63,42 +64,29 @@ const SummaryCard = ({
   icon: Icon,
   title,
   value,
-  detail,
-  accentColor = 'accent'
+  detail
 }: {
   icon: React.ElementType;
   title: string;
   value: string | number;
   detail: string;
-  accentColor?: string;
 }) => {
-  const colorClasses = {
-    accent: 'bg-accent/8 text-accent dark:bg-accent/12',
-    blue: 'bg-blue-500/8 text-blue-600 dark:bg-blue-500/12 dark:text-blue-400',
-    emerald: 'bg-emerald-500/8 text-emerald-600 dark:bg-emerald-500/12 dark:text-emerald-400',
-    violet: 'bg-violet-500/8 text-violet-600 dark:bg-violet-500/12 dark:text-violet-400'
-  };
-
-  const iconBgClass = colorClasses[accentColor as keyof typeof colorClasses] || colorClasses.accent;
-
   return (
-    <div className="group relative overflow-hidden rounded-[1.4rem] border border-zinc-200/80 bg-gradient-to-br from-white/95 to-zinc-50/90 p-4 shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.12)] dark:border-zinc-800/90 dark:from-zinc-900/90 dark:to-zinc-950/80 dark:shadow-none dark:hover:border-zinc-700/90 sm:rounded-[1.6rem] sm:p-6">
-      <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-zinc-100/40 to-transparent opacity-60 blur-2xl transition-opacity duration-300 group-hover:opacity-80 dark:from-zinc-800/40 sm:-right-8 sm:-top-8 sm:h-32 sm:w-32" />
-      
+    <div className="group relative overflow-hidden rounded-xl border border-zinc-200 bg-white p-5 transition-all duration-200 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 sm:rounded-2xl sm:p-6">
       <div className="relative">
-        <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl ${iconBgClass} transition-transform duration-300 group-hover:scale-105 sm:h-12 sm:w-12`}>
+        <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 transition-transform duration-200 group-hover:scale-105 dark:bg-zinc-800 dark:text-zinc-300 sm:h-12 sm:w-12">
           <Icon size={20} className="sm:size-[22px]" />
         </div>
         
-        <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 sm:text-[11px]">
+        <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 sm:text-[11px]">
           {title}
         </div>
         
-        <div className="mb-2 text-2xl font-bold leading-none text-ink dark:text-white sm:text-3xl lg:text-4xl">
+        <div className="mb-2 text-2xl font-bold leading-none text-zinc-900 dark:text-zinc-100 sm:text-3xl lg:text-4xl">
           {value}
         </div>
         
-        <div className="text-xs leading-5 te-600 dark:text-zinc-400 sm:text-sm sm:leading-6">
+        <div className="text-xs leading-5 text-zinc-600 dark:text-zinc-400 sm:text-sm sm:leading-6">
           {detail}
         </div>
       </div>
@@ -115,13 +103,13 @@ const InfoCard = ({
   value: string;
   icon: React.ElementType;
 }) => (
-  <div className="group rounded-[1.25rem] border border-zinc-200/70 bg-white/80 p-3.5 transition-all duration-200 hover:border-zinc-300/80 hover:bg-white/95 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:hover:border-zinc-700/90 dark:hover:bg-zinc-900/80 sm:rounded-[1.4rem] sm:p-4">
-    <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500 sm:text-[11px]">{title}</div>
+  <div className="group rounded-xl border border-zinc-200 bg-white p-3.5 transition-all duration-200 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 sm:rounded-xl sm:p-4">
+    <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 sm:text-[11px]">{title}</div>
     <div className="flex min-w-0 items-center gap-2.5">
-      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-accent/8 text-accent transition-transform duration-200 group-hover:scale-105 dark:bg-accent/12 sm:h-9 sm:w-9">
+      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 transition-transform duration-200 group-hover:scale-105 dark:bg-zinc-800 dark:text-zinc-300 sm:h-9 sm:w-9">
         <Icon size={16} className="sm:size-[18px]" />
       </div>
-      <span className="break-all text-sm font-semibold leading-5 text-ink dark:text-white sm:text-[15px]">{value}</span>
+      <span className="break-all text-sm font-semibold leading-5 text-zinc-900 dark:text-zinc-100 sm:text-[15px]">{value}</span>
     </div>
   </div>
 );
@@ -130,7 +118,9 @@ export const Stats = () => {
   const shouldReduceMotion = useReducedMotion();
   const siteStatsLoadedRef = useRef(false);
   const cloudflareLoadedRef = useRef(false);
+  const umamiLoadedRef = useRef(false);
   const requestIdRef = useRef(0);
+  const umamiRequestIdRef = useRef(0);
   const [siteStats, setSiteStats] = useState<SiteStats>(EMPTY_SITE_STATS);
   const [snapshot, setSnapshot] = useState<CloudflareSnapshot>({
     enabled: false,
@@ -138,10 +128,19 @@ export const Stats = () => {
     domain: '',
     timeWindows: []
   });
+  const [umamiSnapshot, setUmamiSnapshot] = useState<UmamiSnapshot>({
+    enabled: false,
+    fetchedAt: null,
+    websiteId: '',
+    timeWindows: []
+  });
   const [siteStatsLoading, setSiteStatsLoading] = useState(true);
   const [cloudflareLoading, setCloudflareLoading] = useState(false);
   const [cloudflareRequested, setCloudflareRequested] = useState(false);
+  const [umamiLoading, setUmamiLoading] = useState(false);
+  const [umamiRequested, setUmamiRequested] = useState(false);
   const [selectedDays, setSelectedDays] = useState(7);
+  const [selectedUmamiDays, setSelectedUmamiDays] = useState(7);
 
   const loadSiteStats = async () => {
     if (siteStatsLoadedRef.current) {
@@ -187,6 +186,32 @@ export const Stats = () => {
     }
   };
 
+  const loadUmamiData = async (forceRefresh = false) => {
+    const requestId = ++umamiRequestIdRef.current;
+
+    setUmamiRequested(true);
+    setUmamiLoading(true);
+
+    try {
+      const umamiData = await getUmamiSnapshot(forceRefresh);
+
+      if (requestId !== umamiRequestIdRef.current) {
+        return;
+      }
+
+      setUmamiSnapshot(umamiData);
+      umamiLoadedRef.current = true;
+    } catch (error) {
+      if (requestId === umamiRequestIdRef.current) {
+        console.error('Failed to load Umami stats:', error);
+      }
+    } finally {
+      if (requestId === umamiRequestIdRef.current) {
+        setUmamiLoading(false);
+      }
+    }
+  };
+
   useEffect(() => {
     void loadSiteStats();
   }, []);
@@ -203,12 +228,30 @@ export const Stats = () => {
     }
   }, [selectedDays, snapshot.timeWindows]);
 
+  useEffect(() => {
+    if (umamiSnapshot.timeWindows.length === 0) {
+      return;
+    }
+
+    const hasSelectedWindow = umamiSnapshot.timeWindows.some((timeWindow) => timeWindow.days === selectedUmamiDays);
+
+    if (!hasSelectedWindow) {
+      setSelectedUmamiDays(umamiSnapshot.timeWindows[0].days);
+    }
+  }, [selectedUmamiDays, umamiSnapshot.timeWindows]);
+
   const currentTimeWindow =
     snapshot.timeWindows.find((timeWindow) => timeWindow.days === selectedDays) ??
     snapshot.timeWindows[0] ??
     null;
 
+  const currentUmamiTimeWindow =
+    umamiSnapshot.timeWindows.find((timeWindow) => timeWindow.days === selectedUmamiDays) ??
+    umamiSnapshot.timeWindows[0] ??
+    null;
+
   const hasData = snapshot.enabled && Boolean(currentTimeWindow);
+  const hasUmamiData = umamiSnapshot.enabled && Boolean(currentUmamiTimeWindow);
 
   return (
     <motion.div
@@ -219,17 +262,15 @@ export const Stats = () => {
     >
       <Seo title="统计" description="基于 Cloudflare Analytics 生成的站点访问统计页，仅展示当前稳定可用的核心指标。" />
 
-      <section className="relative overflow-hidden rounded-[1.5rem] border border-zinc-200/80 bg-gradient-to-br from-white/95 via-zinc-50/80 to-white/90 p-4 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] dark:border-zinc-800/80 dark:from-zinc-900/90 dark:via-zinc-950/85 dark:to-zinc-900/80 dark:shadow-none sm:rounded-[2rem] sm:p-7 md:p-10 lg:p-12">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
-        <div className="pointer-events-none absolute -right-12 top-8 h-40 w-40 rounded-full bg-accent/6 blur-3xl dark:bg-accent/10" />
+      <section className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:rounded-2xl sm:p-7 md:p-10 lg:p-12">
 
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.28em] text-accent sm:mb-4 sm:text-xs sm:tracking-[0.35em]">Analytics Dashboard</p>
-            <h1 className="max-w-2xl font-serif text-2xl font-bold tracking-tight text-ink dark:text-white sm:text-4xl md:text-5xl lg:text-6xl">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:mb-4 sm:text-xs dark:text-zinc-400">Analytics Dashboard</p>
+            <h1 className="max-w-2xl font-serif text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl md:text-5xl lg:text-6xl">
               站点访问统计
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300 md:mt-4 md:text-base md:leading-7">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400 md:mt-4 md:text-base md:leading-7">
               这里展示 Cloudflare 当前能稳定返回的聚合统计数据。页面保留最近一次成功结果，避免刷新或切换时整块闪烁。
             </p>
           </div>
@@ -239,7 +280,7 @@ export const Stats = () => {
               type="button"
               onClick={() => void loadCloudflareData(cloudflareLoadedRef.current)}
               disabled={cloudflareLoading}
-              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-accent/25 bg-accent/10 px-4 py-3 text-sm font-semibold text-accent transition-all hover:bg-accent/15 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-zinc-300 bg-zinc-100 px-4 py-3 text-sm font-semibold text-zinc-900 transition-all hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700 sm:w-auto"
               title={cloudflareRequested ? '刷新 Cloudflare 统计数据' : '获取 Cloudflare 统计数据'}
             >
               <RefreshCw size={18} className={cloudflareLoading ? 'animate-spin' : ''} />
@@ -251,8 +292,8 @@ export const Stats = () => {
               </span>
             </button>
 
-            <div className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-zinc-200/80 bg-white/92 px-4 py-3 text-sm font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/70 dark:text-zinc-300 sm:w-auto">
-              <BarChart3 size={18} className="text-accent" />
+            <div className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 sm:w-auto">
+              <BarChart3 size={18} className="text-zinc-700 dark:text-zinc-300" />
               <span>
                 {cloudflareRequested
                   ? currentTimeWindow
@@ -272,8 +313,8 @@ export const Stats = () => {
         </div>
 
         {cloudflareLoading && (
-          <div className="mt-10 flex min-h-52 flex-col items-center justify-center rounded-[1.75rem] border border-zinc-200/70 bg-white/92 py-14 dark:border-zinc-800 dark:bg-zinc-950/72">
-            <Loader2 size={44} className="animate-spin text-accent" />
+          <div className="mt-10 flex min-h-52 flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-white py-14 dark:border-zinc-800 dark:bg-zinc-900">
+            <Loader2 size={44} className="animate-spin text-zinc-700 dark:text-zinc-300" />
             <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">获取 Cloudflare 统计数据中...</p>
           </div>
         )}
@@ -288,8 +329,8 @@ export const Stats = () => {
                   onClick={() => setSelectedDays(timeWindow.days)}
                   className={`flex-shrink-0 rounded-full border px-3.5 py-2 text-sm font-semibold transition-all sm:px-4 sm:py-2.5 ${
                     selectedDays === timeWindow.days
-                      ? 'border-accent bg-accent text-white shadow-lg shadow-accent/15'
-                      : 'border-zinc-200/80 bg-white/92 text-zinc-600 hover:border-accent/35 hover:text-accent dark:border-zinc-800 dark:bg-zinc-950/72 dark:text-zinc-300 dark:hover:border-accent/40'
+                      ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'
+                      : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800'
                   }`}
                 >
                   最近 {timeWindow.days} 天
@@ -300,10 +341,10 @@ export const Stats = () => {
             {currentTimeWindow && (
               <>
                 <div className="mt-6 grid gap-4 sm:mt-8 sm:gap-5 min-[480px]:grid-cols-2 xl:grid-cols-4">
-                  <SummaryCard icon={Eye} title="页面浏览" value={formatValue(currentTimeWindow.data.pageViews)} detail={`最近 ${currentTimeWindow.days} 天总浏览量`} accentColor="blue" />
-                  <SummaryCard icon={Users} title="独立访客" value={formatValue(currentTimeWindow.data.uniques)} detail="去重后的访问人数" accentColor="emerald" />
-                  <SummaryCard icon={TrendingUp} title="请求总数" value={formatValue(currentTimeWindow.data.requests)} detail="所有 HTTP 请求总量" accentColor="violet" />
-                  <SummaryCard icon={HardDrive} title="带宽消耗" value={formatBytes(currentTimeWindow.data.bandwidth)} detail="当前时间窗口内的总流量" accentColor="accent" />
+                  <SummaryCard icon={Eye} title="页面浏览" value={formatValue(currentTimeWindow.data.pageViews)} detail={`最近 ${currentTimeWindow.days} 天总浏览量`} />
+                  <SummaryCard icon={Users} title="独立访客" value={formatValue(currentTimeWindow.data.uniques)} detail="去重后的访问人数" />
+                  <SummaryCard icon={TrendingUp} title="请求总数" value={formatValue(currentTimeWindow.data.requests)} detail="所有 HTTP 请求总量" />
+                  <SummaryCard icon={HardDrive} title="带宽消耗" value={formatBytes(currentTimeWindow.data.bandwidth)} detail="当前时间窗口内的总流量" />
                 </div>
 
                 {currentTimeWindow.error && (
@@ -317,9 +358,9 @@ export const Stats = () => {
         )}
 
         {!cloudflareLoading && cloudflareRequested && !snapshot.enabled && (
-          <div className="mt-10 rounded-[1.75rem] border border-zinc-200/70 bg-white/92 p-8 text-center dark:border-zinc-800 dark:bg-zinc-950/72">
+          <div className="mt-10 rounded-2xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
             <ShieldCheck size={44} className="mx-auto mb-4 text-zinc-400" />
-            <h3 className="mb-2 font-serif text-xl font-bold text-ink dark:text-white">未配置 Cloudflare API</h3>
+            <h3 className="mb-2 font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100">未配置 Cloudflare API</h3>
             <p className="mx-auto max-w-xl text-sm leading-7 text-zinc-500 dark:text-zinc-400">
               请在环境变量中配置 `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ZONE_ID`，然后重新构建站点以生成统计数据。
             </p>
@@ -331,7 +372,7 @@ export const Stats = () => {
             <button
               type="button"
               onClick={() => void loadCloudflareData(false)}
-              className="group inline-flex min-h-16 w-full max-w-xl items-center justify-center gap-3 rounded-[1.5rem] border border-accent/30 bg-gradient-to-r from-accent to-accent/85 px-6 py-5 text-base font-bold text-white shadow-[0_24px_60px_-24px_rgba(192,57,43,0.65)] transition-all hover:-translate-y-0.5 hover:shadow-[0_28px_70px_-24px_rgba(192,57,43,0.78)] focus:outline-none focus:ring-2 focus:ring-accent/40 focus:ring-offset-2 focus:ring-offset-white dark:ring-offset-zinc-950 sm:text-lg"
+              className="group inline-flex min-h-16 w-full max-w-xl items-center justify-center gap-3 rounded-2xl border border-zinc-300 bg-zinc-900 px-6 py-5 text-base font-bold text-white transition-all hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:border-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:ring-offset-zinc-950 sm:text-lg"
               title="获取 Cloudflare 访问数据"
             >
               <RefreshCw size={22} className="transition-transform duration-300 group-hover:rotate-90" />
@@ -341,33 +382,149 @@ export const Stats = () => {
         )}
       </section>
 
-      <section className="mt-8 rounded-[1.5rem] border border-zinc-200/80 bg-white/95 p-4 shadow-[0_2px_20px_-6px_rgba(0,0,0,0.08)] dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-none sm:rounded-[1.75rem] sm:p-5 md:mt-12 md:p-6 lg:mt-14">
+      <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:rounded-2xl sm:p-5 md:mt-12 md:p-6 lg:mt-14">
         <div className="mb-5 flex items-center gap-2.5 md:mb-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/8 text-accent dark:bg-accent/12">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
             <Database size={18} />
           </div>
-          <h2 className="font-serif text-xl font-bold text-ink dark:text-white md:text-2xl">站点概览</h2>
+          <h2 className="font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100 md:text-2xl">站点概览</h2>
         </div>
 
         <div className="grid gap-4 sm:gap-5 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <SummaryCard icon={FileText} title="当前文章数" value={formatValue(siteStats.totalPosts)} detail="已公开发布的文章总数" accentColor="blue" />
-          <SummaryCard icon={Type} title="总字数" value={formatValue(siteStats.totalWords)} detail="按正文内容累计的总阅读字数" accentColor="emerald" />
-          <SummaryCard icon={FolderTree} title="总分类数" value={formatValue(siteStats.totalCategories)} detail="当前启用的文章分类数量" accentColor="violet" />
-          <SummaryCard icon={Hash} title="总标签数" value={formatValue(siteStats.totalTags)} detail="去重后的标签总数量" accentColor="accent" />
-          <SummaryCard icon={FileImage} title="总图片数" value={formatValue(siteStats.totalImages)} detail="正文内 Markdown 图片累计数量" accentColor="blue" />
+          <SummaryCard icon={FileText} title="当前文章数" value={formatValue(siteStats.totalPosts)} detail="已公开发布的文章总数" />
+          <SummaryCard icon={Type} title="总字数" value={formatValue(siteStats.totalWords)} detail="按正文内容累计的总阅读字数" />
+          <SummaryCard icon={FolderTree} title="总分类数" value={formatValue(siteStats.totalCategories)} detail="当前启用的文章分类数量" />
+          <SummaryCard icon={Hash} title="总标签数" value={formatValue(siteStats.totalTags)} detail="去重后的标签总数量" />
+          <SummaryCard icon={FileImage} title="总图片数" value={formatValue(siteStats.totalImages)} detail="正文内 Markdown 图片累计数量" />
         </div>
+      </section>
+
+      <section className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:rounded-2xl sm:p-7 md:mt-12 md:p-10 lg:mt-14 lg:p-12">
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:mb-4 sm:text-xs dark:text-zinc-400">Umami Analytics</p>
+            <h1 className="max-w-2xl font-serif text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl md:text-5xl lg:text-6xl">
+              Umami 访问统计
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400 md:mt-4 md:text-base md:leading-7">
+              这里展示 Umami 统计数据，包括访客数、访问次数和浏览量。
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col lg:items-end">
+            <button
+              type="button"
+              onClick={() => void loadUmamiData(umamiLoadedRef.current)}
+              disabled={umamiLoading}
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-zinc-300 bg-zinc-100 px-4 py-3 text-sm font-semibold text-zinc-900 transition-all hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700 sm:w-auto"
+              title={umamiRequested ? '刷新 Umami 统计数据' : '获取 Umami 统计数据'}
+            >
+              <RefreshCw size={18} className={umamiLoading ? 'animate-spin' : ''} />
+              <span className="sm:hidden">
+                {umamiLoading ? '获取中...' : umamiRequested ? '刷新数据' : '获取数据'}
+              </span>
+              <span className="hidden sm:inline">
+                {umamiLoading ? '获取中...' : umamiRequested ? '刷新 Umami 数据' : '获取 Umami 访问数据'}
+              </span>
+            </button>
+
+            <div className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 sm:w-auto">
+              <BarChart3 size={18} className="text-zinc-700 dark:text-zinc-300" />
+              <span>
+                {umamiRequested
+                  ? currentUmamiTimeWindow
+                    ? `最近 ${currentUmamiTimeWindow.days} 天`
+                    : '暂无 Umami 数据'
+                  : '按需加载'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative mt-6 grid gap-3 sm:mt-8 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          <InfoCard title="网站 ID" value={umamiSnapshot.websiteId || '未配置'} icon={Database} />
+          <InfoCard title="最近更新" value={umamiRequested ? formatDateTime(umamiSnapshot.fetchedAt) : '尚未请求'} icon={Clock3} />
+          <InfoCard title="时间窗口" value={umamiRequested ? `${umamiSnapshot.timeWindows.length} 个可选区间` : '点击后加载'} icon={BarChart3} />
+          <InfoCard title="访问状态" value={umamiRequested ? (umamiSnapshot.enabled ? '数据可用' : '等待配置') : '未请求'} icon={ShieldCheck} />
+        </div>
+
+        {umamiLoading && (
+          <div className="mt-10 flex min-h-52 flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-white py-14 dark:border-zinc-800 dark:bg-zinc-900">
+            <Loader2 size={44} className="animate-spin text-zinc-700 dark:text-zinc-300" />
+            <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">获取 Umami 统计数据中...</p>
+          </div>
+        )}
+
+        {!umamiLoading && umamiRequested && umamiSnapshot.enabled && umamiSnapshot.timeWindows.length > 0 && (
+          <>
+            <div className="-mx-1 mt-6 flex gap-2 overflow-x-auto px-1 pb-2 no-scrollbar sm:mt-8">
+              {umamiSnapshot.timeWindows.map((timeWindow) => (
+                <button
+                  key={timeWindow.days}
+                  type="button"
+                  onClick={() => setSelectedUmamiDays(timeWindow.days)}
+                  className={`flex-shrink-0 rounded-full border px-3.5 py-2 text-sm font-semibold transition-all sm:px-4 sm:py-2.5 ${
+                    selectedUmamiDays === timeWindow.days
+                      ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'
+                      : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  最近 {timeWindow.days} 天
+                </button>
+              ))}
+            </div>
+
+            {currentUmamiTimeWindow && (
+              <>
+                <div className="mt-6 grid gap-4 sm:mt-8 sm:gap-5 min-[480px]:grid-cols-2 xl:grid-cols-3">
+                  <SummaryCard icon={Users} title="访客数" value={formatValue(currentUmamiTimeWindow.data.visitors)} detail={`最近 ${currentUmamiTimeWindow.days} 天独立访客`} />
+                  <SummaryCard icon={TrendingUp} title="访问次数" value={formatValue(currentUmamiTimeWindow.data.visits)} detail="总访问会话数" />
+                  <SummaryCard icon={Eye} title="浏览量" value={formatValue(currentUmamiTimeWindow.data.pageviews)} detail="页面浏览总量" />
+                </div>
+                {currentUmamiTimeWindow.error && (
+                  <div className="mt-6 rounded-2xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-700 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-300">
+                    {currentUmamiTimeWindow.error}
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {!umamiLoading && umamiRequested && !umamiSnapshot.enabled && (
+          <div className="mt-10 rounded-2xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
+            <ShieldCheck size={44} className="mx-auto mb-4 text-zinc-400" />
+            <h3 className="mb-2 font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100">未配置 Umami API</h3>
+            <p className="mx-auto max-w-xl text-sm leading-7 text-zinc-500 dark:text-zinc-400">
+              请在环境变量中配置 `UMAMI_API_URL`、`UMAMI_API_KEY` 和 `UMAMI_WEBSITE_ID`，然后重新构建站点以生成统计数据。
+            </p>
+          </div>
+        )}
+
+        {!umamiRequested && (
+          <div className="mt-10 flex justify-center">
+            <button    type="button"
+              onClick={() => void loadUmamiData(false)}
+              className="group inline-flex min-h-16 w-full max-w-xl items-center justify-center gap-3 rounded-2xl border border-zinc-300 bg-zinc-900 px-6 py-5 text-base font-bold text-white transition-all hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:border-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:ring-offset-zinc-950 sm:text-lg"
+              title="获取 Umami 访问数据"
+            >
+              <RefreshCw size={22} className="transition-transform duration-300 group-hover:rotate-90" />
+              <span>获取 Umami 访问数据</span>
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="mt-8 space-y-5 md:mt-12 md:space-y-6 lg:mt-14">
         {!cloudflareLoading && cloudflareRequested && hasData && currentTimeWindow && (
-          <div className="rounded-[1.5rem] border border-zinc-200/80 bg-white/95 p-4 shadow-[0_2px_20px_-6px_rgba(0,0,0,0.08)] dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-none sm:rounded-[1.75rem] sm:p-5 md:p-6">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:rounded-2xl sm:p-5 md:p-6">
             <div className="mb-5 flex items-center gap-2.5 md:mb-6">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/8 text-accent dark:bg-accent/12">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                 <Database size={18} />
               </div>
-              <h2 className="font-serif text-xl font-bold text-ink dark:text-white md:text-2xl">数据说明</h2>
+              <h2 className="font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100 md:text-2xl">Cloudflare 数据说明</h2>
               {cloudflareLoading && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-1 text-[11px] font-semibold text-sky-700 dark:text-sky-300">
+                <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                   <Loader2 size={12} className="animate-spin" />
                   同步中
                 </span>
@@ -384,8 +541,32 @@ export const Stats = () => {
         )}
 
         {!cloudflareLoading && cloudflareRequested && !snapshot.enabled && (
-          <div className="rounded-[1.75rem] border border-dashed border-zinc-300 bg-white/72 px-6 py-16 text-center text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-400">
+          <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
             暂无 Cloudflare 统计数据。请配置环境变量后重新执行 `npm run build`。
+          </div>
+        )}
+
+        {!umamiLoading && umamiRequested && hasUmamiData && currentUmamiTimeWindow && (
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:rounded-2xl sm:p-5 md:p-6">
+            <div className="mb-5 flex items-center gap-2.5 md:mb-6">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                <Database size={18} />
+              </div>
+              <h2 className="font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100 md:text-2xl">Umami 数据说明</h2>
+              {umamiLoading && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                  <Loader2 size={12} className="animate-spin" />
+                  同步中
+                </span>
+              )}
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
+              <InfoCard title="网站 ID" value={umamiSnapshot.websiteId} icon={Database} />
+              <InfoCard title="统计窗口" value={`最近 ${currentUmamiTimeWindow.days} 天`} icon={BarChart3} />
+              <InfoCard title="更新时间" value={formatDateTime(umamiSnapshot.fetchedAt)} icon={Clock3} />
+              <InfoCard title="展示范围" value="访客数、访问次数、浏览量" icon={ShieldCheck} />
+            </div>
           </div>
         )}
       </section>
