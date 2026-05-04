@@ -478,7 +478,7 @@ const generateUmamiSnapshot = async () => {
     const endAtMs = now.getTime();
 
     try {
-      const url = `https://${apiUrl}/api/v1/websites/${websiteId}/stats?startAt=${startAtMs}&endAt=${endAtMs}`;
+      const url = `https://${apiUrl}/api/websites/${websiteId}/stats?startAt=${startAtMs}&endAt=${endAtMs}`;
 
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
