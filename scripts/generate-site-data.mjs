@@ -15,7 +15,6 @@ const POSTS_DIR = path.join(__dirname, '../posts');
 const FRIENDS_DIR = path.join(__dirname, '../friends');
 const OUTPUT_JSON_DIR = path.join(__dirname, '../generated');
 const PUBLIC_DIR = path.join(__dirname, '../public');
-const CLOUDFLARE_FILE = path.join(OUTPUT_JSON_DIR, 'cloudflare.json');
 
 if (!fs.existsSync(OUTPUT_JSON_DIR)) {
   fs.mkdirSync(OUTPUT_JSON_DIR, { recursive: true });
@@ -158,10 +157,6 @@ const normalizeCategory = (value) => {
   return POST_CATEGORIES.includes(category) ? category : '其他';
 };
 
-const writeCloudflareSnapshot = (snapshot) => {
-  fs.writeFileSync(CLOUDFLARE_FILE, JSON.stringify(snapshot, null, 2));
-};
-
 const files = fs.readdirSync(POSTS_DIR).filter((file) => file.endsWith('.md'));
 const postsWithSearch = files
   .map((filename) => {
@@ -251,126 +246,6 @@ const friends = friendFiles.flatMap((filename) => {
 fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'friends.json'), JSON.stringify(friends, null, 2));
 console.log(`JSON generated: ${friends.length} friends`);
 
-const generateCloudflareSnapshot = async () => {
-  const token = process.env.CLOUDFLARE_API_TOKEN?.trim();
-  const zoneId = process.env.CLOUDFLARE_ZONE_ID?.trim();
-
-  if (!token || !zoneId) {
-    const emptySnapshot = {
-      enabled: false,
-      fetchedAt: null,
-      domain: 'pldduck.com',
-      timeWindows: []
-    };
-    writeCloudflareSnapshot(emptySnapshot);
-    console.log('Cloudflare Analytics skipped: missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ZONE_ID');
-    return;
-  }
-
-  const snapshot = {
-    enabled: true,
-    fetchedAt: new Date().toISOString(),
-    domain: 'pldduck.com',
-    timeWindows: []
-  };
-
-  const timeWindows = [1, 7, 30];
-
-  for (const days of timeWindows) {
-    const now = new Date();
-    const since = new Date(now);
-    since.setDate(since.getDate() - days);
-
-    const until = new Date(now);
-    until.setDate(until.getDate() + 1);
-
-    const sinceStr = since.toISOString().split('T')[0];
-    const untilStr = until.toISOString().split('T')[0];
-
-    try {
-      const totalsQuery = `
-        query {
-          viewer {
-            zones(filter: { zoneTag: "${zoneId}" }) {
-              httpRequests1dGroups(
-                limit: ${days + 1}
-                filter: { date_geq: "${sinceStr}", date_lt: "${untilStr}" }
-              ) {
-                sum {
-                  requests
-                  pageViews
-                  bytes
-                }
-                uniq {
-                  uniques
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-
-      try {
-        const totalsResponse = await fetch('https://api.cloudflare.com/client/v4/graphql', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ query: totalsQuery }),
-          signal: controller.signal
-        });
-        clearTimeout(timeout);
-
-        if (!totalsResponse.ok) {
-          throw new Error(`API request failed with status ${totalsResponse.status}`);
-        }
-
-        const totalsData = await totalsResponse.json();
-        const groups = totalsData?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
-
-        const totals = groups.reduce(
-          (acc, group) => ({
-            requests: acc.requests + (group.sum?.requests || 0),
-            pageViews: acc.pageViews + (group.sum?.pageViews || 0),
-            bandwidth: acc.bandwidth + (group.sum?.bytes || 0),
-            uniques: acc.uniques + (group.uniq?.uniques || 0)
-          }),
-          { requests: 0, pageViews: 0, bandwidth: 0, uniques: 0 }
-        );
-
-        snapshot.timeWindows.push({
-          days,
-          data: totals,
-          error: null
-        });
-
-        console.log(`Cloudflare data fetched for ${days} days: ${totals.pageViews} page views`);
-      } catch (error) {
-        console.warn(`Cloudflare Analytics failed for ${days} days: ${error.message}`);
-        snapshot.timeWindows.push({
-          days,
-          data: { requests: 0, pageViews: 0, bandwidth: 0, uniques: 0 },
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
-    } catch (error) {
-      console.warn(`Cloudflare Analytics failed for ${days} days: ${error.message}`);
-      snapshot.timeWindows.push({
-        days,
-        data: { requests: 0, pageViews: 0, bandwidth: 0, uniques: 0 },
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  }
-
-  writeCloudflareSnapshot(snapshot);
-  console.log(`Cloudflare snapshot generated with ${snapshot.timeWindows.length} time windows`);
-};
-
 const generateSitemap = () => {
   const staticPages = ['', 'archive', 'tags', 'stats', 'friends', 'about'];
 
@@ -438,6 +313,5 @@ const generateRss = () => {
   console.log('RSS feed generated');
 };
 
-await generateCloudflareSnapshot();
 generateSitemap();
 generateRss();

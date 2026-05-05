@@ -1,4 +1,4 @@
-﻿import fs from 'fs';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -108,7 +108,7 @@ posts.forEach(post => {
 const staticPages = [
   { path: 'archive', title: `归档 - ${SITE_SUFFIX}`, description: `按年份整理 ${siteTitle} 的全部文章归档` },
   { path: 'tags', title: `标签 - ${SITE_SUFFIX}`, description: `按标签浏览 ${siteTitle} 的文章` },
-  { path: 'stats', title: `统计 - ${SITE_SUFFIX}`, description: `基于 Cloudflare Analytics API 生成的站点统计快照` },
+  { path: 'stats', title: `统计 - ${SITE_SUFFIX}`, description: `${siteTitle} 的站点统计信息` },
   { path: 'about', title: `关于${siteTitle} - ${SITE_SUFFIX}`, description: `关于${siteTitle}的介绍` },
   { path: 'friends', title: `友情链接 - ${SITE_SUFFIX}`, description: `我的朋友们和推荐的网站` }
 ];
