@@ -183,7 +183,7 @@ export const Sponsor: React.FC<SponsorPageProps> = () => {
           />
         </a>
         <a
-          href="https://1sudun.cn"
+          href="https://1sdun.cn"
           target="_blank"
           rel="noopener noreferrer"
         >
