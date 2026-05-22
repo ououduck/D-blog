@@ -47,8 +47,7 @@ export const Seo: React.FC<SeoProps> = ({
   structuredData,
   noindex = false
 }) => {
-  const siteTitle = `${siteConfig.title} | ${siteConfig.author.name}`;
-  const fullTitle = title === siteConfig.title ? siteTitle : `${title} | ${siteTitle}`;
+  const fullTitle = title === siteConfig.title ? siteConfig.title : `${title} - ${siteConfig.title}`;
   const canonicalUrl = toAbsoluteUrl(url);
   const imageUrl = toAbsoluteUrl(image);
   const schema = structuredData

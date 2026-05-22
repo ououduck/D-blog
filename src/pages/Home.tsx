@@ -546,7 +546,7 @@ export const Home = () => {
 
   return (
     <motion.div initial="initial" animate="animate" exit="exit" className="pb-10 md:pb-20">
-      <Seo title="D-blog - 技术分享与生活随笔" description="跑路的duck的个人博客，分享前端技术、编程教程与生活感悟，探索极致的静态页面体验。" />
+      <Seo title="D-blog" description="跑路的duck的个人博客，分享前端技术、编程教程与生活感悟，探索极致的静态页面体验。" />
       <Hero />
 
       {!loading && !loadError && (

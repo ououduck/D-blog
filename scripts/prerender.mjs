@@ -30,7 +30,7 @@ if (fs.existsSync(SITE_CONFIG_FILE)) {
   }
 }
 
-const SITE_SUFFIX = `${siteTitle} | ${authorName}`;
+const SITE_SUFFIX = siteTitle;
 
 
 // Check if dist exists
