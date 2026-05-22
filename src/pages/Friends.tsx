@@ -1,21 +1,17 @@
-import React, { useEffect, useState, useRef, useId } from 'react';
-import { motion } from 'framer-motion';
-import { ExternalLink, X, Copy, Check, GitPullRequest, Sparkles, Plus } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ExternalLink, Copy, Check, GitPullRequest, Sparkles, ChevronDown } from 'lucide-react';
 import { siteConfig } from '@config/site.config';
 import { getFriends } from '@/services/friends';
 import { Seo } from '../components/Seo';
 import { Friend } from '../types';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
-import { SlideModal } from '@/components/SlideModal';
 
 export const Friends = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
 
   useEffect(() => {
     getFriends()
@@ -86,33 +82,6 @@ export const Friends = () => {
       </motion.div>
 
       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <motion.button
-          type="button"
-          variants={itemVariants}
-          onClick={() => setIsModalOpen(true)}
-          whileHover={{ y: -6, scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-          className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 text-left dark:border-zinc-800 dark:bg-zinc-900 lg:col-span-3 lg:p-7"
-        >
-          <div className="relative flex h-full flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-2xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
-                <Plus size={14} />
-                Friend Link
-              </div>
-              <h3 className="text-2xl font-serif font-bold text-zinc-900 dark:text-zinc-100">申请友链</h3>
-              <p className="mt-3 text-sm leading-7 text-zinc-600 dark:text-zinc-400 md:text-base">
-                想出现在这个列表里?先添加本站友链,再按模板提交 PR 即可,信息清晰、审核也更快。
-              </p>
-            </div>
-            <div className="flex items-center gap-3 self-start rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-sm font-bold text-zinc-900 transition-all group-hover:border-zinc-900 group-hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:group-hover:border-zinc-100">
-              查看申请说明
-              <GitPullRequest size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
-            </div>
-          </div>
-        </motion.button>
-
         {!loading &&
           friends.map((friend, index) => (
             <motion.a
@@ -155,14 +124,21 @@ export const Friends = () => {
           ))}
       </motion.div>
 
-      <SlideModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        initialFocusRef={closeButtonRef}
-        ariaLabelledby={titleId}
+      {/* 申请友链折叠卡片 */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="mt-12 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
       >
-        {/* Windows 风格标题栏 */}
-        <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-5 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+        {/* 标题栏 - 始终可见 */}
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex w-full items-center justify-between px-5 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800 sm:px-6"
+          aria-expanded={isExpanded}
+          aria-controls="friend-link-panel"
+        >
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <div className="h-3 w-3 rounded-full bg-zinc-300 dark:bg-zinc-700" />
@@ -171,83 +147,96 @@ export const Friends = () => {
             </div>
             <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">申请友链</span>
           </div>
-          <button
-            ref={closeButtonRef}
-            onClick={() => setIsModalOpen(false)}
-            className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-            aria-label="关闭申请友链弹窗"
+          <motion.div
+            animate={{ rotate: isExpanded ? 180 : 0 }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
           >
-            <X size={16} />
-          </button>
-        </div>
+            <ChevronDown size={18} className="text-zinc-500 dark:text-zinc-400" />
+          </motion.div>
+        </button>
 
-        {/* 窗口内容 */}
-        <div className="p-5 sm:p-6">
-          <div className="mb-5">
-            <p className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">FRIEND LINK</p>
-            <h3 id={titleId} className="text-lg font-bold text-zinc-900 dark:text-zinc-100">按模板提交 PR，就能更快完成收录</h3>
-          </div>
+        {/* 可折叠内容 */}
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              id="friend-link-panel"
+              key="friend-link-content"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="border-t border-zinc-200 dark:border-zinc-800" />
+              <div className="p-5 sm:p-6">
+                <div className="mb-5">
+                  <p className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">FRIEND LINK</p>
+                  <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">按模板提交 PR，就能更快完成收录</h3>
+                </div>
 
-          <div className="space-y-4">
-            <div className="rounded-lg border border-zinc-200 bg-zinc-100 p-3 text-sm leading-relaxed text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
-              <strong>公告：</strong>
-              {siteConfig.friendsPage.announcement}
-            </div>
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-zinc-200 bg-zinc-100 p-3 text-sm leading-relaxed text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
+                    <strong>公告：</strong>
+                    {siteConfig.friendsPage.announcement}
+                  </div>
 
-            <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-              <h4 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">本站信息（提交前请先添加本站友链）</h4>
-              <div className="flex flex-col items-start gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800 sm:flex-row sm:items-center">
-                <ProgressiveImage src={siteInfo.avatar} alt={siteInfo.name} wrapperClassName="h-12 w-12 flex-shrink-0 rounded-full border border-zinc-200 bg-white dark:border-zinc-700" className="h-12 w-12 rounded-full object-cover object-center" />
-                <div className="w-full flex-1 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100">{siteInfo.name}</div>
-                  <div className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{siteInfo.description}</div>
-                  <div className="break-all pt-0.5 font-mono text-xs leading-relaxed text-zinc-700 dark:text-zinc-400 select-all">链接：{siteInfo.url}</div>
-                  <div className="break-all font-mono text-xs leading-relaxed text-zinc-700 dark:text-zinc-400 select-all">LOGO：{siteInfo.avatar}</div>
+                  <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                    <h4 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">本站信息（提交前请先添加本站友链）</h4>
+                    <div className="flex flex-col items-start gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800 sm:flex-row sm:items-center">
+                      <ProgressiveImage src={siteInfo.avatar} alt={siteInfo.name} wrapperClassName="h-12 w-12 flex-shrink-0 rounded-full border border-zinc-200 bg-white dark:border-zinc-700" className="h-12 w-12 rounded-full object-cover object-center" />
+                      <div className="w-full flex-1 space-y-1">
+                        <div className="font-semibold text-zinc-900 dark:text-zinc-100">{siteInfo.name}</div>
+                        <div className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{siteInfo.description}</div>
+                        <div className="break-all pt-0.5 font-mono text-xs leading-relaxed text-zinc-700 dark:text-zinc-400 select-all">链接：{siteInfo.url}</div>
+                        <div className="break-all font-mono text-xs leading-relaxed text-zinc-700 dark:text-zinc-400 select-all">LOGO：{siteInfo.avatar}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">友链 JSON 模板</h4>
+                      <button onClick={handleCopyTemplate} className="flex items-center gap-1.5 rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700">
+                        {isCopied ? <Check size={14} /> : <Copy size={14} />}
+                        {isCopied ? '已复制' : '复制模板'}
+                      </button>
+                    </div>
+                    <pre className="select-all whitespace-pre-wrap rounded border border-zinc-300 bg-zinc-50 p-3 font-mono text-xs leading-relaxed text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+                      {templateText}
+                    </pre>
+                  </div>
+
+                  <a
+                    href={siteConfig.friendsPage.repoFriendsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white p-3 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                  >
+                    <div>
+                      <div className="font-semibold text-zinc-900 dark:text-zinc-100">GitHub PR</div>
+                      <div className="break-all text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        在仓库 {siteConfig.friendsPage.repoFriendsDir} 目录下新增一个 JSON 文件并提交 PR
+                      </div>
+                    </div>
+                    <GitPullRequest size={18} className="flex-shrink-0 text-zinc-500 dark:text-zinc-400" />
+                  </a>
+                </div>
+
+                <div className="mt-5 flex justify-end border-t border-zinc-200 pt-4 dark:border-zinc-800">
+                  <a
+                    href={`${siteConfig.friendsPage.repoUrl}/tree/main/${siteConfig.friendsPage.repoFriendsDir}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  >
+                    去提交 PR
+                  </a>
                 </div>
               </div>
-            </div>
-
-            <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">友链 JSON 模板</h4>
-                <button onClick={handleCopyTemplate} className="flex items-center gap-1.5 rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700">
-                  {isCopied ? <Check size={14} /> : <Copy size={14} />}
-                  {isCopied ? '已复制' : '复制模板'}
-                </button>
-              </div>
-              <pre className="select-all whitespace-pre-wrap rounded border border-zinc-300 bg-zinc-50 p-3 font-mono text-xs leading-relaxed text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
-                {templateText}
-              </pre>
-            </div>
-
-            <a
-              href={siteConfig.friendsPage.repoFriendsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white p-3 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-            >
-              <div>
-                <div className="font-semibold text-zinc-900 dark:text-zinc-100">GitHub PR</div>
-                <div className="break-all text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                  在仓库 {siteConfig.friendsPage.repoFriendsDir} 目录下新增一个 JSON 文件并提交 PR
-                </div>
-              </div>
-              <GitPullRequest size={18} className="flex-shrink-0 text-zinc-500 dark:text-zinc-400" />
-            </a>
-          </div>
-
-          <div className="mt-5 flex justify-end border-t border-zinc-200 pt-4 dark:border-zinc-800">
-            <a
-              href={`${siteConfig.friendsPage.repoUrl}/tree/main/${siteConfig.friendsPage.repoFriendsDir}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              去提交 PR
-            </a>
-          </div>
-        </div>
-      </SlideModal>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 };
