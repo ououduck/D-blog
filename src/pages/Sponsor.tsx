@@ -169,21 +169,30 @@ export const Sponsor: React.FC<SponsorPageProps> = () => {
         })}
       </div>
 
-      {/* Sponsor Ad */}
-      <div className="mt-12 flex justify-center">
-        <motion.a
+      {/* Sponsor Ads */}
+      <div className="mt-12 flex flex-col items-center gap-6">
+        <a
           href="https://curl.qcloud.com/fBu6YgLR"
           target="_blank"
           rel="noopener noreferrer"
-          whileHover={{ scale: 1.02 }}
-          className="overflow-hidden rounded-2xl border border-zinc-200 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800"
         >
           <img
             src="/ads-img/tencent-cloud.png"
             alt="腾讯云广告"
             className="h-auto w-full max-w-2xl"
           />
-        </motion.a>
+        </a>
+        <a
+          href="https://1sudun.cn"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            src="/ads-img/fynxscdn.jpg"
+            alt="1sudun 广告"
+            className="h-auto w-full max-w-2xl"
+          />
+        </a>
       </div>
     </motion.div>
   );
