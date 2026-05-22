@@ -80,10 +80,10 @@ export const Sponsor: React.FC<SponsorPageProps> = () => {
       id: 'ads',
       icon: TrendingUp,
       title: '广告赞助',
-      description: '通过浏览和点击广告产生收益',
-      buttonText: '查看详情',
-      disabled: true,
-      disabledNote: '暂时未接入广告'
+      description: '通过光临我们的广告赞助商对我们进行间接赞助',
+      buttonText: '看看下方广告吧',
+      disabled: false,
+      disabledNote: '广告赞助已经关闭'
     }
   ];
 
@@ -167,6 +167,23 @@ export const Sponsor: React.FC<SponsorPageProps> = () => {
             </motion.div>
           );
         })}
+      </div>
+
+      {/* Sponsor Ad */}
+      <div className="mt-12 flex justify-center">
+        <motion.a
+          href="https://curl.qcloud.com/fBu6YgLR"
+          target="_blank"
+          rel="noopener noreferrer"
+          whileHover={{ scale: 1.02 }}
+          className="overflow-hidden rounded-2xl border border-zinc-200 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800"
+        >
+          <img
+            src="/ads-img/tencent-cloud.png"
+            alt="腾讯云广告"
+            className="h-auto w-full max-w-2xl"
+          />
+        </motion.a>
       </div>
     </motion.div>
   );
