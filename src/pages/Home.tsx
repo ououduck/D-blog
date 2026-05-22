@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronLeft, ChevronRight, Share2, X } from 'lucide-react';
+import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronLeft, ChevronRight, Share2, ChevronDown } from 'lucide-react';
 import { getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
@@ -307,7 +307,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
   );
 };
 
-const Hero = ({ onSearch, searchQuery, onClearSearch }: { onSearch: (val: string) => void; searchQuery: string; onClearSearch: () => void }) => {
+const Hero = () => {
   const shouldReduceMotion = useReducedMotion();
 
   return (
@@ -326,48 +326,49 @@ const Hero = ({ onSearch, searchQuery, onClearSearch }: { onSearch: (val: string
           transition={shouldReduceMotion ? undefined : { duration: 8.6, repeat: Infinity, ease: 'easeInOut' }}
         />
       </motion.div>
-      <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.82, ease: [0.16, 1, 0.3, 1] }} className="mb-6 font-serif text-5xl font-extrabold leading-[1.05] tracking-tight bg-gradient-to-br from-ink to-zinc-600 bg-clip-text text-transparent drop-shadow-[0_10px_24px_rgba(28,25,23,0.14)] dark:from-white dark:to-zinc-400 dark:drop-shadow-[0_10px_28px_rgba(255,255,255,0.08)] sm:text-6xl md:mb-8 md:text-7xl lg:text-8xl">
+      <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.82, ease: [0.16, 1, 0.3, 1] }} className="mb-6 font-serif text-6xl font-black leading-[1.05] tracking-tight bg-gradient-to-br from-ink to-zinc-600 bg-clip-text text-transparent drop-shadow-[0_10px_24px_rgba(28,25,23,0.14)] dark:from-white dark:to-zinc-400 dark:drop-shadow-[0_10px_28px_rgba(255,255,255,0.08)] sm:text-7xl md:mb-8 md:text-8xl lg:text-9xl">
         {siteConfig.title}
       </motion.h1>
       <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16, duration: 0.72, ease: [0.16, 1, 0.3, 1] }} className="mx-auto mb-12 max-w-2xl font-sans text-base leading-relaxed text-zinc-600 dark:text-zinc-300 md:text-xl">
         {siteConfig.description}
       </motion.p>
-      <motion.div initial={{ opacity: 0, y: 12, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.24, duration: 0.72, ease: [0.16, 1, 0.3, 1] }} className="flex w-full flex-col items-center gap-6">
-        <div className="group relative w-full max-w-sm md:max-w-md">
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ delay: 0.24, duration: 0.72, ease: [0.16, 1, 0.3, 1] }}
+        className="mt-8 flex flex-col items-center gap-3"
+      >
+        <motion.button
+          onClick={() => document.getElementById('posts-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          className="group flex flex-col items-center gap-2 rounded-full px-6 py-3 transition-colors hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40"
+          aria-label="向下浏览文章"
+        >
+          <motion.span
+            className="text-sm font-medium tracking-wide text-zinc-400 transition-colors group-hover:text-zinc-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"
+            animate={shouldReduceMotion ? undefined : { opacity: [0.5, 1, 0.5] }}
+            transition={shouldReduceMotion ? undefined : { duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            向下浏览
+          </motion.span>
           <motion.div
-            className="pointer-events-none absolute inset-0 rounded-full"
-            animate={shouldReduceMotion || searchQuery ? undefined : { boxShadow: ['0 18px 36px -30px rgba(192,57,43,0.08)', '0 22px 44px -30px rgba(192,57,43,0.14)', '0 18px 36px -30px rgba(192,57,43,0.08)'] }}
-            transition={shouldReduceMotion || searchQuery ? undefined : { duration: 6.8, repeat: Infinity, ease: 'easeInOut' }}
-          />
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5">
-            <motion.div animate={searchQuery ? { scale: 1.04, opacity: 1 } : { scale: 1, opacity: 0.86 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
-              <Search className="text-zinc-400 transition-colors group-focus-within:text-zinc-900 dark:group-focus-within:text-zinc-100" size={20} />
-            </motion.div>
-          </div>
-          <input
-            type="text"
-            placeholder="搜索文章..."
-            value={searchQuery}
-            onChange={(event) => onSearch(event.target.value)}
-            className="w-full rounded-full border border-zinc-200/90 bg-white/90 py-4 pl-12 pr-12 text-base text-ink shadow-[0_18px_40px_-28px_rgba(28,25,23,0.35)] outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-900/5 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-white dark:focus:border-zinc-600 dark:focus:ring-zinc-100/5 hover:border-zinc-300 dark:hover:border-zinc-700"
-            aria-label="搜索文章"
-          />
-          <AnimatePresence initial={false}>
-            {searchQuery && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.82, x: 6 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.82, x: 6 }}
-                transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
-                onClick={onClearSearch}
-                className="absolute inset-y-0 right-0 flex items-center pr-5 text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
-                aria-label="清除搜索"
-              >
-                <X size={18} />
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </div>
+            animate={shouldReduceMotion ? undefined : {
+              y: [0, 8, 0],
+              opacity: [0.45, 1, 0.45],
+              scale: [0.92, 1.08, 0.92],
+            }}
+            transition={shouldReduceMotion ? undefined : {
+              duration: 2.8,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          >
+            <ChevronDown
+              size={28}
+              className="text-zinc-400 transition-colors group-hover:text-zinc-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"
+              strokeWidth={2}
+            />
+          </motion.div>
+        </motion.button>
       </motion.div>
     </div>
   );
@@ -546,7 +547,7 @@ export const Home = () => {
   return (
     <motion.div initial="initial" animate="animate" exit="exit" className="pb-10 md:pb-20">
       <Seo title="首页" />
-      <Hero onSearch={handleSearch} searchQuery={searchQuery} onClearSearch={handleClearSearch} />
+      <Hero />
 
       {!loading && !loadError && (
         <motion.div variants={pageBlockVariants} initial="hidden" animate="visible" transition={{ delay: 0.05 }}>
