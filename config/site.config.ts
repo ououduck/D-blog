@@ -1,9 +1,9 @@
 export const siteConfig = {
   title: 'D-blog',
   subtitle: '跑路的duck',
-  description: '技术分享和生活随笔',
-  logo: '/logo.png',
-  seoImage: '/logo.png',
+  description: '跑路的duck的技术分享和生活随笔',
+  logo: 'https://blog.pldduck.com/logo.png',
+  seoImage: 'https://blog.pldduck.com/logo.png',
   footerText: '©2026 D工作室',
   url: 'https://blog.pldduck.com',
   social: {

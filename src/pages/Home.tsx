@@ -326,7 +326,7 @@ const Hero = () => {
           transition={shouldReduceMotion ? undefined : { duration: 8.6, repeat: Infinity, ease: 'easeInOut' }}
         />
       </motion.div>
-      <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.82, ease: [0.16, 1, 0.3, 1] }} className="mb-6 font-serif text-6xl font-black leading-[1.05] tracking-tight bg-gradient-to-br from-ink to-zinc-600 bg-clip-text text-transparent drop-shadow-[0_10px_24px_rgba(28,25,23,0.14)] dark:from-white dark:to-zinc-400 dark:drop-shadow-[0_10px_28px_rgba(255,255,255,0.08)] sm:text-7xl md:mb-8 md:text-8xl lg:text-9xl">
+      <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.82, ease: [0.16, 1, 0.3, 1] }} className="mb-6 font-serif text-[5.5rem] font-black leading-[0.95] tracking-tighter bg-gradient-to-br from-ink to-zinc-600 bg-clip-text text-transparent drop-shadow-[0_12px_32px_rgba(28,25,23,0.18)] dark:from-white dark:to-zinc-400 dark:drop-shadow-[0_12px_36px_rgba(255,255,255,0.1)] sm:text-[7rem] md:mb-8 md:text-[9rem] lg:text-[11rem]">
         {siteConfig.title}
       </motion.h1>
       <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16, duration: 0.72, ease: [0.16, 1, 0.3, 1] }} className="mx-auto mb-12 max-w-2xl font-sans text-base leading-relaxed text-zinc-600 dark:text-zinc-300 md:text-xl">
@@ -340,7 +340,7 @@ const Hero = () => {
       >
         <motion.button
           onClick={() => document.getElementById('posts-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          className="group flex flex-col items-center gap-2 rounded-full px-6 py-3 transition-colors hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40"
+          className="group flex flex-col items-center gap-2 rounded-xl px-10 py-3 transition-colors hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40"
           aria-label="向下浏览文章"
         >
           <motion.span
