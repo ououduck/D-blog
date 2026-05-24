@@ -7,12 +7,7 @@ import { ProgressiveImage } from '@/components/ProgressiveImage';
 
 export const About = () => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      className="mx-auto max-w-4xl py-12 md:py-20"
-    >
+    <div className="mx-auto max-w-4xl py-12 md:py-20">
       <Seo title="关于我" description="关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的用户界面。" />
 
       <div className="mb-12 flex flex-col items-center gap-8 rounded-2xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900 md:flex-row md:gap-12 md:p-12 md:text-left">
@@ -67,6 +62,6 @@ export const About = () => {
           </p>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };

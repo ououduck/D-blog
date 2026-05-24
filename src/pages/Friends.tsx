@@ -70,7 +70,7 @@ export const Friends = () => {
     <div className="py-12 md:py-20">
       <Seo title="友情链接" description="D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链。" />
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-16 text-center">
+      <div className="mb-16 text-center">
         <h1 className="mb-6 font-serif text-4xl font-bold text-zinc-900 dark:text-zinc-100 md:text-5xl">友情链接</h1>
         <p className="mx-auto max-w-xl text-zinc-600 dark:text-zinc-400">
           这里汇集了一些优秀的技术博客和有趣的网站。如果你也想交换友链，可以直接在仓库里提交 PR。
@@ -79,15 +79,10 @@ export const Friends = () => {
           <Sparkles size={14} />
           以下排名不分先后，每次刷新都会随机排序
         </p>
-      </motion.div>
+      </div>
 
       {/* 申请友链折叠卡片 */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="mb-12 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
-      >
+      <div className="mb-12 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         {/* 标题栏 - 始终可见 */}
         <button
           type="button"
@@ -193,7 +188,7 @@ export const Friends = () => {
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {!loading &&

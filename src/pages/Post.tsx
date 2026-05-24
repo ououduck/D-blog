@@ -524,7 +524,7 @@ export const Post = () => {
         desktopShowTrigger={headings.length > 0}
       />
 
-      <motion.article initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
+      <article>
         <Seo
           title={post.title}
           description={post.excerpt}
@@ -557,7 +557,7 @@ export const Post = () => {
             返回文章
           </Link>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }}>
             <div className="mb-8 flex flex-col items-center gap-4">
               <span className="rounded-full border border-zinc-200 bg-zinc-100 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
                 {post.category}
@@ -598,7 +598,7 @@ export const Post = () => {
 
         {post.coverImage && (
           <button type="button" className="mx-auto block w-full max-w-6xl px-4 md:px-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="mb-10 aspect-[4/3] cursor-zoom-in overflow-hidden rounded-2xl shadow-2xl shadow-zinc-200/50 dark:shadow-none sm:aspect-[16/9] md:mb-20 md:aspect-[21/9] md:rounded-3xl">
+            <motion.div initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.15, duration: 0.5 }} className="mb-10 aspect-[4/3] cursor-zoom-in overflow-hidden rounded-2xl shadow-2xl shadow-zinc-200/50 dark:shadow-none sm:aspect-[16/9] md:mb-20 md:aspect-[21/9] md:rounded-3xl">
               <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="auto" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
             </motion.div>
           </button>
@@ -663,7 +663,7 @@ export const Post = () => {
             </div>
           </div>
         </div>
-      </motion.article>
+      </article>
 
       <ShareModal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} title={post.title} excerpt={post.excerpt} url={`${typeof window !== 'undefined' ? window.location.origin : siteConfig.url}/post/${post.id}`} />
     </>

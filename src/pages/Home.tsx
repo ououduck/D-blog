@@ -24,12 +24,12 @@ const springCardLayout = {
 } as const;
 
 const sectionFadeIn = {
-  hidden: { opacity: 0, y: 14 },
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.62,
+      duration: 0.4,
       ease: easeOutQuint
     }
   }
@@ -55,12 +55,12 @@ const chipMotion = {
 } as const;
 
 const pageBlockVariants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.64,
+      duration: 0.4,
       ease: [0.16, 1, 0.3, 1]
     }
   }
@@ -116,15 +116,15 @@ const filterAndSortPosts = (
 const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean; onShare: (post: PostMetadata) => void }> = ({ post, index, featured, onShare }) => {
   const shouldReduceMotion = useReducedMotion();
   const cardVariants = {
-    hidden: { opacity: 0, y: 24, scale: 0.985 },
+    hidden: { opacity: 0, y: 18, scale: 0.99 },
     visible: {
       opacity: 1,
       y: 0,
       scale: 1,
       transition: {
-        duration: 0.58,
+        duration: 0.4,
         ease: easeOutSoft,
-        delay: index * 0.05
+        delay: index * 0.04
       }
     }
   };
@@ -173,9 +173,9 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
           </Link>
           <motion.div
             className="relative flex w-full flex-col justify-center bg-white p-6 backdrop-blur-sm dark:bg-zinc-900/80 md:w-5/12 md:p-12"
-            initial={shouldReduceMotion ? false : { opacity: 0, x: 18 }}
+            initial={shouldReduceMotion ? false : { opacity: 0, x: 14 }}
             animate={shouldReduceMotion ? undefined : { opacity: 1, x: 0 }}
-            transition={shouldReduceMotion ? undefined : { duration: 0.56, delay: 0.08 + index * 0.04, ease: easeOutSoft }}
+            transition={shouldReduceMotion ? undefined : { duration: 0.4, delay: 0.05 + index * 0.03, ease: easeOutSoft }}
           >
             {post.top !== undefined && (
               <div className="absolute right-6 top-6 rounded-full border border-zinc-200 bg-zinc-100 p-2 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
@@ -326,16 +326,16 @@ const Hero = () => {
           transition={shouldReduceMotion ? undefined : { duration: 8.6, repeat: Infinity, ease: 'easeInOut' }}
         />
       </motion.div>
-      <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.82, ease: [0.16, 1, 0.3, 1] }} className="mb-6 font-serif text-[5.5rem] font-black leading-[0.95] tracking-tighter bg-gradient-to-br from-ink to-zinc-600 bg-clip-text text-transparent drop-shadow-[0_12px_32px_rgba(28,25,23,0.18)] dark:from-white dark:to-zinc-400 dark:drop-shadow-[0_12px_36px_rgba(255,255,255,0.1)] sm:text-[7rem] md:mb-8 md:text-[9rem] lg:text-[11rem]">
+      <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.55, ease: [0.16, 1, 0.3, 1] }} className="mb-6 font-serif text-[5.5rem] font-black leading-[0.95] tracking-tighter bg-gradient-to-br from-ink to-zinc-600 bg-clip-text text-transparent drop-shadow-[0_12px_32px_rgba(28,25,23,0.18)] dark:from-white dark:to-zinc-400 dark:drop-shadow-[0_12px_36px_rgba(255,255,255,0.1)] sm:text-[7rem] md:mb-8 md:text-[9rem] lg:text-[11rem]">
         {siteConfig.title}
       </motion.h1>
-      <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16, duration: 0.72, ease: [0.16, 1, 0.3, 1] }} className="mx-auto mb-12 max-w-2xl font-sans text-base leading-relaxed text-zinc-600 dark:text-zinc-300 md:text-xl">
+      <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="mx-auto mb-12 max-w-2xl font-sans text-base leading-relaxed text-zinc-600 dark:text-zinc-300 md:text-xl">
         {siteConfig.description}
       </motion.p>
       <motion.div
-        initial={{ opacity: 0, y: 12, scale: 0.985 }}
+        initial={{ opacity: 0, y: 10, scale: 0.99 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ delay: 0.24, duration: 0.72, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ delay: 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         className="mt-8 flex flex-col items-center gap-3"
       >
         <motion.button
@@ -545,7 +545,7 @@ export const Home = () => {
   };
 
   return (
-    <motion.div initial="initial" animate="animate" exit="exit" className="pb-10 md:pb-20">
+    <div className="pb-10 md:pb-20">
       <Seo title="D-blog" description="跑路的duck的个人博客，分享前端技术、编程教程与生活感悟，探索极致的静态页面体验。" />
       <Hero />
 
@@ -629,7 +629,7 @@ export const Home = () => {
       </motion.div>
 
       <ShareModal isOpen={!!sharePost} onClose={() => setSharePost(null)} title={sharePost?.title || ''} excerpt={sharePost?.excerpt || ''} url={sharePost ? `${window.location.origin}/post/${sharePost.id}` : ''} />
-    </motion.div>
+    </div>
   );
 };
 

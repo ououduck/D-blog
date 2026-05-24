@@ -20,15 +20,6 @@ interface ShadowConfig {
   opacity: number;
 }
 
-const pageVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
-  }
-};
-
 export const CoverGenerator: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bgImageInputRef = useRef<HTMLInputElement>(null);
@@ -628,16 +619,14 @@ export const CoverGenerator: React.FC = () => {
   }, [generateCover]);
 
   return (
-    <motion.div variants={pageVariants} initial="hidden" animate="visible" className="pb-20">
+    <div className="pb-20">
       <Seo title="封面生成器" description="在线生成精美博客文章封面图片，支持自定义文字、图标、渐变背景与多种导出比例。" />
 
       <div className="mb-8 text-center">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <h1 className="mb-4 font-serif text-5xl font-bold text-ink dark:text-white md:text-6xl">封面生成器</h1>
-          <p className="mx-auto max-w-2xl text-lg text-zinc-500 dark:text-zinc-400">
-            快速生成精美的博客文章封面，支持自定义文字、图标和样式
-          </p>
-        </motion.div>
+        <h1 className="mb-4 font-serif text-5xl font-bold text-ink dark:text-white md:text-6xl">封面生成器</h1>
+        <p className="mx-auto max-w-2xl text-lg text-zinc-500 dark:text-zinc-400">
+          快速生成精美的博客文章封面，支持自定义文字、图标和样式
+        </p>
       </div>
 
       {/* 标签页切换 */}
@@ -659,7 +648,7 @@ export const CoverGenerator: React.FC = () => {
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* 左侧控制面板 */}
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="space-y-6 lg:col-span-1">
+        <div className="space-y-6 lg:col-span-1">
           
           {/* 内容标签页 */}
           {activeTab === 'content' && (
@@ -1361,10 +1350,10 @@ export const CoverGenerator: React.FC = () => {
               </div>
             </>
           )}
-        </motion.div>
+        </div>
 
         {/* 右侧预览区域 */}
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="lg:col-span-2">
+        <div className="lg:col-span-2">
           <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
             <div className="mb-4 flex items-center gap-2">
               <ImageIcon className="text-ink dark:text-white" size={20} />
@@ -1404,7 +1393,7 @@ export const CoverGenerator: React.FC = () => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Iconify 搜索弹窗 */}

@@ -87,12 +87,7 @@ export const Stats = () => {
   }, []);
 
   return (
-    <motion.div
-      initial={shouldReduceMotion ? false : { opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.28, ease: 'easeOut' }}
-      className="pb-10 md:pb-20"
-    >
+    <div className="pb-10 md:pb-20">
       <Seo title="站点统计" description="D-blog 站点统计概览：文章数、总字数、分类标签、图片数量等核心数据一目了然。" />
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:rounded-2xl sm:p-5 md:p-6 lg:p-8">
@@ -163,6 +158,6 @@ export const Stats = () => {
           </a>
         </div>
       </section>
-    </motion.div>
+    </div>
   );
 };

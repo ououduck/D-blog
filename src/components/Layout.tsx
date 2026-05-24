@@ -928,25 +928,21 @@ interface LayoutProps {
 }
 
 const routeShellVariants = {
-  initial: { opacity: 0, y: 22, scale: 0.992, filter: 'blur(12px)' },
+  initial: { opacity: 0, y: 16 },
   animate: {
     opacity: 1,
     y: 0,
-    scale: 1,
-    filter: 'blur(0px)',
     transition: {
-      duration: 0.55,
+      duration: 0.4,
       ease: [0.22, 1, 0.36, 1]
     }
   },
   exit: {
     opacity: 0,
-    y: -14,
-    scale: 0.995,
-    filter: 'blur(8px)',
+    y: -10,
     transition: {
-      duration: 0.28,
-      ease: [0.4, 0, 1, 1]
+      duration: 0.25,
+      ease: [0.22, 1, 0.36, 1]
     }
   }
 } as const;
