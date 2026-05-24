@@ -81,55 +81,12 @@ export const Friends = () => {
         </p>
       </motion.div>
 
-      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {!loading &&
-          friends.map((friend, index) => (
-            <motion.a
-              key={`${friend.url}-${index}`}
-              variants={itemVariants}
-              whileHover={{ y: -6 }}
-              transition={{ type: 'spring', stiffness: 280, damping: 22 }}
-              href={friend.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative block overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 transition-all duration-300 hover:border-zinc-300 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)]"
-            >
-              <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100 dark:text-zinc-500">
-                <ExternalLink size={16} />
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800">
-                  <ProgressiveImage src={friend.avatar} alt={friend.name} wrapperClassName="h-full w-full" className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="mb-1 truncate font-serif text-lg font-bold text-zinc-900 transition-colors group-hover:text-zinc-700 dark:text-zinc-100 dark:group-hover:text-zinc-300">{friend.name}</h2>
-                  <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{friend.description}</p>
-                </div>
-              </div>
-            </motion.a>
-          ))}
-
-        {loading &&
-          Array.from({ length: 3 }).map((_, index) => (
-            <motion.div key={`skeleton-${index}`} variants={itemVariants} className="animate-pulse rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900/50">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 flex-shrink-0 rounded-full bg-zinc-100 dark:bg-zinc-800" />
-                <div className="flex-1 space-y-3">
-                  <div className="h-5 w-1/3 rounded bg-zinc-100 dark:bg-zinc-800" />
-                  <div className="h-4 w-full rounded bg-zinc-100 dark:bg-zinc-800" />
-                  <div className="h-4 w-2/3 rounded bg-zinc-100 dark:bg-zinc-800" />
-                </div>
-              </div>
-            </motion.div>
-          ))}
-      </motion.div>
-
       {/* 申请友链折叠卡片 */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="mt-12 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+        className="mb-12 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
       >
         {/* 标题栏 - 始终可见 */}
         <button
@@ -236,6 +193,49 @@ export const Friends = () => {
             </motion.div>
           )}
         </AnimatePresence>
+      </motion.div>
+
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {!loading &&
+          friends.map((friend, index) => (
+            <motion.a
+              key={`${friend.url}-${index}`}
+              variants={itemVariants}
+              whileHover={{ y: -6 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+              href={friend.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative block overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 transition-all duration-300 hover:border-zinc-300 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)]"
+            >
+              <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100 dark:text-zinc-500">
+                <ExternalLink size={16} />
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800">
+                  <ProgressiveImage src={friend.avatar} alt={friend.name} wrapperClassName="h-full w-full" className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="mb-1 truncate font-serif text-lg font-bold text-zinc-900 transition-colors group-hover:text-zinc-700 dark:text-zinc-100 dark:group-hover:text-zinc-300">{friend.name}</h2>
+                  <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{friend.description}</p>
+                </div>
+              </div>
+            </motion.a>
+          ))}
+
+        {loading &&
+          Array.from({ length: 3 }).map((_, index) => (
+            <motion.div key={`skeleton-${index}`} variants={itemVariants} className="animate-pulse rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900/50">
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 flex-shrink-0 rounded-full bg-zinc-100 dark:bg-zinc-800" />
+                <div className="flex-1 space-y-3">
+                  <div className="h-5 w-1/3 rounded bg-zinc-100 dark:bg-zinc-800" />
+                  <div className="h-4 w-full rounded bg-zinc-100 dark:bg-zinc-800" />
+                  <div className="h-4 w-2/3 rounded bg-zinc-100 dark:bg-zinc-800" />
+                </div>
+              </div>
+            </motion.div>
+          ))}
       </motion.div>
     </div>
   );
