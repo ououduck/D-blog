@@ -1491,6 +1491,6 @@ export const CoverGenerator: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 };
