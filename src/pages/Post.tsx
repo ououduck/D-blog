@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion } from 'framer-motion';
+import DOMPurify from 'dompurify';
 
 import { ArrowLeft, Clock, Calendar, ChevronRight, Shield, Share2, Copy, Check, Users, ExternalLink } from 'lucide-react';
 import { getPostById } from '@/services/posts';
@@ -44,8 +45,8 @@ const MERMAID_CONFIG = {
   }
 } satisfies Record<string, unknown>;
 
-const hasCodeBlocks = (content: string) => /```[\w-]*\s*[\r\n]/.test(content);
-const hasMathExpressions = (content: string) => /(^|[\r\n])\$\$[\s\S]*?\$\$|\\\(|\\\[/.test(content);
+const hasCodeBlocks = (content: string) => /```[\w-]*\s*```/m.test(content);
+const hasMathExpressions = (content: string) => /\$\$[\s\S]*?\$\$|\\\(|\\\[/m.test(content);
 const hasMermaidDiagrams = (content: string) => /```mermaid\b/.test(content);
 
 const formatMetaDate = (dateText?: string) => {
@@ -80,10 +81,13 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
   const [copied, setCopied] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
 
-  useEffect(() => () => {
-    if (resetTimerRef.current !== null) {
-      window.clearTimeout(resetTimerRef.current);
-    }
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current !== null) {
+        window.clearTimeout(resetTimerRef.current);
+        resetTimerRef.current = null;
+      }
+    };
   }, []);
 
   const markCopied = () => {
@@ -161,7 +165,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
 
 const MermaidBlock = ({ children, renderer }: { children: string; renderer: MermaidRenderer | null }) => {
   const [svg, setSvg] = useState('');
-  const mermaidIdRef = useRef(`mermaid-${Math.random().toString(36).slice(2, 11)}`);
+  const mermaidIdRef = useRef(`mermaid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`);
 
   useEffect(() => {
     if (!renderer) {
@@ -197,9 +201,13 @@ const MermaidBlock = ({ children, renderer }: { children: string; renderer: Merm
     );
   }
 
+  const sanitizedSvg = typeof DOMPurify !== 'undefined'
+    ? DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } })
+    : svg;
+
   return (
     <div className="my-8 flex justify-center overflow-x-auto rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900/50">
-      <div dangerouslySetInnerHTML={{ __html: svg }} />
+      <div dangerouslySetInnerHTML={{ __html: sanitizedSvg }} />
     </div>
   );
 };
@@ -375,12 +383,13 @@ export const Post = () => {
         tasks.push((async () => {
           const isDark = document.documentElement.classList.contains('dark');
           const highlightCss = isDark ? import('highlight.js/styles/github-dark.css') : import('highlight.js/styles/github.css');
-          
+
           const [{ default: rehypeHighlight }] = await Promise.all([
             import('rehype-highlight'),
             highlightCss
           ]);
 
+          if (cancelled) return;
           nextRehypePlugins.push(rehypeHighlight);
         })());
       }

@@ -33,10 +33,10 @@ export const usePostSearch = ({
   }, [emptyResults, searchQuery]);
 
   useEffect(() => {
-    const normalizedQuery = searchQuery.trim();
+    const currentQuery = searchQuery.trim();
     const requestId = ++searchRequestIdRef.current;
 
-    if (!normalizedQuery) {
+    if (!currentQuery) {
       setResults(emptyResultsRef.current);
       setIsSearching(false);
       return;
@@ -46,7 +46,7 @@ export const usePostSearch = ({
 
     const timeoutId = window.setTimeout(async () => {
       try {
-        const searchedPosts = await searchPosts(normalizedQuery, { scope });
+        const searchedPosts = await searchPosts(currentQuery, { scope });
 
         if (requestId !== searchRequestIdRef.current) {
           return;

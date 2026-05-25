@@ -61,6 +61,41 @@ const RouteFallback: React.FC = () => (
   </div>
 );
 
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('App Error:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <h1 className="mb-4 text-2xl font-bold text-zinc-900 dark:text-zinc-100">页面加载出错</h1>
+            <p className="mb-6 text-zinc-600 dark:text-zinc-400">抱歉，页面发生了意外错误，请刷新重试。</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              刷新页面
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const AppRoutes: React.FC = () => {
   const location = useLocation();
   const routeKey = location.pathname;
@@ -119,11 +154,13 @@ const App: React.FC = () => {
 
   return (
     <HelmetProvider>
-      <Router>
-        <AppRoutes />
-        <AnimatePresence>{showLoadingScreen && <LoadingScreen />}</AnimatePresence>
-        {showCookieNotice && <CookieNotice />}
-      </Router>
+      <ErrorBoundary>
+        <Router>
+          <AppRoutes />
+          <AnimatePresence>{showLoadingScreen && <LoadingScreen />}</AnimatePresence>
+          {showCookieNotice && <CookieNotice />}
+        </Router>
+      </ErrorBoundary>
     </HelmetProvider>
   );
 };

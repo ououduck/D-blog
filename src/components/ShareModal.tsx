@@ -5,21 +5,19 @@ import { SlideModal } from './SlideModal';
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpen?: () => void;
   onCloseCallback?: () => void;
   title: string;
   excerpt: string;
   url: string;
 }
 
-export const ShareModal: React.FC<ShareModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onOpen,
+export const ShareModal: React.FC<ShareModalProps> = ({
+  isOpen,
+  onClose,
   onCloseCallback,
-  title, 
-  excerpt, 
-  url 
+  title,
+  excerpt,
+  url
 }) => {
   const [copiedType, setCopiedType] = useState<'all' | 'link' | null>(null);
   const [copyError, setCopyError] = useState<string | null>(null);
@@ -105,7 +103,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     <SlideModal
       isOpen={isOpen}
       onClose={onClose}
-      onOpen={onOpen}
       onCloseCallback={onCloseCallback}
       initialFocusRef={closeButtonRef}
       ariaLabelledby={titleId}
