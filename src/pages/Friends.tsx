@@ -201,7 +201,7 @@ export const Friends = () => {
               href={friend.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative block overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 transition-all duration-300 hover:border-zinc-300 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)]"
+              className="group relative block overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl p-6 transition-all duration-300 dark:hover:border-zinc-700"
             >
               <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100 dark:text-zinc-500">
                 <ExternalLink size={16} />
@@ -220,7 +220,7 @@ export const Friends = () => {
 
         {loading &&
           Array.from({ length: 3 }).map((_, index) => (
-            <motion.div key={`skeleton-${index}`} variants={itemVariants} className="animate-pulse rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <motion.div key={`skeleton-${index}`} variants={itemVariants} className="animate-pulse rounded-2xl liquid-glass backdrop-blur-xl p-6">
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 flex-shrink-0 rounded-full bg-zinc-100 dark:bg-zinc-800" />
                 <div className="flex-1 space-y-3">

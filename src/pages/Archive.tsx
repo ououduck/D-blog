@@ -220,7 +220,7 @@ export const ArchivePage = () => {
     <div className="pb-10 md:pb-20">
       <Seo title="文章归档" description="按年份归档 D-blog 全部历史文章，快速查看发布时间、分类与更新轨迹。" />
 
-      <section className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900 md:p-12">
+      <section className="relative overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl p-8 md:p-12">
         <div className="absolute right-6 top-6 rounded-lg border border-zinc-200 bg-zinc-100 p-3 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
           <Archive size={22} />
         </div>
@@ -235,22 +235,22 @@ export const ArchivePage = () => {
         </div>
 
         <div className="mt-10 grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="rounded-2xl liquid-glass backdrop-blur-xl p-5">
             <div className="mb-3 flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
               <Archive size={16} />
               <span className="text-[10px] font-semibold uppercase tracking-wider sm:text-[11px]">文章总数</span>
             </div>
             <div className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{totalPosts}</div>
           </div>
-          <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="rounded-2xl liquid-glass backdrop-blur-xl p-5">
             <div className="mb-3 flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
               <Calendar size={16} />
               <span className="text-[10px] font-semibold uppercase tracking-wider sm:text-[11px]">归档年份</span>
             </div>
             <div className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{groups.length}</div>
           </div>
-          <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="mb-3 flex items-center gap-2 text-zinc-500 dark:tt-zinc-400">
+          <div className="rounded-2xl liquid-glass backdrop-blur-xl p-5">
+            <div className="mb-3 flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
               <FolderTree size={16} />
               <span className="text-[10px] font-semibold uppercase tracking-wider sm:text-[11px]">最近更新</span>
             </div>
@@ -270,7 +270,7 @@ export const ArchivePage = () => {
               placeholder="搜索归档文章..."
               value={searchQuery}
               onChange={(event) => handleSearch(event.target.value)}
-              className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-11 pr-11 text-sm text-ink outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-4 ring-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-100 dark:ring-zinc-100/10"
+              className="w-full rounded-2xl liquid-glass backdrop-blur-xl py-3 pl-11 pr-11 text-sm text-ink outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-4 ring-zinc-900/10 dark:text-white dark:focus:border-zinc-100 dark:ring-zinc-100/10"
               aria-label="搜索归档文章"
             />
             {searchQuery && (
@@ -293,7 +293,7 @@ export const ArchivePage = () => {
             ))}
           </div>
         ) : loadError ? (
-          <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-8 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+          <div className="rounded-2xl border border-dashed border-zinc-200 liquid-glass backdrop-blur-xl p-8 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
             {loadError}
           </div>
         ) : (
@@ -333,14 +333,14 @@ export const ArchivePage = () => {
                             {group.year}
                           </h2>
                         </div>
-                        <span className="rounded-full border border-zinc-200 bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
+                        <span className="rounded-full liquid-glass backdrop-blur-md px-3 py-1 text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                           {group.total} 篇
                         </span>
                         <div className="flex flex-wrap gap-1.5">
                           {group.categories.map((category) => (
                             <span 
                               key={`${group.year}-${category}`} 
-                              className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-[11px] font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                              className="rounded-full liquid-glass backdrop-blur-sm px-2.5 py-0.5 text-[11px] font-medium text-zinc-700 dark:text-zinc-300"
                             >
                               {category}
                             </span>

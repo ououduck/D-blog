@@ -111,7 +111,7 @@ export const Tags = () => {
     <div className="pb-10 md:pb-20">
       <Seo title="标签云" description="按标签浏览 D-blog 文章，通过标签快速筛选感兴趣的技术主题与内容。" />
 
-      <section className="relative mb-10 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900 md:p-12">
+      <section className="relative mb-10 overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl p-8 md:p-12">
         <div className="absolute right-6 top-6 rounded-lg border border-zinc-200 bg-zinc-100 p-3 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
           <Tag size={22} />
         </div>
@@ -144,7 +144,7 @@ export const Tags = () => {
                 placeholder="搜索标签或文章..."
                 value={searchQuery}
                 onChange={(event) => handleSearch(event.target.value)}
-                className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-11 pr-11 text-sm text-ink outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-4 ring-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:focus:border-zinc-100 dark:ring-zinc-100/10"
+                className="w-full rounded-2xl liquid-glass backdrop-blur-xl py-3 pl-11 pr-11 text-sm text-ink outline-none transition-all duration-300 placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-4 ring-zinc-900/10 dark:text-white dark:focus:border-zinc-100 dark:ring-zinc-100/10"
                 aria-label="搜索标签或文章"
               />
               {searchQuery && (
@@ -162,7 +162,7 @@ export const Tags = () => {
 
           {!selectedTag ? (
             allTags.length > 0 ? (
-              <div className="rounded-2xl border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900 md:p-12">
+              <div className="rounded-2xl liquid-glass backdrop-blur-xl p-8 md:p-12">
                 <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
                   {tags.map((tag, index) => (
                     <motion.button
@@ -171,7 +171,7 @@ export const Tags = () => {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.25, delay: index * 0.02 }}
                       onClick={() => updateTagParam(tag.name)}
-                      className={`${getTagSize(tag.count)} group relative rounded-xl border border-zinc-200 bg-white px-5 py-2.5 font-bold text-zinc-700 transition-all hover:border-zinc-900 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-100 dark:hover:text-zinc-100`}
+                      className={`${getTagSize(tag.count)} group relative rounded-xl liquid-glass backdrop-blur-xl px-5 py-2.5 font-bold text-zinc-700 transition-all hover:border-zinc-900 hover:text-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-100 dark:hover:text-zinc-100`}
                   aria-label={`查看标签 ${tag.name}，共 ${tag.count} 篇文章`}
                 >
                   {tag.name}
@@ -181,7 +181,7 @@ export const Tags = () => {
                 </div>
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+              <div className="rounded-2xl border border-dashed border-zinc-200 liquid-glass backdrop-blur-xl p-8 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
                 当前还没有可展示的标签内容。
               </div>
             )
@@ -194,7 +194,7 @@ export const Tags = () => {
                 </h2>
                 <button
                   onClick={() => updateTagParam()}
-                  className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-bold text-zinc-600 transition-colors hover:border-zinc-900 hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-100 dark:hover:text-zinc-100"
+                  className="rounded-xl liquid-glass backdrop-blur-xl px-4 py-2 text-sm font-bold text-zinc-600 transition-colors hover:border-zinc-900 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-100 dark:hover:text-zinc-100"
                 >
                   查看全部
                 </button>
@@ -203,9 +203,9 @@ export const Tags = () => {
               <div className="grid gap-6 md:grid-cols-2">
                 {filteredSelectedTagPosts.map((post, index) => (
                   <motion.div key={post.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: index * 0.03 }}>
-                    <Link to={`/post/${post.id}`} className="group block rounded-2xl border border-zinc-200 bg-white p-6 transition-all hover:border-zinc-300 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700">
+                    <Link to={`/post/${post.id}`} className="group block rounded-2xl liquid-glass backdrop-blur-xl p-6 transition-all dark:hover:border-zinc-700">
                       <div className="mb-3 flex items-center gap-2">
-                        <span className="rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
+                        <span className="rounded-lg liquid-glass backdrop-blur-md px-3 py-1 text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
                           {post.category}
                         </span>
                       </div>
@@ -228,7 +228,7 @@ export const Tags = () => {
                 ))}
 
                 {selectedTagInfo && filteredSelectedTagPosts.length === 0 && (
-                  <div className="rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+                  <div className="rounded-2xl liquid-glass backdrop-blur-xl p-6 text-sm text-zinc-500 dark:text-zinc-400">
                     当前标签存在，但在当前搜索条件下没有匹配文章。你可以清除搜索后查看完整列表。
                   </div>
                 )}

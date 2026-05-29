@@ -136,7 +136,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
 
 
   const CategoryBadge = ({ text }: { text: string }) => (
-    <span className="z-10 rounded-full border border-white/20 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-ink shadow-sm backdrop-blur-md transition-transform group-hover:scale-105 dark:border-white/10 dark:bg-black/60 dark:text-white">
+    <span className="z-10 rounded-full liquid-glass backdrop-blur-md px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-ink transition-transform group-hover:scale-105 dark:text-white">
       {text}
     </span>
   );
@@ -156,7 +156,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
         transition={springCardLayout}
         className="col-span-full w-full"
       >
-        <div className="relative flex h-auto flex-col overflow-hidden rounded-[2rem] border border-zinc-200 bg-white transition-all duration-500 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] hover:-translate-y-1 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700 dark:hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)] md:h-[480px] md:flex-row">
+        <div className="relative flex h-auto flex-col overflow-hidden rounded-[2rem] liquid-glass backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 dark:hover:border-zinc-700 md:h-[480px] md:flex-row">
           <Link to={`/post/${post.id}`} className="group relative block h-64 w-full overflow-hidden md:h-full md:w-7/12" aria-label={`阅读文章：${post.title}`}>
             <div className="absolute inset-0 animate-pulse bg-zinc-200 dark:bg-zinc-800" />
             {post.coverImage ? (
@@ -213,7 +213,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
 
   return (
     <motion.article layout variants={cardVariants} whileHover={hoverMotion} transition={springCardLayout} className="flex h-full flex-col min-w-0">
-      <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white backdrop-blur-md transition-all duration-500 hover:border-zinc-300 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] hover:-translate-y-1 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:hover:border-zinc-700 dark:hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)] md:rounded-3xl">
+      <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 dark:hover:border-zinc-700 md:rounded-3xl">
         <Link to={`/post/${post.id}`} className="group/image relative aspect-[16/10] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
             <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" width={1600} height={1000} wrapperClassName="h-full w-full" className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover/image:scale-110" />
@@ -272,7 +272,7 @@ interface FilterBarProps {
 
 const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, sortOrder, onToggleSort }) => {
   return (
-    <motion.div variants={sectionFadeIn} initial="hidden" animate="visible" className="mb-12 flex flex-col items-center justify-between gap-4 rounded-[1.75rem] border border-zinc-200/70 bg-white/80 px-3 py-3 shadow-[0_20px_55px_-42px_rgba(28,25,23,0.55)] backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-900/50 md:flex-row md:px-4">
+    <motion.div variants={sectionFadeIn} initial="hidden" animate="visible" className="mb-12 flex flex-col items-center justify-between gap-4 rounded-[1.75rem] liquid-glass backdrop-blur-xl px-3 py-3 md:flex-row md:px-4">
       <div className="-mx-4 w-full overflow-x-auto px-4 pb-2 no-scrollbar md:mx-0 md:w-auto md:px-0 md:pb-0">
         <div className="flex space-x-2" role="tablist" aria-label="文章分类筛选">
           {[ALL_CATEGORY, ...categories].map((category) => (
@@ -299,7 +299,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
           ))}
         </div>
       </div>
-      <motion.button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} variants={chipMotion} initial="rest" animate="rest" whileHover="hover" whileTap="tap" className="flex w-full items-center justify-center space-x-2 rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-bold tracking-wide text-zinc-700 transition-all duration-300 hover:border-zinc-300 hover:text-ink dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:text-white md:w-auto">
+      <motion.button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} variants={chipMotion} initial="rest" animate="rest" whileHover="hover" whileTap="tap" className="flex w-full items-center justify-center space-x-2 rounded-full liquid-glass backdrop-blur-xl px-5 py-2.5 text-sm font-bold tracking-wide text-zinc-700 transition-all duration-300 hover:text-ink dark:hover:text-white md:w-auto">
         {sortOrder === 'newest' ? <ArrowDownWideNarrow size={16} /> : <ArrowUpWideNarrow size={16} />}
         <span>{sortOrder === 'newest' ? '最新' : '最早'}</span>
       </motion.button>
@@ -320,11 +320,7 @@ const Hero = () => {
         >
           {siteConfig.subtitle}
         </motion.span>
-        <motion.div
-          className="absolute -inset-4 rounded-full bg-zinc-200/50 blur-xl dark:bg-zinc-800/50"
-          animate={shouldReduceMotion ? undefined : { scale: [1, 1.05, 1], opacity: [0.62, 0.9, 0.66] }}
-          transition={shouldReduceMotion ? undefined : { duration: 8.6, repeat: Infinity, ease: 'easeInOut' }}
-        />
+        <div className="absolute -inset-4 rounded-full bg-zinc-200/50 blur-xl dark:bg-zinc-800/50" />
       </motion.div>
       <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.55, ease: [0.16, 1, 0.3, 1] }} className="mb-6 font-serif text-[5.5rem] font-black leading-[0.95] tracking-tighter bg-gradient-to-br from-ink to-zinc-600 bg-clip-text text-transparent drop-shadow-[0_12px_32px_rgba(28,25,23,0.18)] dark:from-white dark:to-zinc-400 dark:drop-shadow-[0_12px_36px_rgba(255,255,255,0.1)] sm:text-[7rem] md:mb-8 md:text-[9rem] lg:text-[11rem]">
         {siteConfig.title}
@@ -554,14 +550,14 @@ export const Home = () => {
           <AnimatePresence mode="wait" initial={false}>
             {hasSearchQuery && (
               <motion.div key={`search-summary-${searchQuery}-${activeCategoryLabel}`} initial={{ opacity: 0, y: 8, scale: 0.992 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, scale: 0.992 }} transition={listSwapTransition} className="mb-6 px-2">
-                <motion.div layout className="flex flex-wrap items-center gap-3 rounded-2xl border border-zinc-200/70 bg-white/72 px-4 py-3 text-sm text-zinc-700 shadow-[0_20px_45px_-38px_rgba(28,25,23,0.5)] backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-900/48 dark:text-zinc-300">
+                <motion.div layout className="flex flex-wrap items-center gap-3 rounded-2xl liquid-glass backdrop-blur-xl px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300">
                   <motion.div initial={{ opacity: 0, scale: 0.86 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.34, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}>
                     <Search size={16} className="text-zinc-700 dark:text-zinc-300" />
                   </motion.div>
                   <p className="text-sm text-zinc-700 dark:text-zinc-300">
                     搜索 "<span className="font-bold text-zinc-900 dark:text-zinc-100">{searchQuery}</span>" 共命中 {results.length} 篇文章，当前按 "<span className="font-bold text-ink dark:text-white">{activeCategoryLabel}</span>" 显示 {displayedPosts.length} 篇
                   </p>
-                  <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.99 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }} onClick={handleClearSearch} className="ml-auto rounded-full border border-zinc-200/80 bg-white/90 px-3 py-1.5 text-xs transition-colors hover:border-zinc-900 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900/85 dark:hover:border-zinc-100 dark:hover:text-zinc-100" aria-label="清除搜索">
+                  <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.99 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }} onClick={handleClearSearch} className="liquid-glass backdrop-blur-xl ml-auto rounded-full px-3 py-1.5 text-xs transition-colors hover:border-zinc-900 hover:text-zinc-900 dark:hover:border-zinc-100 dark:hover:text-zinc-100" aria-label="清除搜索">
                     清除搜索
                   </motion.button>
                 </motion.div>
@@ -581,7 +577,7 @@ export const Home = () => {
             ))}
           </motion.div>
         ) : loadError ? (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={listSwapTransition} className="col-span-full rounded-[2rem] border border-dashed border-zinc-200 bg-zinc-50 py-16 text-center shadow-[0_18px_45px_-40px_rgba(28,25,23,0.55)] dark:border-zinc-800 dark:bg-zinc-900">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={listSwapTransition} className="col-span-full rounded-[2rem] border border-dashed border-zinc-200 liquid-glass backdrop-blur-xl py-16 text-center dark:border-zinc-800">
             <p className="mb-2 font-serif text-xl text-zinc-700 dark:text-zinc-300">加载失败</p>
             <p className="text-sm text-zinc-600 dark:text-zinc-400">{loadError}</p>
           </motion.div>
@@ -599,7 +595,7 @@ export const Home = () => {
                 {currentPosts.length > 0 ? (
                   currentPosts.map((post, index) => <PostCard key={post.id} post={post} index={index} featured={!!post.featured} onShare={setSharePost} />)
                 ) : (
-                  <motion.div variants={pageBlockVariants} className="col-span-full rounded-[2rem] border border-dashed border-zinc-200 bg-white/60 py-24 text-center shadow-[0_18px_45px_-40px_rgba(28,25,23,0.55)] dark:border-zinc-800 dark:bg-zinc-900/40">
+                  <motion.div variants={pageBlockVariants} className="col-span-full rounded-[2rem] border border-dashed border-zinc-200 liquid-glass backdrop-blur-xl py-24 text-center dark:border-zinc-800">
                     <p className="mb-2 font-serif text-xl text-zinc-400">{hasSearchQuery ? '未找到匹配的文章' : '暂无相关文章'}</p>
                     {hasSearchQuery && (
                       <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.99 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }} onClick={handleClearSearch} className="mt-4 text-sm text-zinc-700 hover:underline dark:text-zinc-300" aria-label="清除搜索条件">
@@ -613,13 +609,13 @@ export const Home = () => {
 
             {totalPages > 1 && (
               <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="mt-8 flex items-center justify-center gap-4 md:mt-16" aria-label="分页导航">
-                <motion.button whileHover={{ y: -1.5 }} whileTap={{ scale: 0.988 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }} onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="rounded-full border border-zinc-200 bg-white/80 p-3 shadow-[0_16px_30px_-24px_rgba(28,25,23,0.5)] transition-colors hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-zinc-100 dark:hover:text-zinc-100" aria-label="上一页">
+                <motion.button whileHover={{ y: -1.5 }} whileTap={{ scale: 0.988 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }} onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="liquid-glass backdrop-blur-xl rounded-full p-3 transition-colors hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 dark:hover:border-zinc-100 dark:hover:text-zinc-100" aria-label="上一页">
                   <ChevronLeft size={20} />
                 </motion.button>
-                <motion.span layout transition={{ type: 'spring', stiffness: 280, damping: 30, mass: 0.8 }} className="rounded-full border border-zinc-200/80 bg-white/80 px-4 py-2 font-mono text-sm font-bold text-zinc-600 shadow-[0_12px_24px_-20px_rgba(28,25,23,0.4)] dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-300" aria-live="polite">
+                <motion.span layout transition={{ type: 'spring', stiffness: 280, damping: 30, mass: 0.8 }} className="liquid-glass backdrop-blur-xl rounded-full px-4 py-2 font-mono text-sm font-bold text-zinc-600 dark:text-zinc-300" aria-live="polite">
                   {currentPage} / {totalPages}
                 </motion.span>
-                <motion.button whileHover={{ y: -1.5 }} whileTap={{ scale: 0.988 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }} onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="rounded-full border border-zinc-200 bg-white/80 p-3 shadow-[0_16px_30px_-24px_rgba(28,25,23,0.5)] transition-colors hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-zinc-100 dark:hover:text-zinc-100" aria-label="下一页">
+                <motion.button whileHover={{ y: -1.5 }} whileTap={{ scale: 0.988 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }} onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="liquid-glass backdrop-blur-xl rounded-full p-3 transition-colors hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 dark:hover:border-zinc-100 dark:hover:text-zinc-100" aria-label="下一页">
                   <ChevronRight size={20} />
                 </motion.button>
               </motion.div>

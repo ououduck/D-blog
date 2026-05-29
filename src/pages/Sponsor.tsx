@@ -114,7 +114,7 @@ export const Sponsor: React.FC<SponsorPageProps> = () => {
               // Hover animation only for enabled cards
               whileHover={!option.disabled ? { y: -6, scale: 1.01 } : undefined}
               transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-              className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900"
+              className="relative overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl p-6"
             >
               {/* Icon container */}
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">

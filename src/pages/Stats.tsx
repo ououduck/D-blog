@@ -36,7 +36,7 @@ const SummaryCard = ({
   detail: string;
 }) => {
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-zinc-200 bg-white p-5 transition-all duration-200 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 sm:rounded-2xl sm:p-6">
+    <div className="group relative overflow-hidden rounded-xl liquid-glass backdrop-blur-xl p-5 transition-all duration-200 dark:hover:border-zinc-700 sm:rounded-2xl sm:p-6">
       <div className="relative">
         <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 transition-transform duration-200 group-hover:scale-105 dark:bg-zinc-800 dark:text-zinc-300 sm:h-12 sm:w-12">
           <Icon size={20} className="sm:size-[22px]" />
@@ -90,7 +90,7 @@ export const Stats = () => {
     <div className="pb-10 md:pb-20">
       <Seo title="站点统计" description="D-blog 站点统计概览：文章数、总字数、分类标签、图片数量等核心数据一目了然。" />
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:rounded-2xl sm:p-5 md:p-6 lg:p-8">
+      <section className="rounded-2xl liquid-glass backdrop-blur-xl p-4 sm:rounded-2xl sm:p-5 md:p-6 lg:p-8">
         <div className="mb-5 flex items-center gap-2.5 md:mb-6">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
             <Database size={18} />
@@ -107,7 +107,7 @@ export const Stats = () => {
         </div>
       </section>
 
-      <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:rounded-2xl sm:p-5 md:mt-12 md:p-6 lg:mt-14 lg:p-8">
+      <section className="mt-8 rounded-2xl liquid-glass backdrop-blur-xl p-4 sm:rounded-2xl sm:p-5 md:mt-12 md:p-6 lg:mt-14 lg:p-8">
         <div className="mb-5 flex items-center gap-2.5 md:mb-6">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
             <BarChart3 size={18} />
