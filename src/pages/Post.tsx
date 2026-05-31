@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { easeOut } from '@/utils/motion';
 import DOMPurify from 'dompurify';
 
-import { ArrowLeft, Clock, Calendar, ChevronRight, Shield, Share2, Copy, Check, Users, ExternalLink } from 'lucide-react';
-import { getPostById } from '@/services/posts';
+import { ArrowLeft, ArrowUp, ArrowRight, Clock, Calendar, ChevronRight, Shield, Share2, Copy, Check, Users, ExternalLink } from 'lucide-react';
+import { getPostById, getPosts } from '@/services/posts';
 import { Post as PostType, PostAuthor } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
@@ -77,12 +78,46 @@ const getDisplayAuthors = (post: PostType): PostAuthor[] => {
   ];
 };
 
+const MAX_CODE_LINES = 30;
+
+const extractLangFromChildren = (children: React.ReactNode): string | undefined => {
+  const codeChild = React.Children.toArray(children).find(
+    (child) => React.isValidElement(child) && typeof (child.props as Record<string, unknown>).className === 'string'
+  ) as React.ReactElement | undefined;
+  if (!codeChild) return undefined;
+  const cls = (codeChild.props as Record<string, string>).className || '';
+  const match = cls.match(/language-(\w+)/);
+  return match ? match[1] : undefined;
+};
+
+const getLangDisplayName = (lang: string): string => {
+  const langMap: Record<string, string> = {
+    js: 'JavaScript', jsx: 'JSX', ts: 'TypeScript', tsx: 'TSX',
+    py: 'Python', rb: 'Ruby', go: 'Go', rs: 'Rust',
+    java: 'Java', kt: 'Kotlin', swift: 'Swift',
+    html: 'HTML', css: 'CSS', scss: 'SCSS', json: 'JSON',
+    yaml: 'YAML', yml: 'YAML', xml: 'XML', md: 'Markdown',
+    sql: 'SQL', sh: 'Shell', bash: 'Bash', zsh: 'Zsh',
+    dockerfile: 'Dockerfile', docker: 'Docker',
+    graphql: 'GraphQL', gql: 'GraphQL',
+    c: 'C', cpp: 'C++', cs: 'C#',
+  };
+  return langMap[lang] || lang;
+};
+
 const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>) => {
   const preRef = useRef<HTMLPreElement>(null);
   const [copied, setCopied] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [needsExpand, setNeedsExpand] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
+  const lang = extractLangFromChildren(children);
 
   useEffect(() => {
+    if (preRef.current) {
+      const lineCount = (preRef.current.innerText.match(/\n/g) || []).length + 1;
+      setNeedsExpand(lineCount > MAX_CODE_LINES);
+    }
     return () => {
       if (resetTimerRef.current !== null) {
         window.clearTimeout(resetTimerRef.current);
@@ -92,28 +127,20 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
   }, []);
 
   const markCopied = () => {
-    if (resetTimerRef.current !== null) {
-      window.clearTimeout(resetTimerRef.current);
-    }
-
+    if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
     setCopied(true);
     resetTimerRef.current = window.setTimeout(() => setCopied(false), 2000);
   };
 
   const handleCopy = async () => {
-    if (!preRef.current) {
-      return;
-    }
-
+    if (!preRef.current) return;
     const code = preRef.current.innerText.replace(/\n$/, '');
-
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(code);
         markCopied();
         return;
       }
-
       throw new Error('Clipboard API not available');
     } catch {
       const textArea = document.createElement('textarea');
@@ -123,18 +150,10 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
-
       try {
-        const copiedSuccessfully = document.execCommand('copy');
-        if (!copiedSuccessfully) {
-          throw new Error('Copy command was rejected');
-        }
-
-        markCopied();
-      } catch (error) {
-        console.error('Copy failed', error);
-      }
-
+        const ok = document.execCommand('copy');
+        if (ok) markCopied();
+      } catch { /* ignore */ }
       document.body.removeChild(textArea);
     }
   };
@@ -143,23 +162,62 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
     if (React.isValidElement(child)) {
       return React.cloneElement(child as React.ReactElement<BlockCodeProps>, { isBlock: true });
     }
-
     return child;
   });
 
   return (
     <div className="group relative my-5 md:my-6">
+      {/* Language badge */}
+      {lang && (
+        <span className="code-lang-badge">{getLangDisplayName(lang)}</span>
+      )}
+
+      {/* Copy button */}
       <button
         onClick={handleCopy}
-        className="absolute right-3 top-3 z-10 rounded-lg bg-zinc-700/80 p-2 text-zinc-300 opacity-100 backdrop-blur-sm transition-all hover:bg-zinc-600/80 hover:text-white md:opacity-0 md:group-hover:opacity-100"
-        title="复制代码"
-        aria-label="复制代码"
+        className={`absolute z-10 rounded-lg p-2 backdrop-blur-sm transition-all ${
+          lang ? 'right-3 top-3' : 'right-3 top-3'
+        } ${
+          copied
+            ? 'bg-green-600/80 text-white'
+            : 'bg-zinc-700/80 text-zinc-300 hover:bg-zinc-600/80 hover:text-white md:opacity-0 md:group-hover:opacity-100'
+        }`}
+        title={copied ? '已复制' : '复制代码'}
+        aria-label={copied ? '已复制' : '复制代码'}
       >
         {copied ? <Check size={16} /> : <Copy size={16} />}
       </button>
-      <pre ref={preRef} {...props} className={`${props.className || ''} !my-0 overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-600 touch-pan-x !p-3 md:!p-6`}>
-        {childrenWithProps}
-      </pre>
+
+      {/* Code block with optional collapse */}
+      <div className="relative">
+        <pre
+          ref={preRef}
+          {...props}
+          className={`${props.className || ''} !my-0 overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-600 touch-pan-x !p-3 !pt-10 md:!p-6 md:!pt-7 ${needsExpand && !isExpanded ? 'code-block-collapsed' : 'code-block-expanded'}`}
+        >
+          {childrenWithProps}
+        </pre>
+
+        {/* Expand/collapse overlay */}
+        {needsExpand && !isExpanded && (
+          <button
+            onClick={() => setIsExpanded(true)}
+            className="code-expand-btn"
+            aria-label="展开完整代码"
+          >
+            展开完整代码
+          </button>
+        )}
+        {needsExpand && isExpanded && (
+          <button
+            onClick={() => setIsExpanded(false)}
+            className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2 rounded-full bg-zinc-700/80 px-3 py-1 text-xs text-zinc-300 backdrop-blur-sm hover:bg-zinc-600/80 hover:text-white"
+            aria-label="折叠代码"
+          >
+            折叠
+          </button>
+        )}
+      </div>
     </div>
   );
 };
@@ -224,18 +282,12 @@ const createMarkdownComponents = (
 
   const resolveHeadingId = (level: number, children: React.ReactNode) => {
     const rawText = extractTextFromReactNode(children);
-
-    // 先尝试从缓存的 Map 中查找
     const slugId = slugifyHeading(rawText);
     const cachedId = headingIdMap.get(slugId);
-    if (cachedId) {
-      return cachedId;
-    }
+    if (cachedId) return cachedId;
 
-    // 如果缓存中没有，使用原有逻辑
     for (let index = headingCursor; index < headings.length; index += 1) {
       const heading = headings[index];
-
       if (heading.level === level && heading.rawText === rawText) {
         headingCursor = index + 1;
         return heading.id;
@@ -244,29 +296,69 @@ const createMarkdownComponents = (
 
     const fallbackBaseId = slugId || 'section';
     const duplicateCount = (fallbackHeadingIds.get(fallbackBaseId) ?? 0) + 1;
-
     fallbackHeadingIds.set(fallbackBaseId, duplicateCount);
-
     return duplicateCount === 1 ? fallbackBaseId : `${fallbackBaseId}-${duplicateCount}`;
   };
 
+  const handleHeadingClick = (id: string) => {
+    const url = new URL(window.location.href);
+    url.hash = id;
+    window.history.replaceState({}, '', url.toString());
+    navigator.clipboard.writeText(url.toString()).catch(() => {});
+  };
+
+  const renderHeading = (level: number, Tag: string, { children, ...props }: Record<string, unknown>) => {
+    const id = resolveHeadingId(level, children);
+    return React.createElement(
+      Tag,
+      { ...props, id, className: 'heading-anchor-wrapper' },
+      React.createElement(
+        'button',
+        {
+          type: 'button',
+          className: 'heading-anchor',
+          onClick: (e: React.MouseEvent) => { e.stopPropagation(); handleHeadingClick(id); },
+          'aria-label': `复制标题链接：${extractTextFromReactNode(children)}`,
+          title: '复制链接',
+        },
+        '#'
+      ),
+      children
+    );
+  };
+
   return {
-    img: ({ ...props }) => (
-      <button
-        type="button"
-        onClick={() => onPreviewImage({ src: props.src || '', alt: props.alt })}
-        className="my-12 block w-full rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100"
-        aria-label={props.alt ? `预览图片：${props.alt}` : '预览图片'}
-      >
-        <ProgressiveImage
-          {...props}
-          loading="lazy"
-          wrapperClassName="rounded-2xl"
-          className="cursor-zoom-in rounded-2xl shadow-lg"
-        />
-      </button>
+    img: ({ title, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => (
+      <figure className="my-8 md:my-12">
+        <button
+          type="button"
+          onClick={() => onPreviewImage({ src: props.src || '', alt: props.alt })}
+          className="block w-full rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100"
+          aria-label={props.alt ? `预览图片：${props.alt}` : '预览图片'}
+        >
+          <ProgressiveImage
+            {...props}
+            loading="lazy"
+            decoding="async"
+            wrapperClassName="rounded-2xl"
+            className="cursor-zoom-in rounded-2xl shadow-lg"
+          />
+        </button>
+        {(title || props.alt) && (
+          <figcaption className="image-caption">
+            {title || props.alt}
+          </figcaption>
+        )}
+      </figure>
     ),
     pre: PreBlock,
+    table: ({ children, ...props }: React.TableHTMLAttributes<HTMLTableElement>) => (
+      <div className="table-wrapper">
+        <table {...props} className="min-w-full">
+          {children}
+        </table>
+      </div>
+    ),
     code: ({ className, children, ...props }) => {
       const { isBlock, ...restProps } = props as React.HTMLAttributes<HTMLElement> & BlockCodeProps;
       const isBlockCode = Boolean(isBlock) || /language-(\w+)/.test(className || '');
@@ -289,20 +381,9 @@ const createMarkdownComponents = (
         </code>
       );
     },
-    // Markdown 标题降级渲染：h1→h2, h2→h3, h3→h4
-    // 确保文章正文标题不会与页面主标题(h1)冲突
-    h1: ({ children, ...props }) => {
-      const id = resolveHeadingId(1, children);
-      return <h2 id={id} {...props}>{children}</h2>;
-    },
-    h2: ({ children, ...props }) => {
-      const id = resolveHeadingId(2, children);
-      return <h3 id={id} {...props}>{children}</h3>;
-    },
-    h3: ({ children, ...props }) => {
-      const id = resolveHeadingId(3, children);
-      return <h4 id={id} {...props}>{children}</h4>;
-    }
+    h1: ({ children, ...props }) => renderHeading(1, 'h2', { children, ...props }),
+    h2: ({ children, ...props }) => renderHeading(2, 'h3', { children, ...props }),
+    h3: ({ children, ...props }) => renderHeading(3, 'h4', { children, ...props }),
   };
 };
 
@@ -316,6 +397,8 @@ export const Post = () => {
   const [rehypePlugins, setRehypePlugins] = useState<MarkdownPlugin[]>([]);
   const [mermaidRenderer, setMermaidRenderer] = useState<MermaidRenderer | null>(null);
   const [mobileFloatingVisible, setMobileFloatingVisible] = useState(false);
+  const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostType | null; next: PostType | null }>({ prev: null, next: null });
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const articleBodyRef = useRef<HTMLDivElement>(null);
 
   // 使用 Map 缓存标题映射
@@ -445,6 +528,51 @@ export const Post = () => {
     });
     headingIdMapRef.current = newMap;
   }, [headings]);
+
+  // 加载相邻文章（上一篇/下一篇）
+  useEffect(() => {
+    if (!post) return;
+    let cancelled = false;
+
+    getPosts().then((allPosts) => {
+      if (cancelled) return;
+      const currentIndex = allPosts.findIndex((p) => p.id === post.id);
+      setAdjacentPosts({
+        prev: currentIndex > 0 ? allPosts[currentIndex - 1] : null,
+        next: currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : null,
+      });
+    });
+
+    return () => { cancelled = true; };
+  }, [post]);
+
+  // 返回顶部按钮可见性
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > window.innerHeight);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // 键盘快捷键
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (previewImage) { setPreviewImage(null); return; }
+        if (shareModalOpen) { setShareModalOpen(false); return; }
+      }
+      if (e.key === 'ArrowLeft' && e.altKey && adjacentPosts.prev) {
+        window.location.href = `/post/${adjacentPosts.prev.id}`;
+      }
+      if (e.key === 'ArrowRight' && e.altKey && adjacentPosts.next) {
+        window.location.href = `/post/${adjacentPosts.next.id}`;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [previewImage, shareModalOpen, adjacentPosts]);
 
   const markdownComponents = createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, headings, headingIdMapRef.current);
 
@@ -609,14 +737,31 @@ export const Post = () => {
         {post.coverImage && (
           <button type="button" className="mx-auto block w-full max-w-6xl px-4 md:px-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.35, ease: easeOut }} className="mb-10 aspect-[4/3] cursor-zoom-in overflow-hidden rounded-2xl shadow-2xl shadow-zinc-200/50 dark:shadow-none sm:aspect-[16/9] md:mb-20 md:aspect-[21/9] md:rounded-3xl">
-              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="auto" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
+              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
             </motion.div>
           </button>
         )}
 
         <div ref={articleBodyRef} className="mx-auto flex max-w-4xl flex-col gap-4 px-2 pb-12 sm:max-w-5xl sm:gap-6 sm:px-4 md:max-w-6xl md:pb-16 lg:max-w-7xl lg:px-8 md:pb-24">
           <div className="flex-1 rounded-xl bg-white px-5 py-6 shadow-sm dark:bg-zinc-900 sm:rounded-2xl sm:px-8 sm:py-8 md:px-10 md:py-12 lg:px-12">
-            <div className="prose prose-base mx-auto max-w-none prose-stone dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white prose-h2:mb-8 prose-h2:mt-12 prose-h2:text-4xl md:prose-h2:mb-10 md:prose-h2:mt-16 md:prose-h2:text-5xl prose-h3:mb-5 prose-h3:mt-10 prose-h3:text-3xl md:prose-h3:mb-6 md:prose-h3:mt-12 md:prose-h3:text-4xl prose-h4:mb-4 prose-h4:mt-8 prose-h4:text-2xl md:prose-h4:mb-5 md:prose-h4:mt-10 md:prose-h4:text-3xl prose-p:mb-5 prose-p:font-sans prose-p:text-[16px] md:prose-p:text-[18px] prose-p:leading-[1.8] md:prose-p:leading-[1.9] prose-p:tracking-[0.01em] prose-a:break-words prose-a:text-zinc-900 prose-a:font-semibold prose-a:underline prose-a:decoration-zinc-300 prose-a:decoration-2 prose-a:underline-offset-[3px] prose-a:transition-all hover:prose-a:decoration-zinc-900 hover:prose-a:underline-offset-[5px] dark:prose-a:text-zinc-100 dark:prose-a:decoration-zinc-700 dark:hover:prose-a:decoration-zinc-400 prose-strong:font-bold prose-strong:text-ink dark:prose-strong:text-white prose-img:my-6 prose-img:h-auto prose-img:w-full prose-img:max-w-full prose-img:cursor-zoom-in prose-img:rounded-xl prose-img:shadow-lg prose-img:transition-transform hover:prose-img:scale-[1.01] dark:prose-img:rounded-2xl md:prose-img:my-10 md:prose-img:rounded-2xl prose-blockquote:my-7 prose-blockquote:rounded-r-xl prose-blockquote:border-l-4 prose-blockquote:border-l-zinc-900 prose-blockquote:bg-zinc-50 prose-blockquote:px-7 prose-blockquote:py-6 prose-blockquote:font-serif prose-blockquote:not-italic prose-blockquote:text-[16px] md:prose-blockquote:text-[18px] prose-blockquote:leading-[1.8] dark:prose-blockquote:border-l-zinc-100 dark:prose-blockquote:bg-zinc-900 md:prose-blockquote:my-9 md:prose-blockquote:rounded-r-2xl md:prose-blockquote:px-10 md:prose-blockquote:py-8 prose-code:font-mono prose-code:text-[13px] prose-code:font-medium md:prose-code:text-[14px] prose-pre:overflow-hidden prose-pre:rounded-xl prose-pre:border prose-pre:border-zinc-800 prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:shadow-xl md:prose-pre:rounded-2xl prose-ul:my-6 prose-ul:space-y-3 md:prose-ul:my-8 md:prose-ul:space-y-4 prose-ol:my-6 prose-ol:space-y-3 md:prose-ol:my-8 md:prose-ol:space-y-4 prose-li:text-[17px] prose-li:leading-[1.85] prose-li:marker:text-zinc-500 dark:prose-li:marker:text-zinc-500 md:prose-li:text-[19px] md:prose-li:leading-[1.9] prose-hr:my-10 prose-hr:border-zinc-200 dark:prose-hr:border-zinc-800 md:prose-hr:my-14 prose-table:my-8 md:prose-table:my-10">
+            <div className="prose prose-base mx-auto max-w-none prose-stone dark:prose-invert md:prose-lg
+              prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white
+              prose-h2:mb-6 prose-h2:mt-10 prose-h2:text-3xl md:prose-h2:mb-8 md:prose-h2:mt-14 md:prose-h2:text-5xl
+              prose-h3:mb-4 prose-h3:mt-8 prose-h3:text-2xl md:prose-h3:mb-5 md:prose-h3:mt-10 md:prose-h3:text-3xl
+              prose-h4:mb-3 prose-h4:mt-6 prose-h4:text-xl md:prose-h4:mb-4 md:prose-h4:mt-8 md:prose-h4:text-2xl
+              prose-p:font-sans prose-p:text-[16px] md:prose-p:text-[18px] prose-p:leading-[1.85] md:prose-p:leading-[1.9]
+              prose-a:break-words prose-a:font-semibold prose-a:decoration-zinc-300 prose-a:decoration-2 prose-a:underline-offset-[3px] hover:prose-a:decoration-zinc-900 hover:prose-a:underline-offset-[5px] dark:prose-a:decoration-zinc-700 dark:hover:prose-a:decoration-zinc-400
+              prose-strong:font-bold prose-strong:text-ink dark:prose-strong:text-white
+              prose-img:my-8 prose-img:h-auto prose-img:w-full prose-img:max-w-full prose-img:cursor-zoom-in prose-img:rounded-xl prose-img:shadow-lg hover:prose-img:scale-[1.005] dark:prose-img:rounded-2xl dark:prose-img:ring-1 dark:prose-img:ring-white/10 md:prose-img:my-12
+              prose-blockquote:my-7 prose-blockquote:rounded-r-xl prose-blockquote:border-l-4 prose-blockquote:border-l-accent prose-blockquote:bg-accent/5 prose-blockquote:px-6 prose-blockquote:py-5 prose-blockquote:font-serif prose-blockquote:not-italic prose-blockquote:text-[16px] md:prose-blockquote:text-[18px] prose-blockquote:leading-[1.8] dark:prose-blockquote:border-l-accent dark:prose-blockquote:bg-accent/5 dark:prose-blockquote:text-zinc-200 md:prose-blockquote:my-9 md:prose-blockquote:rounded-r-2xl md:prose-blockquote:px-8 md:prose-blockquote:py-6
+              prose-ul:my-6 prose-ul:space-y-2 md:prose-ul:my-8 md:prose-ul:space-y-3
+              prose-ol:my-6 prose-ol:space-y-2 md:prose-ol:my-8 md:prose-ol:space-y-3
+              prose-li:text-[16px] prose-li:leading-[1.85] md:prose-li:text-[18px] md:prose-li:leading-[1.9]
+              prose-hr:my-10 prose-hr:border-zinc-200 dark:prose-hr:border-zinc-800 md:prose-hr:my-14
+              prose-code:font-mono prose-code:text-[13px] prose-code:font-semibold md:prose-code:text-[14px]
+              prose-pre:overflow-hidden prose-pre:rounded-xl prose-pre:border prose-pre:border-zinc-700/80 prose-pre:bg-[#0d1117] prose-pre:p-0 prose-pre:shadow-xl md:prose-pre:rounded-2xl
+              dark:prose-body:text-zinc-300
+            ">
               <ReactMarkdown
                 remarkPlugins={remarkPlugins}
                 rehypePlugins={rehypePlugins}
@@ -671,11 +816,74 @@ export const Post = () => {
                 <span>此文章有问题？帮助改进！</span>
               </a>
             </div>
+
+            {/* 上一篇 / 下一篇导航 */}
+            <nav aria-label="文章导航" className="mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800 md:mt-16 md:pt-10">
+              <div className="flex flex-col gap-4 sm:flex-row">
+                {adjacentPosts.prev ? (
+                  <Link
+                    to={`/post/${adjacentPosts.prev.id}`}
+                    className="post-nav-item group flex items-start gap-3"
+                  >
+                    <ArrowLeft size={18} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-600 dark:group-hover:text-zinc-100" />
+                    <div className="min-w-0 text-left">
+                      <span className="post-nav-label">上一篇</span>
+                      <span className="post-nav-title">{adjacentPosts.prev.title}</span>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="flex-1" />
+                )}
+                {adjacentPosts.next ? (
+                  <Link
+                    to={`/post/${adjacentPosts.next.id}`}
+                    className="post-nav-item group flex items-start justify-end gap-3 text-right"
+                  >
+                    <div className="min-w-0">
+                      <span className="post-nav-label justify-end">下一篇</span>
+                      <span className="post-nav-title">{adjacentPosts.next.title}</span>
+                    </div>
+                    <ArrowRight size={18} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-600 dark:group-hover:text-zinc-100" />
+                  </Link>
+                ) : (
+                  <div className="flex-1" />
+                )}
+              </div>
+
+              {/* 键盘快捷键提示 */}
+              <div className="mt-6 text-center">
+                <span className="text-[11px] text-zinc-400 dark:text-zinc-600">
+                  快捷键：<kbd className="kbd">Alt</kbd> + <kbd className="kbd">←</kbd> 上一篇 · <kbd className="kbd">Alt</kbd> + <kbd className="kbd">→</kbd> 下一篇 · <kbd className="kbd">Esc</kbd> 关闭弹窗
+                </span>
+              </div>
+            </nav>
           </div>
         </div>
       </article>
 
       <ShareModal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} title={post.title} excerpt={post.excerpt} url={`${typeof window !== 'undefined' ? window.location.origin : siteConfig.url}/post/${post.id}`} />
+
+      {/* 返回顶部按钮 */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showBackToTop && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="back-to-top-btn"
+              aria-label="返回顶部"
+              title="返回顶部"
+            >
+              <ArrowUp size={18} />
+            </motion.button>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 };

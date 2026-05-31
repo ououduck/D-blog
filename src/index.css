@@ -421,3 +421,154 @@ html.theme-switching *::after {
   }
 }
 
+/* ===== 排版增强 ===== */
+
+/* 表格样式增强 */
+.prose table {
+  @apply w-full border-collapse text-sm md:text-[15px];
+  font-variant-numeric: tabular-nums;
+}
+
+.prose thead {
+  @apply border-b-2 border-zinc-200 dark:border-zinc-700;
+}
+
+.prose thead th {
+  @apply px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 md:px-4 md:py-3 md:text-sm;
+  background: transparent;
+}
+
+.prose tbody tr {
+  @apply border-b border-zinc-100 transition-colors dark:border-zinc-800/60;
+}
+
+.prose tbody tr:nth-child(even) {
+  @apply bg-zinc-50/60 dark:bg-zinc-800/30;
+}
+
+.prose tbody tr:hover {
+  @apply bg-zinc-100/60 dark:bg-zinc-800/50;
+}
+
+.prose tbody td {
+  @apply px-3 py-2.5 align-middle text-zinc-700 dark:text-zinc-300 md:px-4 md:py-3;
+}
+
+/* 表格横向滚动容器 */
+.table-wrapper {
+  @apply my-8 overflow-x-auto rounded-xl border border-zinc-200/80 dark:border-zinc-800/80;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 引用块增强 */
+.prose blockquote p:first-of-type::before { content: ''; }
+.prose blockquote p:last-of-type::after { content: ''; }
+
+/* 水平线增强 */
+.prose hr {
+  @apply relative border-0;
+}
+.prose hr::after {
+  content: '';
+  @apply absolute left-1/2 top-1/2 h-px w-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-300 dark:bg-zinc-600;
+}
+
+/* 有序列表序号增强 */
+.prose ol > li::marker {
+  @apply font-bold text-zinc-400 dark:text-zinc-500;
+}
+
+/* 标题锚点链接 */
+.heading-anchor-wrapper {
+  @apply relative group/heading;
+}
+.heading-anchor {
+  @apply absolute -left-8 top-1/2 -translate-y-1/2 hidden text-zinc-300 opacity-0 transition-all hover:text-zinc-900 dark:text-zinc-600 dark:hover:text-zinc-100 md:inline-flex;
+}
+.group\/heading:hover .heading-anchor {
+  @apply opacity-100;
+}
+
+/* ===== 代码块增强 ===== */
+
+/* 语言标签 */
+.code-lang-badge {
+  @apply absolute left-3 top-3 z-10 rounded-md bg-zinc-600/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-200 backdrop-blur-sm;
+}
+
+/* 代码块折叠 */
+.code-block-collapsed {
+  max-height: 20rem;
+}
+.code-block-expanded {
+  max-height: none;
+}
+.code-expand-btn {
+  @apply absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center rounded-b-xl bg-gradient-to-t from-[#0d1117] via-[#0d1117]/90 to-transparent py-6 text-sm text-zinc-400 transition-colors hover:text-zinc-200;
+}
+
+/* 复制按钮动画 */
+.copy-btn-success {
+  @apply text-green-400;
+}
+
+/* ===== 返回顶部按钮 ===== */
+.back-to-top-btn {
+  @apply fixed bottom-28 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-500 shadow-lg backdrop-blur-xl transition-all hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100 md:bottom-20;
+}
+
+/* ===== 上一篇/下一篇导航 ===== */
+.post-nav-item {
+  @apply flex-1 rounded-2xl border border-zinc-200 p-4 transition-all hover:border-zinc-400 hover:shadow-md dark:border-zinc-800 dark:hover:border-zinc-600 md:p-6;
+}
+.post-nav-label {
+  @apply mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500;
+}
+.post-nav-title {
+  @apply line-clamp-2 text-sm font-semibold text-ink dark:text-zinc-100 md:text-[15px];
+}
+
+/* ===== 图片说明文字 ===== */
+.image-caption {
+  @apply mt-3 text-center text-[13px] leading-relaxed text-zinc-400 dark:text-zinc-500;
+}
+.image-caption::before {
+  content: '▲ ';
+  @apply text-[10px];
+}
+
+/* ===== 暗色模式下图片边框 ===== */
+.dark .prose img:not(.no-dark-border) {
+  @apply ring-1 ring-white/10;
+}
+
+/* ===== 键盘快捷键提示 ===== */
+.kbd {
+  @apply inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 px-1.5 text-[11px] font-medium leading-none text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-400;
+}
+
+/* ===== TOC 阅读进度增强 ===== */
+.toc-progress-ring {
+  transition: stroke-dashoffset 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ===== 暗色模式 prose 对比度增强 ===== */
+.dark .prose {
+  --tw-prose-body: #d4d4d8;
+  --tw-prose-headings: #fafafa;
+  --tw-prose-lead: #d4d4d8;
+  --tw-prose-links: #fafafa;
+  --tw-prose-bold: #fafafa;
+  --tw-prose-counters: #a1a1aa;
+  --tw-prose-bullets: #71717a;
+  --tw-prose-hr: #3f3f46;
+  --tw-prose-quotes: #e4e4e7;
+  --tw-prose-quote-borders: #52525b;
+  --tw-prose-captions: #a1a1aa;
+  --tw-prose-code: #f97316;
+  --tw-prose-pre-code: #e4e4e7;
+  --tw-prose-pre-bg: #09090b;
+  --tw-prose-th-borders: #3f3f46;
+  --tw-prose-td-borders: #27272a;
+}
+

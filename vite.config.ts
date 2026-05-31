@@ -21,12 +21,16 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    target: 'es2020',
+    modulePreload: {
+      polyfill: false,
+    },
     rollupOptions: {
       output: {
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
             // React 核心库
-            if (id.includes('react') || id.includes('react-dom')) {
+            if (id.includes('react-dom') || id.includes('react/') || id.includes('scheduler')) {
               return 'react-core';
             }
             // 路由
@@ -37,8 +41,8 @@ export default defineConfig({
             if (id.includes('framer-motion')) {
               return 'animation';
             }
-            // Markdown 相关
-            if (id.includes('react-markdown') || id.includes('remark') || id.includes('rehype')) {
+            // Markdown 解析（合并不拆分避免循环引用）
+            if (id.includes('react-markdown') || id.includes('unified') || id.includes('mdast') || id.includes('hast') || id.includes('remark-') || id.includes('rehype-')) {
               return 'markdown';
             }
             // 代码高亮和数学公式
@@ -57,6 +61,10 @@ export default defineConfig({
             return 'vendor';
           }
         },
+        // 资源文件命名（利于缓存）
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
       },
     },
     cssCodeSplit: true,

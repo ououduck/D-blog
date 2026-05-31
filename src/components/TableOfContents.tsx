@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { ChevronDown, List, Search, X } from 'lucide-react';
+import { ChevronDown, List, Search, X, ArrowUp } from 'lucide-react';
 
 
 import { siteConfig } from '@config/site.config';
@@ -221,7 +221,7 @@ export const TableOfContents: React.FC<{
 
     // 使用 Intersection Observer 替代滚动监听
     const observerOptions = {
-      rootMargin: '-140px 0px -66% 0px',
+      rootMargin: '-100px 0px -60% 0px',
       threshold: 0
     };
 
@@ -421,9 +421,10 @@ export const TableOfContents: React.FC<{
                     </span>
 
                     <span
-                      className={`block flex-1 leading-6 ${isSubLevel ? 'text-[12.5px]' : 'text-[13px]'} ${
+                      className={`block flex-1 truncate leading-6 ${isSubLevel ? 'text-[12.5px]' : 'text-[13px]'} ${
                         isActive ? 'font-semibold' : isInActiveBranch ? 'font-medium' : ''
                       }`}
+                      title={item.text}
                     >
                       {item.text}
                     </span>
@@ -531,6 +532,9 @@ export const TableOfContents: React.FC<{
     return count + countNodes([node]);
   }, 0);
   const shouldForceExpandFilteredTree = searchQuery.trim().length > 0;
+  const currentHeadingIndex = headings.findIndex((h) => h.id === activeHeadingId);
+  const readingProgressDisplay = headings.length > 0 ? Math.round(((currentHeadingIndex + 1) / headings.length) * 100) : 0;
+
   const panelContent = (
     <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-4 shadow-lg backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-900 sm:p-4.5">
       <div
@@ -543,27 +547,43 @@ export const TableOfContents: React.FC<{
         <span className="h-1.5 w-14 rounded-full bg-zinc-300 dark:bg-zinc-700" />
       </div>
 
-      <div className="mb-3.5 flex items-start justify-between gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-            <List size={17} />
-          </span>
-          <div className="min-w-0">
-            <h3 className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</h3>
-            <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">
-              {rootHeadingsCount} 个主章节 · 共 {headings.length} 节
-            </p>
+      <div className="mb-3.5 space-y-3 border-b border-zinc-200 pb-3 dark:border-zinc-800">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+              <List size={17} />
+            </span>
+            <div className="min-w-0">
+              <h3 className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</h3>
+              <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">
+                {rootHeadingsCount} 个主章节 · 共 {headings.length} 节
+              </p>
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-300 lg:hidden"
+            aria-label="关闭目录"
+          >
+            <X size={16} />
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsOpen(false)}
-          className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-300 lg:hidden"
-          aria-label="关闭目录"
-        >
-          <X size={16} />
-        </button>
+        {/* Reading progress bar */}
+        <div className="flex items-center gap-2.5">
+          <div className="h-1 flex-1 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-zinc-500 to-zinc-900 dark:from-zinc-400 dark:to-zinc-100"
+              animate={{ width: `${readingProgressDisplay}%` }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+            />
+          </div>
+          <span className="min-w-[2.2rem] text-right text-[11px] font-semibold tabular-nums text-zinc-500 dark:text-zinc-400">
+            {readingProgressDisplay}%
+          </span>
+        </div>
       </div>
 
       <div className="mb-3.5">
@@ -599,6 +619,22 @@ export const TableOfContents: React.FC<{
           </div>
         )}
       </nav>
+
+      {/* Back to top button */}
+      <div className="mt-2 border-t border-zinc-100 pt-2 dark:border-zinc-800">
+        <button
+          type="button"
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (isMobileViewport) setIsOpen(false);
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+          aria-label="回到顶部"
+        >
+          <ArrowUp size={14} />
+          回到顶部
+        </button>
+      </div>
     </div>
   );
 
