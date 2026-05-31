@@ -10,15 +10,15 @@ import type { MarkdownHeading } from '@/utils/headings';
 const formatIndex = (value: number) => String(value).padStart(2, '0');
 const MOBILE_TOC_TRIGGER_STYLE = {
   right: 'max(1rem, calc(env(safe-area-inset-right) + 1rem))',
-  bottom: 'max(8.5rem, calc(env(safe-area-inset-bottom) + 8.5rem))'
+  bottom: 'max(11rem, calc(env(safe-area-inset-bottom) + 11rem))'
 } as const;
 const DESKTOP_TOC_TRIGGER_STYLE = {
   right: '1.5rem',
-  bottom: '9rem'
+  bottom: '11rem'
 } as const;
 const DESKTOP_TOC_POPOVER_STYLE = {
   right: '1.5rem',
-  bottom: '13.75rem'
+  bottom: '15.75rem'
 } as const;
 const MOBILE_TOC_SHEET_STYLE = {
   left: 'max(0.6rem, calc(env(safe-area-inset-left) + 0.6rem))',
