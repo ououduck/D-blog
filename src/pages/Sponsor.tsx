@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Code2, FileText, TrendingUp } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { adsConfig } from '../../config/ads.config';
+import { easeOut } from '@/utils/motion';
 
 /**
  * Represents a single sponsor option displayed on the sponsor page.
@@ -112,8 +113,8 @@ export const Sponsor: React.FC<SponsorPageProps> = () => {
             <motion.div
               key={option.id}
               // Hover animation only for enabled cards
-              whileHover={!option.disabled ? { y: -6, scale: 1.01 } : undefined}
-              transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+              whileHover={!option.disabled ? { y: -3 } : undefined}
+              transition={{ duration: 0.22, ease: easeOut }}
               className="relative overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl p-6"
             >
               {/* Icon container */}

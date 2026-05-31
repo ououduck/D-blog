@@ -377,9 +377,9 @@ html.theme-switching *::after {
 
 .mobile-nav-panel {
   opacity: 0;
-  transform: translate3d(0, -24px, 0) scale(0.96);
+  transform: translate3d(0, -12px, 0) scale(0.98);
   pointer-events: none;
-  transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1), transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.36s cubic-bezier(0.22, 1, 0.36, 1), transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .mobile-nav-panel[data-open='true'] {

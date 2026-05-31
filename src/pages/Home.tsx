@@ -11,74 +11,13 @@ import { usePostSearch } from '@/hooks/usePostSearch';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { getDateTimestamp } from '@/utils/date';
+import { easeOut, easeSmooth, fadeInUp, staggerContainer, cardHover, chipHover } from '@/utils/motion';
 
 const ALL_CATEGORY = '全部';
 
-const easeOutQuint = [0.16, 1, 0.3, 1] as const;
-const easeOutSoft = [0.22, 1, 0.36, 1] as const;
-const springCardLayout = {
-  type: 'spring',
-  stiffness: 220,
-  damping: 26,
-  mass: 0.72
-} as const;
-
-const sectionFadeIn = {
-  hidden: { opacity: 0, y: 12 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.4,
-      ease: easeOutQuint
-    }
-  }
-} as const;
-
-const chipMotion = {
-  rest: { y: 0, scale: 1 },
-  hover: {
-    y: -1.5,
-    scale: 1.008,
-    transition: {
-      duration: 0.28,
-      ease: [0.22, 1, 0.36, 1]
-    }
-  },
-  tap: {
-    scale: 0.992,
-    transition: {
-      duration: 0.16,
-      ease: [0.3, 0, 0.2, 1]
-    }
-  }
-} as const;
-
-const pageBlockVariants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.4,
-      ease: [0.16, 1, 0.3, 1]
-    }
-  }
-} as const;
-
-const listContainerVariants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.06,
-      delayChildren: 0.03
-    }
-  }
-} as const;
-
 const listSwapTransition = {
-  duration: 0.32,
-  ease: [0.16, 1, 0.3, 1]
+  duration: 0.25,
+  ease: easeOut,
 } as const;
 
 
@@ -116,23 +55,20 @@ const filterAndSortPosts = (
 const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean; onShare: (post: PostMetadata) => void }> = ({ post, index, featured, onShare }) => {
   const shouldReduceMotion = useReducedMotion();
   const cardVariants = {
-    hidden: { opacity: 0, y: 18, scale: 0.99 },
+    hidden: { opacity: 0, y: 10 },
     visible: {
       opacity: 1,
       y: 0,
-      scale: 1,
       transition: {
-        duration: 0.4,
-        ease: easeOutSoft,
-        delay: index * 0.04
+        duration: 0.3,
+        ease: easeOut,
+        delay: index * 0.03
       }
     }
   };
   const hoverMotion = shouldReduceMotion
     ? undefined
-    : featured
-      ? { y: -4, scale: 1.003 }
-      : { y: -6, scale: 1.01 };
+    : { y: -3 };
 
 
   const CategoryBadge = ({ text }: { text: string }) => (
@@ -153,7 +89,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
         layout
         variants={cardVariants}
         whileHover={hoverMotion}
-        transition={springCardLayout}
+        transition={{ duration: 0.3, ease: easeOut }}
         className="col-span-full w-full"
       >
         <div className="relative flex h-auto flex-col overflow-hidden rounded-[2rem] liquid-glass backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 dark:hover:border-zinc-700 md:h-[480px] md:flex-row">
@@ -171,11 +107,8 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
               <CategoryBadge text={post.category} />
             </div>
           </Link>
-          <motion.div
+          <div
             className="relative flex w-full flex-col justify-center bg-white p-6 backdrop-blur-sm dark:bg-zinc-900/80 md:w-5/12 md:p-12"
-            initial={shouldReduceMotion ? false : { opacity: 0, x: 14 }}
-            animate={shouldReduceMotion ? undefined : { opacity: 1, x: 0 }}
-            transition={shouldReduceMotion ? undefined : { duration: 0.4, delay: 0.05 + index * 0.03, ease: easeOutSoft }}
           >
             {post.top !== undefined && (
               <div className="absolute right-6 top-6 rounded-full border border-zinc-200 bg-zinc-100 p-2 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
@@ -205,14 +138,14 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
                 <Share2 size={16} />
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </motion.article>
     );
   }
 
   return (
-    <motion.article layout variants={cardVariants} whileHover={hoverMotion} transition={springCardLayout} className="flex h-full flex-col min-w-0">
+    <motion.article layout variants={cardVariants} whileHover={hoverMotion} transition={{ duration: 0.3, ease: easeOut }} className="flex h-full flex-col min-w-0">
       <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 dark:hover:border-zinc-700 md:rounded-3xl">
         <Link to={`/post/${post.id}`} className="group/image relative aspect-[16/10] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
@@ -272,7 +205,7 @@ interface FilterBarProps {
 
 const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, sortOrder, onToggleSort }) => {
   return (
-    <motion.div variants={sectionFadeIn} initial="hidden" animate="visible" className="mb-12 flex flex-col items-center justify-between gap-4 rounded-[1.75rem] liquid-glass backdrop-blur-xl px-3 py-3 md:flex-row md:px-4">
+    <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="mb-10 flex flex-col items-center justify-between gap-4 rounded-[1.75rem] liquid-glass backdrop-blur-xl px-3 py-3 md:flex-row md:px-4">
       <div className="-mx-4 w-full overflow-x-auto px-4 pb-2 no-scrollbar md:mx-0 md:w-auto md:px-0 md:pb-0">
         <div className="flex space-x-2" role="tablist" aria-label="文章分类筛选">
           {[ALL_CATEGORY, ...categories].map((category) => (
@@ -283,7 +216,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
               aria-selected={selected === category}
               aria-controls="posts-grid"
               tabIndex={selected === category ? 0 : -1}
-              variants={chipMotion}
+              variants={chipHover}
               initial="rest"
               animate="rest"
               whileHover="hover"
@@ -299,7 +232,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
           ))}
         </div>
       </div>
-      <motion.button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} variants={chipMotion} initial="rest" animate="rest" whileHover="hover" whileTap="tap" className="flex w-full items-center justify-center space-x-2 rounded-full liquid-glass backdrop-blur-xl px-5 py-2.5 text-sm font-bold tracking-wide text-zinc-700 transition-all duration-300 hover:text-ink dark:hover:text-white md:w-auto">
+      <motion.button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} variants={chipHover} initial="rest" animate="rest" whileHover="hover" whileTap="tap" className="flex w-full items-center justify-center space-x-2 rounded-full liquid-glass backdrop-blur-xl px-5 py-2.5 text-sm font-bold tracking-wide text-zinc-700 transition-all duration-300 hover:text-ink dark:hover:text-white md:w-auto">
         {sortOrder === 'newest' ? <ArrowDownWideNarrow size={16} /> : <ArrowUpWideNarrow size={16} />}
         <span>{sortOrder === 'newest' ? '最新' : '最早'}</span>
       </motion.button>
@@ -308,63 +241,44 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
 };
 
 const Hero = () => {
-  const shouldReduceMotion = useReducedMotion();
-
   return (
-    <div className="relative z-10 flex flex-col items-center px-4 py-20 text-center md:py-32">
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.64, ease: [0.16, 1, 0.3, 1] }} className="relative mb-8">
-        <motion.span
+    <div className="relative z-10 flex flex-col items-center px-4 py-14 text-center md:py-24">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: easeOut }} className="relative mb-6">
+        <span
           className="relative z-10 text-xs font-bold uppercase tracking-[0.3em] text-zinc-700 dark:text-zinc-300 md:text-sm"
-          animate={shouldReduceMotion ? undefined : { opacity: [0.92, 1, 0.94] }}
-          transition={shouldReduceMotion ? undefined : { duration: 6.2, repeat: Infinity, ease: 'easeInOut' }}
         >
           {siteConfig.subtitle}
-        </motion.span>
+        </span>
         <div className="absolute -inset-4 rounded-full bg-zinc-200/50 blur-xl dark:bg-zinc-800/50" />
       </motion.div>
-      <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.55, ease: [0.16, 1, 0.3, 1] }} className="mb-6 font-serif text-[5.5rem] font-black leading-[0.95] tracking-tighter bg-gradient-to-br from-ink to-zinc-600 bg-clip-text text-transparent drop-shadow-[0_12px_32px_rgba(28,25,23,0.18)] dark:from-white dark:to-zinc-400 dark:drop-shadow-[0_12px_36px_rgba(255,255,255,0.1)] sm:text-[7rem] md:mb-8 md:text-[9rem] lg:text-[11rem]">
+      <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04, duration: 0.4, ease: easeOut }} className="mb-5 font-serif text-[5.5rem] font-black leading-[0.95] tracking-tighter bg-gradient-to-br from-ink to-zinc-600 bg-clip-text text-transparent drop-shadow-[0_12px_32px_rgba(28,25,23,0.18)] dark:from-white dark:to-zinc-400 dark:drop-shadow-[0_12px_36px_rgba(255,255,255,0.1)] sm:text-[7rem] md:mb-6 md:text-[9rem] lg:text-[11rem]">
         {siteConfig.title}
       </motion.h1>
-      <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="mx-auto mb-12 max-w-2xl font-sans text-base leading-relaxed text-zinc-600 dark:text-zinc-300 md:text-xl">
+      <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.35, ease: easeOut }} className="mx-auto mb-8 max-w-2xl font-sans text-base leading-relaxed text-zinc-600 dark:text-zinc-300 md:text-xl">
         {siteConfig.description}
       </motion.p>
       <motion.div
-        initial={{ opacity: 0, y: 10, scale: 0.99 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ delay: 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-8 flex flex-col items-center gap-3"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.12, duration: 0.35, ease: easeOut }}
+        className="mt-4 flex flex-col items-center gap-3"
       >
-        <motion.button
+        <button
           onClick={() => document.getElementById('posts-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
           className="group flex flex-col items-center gap-2 rounded-xl px-10 py-3 transition-colors hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40"
           aria-label="向下浏览文章"
         >
-          <motion.span
+          <span
             className="text-sm font-medium tracking-wide text-zinc-400 transition-colors group-hover:text-zinc-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"
-            animate={shouldReduceMotion ? undefined : { opacity: [0.5, 1, 0.5] }}
-            transition={shouldReduceMotion ? undefined : { duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
           >
             向下浏览
-          </motion.span>
-          <motion.div
-            animate={shouldReduceMotion ? undefined : {
-              y: [0, 8, 0],
-              opacity: [0.45, 1, 0.45],
-              scale: [0.92, 1.08, 0.92],
-            }}
-            transition={shouldReduceMotion ? undefined : {
-              duration: 2.8,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          >
-            <ChevronDown
-              size={28}
-              className="text-zinc-400 transition-colors group-hover:text-zinc-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"
-              strokeWidth={2}
-            />
-          </motion.div>
-        </motion.button>
+          </span>
+          <ChevronDown
+            size={24}
+            className="text-zinc-400 transition-colors group-hover:text-zinc-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"
+            strokeWidth={2}
+          />
+        </button>
       </motion.div>
     </div>
   );
@@ -541,23 +455,23 @@ export const Home = () => {
   };
 
   return (
-    <div className="pb-10 md:pb-20">
+    <div className="pb-8 md:pb-14">
       <Seo title="D-blog" description="跑路的duck的个人博客，分享前端技术、编程教程与生活感悟，探索极致的静态页面体验。" />
       <Hero />
 
       {!loading && !loadError && (
-        <motion.div variants={pageBlockVariants} initial="hidden" animate="visible" transition={{ delay: 0.05 }}>
+        <motion.div variants={fadeInUp} initial="hidden" animate="visible" transition={{ delay: 0.03 }}>
           <AnimatePresence mode="wait" initial={false}>
             {hasSearchQuery && (
               <motion.div key={`search-summary-${searchQuery}-${activeCategoryLabel}`} initial={{ opacity: 0, y: 8, scale: 0.992 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, scale: 0.992 }} transition={listSwapTransition} className="mb-6 px-2">
                 <motion.div layout className="flex flex-wrap items-center gap-3 rounded-2xl liquid-glass backdrop-blur-xl px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300">
-                  <motion.div initial={{ opacity: 0, scale: 0.86 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.34, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}>
+                  <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.25, delay: 0.03, ease: easeOut }}>
                     <Search size={16} className="text-zinc-700 dark:text-zinc-300" />
                   </motion.div>
                   <p className="text-sm text-zinc-700 dark:text-zinc-300">
                     搜索 "<span className="font-bold text-zinc-900 dark:text-zinc-100">{searchQuery}</span>" 共命中 {results.length} 篇文章，当前按 "<span className="font-bold text-ink dark:text-white">{activeCategoryLabel}</span>" 显示 {displayedPosts.length} 篇
                   </p>
-                  <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.99 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }} onClick={handleClearSearch} className="liquid-glass backdrop-blur-xl ml-auto rounded-full px-3 py-1.5 text-xs transition-colors hover:border-zinc-900 hover:text-zinc-900 dark:hover:border-zinc-100 dark:hover:text-zinc-100" aria-label="清除搜索">
+                  <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.18, ease: easeOut }} onClick={handleClearSearch} className="liquid-glass backdrop-blur-xl ml-auto rounded-full px-3 py-1.5 text-xs transition-colors hover:border-zinc-900 hover:text-zinc-900 dark:hover:border-zinc-100 dark:hover:text-zinc-100" aria-label="清除搜索">
                     清除搜索
                   </motion.button>
                 </motion.div>
@@ -569,36 +483,36 @@ export const Home = () => {
         </motion.div>
       )}
 
-      <motion.div id="posts-grid" className="scroll-mt-32" variants={pageBlockVariants} initial="hidden" animate="visible" transition={{ delay: 0.1 }}>
+      <motion.div id="posts-grid" className="scroll-mt-32" variants={fadeInUp} initial="hidden" animate="visible" transition={{ delay: 0.06 }}>
         {loading || isSearching ? (
-          <motion.div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3" variants={listContainerVariants} initial="hidden" animate="visible">
+          <motion.div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3" variants={staggerContainer} initial="hidden" animate="visible">
             {[1, 2, 3].map((item) => (
-              <motion.div key={item} variants={pageBlockVariants} className="h-80 animate-pulse rounded-3xl bg-zinc-100 dark:bg-zinc-800" />
+              <motion.div key={item} variants={fadeInUp} className="h-80 animate-pulse rounded-3xl bg-zinc-100 dark:bg-zinc-800" />
             ))}
           </motion.div>
         ) : loadError ? (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={listSwapTransition} className="col-span-full rounded-[2rem] border border-dashed border-zinc-200 liquid-glass backdrop-blur-xl py-16 text-center dark:border-zinc-800">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={listSwapTransition} className="col-span-full rounded-[2rem] border border-dashed border-zinc-200 liquid-glass backdrop-blur-xl py-16 text-center dark:border-zinc-800">
             <p className="mb-2 font-serif text-xl text-zinc-700 dark:text-zinc-300">加载失败</p>
             <p className="text-sm text-zinc-600 dark:text-zinc-400">{loadError}</p>
           </motion.div>
         ) : (
-          <div className="space-y-16">
+          <div className="space-y-10">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`${selectedCategory}-${sortOrder}-${currentPage}-${searchQuery}`}
-                className="grid grid-cols-2 gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3"
-                variants={listContainerVariants}
+                className="grid grid-cols-2 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3"
+                variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
-                exit={{ opacity: 0, y: 8, transition: listSwapTransition }}
+                exit={{ opacity: 0, y: 6, transition: listSwapTransition }}
               >
                 {currentPosts.length > 0 ? (
                   currentPosts.map((post, index) => <PostCard key={post.id} post={post} index={index} featured={!!post.featured} onShare={setSharePost} />)
                 ) : (
-                  <motion.div variants={pageBlockVariants} className="col-span-full rounded-[2rem] border border-dashed border-zinc-200 liquid-glass backdrop-blur-xl py-24 text-center dark:border-zinc-800">
+                  <motion.div variants={fadeInUp} className="col-span-full rounded-[2rem] border border-dashed border-zinc-200 liquid-glass backdrop-blur-xl py-24 text-center dark:border-zinc-800">
                     <p className="mb-2 font-serif text-xl text-zinc-400">{hasSearchQuery ? '未找到匹配的文章' : '暂无相关文章'}</p>
                     {hasSearchQuery && (
-                      <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.99 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }} onClick={handleClearSearch} className="mt-4 text-sm text-zinc-700 hover:underline dark:text-zinc-300" aria-label="清除搜索条件">
+                      <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.18, ease: easeOut }} onClick={handleClearSearch} className="mt-4 text-sm text-zinc-700 hover:underline dark:text-zinc-300" aria-label="清除搜索条件">
                         清除搜索条件
                       </motion.button>
                     )}
@@ -608,14 +522,14 @@ export const Home = () => {
             </AnimatePresence>
 
             {totalPages > 1 && (
-              <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="mt-8 flex items-center justify-center gap-4 md:mt-16" aria-label="分页导航">
-                <motion.button whileHover={{ y: -1.5 }} whileTap={{ scale: 0.988 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }} onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="liquid-glass backdrop-blur-xl rounded-full p-3 transition-colors hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 dark:hover:border-zinc-100 dark:hover:text-zinc-100" aria-label="上一页">
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: easeOut }} className="mt-6 flex items-center justify-center gap-4 md:mt-10" aria-label="分页导航">
+                <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.18, ease: easeOut }} onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="liquid-glass backdrop-blur-xl rounded-full p-3 transition-colors hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 dark:hover:border-zinc-100 dark:hover:text-zinc-100" aria-label="上一页">
                   <ChevronLeft size={20} />
                 </motion.button>
-                <motion.span layout transition={{ type: 'spring', stiffness: 280, damping: 30, mass: 0.8 }} className="liquid-glass backdrop-blur-xl rounded-full px-4 py-2 font-mono text-sm font-bold text-zinc-600 dark:text-zinc-300" aria-live="polite">
+                <motion.span layout transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.6 }} className="liquid-glass backdrop-blur-xl rounded-full px-4 py-2 font-mono text-sm font-bold text-zinc-600 dark:text-zinc-300" aria-live="polite">
                   {currentPage} / {totalPages}
                 </motion.span>
-                <motion.button whileHover={{ y: -1.5 }} whileTap={{ scale: 0.988 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }} onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="liquid-glass backdrop-blur-xl rounded-full p-3 transition-colors hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 dark:hover:border-zinc-100 dark:hover:text-zinc-100" aria-label="下一页">
+                <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.18, ease: easeOut }} onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="liquid-glass backdrop-blur-xl rounded-full p-3 transition-colors hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:hover:border-zinc-200 dark:hover:border-zinc-100 dark:hover:text-zinc-100" aria-label="下一页">
                   <ChevronRight size={20} />
                 </motion.button>
               </motion.div>

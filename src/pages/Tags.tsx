@@ -7,6 +7,7 @@ import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { getDateTimestamp } from '@/utils/date';
+import { easeOut } from '@/utils/motion';
 
 interface TagInfo {
   name: string;
@@ -108,7 +109,7 @@ export const Tags = () => {
   };
 
   return (
-    <div className="pb-10 md:pb-20">
+    <div className="pb-8 md:pb-14">
       <Seo title="标签云" description="按标签浏览 D-blog 文章，通过标签快速筛选感兴趣的技术主题与内容。" />
 
       <section className="relative mb-10 overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl p-8 md:p-12">
@@ -167,9 +168,9 @@ export const Tags = () => {
                   {tags.map((tag, index) => (
                     <motion.button
                       key={tag.name}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.25, delay: index * 0.02 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2, delay: index * 0.015, ease: easeOut }}
                       onClick={() => updateTagParam(tag.name)}
                       className={`${getTagSize(tag.count)} group relative rounded-xl liquid-glass backdrop-blur-xl px-5 py-2.5 font-bold text-zinc-700 transition-all hover:border-zinc-900 hover:text-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-100 dark:hover:text-zinc-100`}
                   aria-label={`查看标签 ${tag.name}，共 ${tag.count} 篇文章`}
@@ -202,7 +203,7 @@ export const Tags = () => {
 
               <div className="grid gap-6 md:grid-cols-2">
                 {filteredSelectedTagPosts.map((post, index) => (
-                  <motion.div key={post.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: index * 0.03 }}>
+                  <motion.div key={post.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, delay: index * 0.02, ease: easeOut }}>
                     <Link to={`/post/${post.id}`} className="group block rounded-2xl liquid-glass backdrop-blur-xl p-6 transition-all dark:hover:border-zinc-700">
                       <div className="mb-3 flex items-center gap-2">
                         <span className="rounded-lg liquid-glass backdrop-blur-md px-3 py-1 text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">

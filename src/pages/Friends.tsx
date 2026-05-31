@@ -6,6 +6,7 @@ import { getFriends } from '@/services/friends';
 import { Seo } from '../components/Seo';
 import { Friend } from '../types';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
+import { easeOut, fadeInUp, staggerContainer, cardHover } from '@/utils/motion';
 
 export const Friends = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -19,15 +20,9 @@ export const Friends = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
+  const containerVariants = staggerContainer;
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 }
-  };
+  const itemVariants = fadeInUp;
 
   const siteInfo = {
     name: siteConfig.title,
@@ -196,8 +191,8 @@ export const Friends = () => {
             <motion.a
               key={`${friend.url}-${index}`}
               variants={itemVariants}
-              whileHover={{ y: -6 }}
-              transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+              whileHover={{ y: -3 }}
+              transition={{ duration: 0.22, ease: easeOut }}
               href={friend.url}
               target="_blank"
               rel="noopener noreferrer"

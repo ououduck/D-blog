@@ -7,6 +7,7 @@ import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { formatDate, getDateTimestamp } from '@/utils/date';
+import { easeOut } from '@/utils/motion';
 
 interface MonthGroup {
   month: string;
@@ -217,7 +218,7 @@ export const ArchivePage = () => {
   };
 
   return (
-    <div className="pb-10 md:pb-20">
+    <div className="pb-8 md:pb-14">
       <Seo title="文章归档" description="按年份归档 D-blog 全部历史文章，快速查看发布时间、分类与更新轨迹。" />
 
       <section className="relative overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl p-8 md:p-12">
@@ -307,9 +308,9 @@ export const ArchivePage = () => {
                 return (
                   <motion.div
                     key={group.year}
-                    initial={{ opacity: 0, x: -14 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.35, delay: groupIndex * 0.04 }}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, delay: groupIndex * 0.03, ease: easeOut }}
                   >
                     {/* 年份标题 - 可点击折叠 */}
                     <button
@@ -367,9 +368,9 @@ export const ArchivePage = () => {
                               return (
                                 <motion.div
                                   key={monthKey}
-                                  initial={{ opacity: 0, x: -8 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ duration: 0.25, delay: monthIndex * 0.03 }}
+                                  initial={{ opacity: 0, y: 6 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.2, delay: monthIndex * 0.02, ease: easeOut }}
                                 >
                                   {/* 月份标题 - 可点击折叠 */}
                                   <button
@@ -407,9 +408,9 @@ export const ArchivePage = () => {
                                           {monthGroup.posts.map((post, postIndex) => (
                                             <motion.div
                                               key={post.id}
-                                              initial={{ opacity: 0, x: -8 }}
-                                              animate={{ opacity: 1, x: 0 }}
-                                              transition={{ duration: 0.2, delay: postIndex * 0.02 }}
+                                              initial={{ opacity: 0, y: 4 }}
+                                              animate={{ opacity: 1, y: 0 }}
+                                              transition={{ duration: 0.18, delay: postIndex * 0.015, ease: easeOut }}
                                               className="relative"
                                             >
                                               <div className="absolute -left-[22px] top-3 h-1.5 w-1.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />

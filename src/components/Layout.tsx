@@ -8,6 +8,7 @@ import { usePostSearch } from '@/hooks/usePostSearch';
 import { ProgressiveImage } from './ProgressiveImage';
 import { GlobalLiquidGlass } from './GlobalLiquidGlass';
 import type { PostSearchScope } from '@/services/posts';
+import { easeSmooth, routeTransition } from '@/utils/motion';
 
 const TEXT = {
   searchPlaceholder: '\u641c\u7d22\u6587\u7ae0... (\u2318K)',
@@ -78,7 +79,7 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   });
   const visibleResults = results.slice(0, 8);
   const activeScopeHint = SEARCH_SCOPE_HINTS[searchScope];
-  const modalEase = [0.16, 1, 0.3, 1] as const;
+  const modalEase = easeSmooth;
 
   const saveHistory = (query: string) => {
     if (!query.trim()) return;
@@ -171,9 +172,9 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-16 sm:pt-24">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.26, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/60 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, scale: 0.975, y: -12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.982, y: -8 }} transition={{ duration: 0.34, ease: modalEase }} className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.25, ease: modalEase }} className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
             <div className="flex items-center border-b border-zinc-100 p-4 dark:border-zinc-800">
-              <motion.div animate={searchQuery ? { opacity: 1, scale: 1.03 } : { opacity: 0.82, scale: 1 }} transition={{ duration: 0.24, ease: modalEase }}>
+              <motion.div animate={searchQuery ? { opacity: 1 } : { opacity: 0.82 }} transition={{ duration: 0.2, ease: modalEase }}>
                 <Search className="mr-3 text-zinc-600 dark:text-zinc-300" size={20} />
               </motion.div>
               <input
@@ -201,8 +202,8 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
                     onClick={() => setSearchScope(option.value)}
                     aria-pressed={searchScope === option.value}
                     whileHover={{ y: -1 }}
-                    whileTap={{ scale: 0.992 }}
-                    transition={{ duration: 0.22, ease: modalEase }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0.18, ease: modalEase }}
                     className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                       searchScope === option.value
                         ? 'border-zinc-900 bg-zinc-900 text-white shadow-sm dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'
@@ -399,19 +400,19 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     hidden: {},
     visible: {
       transition: {
-        staggerChildren: 0.06,
-        delayChildren: 0.08
+        staggerChildren: 0.04,
+        delayChildren: 0.05
       }
     }
   };
   const navItemVariants = {
-    hidden: { opacity: 0, y: -8 },
+    hidden: { opacity: 0, y: -6 },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.32,
-        ease: [0.22, 1, 0.36, 1]
+        duration: 0.25,
+        ease: easeSmooth
       }
     }
   };
@@ -609,17 +610,15 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   return (
     <>
       <nav className="fixed left-0 right-0 top-0 z-50 liquid-glass-nav backdrop-blur-xl transition-all duration-500">
-        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 md:h-20">
-          <Link to="/" className="group z-50 flex items-center space-x-3">
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: easeSmooth }} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-20">
+          <Link to="/" className="group z-50 flex items-center space-x-2.5 sm:space-x-3">
             <div className="relative">
-              <motion.div
+              <div
                 className="absolute inset-0 bg-zinc-900/20 opacity-20 blur-md transition-opacity group-hover:opacity-40 dark:bg-zinc-100/20"
-                animate={{ opacity: [0.18, 0.3, 0.18], scale: [0.96, 1.04, 0.96] }}
-                transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
               />
-              <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-9 w-9 rounded-lg bg-white/10 sm:h-10 sm:w-10" className="h-9 w-9 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105 sm:h-10 sm:w-10" />
+              <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-8 w-8 rounded-lg bg-white/10 sm:h-10 sm:w-10" className="h-8 w-8 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105 sm:h-10 sm:w-10" />
             </div>
-            <span className="font-serif text-xl font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
+            <span className="font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
           </Link>
 
           <div className="hidden items-center space-x-8 md:flex">
@@ -650,28 +649,28 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             </motion.div>
 
             <motion.div className="flex items-center space-x-3 border-l border-zinc-300 pl-6 dark:border-zinc-700" variants={navListVariants} initial="hidden" animate="visible">
-              <motion.button variants={navItemVariants} whileHover={{ y: -2 }} whileTap={{ scale: 0.94 }} onClick={onSearchClick} className="group flex items-center space-x-2 rounded-lg border border-transparent bg-zinc-100 px-3 py-2 text-zinc-700 transition-all duration-300 hover:border-zinc-200 hover:bg-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 active:scale-95" aria-label="打开站内搜索">
+              <motion.button variants={navItemVariants} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }} onClick={onSearchClick} className="group flex items-center space-x-2 rounded-lg border border-transparent bg-zinc-100 px-3 py-2 text-zinc-700 transition-all duration-300 hover:border-zinc-200 hover:bg-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 active:scale-95" aria-label="打开站内搜索">
                 <Search size={16} />
                 <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">Ctrl+K</span>
               </motion.button>
-              <motion.a variants={navItemVariants} whileHover={{ y: -2 }} whileTap={{ scale: 0.94 }} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex items-center space-x-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 active:scale-95">
+              <motion.a variants={navItemVariants} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex items-center space-x-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 active:scale-95">
                 <Rss size={16} />
                 <span className="text-xs font-medium">{TEXT.rssFeed}</span>
               </motion.a>
-              <motion.div variants={navItemVariants} whileTap={{ scale: 0.94 }} className="active:scale-95 transition-transform">
+              <motion.div variants={navItemVariants} whileTap={{ scale: 0.97 }} className="active:scale-95 transition-transform">
                 <ThemeToggle />
               </motion.div>
             </motion.div>
           </div>
 
-          <div className="flex items-center gap-2 md:hidden">
-            <button onClick={onSearchClick} className="rounded-full border border-zinc-200/70 bg-white/78 p-2.5 text-zinc-700 shadow-sm shadow-zinc-200/30 transition-all active:scale-95 dark:border-zinc-700/70 dark:bg-zinc-900/78 dark:text-zinc-200 dark:shadow-black/20" aria-label="打开站内搜索">
-              <Search size={20} />
+          <div className="flex items-center gap-1.5 md:hidden">
+            <button onClick={onSearchClick} className="rounded-full border border-zinc-200/60 bg-white/70 p-2 text-zinc-600 transition-all active:scale-90 dark:border-zinc-700/60 dark:bg-zinc-900/70 dark:text-zinc-300" aria-label="打开站内搜索">
+              <Search size={17} />
             </button>
-            <button onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className="z-50 rounded-full border border-zinc-200/70 bg-white/82 p-2.5 text-ink shadow-sm shadow-zinc-200/30 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700/70 dark:bg-zinc-900/82 dark:text-white dark:shadow-black/20" aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
-              <div className="relative flex h-[22px] w-[22px] items-center justify-center">
-                <Menu size={22} className={`absolute transition-all duration-300 ${isMobileNavOpen ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'}`} />
-                <X size={22} className={`absolute transition-all duration-300 ${isMobileNavOpen ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-0 opacity-0'}`} />
+            <button onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className="z-50 rounded-full border border-zinc-200/60 bg-white/70 p-2 text-ink transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700/60 dark:bg-zinc-900/70 dark:text-white" aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
+              <div className="relative flex h-[18px] w-[18px] items-center justify-center">
+                <Menu size={18} className={`absolute transition-all duration-300 ${isMobileNavOpen ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'}`} />
+                <X size={18} className={`absolute transition-all duration-300 ${isMobileNavOpen ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-0 opacity-0'}`} />
               </div>
             </button>
           </div>
@@ -696,22 +695,22 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             className="mobile-nav-panel fixed inset-x-0 top-0 z-[80] overflow-hidden rounded-b-[1.75rem] liquid-glass backdrop-blur-3xl text-ink shadow-2xl dark:text-white"
             style={mobileNavPanelStyle}
           >
-            <div className="flex h-16 items-center justify-between border-b border-zinc-200/70 px-4 sm:h-20 sm:px-6 dark:border-zinc-800/70">
-              <button type="button" onClick={() => handleMobileNavItemSelect('/')} disabled={isMobileNavAnimating} className="group flex items-center space-x-3 text-left disabled:cursor-not-allowed disabled:opacity-60" aria-label="返回首页">
+            <div className="flex h-14 items-center justify-between border-b border-zinc-200/70 px-3 sm:h-16 sm:px-6 dark:border-zinc-800/70">
+              <button type="button" onClick={() => handleMobileNavItemSelect('/')} disabled={isMobileNavAnimating} className="group flex items-center space-x-2.5 text-left disabled:cursor-not-allowed disabled:opacity-60" aria-label="返回首页">
                 <div className="relative">
                   <div className="absolute inset-0 bg-zinc-900/20 blur-md transition-opacity group-hover:opacity-40 dark:bg-zinc-100/20" />
-                  <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-9 w-9 rounded-lg bg-white/10 sm:h-10 sm:w-10" className="h-9 w-9 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105 sm:h-10 sm:w-10" />
+                  <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-8 w-8 rounded-lg bg-white/10 sm:h-10 sm:w-10" className="h-8 w-8 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105 sm:h-10 sm:w-10" />
                 </div>
-                <span className="font-serif text-xl font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
+                <span className="font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
               </button>
 
-              <button type="button" onClick={() => requestCloseMobileNav()} disabled={isMobileNavAnimating} className="rounded-full border border-zinc-200/80 bg-white/85 p-2 text-zinc-500 transition-colors hover:border-zinc-300 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700/80 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-white" aria-label="关闭导航菜单">
-                <X size={20} />
+              <button type="button" onClick={() => requestCloseMobileNav()} disabled={isMobileNavAnimating} className="rounded-full border border-zinc-200/60 bg-white/70 p-1.5 text-zinc-500 transition-colors hover:border-zinc-300 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700/60 dark:bg-zinc-900/70 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-white" aria-label="关闭导航菜单">
+                <X size={16} />
               </button>
             </div>
 
-            <div className="flex max-h-[min(82vh,42rem)] flex-col overflow-y-auto px-4 pb-8 pt-6 sm:px-6">
-              <div className="space-y-2.5">
+            <div className="flex max-h-[min(82vh,42rem)] flex-col overflow-y-auto px-3 pb-6 pt-4 sm:px-6 sm:pb-8 sm:pt-5">
+              <div className="space-y-1.5">
                 {navItems.map((item) => {
                   const isActive = location.pathname === item.path;
 
@@ -721,31 +720,31 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                       type="button"
                       onClick={() => handleMobileNavItemSelect(item.path)}
                       disabled={isMobileNavAnimating}
-                      className={`group flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-left transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
+                      className={`group flex w-full items-center justify-between rounded-xl border px-3.5 py-3 text-left transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
                         isActive
-                          ? 'border-zinc-900/30 bg-zinc-100 text-zinc-900 shadow-sm dark:border-zinc-100/30 dark:bg-zinc-800 dark:text-zinc-100'
-                          : 'border-zinc-200/80 bg-white/82 text-ink hover:border-zinc-300 hover:bg-white dark:border-zinc-800/80 dark:bg-zinc-900/70 dark:text-white dark:hover:border-zinc-700 dark:hover:bg-zinc-900'
+                          ? 'border-zinc-900/25 bg-zinc-100/90 text-zinc-900 dark:border-zinc-100/25 dark:bg-zinc-800/90 dark:text-zinc-100'
+                          : 'border-zinc-200/60 bg-white/70 text-ink hover:border-zinc-300 hover:bg-white/90 dark:border-zinc-800/60 dark:bg-zinc-900/60 dark:text-white dark:hover:border-zinc-700 dark:hover:bg-zinc-900/80'
                       }`}
                       aria-current={isActive ? 'page' : undefined}
                     >
-                      <span className="flex flex-col gap-1.5">
-                        <span className="text-lg font-bold tracking-tight">{item.label}</span>
-                        <span className="text-[13px] font-medium text-zinc-500 dark:text-zinc-400">{item.hint}</span>
+                      <span className="flex flex-col gap-0.5">
+                        <span className="text-base font-bold tracking-tight">{item.label}</span>
+                        <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">{item.hint}</span>
                       </span>
-                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${isActive ? 'bg-zinc-900/12 text-zinc-900 dark:bg-zinc-100/18 dark:text-zinc-100' : 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500'}`}>{isActive ? '当前' : '进入'}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${isActive ? 'bg-zinc-900/10 text-zinc-900 dark:bg-zinc-100/14 dark:text-zinc-100' : 'bg-zinc-100/80 text-zinc-400 dark:bg-zinc-800/80 dark:text-zinc-500'}`}>{isActive ? '当前' : '进入'}</span>
                     </button>
                   );
                 })}
               </div>
 
-              <div className="mt-6 grid gap-3 border-t border-zinc-200/70 pt-6 dark:border-zinc-800/70">
-                <div className="flex items-center justify-between rounded-2xl border border-zinc-200/80 bg-white/82 px-4 py-3 dark:border-zinc-800/80 dark:bg-zinc-900/70">
+              <div className="mt-4 grid gap-2.5 border-t border-zinc-200/70 pt-4 dark:border-zinc-800/70">
+                <div className="flex items-center justify-between rounded-xl border border-zinc-200/60 bg-white/70 px-3.5 py-2.5 dark:border-zinc-800/60 dark:bg-zinc-900/60">
                   <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{TEXT.theme}</span>
                   <ThemeToggle />
                 </div>
 
-                <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex w-full items-center justify-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-bold tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800">
-                  <Rss size={16} />
+                <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex w-full items-center justify-center gap-2.5 rounded-xl border border-zinc-200/60 bg-white/70 px-4 py-2.5 text-sm font-bold tracking-wide text-zinc-700 transition-colors hover:bg-white/90 dark:border-zinc-800/60 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:bg-zinc-900/80">
+                  <Rss size={15} />
                   <span>{TEXT.rssFeed}</span>
                 </a>
               </div>
@@ -781,7 +780,7 @@ const Footer = () => {
   return (
     <footer className="relative mt-12 overflow-hidden border-t border-zinc-200/90 py-12 dark:border-zinc-800/90 md:mt-32">
       <div className="absolute left-1/2 top-0 h-px w-full -translate-x-1/2 bg-gradient-to-r from-transparent via-zinc-900/30 to-transparent opacity-30 dark:via-zinc-100/30" />
-      <motion.div initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.18 }} transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }} className="mx-auto max-w-7xl px-6">
+      <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.18 }} transition={{ duration: 0.35, ease: easeSmooth }} className="mx-auto max-w-7xl px-6">
         <div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-3">
           <div className="flex flex-col items-center space-y-4 md:items-start">
             <div>
@@ -790,10 +789,10 @@ const Footer = () => {
             </div>
             <p className="text-center text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 md:text-left">{siteConfig.description}</p>
             <div className="flex items-center gap-4 pt-2">
-              <motion.a whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }} href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="rounded-full bg-zinc-100 p-2 text-zinc-700 transition-all duration-300 hover:bg-black hover:text-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-white dark:hover:text-zinc-900" aria-label="打开 GitHub 主页">
+              <motion.a whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }} href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="rounded-full bg-zinc-100 p-2 text-zinc-700 transition-all duration-300 hover:bg-black hover:text-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-white dark:hover:text-zinc-900" aria-label="打开 GitHub 主页">
                 <Github size={18} />
               </motion.a>
-              <motion.a whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }} href={siteConfig.social.email} className="rounded-full bg-zinc-100 p-2 text-zinc-700 transition-all duration-300 hover:bg-black hover:text-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-white dark:hover:text-zinc-900" aria-label="发送邮件">
+              <motion.a whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }} href={siteConfig.social.email} className="rounded-full bg-zinc-100 p-2 text-zinc-700 transition-all duration-300 hover:bg-black hover:text-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-white dark:hover:text-zinc-900" aria-label="发送邮件">
                 <Mail size={18} />
               </motion.a>
             </div>
@@ -803,7 +802,7 @@ const Footer = () => {
             <h4 className="mb-6 text-sm font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300">Tech Stack</h4>
             <div className="flex max-w-xs flex-wrap justify-center gap-2 md:justify-start">
               {technologies.map((tech, index) => (
-                <motion.div key={tech.name} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.3, delay: index * 0.04, ease: [0.22, 1, 0.36, 1] }} whileHover={{ y: -2 }} className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 transition-colors hover:border-zinc-900/30 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300 dark:hover:border-zinc-100/30">
+                <motion.div key={tech.name} initial={{ opacity: 0, y: 6 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.22, delay: index * 0.03, ease: easeSmooth }} whileHover={{ y: -1 }} className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 transition-colors hover:border-zinc-900/30 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300 dark:hover:border-zinc-100/30">
                   <tech.icon size={12} className="text-zinc-700 dark:text-zinc-300" />
                   {tech.name}
                 </motion.div>
@@ -822,14 +821,14 @@ const Footer = () => {
                 <span>All Systems Normal</span>
               </div>
               {loadTime && (
-                <motion.div initial={{ opacity: 0, x: 10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }} className="flex items-center justify-center gap-2 text-xs text-zinc-600 dark:text-zinc-300 md:justify-end">
+                <motion.div initial={{ opacity: 0, x: 6 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.25, ease: easeSmooth }} className="flex items-center justify-center gap-2 text-xs text-zinc-600 dark:text-zinc-300 md:justify-end">
                   <Zap size={14} className="text-yellow-500" />
                   <span>
                     Page loaded in <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{loadTime}</span>
                   </span>
                 </motion.div>
               )}
-              <motion.div initial={{ opacity: 0, x: 10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.35, delay: 0.05, ease: [0.22, 1, 0.36, 1] }} className="flex items-center justify-center gap-2 text-xs text-zinc-600 dark:text-zinc-300 md:justify-end">
+              <motion.div initial={{ opacity: 0, x: 6 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.25, delay: 0.03, ease: easeSmooth }} className="flex items-center justify-center gap-2 text-xs text-zinc-600 dark:text-zinc-300 md:justify-end">
                 <Coffee size={14} className="text-amber-700 dark:text-amber-600" />
                 <span>Fueled by Coffee &amp; Code</span>
               </motion.div>
@@ -838,7 +837,7 @@ const Footer = () => {
         </div>
 
         <div className="flex flex-col items-center justify-center gap-4 pb-6 pt-8 md:flex-row">
-          <motion.a whileHover={{ y: -3 }} whileTap={{ scale: 0.985 }} href="/cover" className="group relative inline-flex items-center gap-3 rounded-xl liquid-glass backdrop-blur-xl border-purple-200 dark:border-purple-900/60 px-6 py-3 transition-all duration-300 hover:border-purple-300 dark:hover:border-purple-700">
+          <motion.a whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }} href="/cover" className="group relative inline-flex items-center gap-3 rounded-xl liquid-glass backdrop-blur-xl border-purple-200 dark:border-purple-900/60 px-6 py-3 transition-all duration-300 hover:border-purple-300 dark:hover:border-purple-700">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500 transition-transform duration-300 group-hover:scale-110">
               <Image size={18} className="text-white" />
             </div>
@@ -848,7 +847,7 @@ const Footer = () => {
             </div>
             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-400/0 via-purple-300/10 to-purple-400/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           </motion.a>
-          <motion.a whileHover={{ y: -3 }} whileTap={{ scale: 0.985 }} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 rounded-xl liquid-glass backdrop-blur-xl border-orange-200 dark:border-orange-900/60 px-6 py-3 transition-all duration-300 hover:border-orange-300 dark:hover:border-orange-700">
+          <motion.a whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 rounded-xl liquid-glass backdrop-blur-xl border-orange-200 dark:border-orange-900/60 px-6 py-3 transition-all duration-300 hover:border-orange-300 dark:hover:border-orange-700">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 transition-transform duration-300 group-hover:scale-110">
               <Rss size={18} className="text-white" />
             </div>
@@ -858,7 +857,7 @@ const Footer = () => {
             </div>
             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-400/0 via-orange-300/10 to-orange-400/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           </motion.a>
-          <motion.a whileHover={{ y: -3 }} whileTap={{ scale: 0.985 }} href={siteConfig.friendsPage.repoUrl} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 rounded-xl liquid-glass backdrop-blur-xl border-zinc-200 dark:border-zinc-700 px-6 py-3 transition-all duration-300 hover:border-zinc-900/50 dark:hover:border-zinc-100/50">
+          <motion.a whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }} href={siteConfig.friendsPage.repoUrl} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 rounded-xl liquid-glass backdrop-blur-xl border-zinc-200 dark:border-zinc-700 px-6 py-3 transition-all duration-300 hover:border-zinc-900/50 dark:hover:border-zinc-100/50">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black transition-transform duration-300 group-hover:scale-110 dark:bg-white">
               <Github size={18} className="text-white dark:text-black" />
             </div>
@@ -887,21 +886,15 @@ const Footer = () => {
 };
 
 const Background = () => {
-  const shouldReduceMotion = useReducedMotion();
-
   return (
     <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden">
-      <motion.div
+      <div
         aria-hidden="true"
         className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.08),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(24,24,27,0.08),_transparent_34%),linear-gradient(180deg,_rgba(255,255,255,0.55),_transparent_45%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(192,57,43,0.12),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(161,161,170,0.08),_transparent_34%),linear-gradient(180deg,_rgba(255,255,255,0.04),_transparent_35%)]"
-        animate={shouldReduceMotion ? undefined : { opacity: [0.92, 1, 0.92] }}
-        transition={shouldReduceMotion ? undefined : { duration: 14, repeat: Infinity, ease: 'easeInOut' }}
       />
-      <motion.div
+      <div
         aria-hidden="true"
         className="absolute left-1/2 top-1/3 hidden h-64 w-64 -translate-x-1/2 rounded-full bg-accent/5 blur-[110px] lg:block"
-        animate={shouldReduceMotion ? undefined : { opacity: [0.18, 0.32, 0.18] }}
-        transition={shouldReduceMotion ? undefined : { duration: 16, repeat: Infinity, ease: 'easeInOut' }}
       />
     </div>
   );
@@ -912,25 +905,7 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const routeShellVariants = {
-  initial: { opacity: 0, y: 16 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.4,
-      ease: [0.22, 1, 0.36, 1]
-    }
-  },
-  exit: {
-    opacity: 0,
-    y: -10,
-    transition: {
-      duration: 0.25,
-      ease: [0.22, 1, 0.36, 1]
-    }
-  }
-} as const;
+const routeShellVariants = routeTransition;
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -970,9 +945,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <GlobalLiquidGlass />
       <Navbar onSearchClick={openSearch} />
       <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
-      <main className="relative flex-grow px-4 pt-24 sm:px-6 md:pt-32">
+      <main className="relative flex-grow px-3 pt-20 sm:px-6 sm:pt-24 md:pt-32">
         <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={`${location.pathname}${location.search}`} variants={routeShellVariants} initial="initial" animate="animate" exit="exit" className="mx-auto max-w-7xl will-change-transform">
+          <motion.div key={`${location.pathname}${location.search}`} variants={routeShellVariants} initial="initial" animate="animate" exit="exit" className="mx-auto max-w-7xl will-change-transform will-change-opacity">
             {children}
           </motion.div>
         </AnimatePresence>
