@@ -7,6 +7,7 @@ import { siteConfig } from '@config/site.config';
 
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { ProgressiveImage } from './ProgressiveImage';
+import { BackToTop } from './BackToTop';
 import { GlobalLiquidGlass } from './GlobalLiquidGlass';
 import type { PostSearchScope } from '@/services/posts';
 import { easeSmooth, routeTransition } from '@/utils/motion';
@@ -1037,6 +1038,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) =
           </AnimatePresence>
         )}
       </main>
+      <BackToTop />
       <Footer />
     </div>
   );

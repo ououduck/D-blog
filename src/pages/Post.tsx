@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { easeOut } from '@/utils/motion';
 import DOMPurify from 'dompurify';
 
-import { ArrowLeft, ArrowUp, ArrowRight, Clock, Calendar, ChevronRight, Shield, Share2, Copy, Check, Users, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Shield, Share2, Copy, Check, Users, ExternalLink } from 'lucide-react';
 import { getPostById, getPosts } from '@/services/posts';
 import { Post as PostType, PostAuthor } from '../types';
 import { siteConfig } from '@config/site.config';
@@ -423,7 +423,6 @@ export const Post = () => {
   const [mermaidRenderer, setMermaidRenderer] = useState<MermaidRenderer | null>(null);
   const [mobileFloatingVisible, setMobileFloatingVisible] = useState(false);
   const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostType | null; next: PostType | null }>({ prev: null, next: null });
-  const [showBackToTop, setShowBackToTop] = useState(false);
   const articleBodyRef = useRef<HTMLDivElement>(null);
 
   // 使用 Map 缓存标题映射
@@ -588,16 +587,6 @@ export const Post = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [previewImage, shareModalOpen, adjacentPosts]);
-
-  // 返回顶部按钮可见性
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowBackToTop(window.scrollY > window.innerHeight);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const markdownComponents = createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, headings, headingIdMapRef.current);
 
@@ -887,28 +876,6 @@ export const Post = () => {
       </article>
 
       <ShareModal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} title={post.title} excerpt={post.excerpt} url={`${typeof window !== 'undefined' ? window.location.origin : siteConfig.url}/post/${post.id}`} />
-
-      {/* 返回顶部按钮 */}
-      {typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {showBackToTop && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              type="button"
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="back-to-top-btn"
-              aria-label="返回顶部"
-              title="返回顶部"
-            >
-              <ArrowUp size={18} />
-            </motion.button>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
     </>
   );
 };
