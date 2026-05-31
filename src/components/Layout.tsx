@@ -750,7 +750,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             data-interaction-locked={isMobileNavAnimating}
             data-locked={isMobileNavAnimating}
             data-swiping="false"
-            className="mobile-nav-panel fixed inset-x-0 bottom-0 z-[80] overflow-hidden rounded-t-[2rem] liquid-glass backdrop-blur-3xl text-ink shadow-2xl dark:text-white"
+            className="mobile-nav-panel !fixed inset-x-0 bottom-0 z-[80] overflow-hidden rounded-t-[2rem] liquid-glass backdrop-blur-3xl text-ink shadow-2xl dark:text-white"
             style={mobileNavPanelStyle}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}

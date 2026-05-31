@@ -339,7 +339,6 @@ html.theme-switching *::after {
 
   /* Static variant for navbar / simpler surfaces (no highlight pseudo-element) */
   .liquid-glass-nav {
-    position: relative;
     background-color: rgba(255, 255, 255, 0.72);
     border-bottom: 1px solid rgba(255, 255, 255, 0.45);
     box-shadow: inset 0 1px 1px rgba(255,255,255,0.5);
