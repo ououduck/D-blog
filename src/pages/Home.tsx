@@ -116,7 +116,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
           <Link to={`/post/${post.id}`} className="group relative block h-56 w-full overflow-hidden md:h-full md:w-3/5" aria-label={`阅读文章：${post.title}`}>
             <div className="absolute inset-0 animate-pulse bg-zinc-200 dark:bg-zinc-800" />
             {post.coverImage ? (
-              <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" wrapperClassName="absolute inset-0" className="h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
+              <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" aspectRatio="16/9" wrapperClassName="absolute inset-0" className="h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
                 <Sparkles className="h-16 w-16 text-zinc-300" />
@@ -170,7 +170,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
       <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 dark:hover:border-zinc-700">
         <Link to={`/post/${post.id}`} className="group/image relative aspect-[16/9] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
-            <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" width={1600} height={1000} wrapperClassName="h-full w-full" className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover/image:scale-105" />
+            <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" width={1600} height={1000} aspectRatio="16/10" wrapperClassName="h-full w-full" className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover/image:scale-105" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-300">
               <Sparkles className="h-10 w-10 opacity-50" />
@@ -236,19 +236,14 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
       <div className="-mx-2 w-full overflow-x-auto px-2 no-scrollbar md:mx-0 md:w-auto md:px-0">
         <div className="flex space-x-1.5 md:space-x-2" role="tablist" aria-label="文章分类筛选">
           {[ALL_CATEGORY, ...categories].map((category) => (
-            <motion.button
+            <button
               key={category}
               onClick={() => onSelect(category)}
               role="tab"
               aria-selected={selected === category}
               aria-controls="posts-grid"
               tabIndex={selected === category ? 0 : -1}
-              variants={chipHover}
-              initial="rest"
-              animate="rest"
-              whileHover="hover"
-              whileTap="tap"
-              className={`relative whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors duration-300 md:px-4 md:py-2 md:text-sm ${
+              className={`relative whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-all duration-200 hover:-translate-y-px active:scale-95 md:px-4 md:py-2 md:text-sm ${
                 selected === category
                   ? 'text-white dark:text-ink'
                   : 'text-zinc-500 hover:bg-zinc-100 hover:text-ink dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'
@@ -262,14 +257,14 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
                 />
               )}
               <span className="relative z-10">{category}</span>
-            </motion.button>
+            </button>
           ))}
         </div>
       </div>
-      <motion.button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} variants={chipHover} initial="rest" animate="rest" whileHover="hover" whileTap="tap" className="flex shrink-0 items-center space-x-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-500 transition-all duration-300 hover:text-ink dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white md:px-4 md:py-2 md:text-sm">
+      <button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} className="flex shrink-0 items-center space-x-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-500 transition-all duration-200 hover:-translate-y-px hover:text-ink active:scale-95 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-white md:px-4 md:py-2 md:text-sm">
         {sortOrder === 'newest' ? <ArrowDownWideNarrow size={13} /> : <ArrowUpWideNarrow size={13} />}
         <span>{sortOrder === 'newest' ? '最新' : '最早'}</span>
-      </motion.button>
+      </button>
     </motion.div>
   );
 };

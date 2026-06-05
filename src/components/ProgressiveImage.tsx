@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 interface ProgressiveImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   wrapperClassName?: string;
   placeholderClassName?: string;
+  aspectRatio?: string;
 }
 
 const mergeClassName = (...values: Array<string | undefined | false>) => values.filter(Boolean).join(' ');
@@ -16,6 +17,9 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
   decoding = 'async',
   src,
   alt,
+  aspectRatio,
+  width,
+  height,
   ...props
 }) => {
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -42,8 +46,15 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
     }
   }, [src]);
 
+  const wrapperStyle: React.CSSProperties = { minHeight: '1px' };
+  if (aspectRatio) {
+    wrapperStyle.aspectRatio = aspectRatio;
+  } else if (width && height) {
+    wrapperStyle.aspectRatio = `${width} / ${height}`;
+  }
+
   return (
-    <div className={mergeClassName('relative overflow-hidden', wrapperClassName)} style={{ minHeight: '1px' }}>
+    <div className={mergeClassName('relative overflow-hidden', wrapperClassName)} style={wrapperStyle}>
       <div
         aria-hidden="true"
         className={mergeClassName(

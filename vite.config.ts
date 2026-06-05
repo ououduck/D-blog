@@ -20,8 +20,9 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
     target: 'es2020',
+    reportCompressedSize: false,
     modulePreload: {
       polyfill: false,
     },
@@ -74,7 +75,9 @@ export default defineConfig({
       compress: {
         drop_console: true,
         drop_debugger: true,
-        pure_funcs: ['console.log'],
+        pure_funcs: ['console.log', 'console.info'],
+        pure_getters: true,
+        passes: 2,
       },
     },
   },

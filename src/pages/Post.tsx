@@ -751,7 +751,7 @@ export const Post = () => {
         {post.coverImage && (
           <button type="button" className="mx-auto block w-full max-w-6xl px-4 md:px-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.35, ease: easeOut }} className="mb-10 aspect-[4/3] cursor-zoom-in overflow-hidden rounded-2xl shadow-2xl shadow-zinc-200/50 dark:shadow-none sm:aspect-[16/9] md:mb-20 md:aspect-[21/9] md:rounded-3xl">
-              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
+              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" aspectRatio="21/9" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
             </motion.div>
           </button>
         )}

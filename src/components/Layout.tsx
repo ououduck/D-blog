@@ -672,7 +672,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
               <div
                 className="absolute inset-0 bg-zinc-900/20 opacity-20 blur-md transition-opacity group-hover:opacity-40 dark:bg-zinc-100/20"
               />
-              <ProgressiveImage src={siteConfig.logo} alt="Logo" wrapperClassName="relative h-8 w-8 rounded-lg bg-white/10 sm:h-10 sm:w-10" className="h-8 w-8 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105 sm:h-10 sm:w-10" />
+              <ProgressiveImage src={siteConfig.logo} alt="Logo" fetchPriority="high" wrapperClassName="relative h-8 w-8 rounded-lg bg-white/10 sm:h-10 sm:w-10" className="h-8 w-8 rounded-lg bg-white/10 object-cover transition-transform duration-300 group-hover:scale-105 sm:h-10 sm:w-10" />
             </div>
             <span className="font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
           </Link>
@@ -705,19 +705,19 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
               ))}
             </motion.div>
 
-            <motion.div className="flex items-center space-x-3 border-l border-zinc-300 pl-6 dark:border-zinc-700" variants={navListVariants} initial="hidden" animate="visible">
-              <motion.button variants={navItemVariants} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }} onClick={onSearchClick} className="group flex items-center space-x-2 rounded-lg border border-transparent bg-zinc-100 px-3 py-2 text-zinc-700 transition-all duration-300 hover:border-zinc-200 hover:bg-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 active:scale-95" aria-label="打开站内搜索">
+            <div className="flex items-center space-x-3 border-l border-zinc-300 pl-6 dark:border-zinc-700">
+              <motion.button variants={navItemVariants} onClick={onSearchClick} className="group flex items-center space-x-2 rounded-lg border border-transparent bg-zinc-100 px-3 py-2 text-zinc-700 transition-all duration-200 hover:-translate-y-px hover:border-zinc-200 hover:bg-white active:scale-95 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900" aria-label="打开站内搜索">
                 <Search size={16} />
                 <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">Ctrl+K</span>
               </motion.button>
-              <motion.a variants={navItemVariants} whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex items-center space-x-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 active:scale-95">
+              <motion.a variants={navItemVariants} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex items-center space-x-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-zinc-700 transition-all duration-200 hover:-translate-y-px hover:bg-zinc-100 active:scale-95 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800">
                 <Rss size={16} />
                 <span className="text-xs font-medium">{TEXT.rssFeed}</span>
               </motion.a>
-              <motion.div variants={navItemVariants} whileTap={{ scale: 0.97 }} className="active:scale-95 transition-transform">
+              <motion.div variants={navItemVariants} className="active:scale-95 transition-transform">
                 <ThemeToggle />
               </motion.div>
-            </motion.div>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 md:hidden">
@@ -845,12 +845,12 @@ const Footer = () => {
             </div>
             <p className="text-center text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 md:text-left">{siteConfig.description}</p>
             <div className="flex items-center gap-4 pt-2">
-              <motion.a whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }} href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="rounded-full bg-zinc-100 p-2 text-zinc-700 transition-all duration-300 hover:bg-black hover:text-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-white dark:hover:text-zinc-900" aria-label="打开 GitHub 主页">
+              <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="rounded-full bg-zinc-100 p-2 text-zinc-700 transition-all duration-200 hover:-translate-y-px hover:bg-black hover:text-white active:scale-95 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-white dark:hover:text-zinc-900" aria-label="打开 GitHub 主页">
                 <Github size={18} />
-              </motion.a>
-              <motion.a whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }} href={siteConfig.social.email} className="rounded-full bg-zinc-100 p-2 text-zinc-700 transition-all duration-300 hover:bg-black hover:text-white dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-white dark:hover:text-zinc-900" aria-label="发送邮件">
+              </a>
+              <a href={siteConfig.social.email} className="rounded-full bg-zinc-100 p-2 text-zinc-700 transition-all duration-200 hover:-translate-y-px hover:bg-black hover:text-white active:scale-95 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-white dark:hover:text-zinc-900" aria-label="发送邮件">
                 <Mail size={18} />
-              </motion.a>
+              </a>
             </div>
           </div>
 
@@ -858,7 +858,7 @@ const Footer = () => {
             <h4 className="mb-6 text-sm font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300">Tech Stack</h4>
             <div className="flex max-w-xs flex-wrap justify-center gap-2 md:justify-start">
               {technologies.map((tech, index) => (
-                <motion.div key={tech.name} initial={{ opacity: 0, y: 6 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.22, delay: index * 0.03, ease: easeSmooth }} whileHover={{ y: -1 }} className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 transition-colors hover:border-zinc-900/30 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300 dark:hover:border-zinc-100/30">
+                <motion.div key={tech.name} initial={{ opacity: 0, y: 6 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.22, delay: index * 0.03, ease: easeSmooth }} className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 transition-all duration-200 hover:-translate-y-px hover:border-zinc-900/30 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300 dark:hover:border-zinc-100/30">
                   <tech.icon size={12} className="text-zinc-700 dark:text-zinc-300" />
                   {tech.name}
                 </motion.div>
@@ -893,7 +893,7 @@ const Footer = () => {
         </div>
 
         <div className="flex flex-col items-center justify-center gap-4 pb-6 pt-8 md:flex-row">
-          <motion.a whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }} href="/cover" className="group relative inline-flex items-center gap-3 rounded-xl liquid-glass backdrop-blur-xl border-purple-200 dark:border-purple-900/60 px-6 py-3 transition-all duration-300 hover:border-purple-300 dark:hover:border-purple-700">
+          <a href="/cover" className="group relative inline-flex items-center gap-3 rounded-xl liquid-glass backdrop-blur-xl border-purple-200 dark:border-purple-900/60 px-6 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-300 dark:hover:border-purple-700">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500 transition-transform duration-300 group-hover:scale-110">
               <Image size={18} className="text-white" />
             </div>
@@ -902,8 +902,8 @@ const Footer = () => {
               <span className="text-xs text-zinc-600 dark:text-zinc-300">快速生成精美封面</span>
             </div>
             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-400/0 via-purple-300/10 to-purple-400/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-          </motion.a>
-          <motion.a whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 rounded-xl liquid-glass backdrop-blur-xl border-orange-200 dark:border-orange-900/60 px-6 py-3 transition-all duration-300 hover:border-orange-300 dark:hover:border-orange-700">
+          </a>
+          <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 rounded-xl liquid-glass backdrop-blur-xl border-orange-200 dark:border-orange-900/60 px-6 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300 dark:hover:border-orange-700">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 transition-transform duration-300 group-hover:scale-110">
               <Rss size={18} className="text-white" />
             </div>
@@ -912,8 +912,8 @@ const Footer = () => {
               <span className="text-xs text-zinc-600 dark:text-zinc-300">{TEXT.rssHint}</span>
             </div>
             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-400/0 via-orange-300/10 to-orange-400/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-          </motion.a>
-          <motion.a whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }} href={siteConfig.friendsPage.repoUrl} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 rounded-xl liquid-glass backdrop-blur-xl border-zinc-200 dark:border-zinc-700 px-6 py-3 transition-all duration-300 hover:border-zinc-900/50 dark:hover:border-zinc-100/50">
+          </a>
+          <a href={siteConfig.friendsPage.repoUrl} target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-3 rounded-xl liquid-glass backdrop-blur-xl border-zinc-200 dark:border-zinc-700 px-6 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-900/50 dark:hover:border-zinc-100/50">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black transition-transform duration-300 group-hover:scale-110 dark:bg-white">
               <Github size={18} className="text-white dark:text-black" />
             </div>
@@ -922,7 +922,7 @@ const Footer = () => {
               <span className="text-xs text-zinc-600 dark:text-zinc-300">Open Source on GitHub</span>
             </div>
             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-accent/0 via-accent/5 to-accent/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-          </motion.a>
+          </a>
         </div>
 
         <div className="flex w-full flex-col items-center justify-between border-t border-zinc-200/50 pt-8 text-xs font-medium text-zinc-700 dark:text-zinc-300 dark:border-zinc-800/50 md:flex-row">

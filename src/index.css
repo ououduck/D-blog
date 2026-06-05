@@ -10,7 +10,6 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     color-scheme: light;
-    transition: background-color 240ms ease, color 240ms ease;
   }
 
   html.dark {
@@ -20,7 +19,6 @@
   /* Layout optimization */
   body,
   #root {
-    transition: background-color 240ms ease, color 240ms ease;
   }
 
   body {
@@ -110,25 +108,6 @@ html.theme-switching *::after {
     box-shadow 240ms ease !important;
 }
 
-@keyframes grain {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  20% {
-    transform: translate(-1.5%, 1%);
-  }
-  40% {
-    transform: translate(1%, -1.5%);
-  }
-  60% {
-    transform: translate(-1%, 1.5%);
-  }
-  80% {
-    transform: translate(1.5%, -1%);
-  }
-}
-
 @keyframes soft-float {
   0%,
   100% {
@@ -195,8 +174,7 @@ html.theme-switching *::after {
   @media (prefers-reduced-motion: reduce) {
     .animate-soft-float,
     .animate-soft-pulse,
-    .shimmer-mask::after,
-    .bg-noise {
+    .shimmer-mask::after {
       animation: none !important;
     }
   }
@@ -213,11 +191,9 @@ html.theme-switching *::after {
     background-image:
       repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px),
       repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
-    animation: grain 8s steps(10) infinite;
     opacity: 0.3;
-    z-index: 9999;
+    z-index: -1;
     pointer-events: none;
-    will-change: transform;
   }
   .dark .bg-noise {
     opacity: 0.2;
@@ -296,8 +272,6 @@ html.theme-switching *::after {
       inset 0 1px 1px rgba(255,255,255,0.45),
       0 8px 32px rgba(0,0,0,0.04);
     overflow: hidden;
-    transform: translateZ(0);
-    contain: layout style paint;
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   }
 
@@ -325,8 +299,6 @@ html.theme-switching *::after {
       transparent 100%
     );
     mix-blend-mode: overlay;
-    transform: translateZ(0);
-    will-change: background;
   }
 
   .liquid-glass:hover::before {
@@ -346,8 +318,6 @@ html.theme-switching *::after {
     background-color: rgba(255, 255, 255, 0.72);
     border-bottom: 1px solid rgba(255, 255, 255, 0.45);
     box-shadow: inset 0 1px 1px rgba(255,255,255,0.5);
-    transform: translateZ(0);
-    contain: layout style paint;
     transition: background-color 0.3s ease, border-color 0.3s ease;
   }
 
@@ -371,10 +341,6 @@ html.theme-switching *::after {
     }
   }
 
-  .gpu-layer {
-    transform: translateZ(0);
-    will-change: transform;
-  }
 }
 
 .mobile-nav-backdrop,
@@ -382,7 +348,6 @@ html.theme-switching *::after {
   transition-property: opacity, transform;
   transition-duration: var(--mobile-nav-duration, 340ms);
   transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform, opacity;
   backface-visibility: hidden;
 }
 
