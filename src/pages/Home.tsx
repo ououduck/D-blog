@@ -17,8 +17,25 @@ import { preloadPage } from '@/utils/preload';
 const ALL_CATEGORY = '全部';
 
 const listSwapTransition = {
-  duration: 0.25,
-  ease: easeOut,
+  duration: 0.2,
+  ease: easeSmooth,
+} as const;
+
+const gridExitVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.025,
+      delayChildren: 0.02,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: 10,
+    scale: 0.98,
+    filter: 'blur(2px)',
+    transition: { duration: 0.18, ease: easeSmooth },
+  },
 } as const;
 
 
@@ -56,14 +73,15 @@ const filterAndSortPosts = (
 const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean; onShare: (post: PostMetadata) => void }> = ({ post, index, featured, onShare }) => {
   const shouldReduceMotion = useReducedMotion();
   const cardVariants = {
-    hidden: { opacity: 0, y: 10 },
+    hidden: { opacity: 0, y: 16, scale: 0.97 },
     visible: {
       opacity: 1,
       y: 0,
+      scale: 1,
       transition: {
-        duration: 0.3,
-        ease: easeOut,
-        delay: index * 0.03
+        duration: 0.35,
+        ease: easeSmooth,
+        delay: index * 0.025
       }
     }
   };
@@ -214,7 +232,7 @@ interface FilterBarProps {
 
 const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, sortOrder, onToggleSort }) => {
   return (
-    <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="mb-8 flex items-center justify-between gap-3 rounded-xl liquid-glass backdrop-blur-xl px-3 py-2.5 md:mb-10 md:gap-4 md:rounded-2xl md:px-4 md:py-3">
+    <motion.div layout variants={fadeInUp} initial="hidden" animate="visible" className="mb-8 flex items-center justify-between gap-3 rounded-xl liquid-glass backdrop-blur-xl px-3 py-2.5 md:mb-10 md:gap-4 md:rounded-2xl md:px-4 md:py-3">
       <div className="-mx-2 w-full overflow-x-auto px-2 no-scrollbar md:mx-0 md:w-auto md:px-0">
         <div className="flex space-x-1.5 md:space-x-2" role="tablist" aria-label="文章分类筛选">
           {[ALL_CATEGORY, ...categories].map((category) => (
@@ -230,13 +248,20 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
               animate="rest"
               whileHover="hover"
               whileTap="tap"
-              className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-all duration-300 md:px-4 md:py-2 md:text-sm ${
+              className={`relative whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors duration-300 md:px-4 md:py-2 md:text-sm ${
                 selected === category
-                  ? 'bg-ink text-white shadow-md dark:bg-white dark:text-ink'
+                  ? 'text-white dark:text-ink'
                   : 'text-zinc-500 hover:bg-zinc-100 hover:text-ink dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'
               }`}
             >
-              {category}
+              {selected === category && (
+                <motion.span
+                  layoutId="activeCategoryPill"
+                  className="absolute inset-0 rounded-full bg-ink shadow-md dark:bg-white"
+                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">{category}</span>
             </motion.button>
           ))}
         </div>
@@ -486,10 +511,9 @@ export const Home = () => {
               <motion.div
                 key={`${selectedCategory}-${sortOrder}-${currentPage}-${searchQuery}`}
                 className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3"
-                variants={staggerContainer}
+                variants={gridExitVariants}
                 initial="hidden"
                 animate="visible"
-                exit={{ opacity: 0, y: 6, transition: listSwapTransition }}
               >
                 {currentPosts.length > 0 ? (
                   currentPosts.map((post, index) => <PostCard key={post.id} post={post} index={index} featured={!!post.featured} onShare={setSharePost} />)

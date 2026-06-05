@@ -21,11 +21,12 @@ export const fadeIn: Variants = {
 
 /** 淡入上移（通用入场） */
 export const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 8 },
+  hidden: { opacity: 0, y: 12, scale: 0.98 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, ease: easeOut },
+    scale: 1,
+    transition: { duration: 0.35, ease: easeSmooth },
   },
 };
 
@@ -34,7 +35,7 @@ export const staggerContainer: Variants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.04,
+      staggerChildren: 0.03,
       delayChildren: 0.02,
     },
   },
@@ -61,15 +62,18 @@ export const chipHover = {
 
 /** 路由切换变体 — 轻柔方向感淡入 */
 export const routeTransition = {
-  initial: { opacity: 0, y: 6 },
+  initial: { opacity: 0, y: 8, scale: 0.995 },
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.28, ease: easeSmooth },
+    scale: 1,
+    transition: { duration: 0.35, ease: easeSmooth },
   },
   exit: {
     opacity: 0,
-    y: -4,
-    transition: { duration: 0.14, ease: easeSmooth },
+    y: -6,
+    scale: 0.995,
+    filter: 'blur(2px)',
+    transition: { duration: 0.2, ease: easeSmooth },
   },
 } as const;

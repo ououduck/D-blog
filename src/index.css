@@ -61,23 +61,27 @@
 
   /* Route change View Transition — fade-out old + circle-reveal new */
   ::view-transition-old(route-content) {
-    animation: route-fade-out 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: route-fade-out 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   ::view-transition-new(route-content) {
-    animation: route-circle-reveal 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: route-circle-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   @keyframes route-fade-out {
-    from { opacity: 1; filter: blur(0); }
-    to { opacity: 0; filter: blur(2px); }
+    from { opacity: 1; filter: blur(0) brightness(1); transform: scale(1); }
+    to { opacity: 0; filter: blur(4px) brightness(0.96); transform: scale(0.992); }
   }
 
   @keyframes route-circle-reveal {
     from {
       clip-path: circle(0% at var(--vt-origin-x, 50%) var(--vt-origin-y, 0%));
+      filter: blur(2px);
+      opacity: 0.8;
     }
     to {
       clip-path: circle(150% at var(--vt-origin-x, 50%) var(--vt-origin-y, 0%));
+      filter: blur(0);
+      opacity: 1;
     }
   }
 
