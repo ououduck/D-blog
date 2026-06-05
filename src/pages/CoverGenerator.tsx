@@ -105,7 +105,6 @@ export const CoverGenerator: React.FC = () => {
   const [showSeparator, setShowSeparator] = useState(false);
   const [separatorColor, setSeparatorColor] = useState('#ffffff');
   const [separatorOpacity, setSeparatorOpacity] = useState(30);
-  const [decorOpacity, setDecorOpacity] = useState(10);
 
   // 导出设置
   const [exportRatios, setExportRatios] = useState<ExportRatio[]>([
@@ -555,19 +554,6 @@ export const CoverGenerator: React.FC = () => {
       drawCorners(tempCtx, canvasSize.width, canvasSize.height);
     }
 
-    // 绘制装饰圆
-    if (decorOpacity > 0) {
-      tempCtx.save();
-      tempCtx.fillStyle = `rgba(255, 255, 255, ${decorOpacity / 100})`;
-      tempCtx.beginPath();
-      tempCtx.arc(canvasSize.width * 0.85, canvasSize.height * 0.15, 150, 0, Math.PI * 2);
-      tempCtx.fill();
-      tempCtx.beginPath();
-      tempCtx.arc(canvasSize.width * 0.15, canvasSize.height * 0.85, 100, 0, Math.PI * 2);
-      tempCtx.fill();
-      tempCtx.restore();
-    }
-
     // 绘制图标和文字
     const drawIconAndText = async () => {
       const fontFamily = customFont || '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
@@ -734,8 +720,8 @@ export const CoverGenerator: React.FC = () => {
     showIcon, customIcon, iconSize, iconBorderRadius, iconBgEnabled,
     textShadow, textStroke, customFont, fontWeight, fontSize, subFontSize,
     textColor, spacing, subSpacing, autoTextColor, canvasSize,
-    layoutMode, iconPosition, textAlign, showCorners, cornerColor, cornerOpacity,
-    showSeparator, separatorColor, separatorOpacity, decorOpacity
+    layoutMode, iconPosition, textAlign,     showCorners, cornerColor, cornerOpacity,
+    showSeparator, separatorColor, separatorOpacity
   ]);
 
   // ==================== 导出 ====================
@@ -787,7 +773,6 @@ export const CoverGenerator: React.FC = () => {
     const iconSizes = [48, 56, 64, 72, 80, 96, 120];
     const spacings = [16, 24, 32, 40, 48, 60];
     const radii = [0, 4, 8, 12, 16, 24, 50];
-    const decorOps = [0, 5, 10, 15];
 
     setFontSize(fontSizes[Math.floor(Math.random() * fontSizes.length)]);
     setFontWeight(weights[Math.floor(Math.random() * weights.length)]);
@@ -804,7 +789,6 @@ export const CoverGenerator: React.FC = () => {
     });
     setShowCorners(Math.random() > 0.5);
     setShowSeparator(Math.random() > 0.6);
-    setDecorOpacity(decorOps[Math.floor(Math.random() * decorOps.length)]);
     setLayoutMode(['icon-split', 'stacked', 'text-only'][Math.floor(Math.random() * 3)] as LayoutMode);
   }, []);
 
@@ -1346,12 +1330,7 @@ export const CoverGenerator: React.FC = () => {
                       </div>
                     )}
 
-                    <div>
-                      <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                        <span>背景装饰透明度</span><span className="tabular-nums">{decorOpacity}%</span>
-                      </label>
-                      <input type="range" min="0" max="20" value={decorOpacity} onChange={(e) => setDecorOpacity(Number(e.target.value))} className={rangeClass} />
-                    </div>
+
                   </div>
                 </div>
               </div>
