@@ -107,7 +107,6 @@ const AppRoutes: React.FC = () => {
     }
 
     if (hasViewTransition) {
-      // Set circle reveal origin based on last click position
       const x = (window.__lastClickX ?? window.innerWidth / 2) / window.innerWidth * 100;
       const y = (window.__lastClickY ?? 0) / window.innerHeight * 100;
       document.documentElement.style.setProperty('--vt-origin-x', `${x}%`);
@@ -127,7 +126,6 @@ const AppRoutes: React.FC = () => {
     document.title = siteConfig.title;
   }, [location.pathname]);
 
-  // Track click positions for VT origin
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       (window as any).__lastClickX = e.clientX;
@@ -170,13 +168,16 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!showLoadingScreen) {
-      return;
+      // 非首次访问也延迟显示Cookie通知
+      const timer = window.setTimeout(() => {
+        setShowCookieNotice(true);
+      }, 2000);
+      return () => window.clearTimeout(timer);
     }
 
     const timer = window.setTimeout(() => {
       sessionStorage.setItem('hasVisited', 'true');
       setShowLoadingScreen(false);
-      // 加载动画结束后显示Cookie通知
       setShowCookieNotice(true);
     }, 900);
 

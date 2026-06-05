@@ -46,17 +46,29 @@ export default defineConfig({
             if (id.includes('react-markdown') || id.includes('unified') || id.includes('mdast') || id.includes('hast') || id.includes('remark-') || id.includes('rehype-')) {
               return 'markdown';
             }
-            // 代码高亮和数学公式
-            if (id.includes('highlight.js') || id.includes('katex')) {
+            // 代码高亮
+            if (id.includes('highlight.js')) {
               return 'syntax';
             }
-            // Mermaid 图表
+            // 数学公式（单独分包，按需加载）
+            if (id.includes('katex')) {
+              return 'katex';
+            }
+            // Mermaid 图表 - 单独大包，按需加载
             if (id.includes('mermaid')) {
               return 'mermaid';
             }
-            // 图标库
+            // 图标库 - 按需tree-shake后较小，但仍单独分包
             if (id.includes('lucide-react')) {
               return 'icons';
+            }
+            // DOMPurify
+            if (id.includes('dompurify')) {
+              return 'dompurify';
+            }
+            // React Helmet
+            if (id.includes('react-helmet') || id.includes('hoist-non-react-statics')) {
+              return 'react-helmet';
             }
             // 其他第三方库
             return 'vendor';
@@ -69,15 +81,16 @@ export default defineConfig({
       },
     },
     cssCodeSplit: true,
-    chunkSizeWarningLimit: 500,
+    chunkSizeWarningLimit: 600,
     minify: 'terser',
     terserOptions: {
       compress: {
         drop_console: true,
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info'],
+        pure_funcs: ['console.log', 'console.info', 'console.debug'],
         pure_getters: true,
         passes: 2,
+        unsafe_proto: true,
       },
     },
   },

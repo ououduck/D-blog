@@ -173,8 +173,8 @@ const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-16 sm:pt-24">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.26, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/60 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.25, ease: modalEase }} className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.26, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/60 backdrop-blur-sm md:backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.25, ease: modalEase }} className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl md:backdrop-blur-xl shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
             <div className="flex items-center border-b border-zinc-100 p-4 dark:border-zinc-800">
               <motion.div animate={searchQuery ? { opacity: 1 } : { opacity: 0.82 }} transition={{ duration: 0.2, ease: modalEase }}>
                 <Search className="mr-3 text-zinc-600 dark:text-zinc-300" size={20} />
@@ -665,7 +665,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
   return (
     <>
-      <nav className="fixed left-0 right-0 top-0 z-50 liquid-glass-nav backdrop-blur-xl transition-all duration-500">
+      <nav className="fixed left-0 right-0 top-0 z-50 liquid-glass-nav backdrop-blur-xl md:backdrop-blur-xl transition-all duration-500">
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: easeSmooth }} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-20">
           <Link to="/" onMouseEnter={() => preloadPage('/')} className="group z-50 flex items-center space-x-2.5 sm:space-x-3">
             <div className="relative">
@@ -751,7 +751,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             data-interaction-locked={isMobileNavAnimating}
             data-locked={isMobileNavAnimating}
             data-swiping="false"
-            className="mobile-nav-panel !fixed inset-x-0 bottom-0 z-[80] overflow-hidden rounded-t-[2rem] liquid-glass backdrop-blur-3xl text-ink shadow-2xl dark:text-white"
+            className="mobile-nav-panel !fixed inset-x-0 bottom-0 z-[80] overflow-hidden rounded-t-[2rem] liquid-glass backdrop-blur-3xl md:backdrop-blur-3xl text-ink shadow-2xl dark:text-white"
             style={mobileNavPanelStyle}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
@@ -816,12 +816,14 @@ const Footer = () => {
   const [loadTime, setLoadTime] = useState<string>('');
 
   useEffect(() => {
-    setTimeout(() => {
+    // 使用requestIdleCallback避免阻塞主线程
+    const idleId = requestIdleCallback(() => {
       if (typeof window !== 'undefined' && window.performance) {
         const timing = window.performance.now();
         setLoadTime(`${(timing / 1000).toFixed(2)}s`);
       }
-    }, 0);
+    });
+    return () => cancelIdleCallback(idleId);
   }, []);
 
   const technologies = [

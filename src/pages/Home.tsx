@@ -87,7 +87,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
   };
   const hoverMotion = shouldReduceMotion
     ? undefined
-    : { y: -3 };
+    : { y: -2 };
 
 
   const CategoryBadge = ({ text }: { text: string }) => (
@@ -116,7 +116,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
           <Link to={`/post/${post.id}`} className="group relative block h-56 w-full overflow-hidden md:h-full md:w-3/5" aria-label={`阅读文章：${post.title}`}>
             <div className="absolute inset-0 animate-pulse bg-zinc-200 dark:bg-zinc-800" />
             {post.coverImage ? (
-              <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" aspectRatio="16/9" wrapperClassName="absolute inset-0" className="h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
+              <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="absolute inset-0" className="h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
                 <Sparkles className="h-16 w-16 text-zinc-300" />
@@ -170,7 +170,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
       <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl liquid-glass backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 dark:hover:border-zinc-700">
         <Link to={`/post/${post.id}`} className="group/image relative aspect-[16/9] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
-            <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" width={1600} height={1000} aspectRatio="16/10" wrapperClassName="h-full w-full" className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover/image:scale-105" />
+            <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" width={1600} height={1000} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover/image:scale-105" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-300">
               <Sparkles className="h-10 w-10 opacity-50" />
@@ -232,7 +232,7 @@ interface FilterBarProps {
 
 const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, sortOrder, onToggleSort }) => {
   return (
-    <motion.div layout variants={fadeInUp} initial="hidden" animate="visible" className="mb-8 flex items-center justify-between gap-3 rounded-xl liquid-glass backdrop-blur-xl px-3 py-2.5 md:mb-10 md:gap-4 md:rounded-2xl md:px-4 md:py-3">
+    <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="mb-8 flex items-center justify-between gap-3 rounded-xl liquid-glass backdrop-blur-xl px-3 py-2.5 md:mb-10 md:gap-4 md:rounded-2xl md:px-4 md:py-3 md:backdrop-blur-xl">
       <div className="-mx-2 w-full overflow-x-auto px-2 no-scrollbar md:mx-0 md:w-auto md:px-0">
         <div className="flex space-x-1.5 md:space-x-2" role="tablist" aria-label="文章分类筛选">
           {[ALL_CATEGORY, ...categories].map((category) => (
@@ -253,7 +253,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
                 <motion.span
                   layoutId="activeCategoryPill"
                   className="absolute inset-0 rounded-full bg-ink shadow-md dark:bg-white"
-                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                 />
               )}
               <span className="relative z-10">{category}</span>

@@ -15,11 +15,13 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
   onLoad,
   onError,
   decoding = 'async',
+  loading: loadingProp,
   src,
   alt,
   aspectRatio,
   width,
   height,
+  sizes,
   ...props
 }) => {
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -83,8 +85,10 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
           src={src}
           alt={alt}
           decoding={decoding}
+          loading={loadingProp || 'lazy'}
           width={props.width}
           height={props.height}
+          sizes={sizes}
           className={mergeClassName(
             'relative transition-all duration-700 ease-out',
             isLoaded ? 'scale-100 blur-0 opacity-100' : 'scale-[1.03] blur-xl opacity-0',

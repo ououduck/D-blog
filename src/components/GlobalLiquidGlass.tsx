@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useReducedMotion } from 'framer-motion';
 
+const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
 export const GlobalLiquidGlass = () => {
   const shouldReduceMotion = useReducedMotion();
   const rafRef = useRef<number | null>(null);
@@ -8,7 +10,8 @@ export const GlobalLiquidGlass = () => {
   const coordsRef = useRef({ x: 50, y: 50 });
 
   useEffect(() => {
-    if (shouldReduceMotion) return;
+    // 移动端不监听mousemove，节省CPU
+    if (shouldReduceMotion || isTouchDevice) return;
 
     const updateHighlight = () => {
       if (currentRef.current) {
@@ -45,7 +48,7 @@ export const GlobalLiquidGlass = () => {
       }
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);

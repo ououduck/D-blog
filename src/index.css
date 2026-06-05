@@ -96,16 +96,16 @@
 html.theme-switching,
 html.theme-switching body,
 html.theme-switching #root,
-html.theme-switching *,
-html.theme-switching *::before,
-html.theme-switching *::after {
+html.theme-switching *:not(script):not(style),
+html.theme-switching *:not(script):not(style)::before,
+html.theme-switching *:not(script):not(style)::after {
   transition:
-    background-color 240ms ease,
-    border-color 240ms ease,
-    color 240ms ease,
-    fill 240ms ease,
-    stroke 240ms ease,
-    box-shadow 240ms ease !important;
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    fill 200ms ease,
+    stroke 200ms ease,
+    box-shadow 200ms ease !important;
 }
 
 @keyframes soft-float {
@@ -180,20 +180,21 @@ html.theme-switching *::after {
   }
 
   .bg-noise {
-
     position: fixed;
-    top: -50%;
-    left: -50%;
-    right: -50%;
-    bottom: -50%;
-    width: 200%;
-    height: 200vh;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100vh;
     background-image:
       repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px),
       repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
     opacity: 0.3;
     z-index: -1;
     pointer-events: none;
+    will-change: auto;
+    contain: strict;
   }
   .dark .bg-noise {
     opacity: 0.2;
@@ -273,6 +274,7 @@ html.theme-switching *::after {
       0 8px 32px rgba(0,0,0,0.04);
     overflow: hidden;
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    contain: layout style;
   }
 
   .dark .liquid-glass {
@@ -301,8 +303,11 @@ html.theme-switching *::after {
     mix-blend-mode: overlay;
   }
 
-  .liquid-glass:hover::before {
-    opacity: 1;
+  /* 移动端禁用hover高光效果，减少GPU合成层 */
+  @media (hover: hover) {
+    .liquid-glass:hover::before {
+      opacity: 1;
+    }
   }
 
   .dark .liquid-glass::before {
@@ -319,6 +324,7 @@ html.theme-switching *::after {
     border-bottom: 1px solid rgba(255, 255, 255, 0.45);
     box-shadow: inset 0 1px 1px rgba(255,255,255,0.5);
     transition: background-color 0.3s ease, border-color 0.3s ease;
+    contain: layout style;
   }
 
   .dark .liquid-glass-nav {
@@ -538,5 +544,74 @@ html.theme-switching *::after {
   --tw-prose-pre-bg: #09090b;
   --tw-prose-th-borders: #3f3f46;
   --tw-prose-td-borders: #27272a;
+}
+
+/* ===== 移动端性能优化 ===== */
+
+/* 移动端用纯色半透明替代 backdrop-blur，视觉接近但GPU消耗大幅降低 */
+@media (max-width: 767px) {
+  .liquid-glass-nav.backdrop-blur-xl,
+  nav .backdrop-blur-xl {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .liquid-glass-nav {
+    background-color: rgba(255, 255, 255, 0.94);
+  }
+  .dark .liquid-glass-nav {
+    background-color: rgba(10, 10, 10, 0.9);
+  }
+  /* 搜索modal背景 */
+  [role="dialog"] .backdrop-blur-sm,
+  .backdrop-blur-sm {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  /* 搜索modal卡片 */
+  [role="dialog"].backdrop-blur-xl,
+  .backdrop-blur-xl {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background-color: rgba(255, 255, 255, 0.98) !important;
+  }
+  .dark [role="dialog"].backdrop-blur-xl,
+  .dark .backdrop-blur-xl {
+    background-color: rgba(24, 24, 27, 0.96) !important;
+  }
+  .mobile-nav-backdrop {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background-color: rgba(0, 0, 0, 0.45);
+  }
+  .mobile-nav-panel.backdrop-blur-3xl,
+  .mobile-nav-panel {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background-color: rgba(255, 255, 255, 0.97) !important;
+  }
+  .dark .mobile-nav-panel.backdrop-blur-3xl,
+  .dark .mobile-nav-panel {
+    background-color: rgba(24, 24, 27, 0.96) !important;
+  }
+}
+
+/* content-visibility: 离屏内容跳过渲染 */
+footer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
+.post-nav-item {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 80px;
+}
+
+/* 文章内容区域优化 */
+article .prose h2,
+article .prose h3,
+article .prose h4 {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 48px;
 }
 

@@ -1,15 +1,9 @@
-const SW_VERSION = 'dblog-v2';
+const SW_VERSION = 'dblog-v3';
 const CORE_CACHE = `${SW_VERSION}-core`;
 const PAGE_CACHE = `${SW_VERSION}-pages`;
 const ASSET_CACHE = `${SW_VERSION}-assets`;
 const CORE_ASSETS = [
   '/',
-  '/archive/',
-  '/tags/',
-  '/stats/',
-  '/friends/',
-  '/about/',
-  '/feed.xml',
   '/favicon.ico',
   '/pwa-192.png',
   '/pwa-512.png',
