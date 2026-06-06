@@ -805,7 +805,7 @@ export const CoverGenerator: React.FC = () => {
 
   return (
     <div className="pb-20">
-      <Seo title="封面生成器" description="在线生成精美博客文章封面图片，支持自定义文字、图标、渐变背景与多种导出比例。" />
+      <Seo title="封面生成" description="在线生成精美博客文章封面图片，支持自定义文字、图标、渐变背景与多种导出比例。" />
 
       <div className="mb-8 text-center">
         <h1 className="mb-4 font-serif text-5xl font-bold text-ink dark:text-white md:text-6xl">封面生成器</h1>

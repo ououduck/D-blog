@@ -122,9 +122,8 @@ const AppRoutes: React.FC = () => {
     }
   }, [location, displayLocation.pathname, displayLocation.search, hasViewTransition]);
 
-  useEffect(() => {
-    document.title = siteConfig.title;
-  }, [location.pathname]);
+
+
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

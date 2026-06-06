@@ -63,7 +63,7 @@ export const Friends = () => {
 
   return (
     <div className="py-12 md:py-20">
-      <Seo title="友情链接" description="D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链。" />
+      <Seo title="友链" description="D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链。" />
 
       <div className="mb-16 text-center">
         <h1 className="mb-6 font-serif text-4xl font-bold text-zinc-900 dark:text-zinc-100 md:text-5xl">友情链接</h1>

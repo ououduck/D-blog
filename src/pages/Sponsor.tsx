@@ -92,7 +92,7 @@ export const Sponsor: React.FC<SponsorPageProps> = () => {
   return (
     <div className="mx-auto max-w-4xl py-12 md:py-20">
       {/* SEO metadata for the sponsor page */}
-      <Seo title="赞助支持" description="支持 D-blog 的多种方式：通过贡献代码、撰写文章或浏览广告来帮助博客持续成长。" />
+      <Seo title="赞助" description="支持 D-blog 的多种方式：通过贡献代码、撰写文章或浏览广告来帮助博客持续成长。" />
 
       {/* Header Section */}
       <div className="mb-12 text-center">

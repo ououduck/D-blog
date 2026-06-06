@@ -86,7 +86,7 @@ export const Stats = () => {
 
   return (
     <div className="pb-10 md:pb-20">
-      <Seo title="站点统计" description="D-blog 站点统计概览：文章数、总字数、分类标签、图片数量等核心数据一目了然。" />
+      <Seo title="统计" description="D-blog 站点统计概览：文章数、总字数、分类标签、图片数量等核心数据一目了然。" />
 
       <section className="rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 p-4 sm:rounded-2xl sm:p-5 md:p-6 lg:p-8">
         <div className="mb-5 flex items-center gap-2.5 md:mb-6">

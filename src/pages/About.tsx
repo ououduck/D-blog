@@ -7,7 +7,7 @@ import { ProgressiveImage } from '@/components/ProgressiveImage';
 export const About = () => {
   return (
     <div className="mx-auto max-w-4xl py-12 md:py-20">
-      <Seo title="关于我" description="关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的用户界面。" />
+      <Seo title="关于" description="关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的用户界面。" />
 
       <div className="mb-12 flex flex-col items-center gap-8 rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 p-8 text-center md:flex-row md:gap-12 md:p-12 md:text-left">
         <div className="group relative">

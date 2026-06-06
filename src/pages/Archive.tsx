@@ -219,7 +219,7 @@ export const ArchivePage = () => {
 
   return (
     <div className="pb-8 md:pb-14">
-      <Seo title="文章归档" description="按年份归档 D-blog 全部历史文章，快速查看发布时间、分类与更新轨迹。" />
+      <Seo title="归档" description="按年份归档 D-blog 全部历史文章，快速查看发布时间、分类与更新轨迹。" />
 
       <section className="relative overflow-hidden rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 p-8 md:p-12">
         <div className="absolute right-6 top-6 rounded-lg border border-zinc-200 bg-zinc-100 p-3 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
