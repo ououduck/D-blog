@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+const appBase = process.env.VITE_BASE_PATH?.trim() || './';
+
 const LARGE_VENDOR_LIBS: Array<[string, string]> = [
   ['@remix-run/router', 'router-core'],
   ['decode-named-character-reference', 'markdown'],
@@ -22,6 +24,7 @@ const LARGE_VENDOR_LIBS: Array<[string, string]> = [
   ['web-namespaces', 'markdown']
 ];
 
+
 const resolveVendorChunk = (id: string) => {
   for (const [pattern, chunkName] of LARGE_VENDOR_LIBS) {
     if (id.includes(pattern)) {
@@ -34,7 +37,7 @@ const resolveVendorChunk = (id: string) => {
 
 export default defineConfig({
   plugins: [react()],
-  base: '/',
+  base: appBase,
   css: {
     postcss: path.resolve(__dirname, './config/postcss.config.js'),
   },
