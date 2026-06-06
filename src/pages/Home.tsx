@@ -133,21 +133,21 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
               </div>
             )}
             <div className="mb-3 md:mb-5">
-              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-400 dark:text-zinc-500">Featured</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-600 dark:text-zinc-300">Featured</span>
             </div>
             <Link to={`/post/${post.id}`} className="group/text" aria-label={`阅读文章：${post.title}`}>
               <h2 className="mb-3 pr-14 font-serif text-lg font-bold leading-[1.25] text-ink transition-colors duration-300 group-hover/text:text-zinc-700 dark:text-white dark:group-hover/text:text-zinc-300 md:mb-5 md:pr-0 md:text-3xl">
                 {post.title}
               </h2>
             </Link>
-            <p className="mb-4 font-sans text-xs leading-relaxed text-zinc-500 line-clamp-3 dark:text-zinc-400 md:mb-5 md:text-sm">{post.excerpt}</p>
+            <p className="mb-4 font-sans text-xs leading-relaxed text-zinc-700 line-clamp-3 dark:text-zinc-300 md:mb-5 md:text-sm">{post.excerpt}</p>
             {post.tags.length > 0 && (
               <div className="mb-5 flex flex-wrap gap-2">
                 {post.tags.slice(0, 3).map((tag) => (
                   <Link
                     key={tag}
                     to={`/tags?tag=${encodeURIComponent(tag)}`}
-                    className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[10px] font-semibold text-zinc-600 transition-colors hover:border-zinc-900 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-100 dark:hover:text-zinc-100"
+                    className="rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-1 text-[10px] font-semibold text-zinc-700 transition-colors hover:border-zinc-900 hover:bg-white hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-100 dark:hover:bg-zinc-100 dark:hover:text-zinc-900"
                     onClick={(event) => event.stopPropagation()}
                   >
                     #{tag}
@@ -155,7 +155,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
                 ))}
               </div>
             )}
-            <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-semibold tracking-wide text-zinc-600 dark:text-zinc-300 md:flex-nowrap md:text-xs">
+            <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-semibold tracking-wide text-zinc-700 dark:text-zinc-200 md:flex-nowrap md:text-xs">
 
               <div className="flex items-center gap-1.5">
                 <Calendar size={12} />
@@ -210,14 +210,14 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
               {post.title}
             </h3>
           </Link>
-          <p className="mb-3 line-clamp-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 md:text-sm">{post.excerpt}</p>
+          <p className="mb-3 line-clamp-2 text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 md:text-sm">{post.excerpt}</p>
           {post.tags.length > 0 && (
             <div className="mb-4 flex flex-wrap gap-1.5">
               {post.tags.slice(0, 3).map((tag) => (
                 <Link
                   key={tag}
                   to={`/tags?tag=${encodeURIComponent(tag)}`}
-                  className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-500 transition-colors hover:bg-zinc-900 hover:text-white dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-100 dark:hover:text-zinc-900"
+                  className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 ring-1 ring-zinc-200 transition-colors hover:bg-zinc-900 hover:text-white dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700 dark:hover:bg-zinc-100 dark:hover:text-zinc-900"
                   onClick={(event) => event.stopPropagation()}
                 >
                   #{tag}
@@ -225,7 +225,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
               ))}
             </div>
           )}
-          <div className="mt-auto flex items-center justify-between border-t border-zinc-100/80 pt-3 text-[10px] font-semibold text-zinc-400 dark:border-zinc-800/80 dark:text-zinc-500 md:text-xs">
+          <div className="mt-auto flex items-center justify-between border-t border-zinc-200 pt-3 text-[10px] font-semibold text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 md:text-xs">
             <div className="flex items-center gap-2.5">
               <div className="flex items-center gap-1">
                 <Calendar size={11} />
