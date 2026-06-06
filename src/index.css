@@ -403,22 +403,23 @@ html.theme-switching *:not(script):not(style)::after {
 }
 
 @media (max-width: 767px) {
-  [role="dialog"] .backdrop-blur-sm,
-  .backdrop-blur-sm {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-    background-color: rgba(0, 0, 0, 0.5);
-  }
   .mobile-nav-backdrop {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
-    background-color: rgba(0, 0, 0, 0.45);
+    background-color: rgba(24, 24, 27, 0.58);
   }
+
   .mobile-nav-panel {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
+
+  .back-to-top-btn {
+    bottom: 5.5rem;
+    right: 0.875rem;
+  }
 }
+
 
 footer {
   content-visibility: auto;

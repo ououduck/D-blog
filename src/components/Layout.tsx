@@ -720,10 +720,10 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           </div>
 
           <div className="flex items-center gap-2 md:hidden">
-            <button onClick={onSearchClick} className="rounded-xl bg-zinc-100/80 p-2.5 text-zinc-500 transition-all hover:bg-zinc-200/80 hover:text-ink active:scale-90 dark:bg-zinc-800/80 dark:text-zinc-400 dark:hover:bg-zinc-700/80 dark:hover:text-white" aria-label="打开站内搜索">
+            <button onClick={onSearchClick} className="rounded-xl border border-zinc-200 bg-white p-2.5 text-zinc-600 shadow-sm transition-all hover:border-zinc-300 hover:bg-zinc-50 hover:text-ink active:scale-90 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-white" aria-label="打开站内搜索">
               <Search size={18} />
             </button>
-            <button onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className="z-50 rounded-xl bg-zinc-100/80 p-2.5 text-zinc-500 transition-all hover:bg-zinc-200/80 hover:text-ink active:scale-90 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-800/80 dark:text-zinc-400 dark:hover:bg-zinc-700/80 dark:hover:text-white" aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
+            <button onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className="z-50 rounded-xl border border-zinc-200 bg-white p-2.5 text-zinc-600 shadow-sm transition-all hover:border-zinc-300 hover:bg-zinc-50 hover:text-ink active:scale-90 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
               <div className="relative flex h-[18px] w-[18px] items-center justify-center">
                 <Menu size={18} className={`absolute transition-all duration-300 ${isMobileNavOpen ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'}`} />
                 <X size={18} className={`absolute transition-all duration-300 ${isMobileNavOpen ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-0 opacity-0'}`} />
@@ -735,7 +735,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
       {isMobileNavMounted && (
         <div className="mobile-nav-root md:hidden">
-          <div data-testid="mobile-nav-backdrop" data-open={isMobileNavOpen} data-locked={isMobileNavAnimating} className="mobile-nav-backdrop fixed inset-0 z-[70] bg-void/50 backdrop-blur-sm" style={mobileNavStyle} onClick={() => requestCloseMobileNav()} />
+          <div data-testid="mobile-nav-backdrop" data-open={isMobileNavOpen} data-locked={isMobileNavAnimating} className="mobile-nav-backdrop fixed inset-0 z-[70] bg-zinc-950/55" style={mobileNavStyle} onClick={() => requestCloseMobileNav()} />
 
           <motion.aside
             ref={mobileNavPanelRef}
@@ -750,7 +750,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             data-interaction-locked={isMobileNavAnimating}
             data-locked={isMobileNavAnimating}
             data-swiping="false"
-            className="mobile-nav-panel !fixed inset-x-0 bottom-0 z-[80] overflow-hidden rounded-t-[2rem] bg-white/98 dark:bg-zinc-900/98 border border-zinc-200 dark:border-zinc-800 text-ink shadow-2xl dark:text-white"
+            className="mobile-nav-panel !fixed inset-x-0 bottom-0 z-[80] overflow-hidden rounded-t-[2rem] border border-zinc-200 bg-white text-ink shadow-[0_-18px_50px_rgba(15,23,42,0.14)] dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
             style={mobileNavPanelStyle}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
@@ -758,10 +758,10 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           >
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1">
-              <div className="h-1 w-9 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+              <div className="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600" />
             </div>
 
-            <div className="flex max-h-[65vh] flex-col overflow-y-auto px-4 pb-4 pt-1">
+            <div className="flex max-h-[72vh] flex-col overflow-y-auto px-4 pb-5 pt-2">
               {/* Nav grid - 4 columns */}
               <div className="grid grid-cols-4 gap-x-2 gap-y-3 pb-4">
                 {navItems.map((item) => {
@@ -775,10 +775,10 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                       onClick={() => handleMobileNavItemSelect(item.path)}
                       onMouseEnter={() => preloadPage(item.path)}
                       disabled={isMobileNavAnimating}
-                      className={`flex flex-col items-center gap-1.5 rounded-2xl px-1 py-3 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 ${
+                      className={`flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-2xl border px-1 py-3 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 ${
                         isActive
-                          ? 'bg-ink/[0.07] dark:bg-white/[0.1]'
-                          : 'hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40'
+                          ? 'border-zinc-900/10 bg-zinc-900/[0.06] shadow-sm dark:border-white/10 dark:bg-white/[0.08]'
+                          : 'border-transparent bg-zinc-50 text-zinc-500 hover:border-zinc-200 hover:bg-white dark:bg-zinc-950/60 dark:text-zinc-400 dark:hover:border-zinc-800 dark:hover:bg-zinc-900'
                       }`}
                       aria-current={isActive ? 'page' : undefined}
                     >
@@ -790,12 +790,12 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
               </div>
 
               {/* Bottom row: theme + RSS */}
-              <div className="flex items-center justify-between border-t border-zinc-200/60 pt-3 dark:border-zinc-800/60">
+              <div className="flex items-center justify-between border-t border-zinc-200/70 pt-3 dark:border-zinc-800/70">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500">{TEXT.theme}</span>
                   <ThemeToggle />
                 </div>
-                <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-ink dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-white">
+                <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-white hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:bg-zinc-700 dark:hover:text-white">
                   <Rss size={12} />
                   <span>RSS</span>
                 </a>

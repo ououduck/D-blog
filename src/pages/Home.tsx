@@ -110,7 +110,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
         className="col-span-full w-full"
         onMouseEnter={() => preloadPage(`/post/${post.id}`)}
       >
-        <div className="relative flex h-auto flex-col overflow-hidden rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 transition-all duration-500 hover:-translate-y-1 dark:hover:border-zinc-700 md:h-[440px] md:flex-row md:rounded-3xl">
+        <div className="relative flex h-auto flex-col overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 transition-all duration-500 hover:-translate-y-1 dark:hover:border-zinc-700 md:h-[440px] md:flex-row md:rounded-3xl">
           <Link to={`/post/${post.id}`} className="group relative block h-56 w-full overflow-hidden md:h-full md:w-3/5" aria-label={`阅读文章：${post.title}`}>
             <div className="absolute inset-0 animate-pulse bg-zinc-200 dark:bg-zinc-800" />
             {post.coverImage ? (
@@ -120,14 +120,14 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
                 <Sparkles className="h-16 w-16 text-zinc-300" />
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/5 to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-black/10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-black/10" />
             <div className="absolute left-4 top-4 md:left-6 md:top-6">
               <CategoryBadge text={post.category} />
             </div>
           </Link>
-          <div className="relative flex w-full flex-col justify-center bg-white/90 p-5 backdrop-blur-sm dark:bg-zinc-900/90 md:w-2/5 md:p-10">
+          <div className="relative flex w-full flex-col justify-center bg-white px-4 py-5 dark:bg-zinc-900 sm:px-5 md:w-2/5 md:p-10">
             {post.top !== undefined && (
-              <div className="absolute right-4 top-4 md:right-6 md:top-6 flex items-center gap-1.5 rounded-full bg-ink/5 px-2.5 py-1 text-[10px] font-bold text-ink dark:bg-white/10 dark:text-white">
+              <div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200 md:right-6 md:top-6">
                 <Pin size={10} fill="currentColor" />
                 <span>置顶</span>
               </div>
@@ -136,12 +136,12 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
               <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-400 dark:text-zinc-500">Featured</span>
             </div>
             <Link to={`/post/${post.id}`} className="group/text" aria-label={`阅读文章：${post.title}`}>
-              <h2 className="mb-3 font-serif text-lg font-bold leading-[1.2] text-ink transition-colors duration-300 group-hover/text:text-zinc-700 dark:text-white dark:group-hover/text:text-zinc-300 md:mb-5 md:text-3xl">
+              <h2 className="mb-3 pr-14 font-serif text-lg font-bold leading-[1.25] text-ink transition-colors duration-300 group-hover/text:text-zinc-700 dark:text-white dark:group-hover/text:text-zinc-300 md:mb-5 md:pr-0 md:text-3xl">
                 {post.title}
               </h2>
             </Link>
             <p className="mb-5 font-sans text-xs leading-relaxed text-zinc-500 line-clamp-3 dark:text-zinc-400 md:mb-6 md:text-sm">{post.excerpt}</p>
-            <div className="mt-auto flex items-center gap-3 text-[10px] font-semibold tracking-wide text-zinc-400 dark:text-zinc-500 md:text-xs">
+            <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-semibold tracking-wide text-zinc-400 dark:text-zinc-500 md:flex-nowrap md:text-xs">
               <div className="flex items-center gap-1.5">
                 <Calendar size={12} />
                 <span>{post.date}</span>
