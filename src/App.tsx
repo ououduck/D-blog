@@ -66,6 +66,8 @@ const RouteFallback: React.FC = () => (
 );
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  private autoRecoveryAttempted = false;
+
   constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false };
@@ -75,7 +77,28 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     return { hasError: true };
   }
 
-  componentDidCatch() {
+  componentDidCatch(error: Error) {
+    const message = error?.message ?? '';
+    const isChunkLoadError =
+      /Loading chunk [\d]+ failed/i.test(message) ||
+      /ChunkLoadError/i.test(message) ||
+      /Failed to fetch dynamically imported module/i.test(message) ||
+      /Importing a module script failed/i.test(message);
+
+    if (isChunkLoadError && typeof window !== 'undefined' && !this.autoRecoveryAttempted) {
+      this.autoRecoveryAttempted = true;
+
+      try {
+        const currentUrl = window.location.pathname + window.location.search + window.location.hash;
+        sessionStorage.setItem('dblog:auto-reload-once', currentUrl);
+      } catch {
+        // ignore storage errors
+      }
+
+      window.location.reload();
+      return;
+    }
+
     // 生产环境静默处理，避免额外日志开销
   }
 
@@ -99,6 +122,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     return this.props.children;
   }
 }
+
 
 const AppRoutes: React.FC = () => {
   const location = useLocation();
