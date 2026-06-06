@@ -6,6 +6,8 @@
   "scripts": {
     "gen:data": "node scripts/generate-site-data.mjs",
     "prerender": "node scripts/prerender.mjs",
+    "typecheck": "tsc -p config/tsconfig.json --noEmit",
+    "check": "npm run typecheck && npm run gen:data",
     "dev": "npm run gen:data && vite",
     "build": "npm run gen:data && vite build && npm run prerender",
     "preview": "vite preview"

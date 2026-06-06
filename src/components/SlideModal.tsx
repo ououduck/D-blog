@@ -11,6 +11,7 @@ interface SlideModalProps {
   children: React.ReactNode;
   className?: string;
   ariaLabelledby?: string;
+  ariaDescribedby?: string;
 }
 
 export const SlideModal: React.FC<SlideModalProps> = ({
@@ -22,6 +23,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
   children,
   className = '',
   ariaLabelledby,
+  ariaDescribedby,
 }) => {
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [isMobile, setIsMobile] = useState(false);

@@ -86,8 +86,8 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
           alt={alt}
           decoding={decoding}
           loading={loadingProp || 'lazy'}
-          width={props.width}
-          height={props.height}
+          width={width}
+          height={height}
           sizes={sizes}
           className={mergeClassName(
             'relative transition-all duration-700 ease-out',

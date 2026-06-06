@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { coverTemplates as templates, type CoverTemplate, type PatternType } from '../config/coverTemplates';
+import { siteConfig } from '@config/site.config';
 
 interface ExportRatio {
   label: string;
@@ -26,6 +27,10 @@ interface ShadowConfig {
 type IconPosition = 'center' | 'above' | 'below';
 type TextAlign = 'left' | 'center' | 'right';
 type LayoutMode = 'icon-split' | 'stacked' | 'icon-only' | 'text-only';
+
+type IconifySearchResponse = {
+  icons?: string[];
+};
 
 const DEFAULT_TEXT_SHADOW: ShadowConfig = {
   x: 2, y: 2, blur: 8, color: '#000000', opacity: 0.3
@@ -61,7 +66,7 @@ export const CoverGenerator: React.FC = () => {
 
   // 图标状态
   const [showIcon, setShowIcon] = useState(true);
-  const [customIcon, setCustomIcon] = useState<string | null>('https://blog.pldduck.com/logo.png');
+  const [customIcon, setCustomIcon] = useState<string | null>(siteConfig.logo);
   const [iconSize, setIconSize] = useState(80);
   const [iconColor, setIconColor] = useState('#ffffff');
   const [iconBorderRadius, setIconBorderRadius] = useState(12);
@@ -69,7 +74,7 @@ export const CoverGenerator: React.FC = () => {
 
   // Iconify 搜索状态
   const [iconifySearch, setIconifySearch] = useState('');
-  const [iconifyResults, setIconifyResults] = useState<any[]>([]);
+  const [iconifyResults, setIconifyResults] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showIconifyModal, setShowIconifyModal] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -204,7 +209,7 @@ export const CoverGenerator: React.FC = () => {
     setBgImage(null);
     resetBackgroundImageControls();
     setShowIcon(true);
-    setCustomIcon('https://blog.pldduck.com/logo.png');
+    setCustomIcon(siteConfig.logo);
     setIconifySearch('');
     setIconifyResults([]);
     setSearchError(null);
@@ -457,18 +462,20 @@ export const CoverGenerator: React.FC = () => {
         if (response.status >= 500) throw new Error('Iconify 服务暂时不可用，请稍后再试');
         throw new Error(`搜索失败 (${response.status})`);
       }
-      const data = await response.json();
+      const data = await response.json() as IconifySearchResponse;
       if (data.icons && data.icons.length > 0) {
         setIconifyResults(data.icons);
       } else {
         setIconifyResults([]);
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError') return;
-      if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
+    } catch (error: unknown) {
+      const errorName = error instanceof Error ? error.name : '';
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (errorName === 'AbortError') return;
+      if (errorMessage.includes('Failed to fetch') || errorName === 'TypeError') {
         setSearchError('网络连接失败，请检查网络后重试');
       } else {
-        setSearchError(error.message || '搜索失败，请稍后重试');
+        setSearchError(errorMessage || '搜索失败，请稍后重试');
       }
       setIconifyResults([]);
     } finally {
@@ -760,7 +767,7 @@ export const CoverGenerator: React.FC = () => {
         // 图标在上，文字在下
         const textY = iconCenterY + iconSize / 2 + subSpacing + fontSize / 2;
         const combinedText = leftText && rightText ? `${leftText} ${rightText}` : leftText || rightText;
-        if (combinedText && effectiveLayout !== 'icon-only') {
+        if (combinedText) {
           const alignX = textAlign === 'left' ? 80 : textAlign === 'right' ? canvasSize.width - 80 : centerX;
           const canvasAlign = textAlign === 'left' ? 'left' as const : textAlign === 'right' ? 'right' as const : 'center' as const;
           drawTextWithStroke(tempCtx, combinedText, alignX, textY, canvasAlign);

@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { flushSync } from 'react-dom';
 import { Layout } from './components/Layout';
 import { CookieNotice } from './components/CookieNotice';
@@ -20,7 +20,7 @@ const Sponsor = lazy(pageLoaders['/sponsor']);
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
 
 const LoadingScreen: React.FC = () => {
-  const letterVariants = {
+  const letterVariants: Variants = {
     initial: { y: 100 },
     animate: (index: number) => ({
       y: 0,

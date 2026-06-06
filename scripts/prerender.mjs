@@ -1,35 +1,17 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { loadSiteConfig, toAbsoluteUrl } from './site-config-loader.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const DIST_DIR = path.join(__dirname, '../dist');
 const POSTS_FILE = path.join(__dirname, '../generated/posts.json');
-const SITE_CONFIG_FILE = path.join(__dirname, '../config/site.config.ts');
-
-// Extract Site Config
-let siteTitle = 'D-blog';
-let authorName = '跑路的duck';
-
-if (fs.existsSync(SITE_CONFIG_FILE)) {
-  const configContent = fs.readFileSync(SITE_CONFIG_FILE, 'utf-8');
-  
-  // Extract title
-  const titleMatch = configContent.match(/title:\s*["']([^"']+)["']/);
-  if (titleMatch) siteTitle = titleMatch[1];
-  
-  // Extract author name
-  // Looking for author: { ... name: "..." }
-  const authorBlockMatch = configContent.match(/author:\s*{[\s\S]*?}/);
-  if (authorBlockMatch) {
-    const authorBlock = authorBlockMatch[0];
-    const nameMatch = authorBlock.match(/name:\s*["']([^"']+)["']/);
-    if (nameMatch) authorName = nameMatch[1];
-  }
-}
-
+const siteConfig = loadSiteConfig();
+const siteTitle = siteConfig.title;
+const authorName = siteConfig.author.name;
+const SITE_URL = siteConfig.url;
 const SITE_SUFFIX = siteTitle;
 
 
@@ -102,14 +84,13 @@ const writeStandaloneHtml = (filename, title, description, extraMeta = '') => {
 console.log('🚀 Starting Pre-rendering...');
 
 // 1. Process Blog Posts
-const SITE_URL = 'https://blog.pldduck.com';
 
 posts.forEach(post => {
   // URL structure: /post/:id
   const title = `${post.title} | ${SITE_SUFFIX}`;
   const description = post.excerpt || post.title;
   const postUrl = `${SITE_URL}/post/${post.id}`;
-  const coverImage = post.coverImage ? new URL(post.coverImage, SITE_URL).toString() : `${SITE_URL}/logo.png`;
+  const coverImage = post.coverImage ? toAbsoluteUrl(post.coverImage, SITE_URL) : toAbsoluteUrl(siteConfig.seoImage || siteConfig.logo || '/logo.png', SITE_URL);
   const publishDate = post.date;
   const modifiedDate = post.updatedAt || post.date;
 
@@ -128,7 +109,7 @@ posts.forEach(post => {
     <meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}">
     <meta name="twitter:image" content="${coverImage}">`;
 
-  const authorName = post.authors?.[0]?.name || '跑路的duck';
+  const postAuthorName = post.authors?.[0]?.name || authorName;
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -137,7 +118,7 @@ posts.forEach(post => {
     image: coverImage,
     datePublished: publishDate,
     dateModified: modifiedDate,
-    author: { '@type': 'Person', name: authorName },
+    author: { '@type': 'Person', name: postAuthorName },
     mainEntityOfPage: postUrl,
     publisher: { '@type': 'Organization', name: siteTitle, url: SITE_URL, logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` } }
   };

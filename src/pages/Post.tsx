@@ -9,7 +9,7 @@ import DOMPurify from 'dompurify';
 
 import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Shield, Share2, Copy, Check, Users, ExternalLink } from 'lucide-react';
 import { getPostById, getPosts } from '@/services/posts';
-import { Post as PostType, PostAuthor } from '../types';
+import { Post as PostType, PostAuthor, PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
@@ -41,7 +41,7 @@ const MERMAID_CONFIG = {
     secondaryColor: '#27272a',
     tertiaryColor: '#18181b'
   }
-} satisfies Record<string, unknown>;
+} as const;
 
 const hasCodeBlocks = (content: string) => /```[\w-]*\s*```/m.test(content);
 const hasMathExpressions = (content: string) => /\$\$[\s\S]*?\$\$|\\\(|\\\[/m.test(content);
@@ -317,7 +317,7 @@ const createMarkdownComponents = (
     }
   };
 
-  const renderHeading = (level: number, Tag: string, { children, ...props }: Record<string, unknown>) => {
+  const renderHeading = (level: number, Tag: string, { children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
     const id = resolveHeadingId(level, children);
     return React.createElement(
       Tag,
@@ -432,7 +432,7 @@ export const Post = () => {
   const [rehypePlugins, setRehypePlugins] = useState<MarkdownPlugin[]>([]);
   const [mermaidRenderer, setMermaidRenderer] = useState<MermaidRenderer | null>(null);
   const [mobileFloatingVisible, setMobileFloatingVisible] = useState(false);
-  const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostType | null; next: PostType | null }>({ prev: null, next: null });
+  const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostMetadata | null; next: PostMetadata | null }>({ prev: null, next: null });
   const articleBodyRef = useRef<HTMLDivElement>(null);
 
   // 使用 Map 缓存标题映射

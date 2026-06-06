@@ -31,5 +31,10 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "../src",
+    "../config/**/*.ts",
+    "../vite.config.ts"
+  ]
 }

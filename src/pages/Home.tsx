@@ -448,7 +448,7 @@ export const Home = () => {
 
   return (
     <div className="pb-16 md:pb-24">
-      <Seo title={siteConfig.title} description={siteConfig.description} path="/" />
+      <Seo title={siteConfig.title} description={siteConfig.description} url="/" />
       <Hero />
 
       <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-8 px-4 md:space-y-10 md:px-0">

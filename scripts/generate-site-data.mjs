@@ -3,11 +3,13 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import { fileURLToPath } from 'url';
+import { loadSiteConfig } from './site-config-loader.mjs';
 
-const SITE_URL = 'https://blog.pldduck.com';
-const SITE_TITLE = 'D-blog';
-const SITE_DESCRIPTION = '跑路的duck的个人博客，分享前端技术、编程教程与生活感悟，探索极致的静态页面体验。';
-const AUTHOR_NAME = '跑路的duck';
+const siteConfig = loadSiteConfig();
+const SITE_URL = siteConfig.url;
+const SITE_TITLE = siteConfig.title;
+const SITE_DESCRIPTION = siteConfig.description;
+const AUTHOR_NAME = siteConfig.author.name;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +26,32 @@ if (!fs.existsSync(OUTPUT_JSON_DIR)) {
 if (!fs.existsSync(PUBLIC_DIR)) {
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
 }
+
+const validateDateString = (value) => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+};
+
+const xmlEscape = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&apos;');
+
+const assertValidUrl = (value, label) => {
+  try {
+    new URL(value);
+  } catch {
+    throw new Error(`${label} must be a valid URL: ${value}`);
+  }
+};
+
+assertValidUrl(SITE_URL, 'siteConfig.url');
 
 const markdownToSearchText = (markdown) =>
   markdown
@@ -158,6 +186,44 @@ const normalizeCategory = (value) => {
   return POST_CATEGORIES.includes(category) ? category : '其他';
 };
 
+const validatePostFrontmatter = (filename, data, formattedDate, formattedUpdatedAt, id) => {
+  const errors = [];
+
+  if (typeof id !== 'string' || id.trim() === '') {
+    errors.push('id must be a non-empty string');
+  }
+
+  if (typeof data.title !== 'string' || data.title.trim() === '') {
+    errors.push('title must be a non-empty string');
+  }
+
+  if (typeof data.excerpt !== 'string' || data.excerpt.trim() === '') {
+    errors.push('excerpt must be a non-empty string');
+  }
+
+  if (!formattedDate || !validateDateString(formattedDate)) {
+    errors.push('date must use YYYY-MM-DD format');
+  }
+
+  if (formattedUpdatedAt && !validateDateString(formattedUpdatedAt)) {
+    errors.push('updatedAt must use YYYY-MM-DD format');
+  }
+
+  if (data.tags !== undefined && !Array.isArray(data.tags)) {
+    errors.push('tags must be an array when provided');
+  }
+
+  if (typeof data.category === 'string' && data.category.trim() && !POST_CATEGORIES.includes(data.category.trim())) {
+    errors.push(`category must be one of: ${POST_CATEGORIES.join(', ')}`);
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Invalid front matter in ${filename}: ${errors.join('; ')}`);
+  }
+};
+
+const usedPostIds = new Set();
+
 const files = fs.readdirSync(POSTS_DIR).filter((file) => file.endsWith('.md'));
 const postsWithSearch = files
   .map((filename) => {
@@ -166,10 +232,17 @@ const postsWithSearch = files
     const { data, content } = matter(fileContent);
     const { draft, readTime, author, authors, updatedAt, ...restData } = data;
 
-    const id = data.id || filename.replace(/\.md$/, '');
+    const id = String(data.id || filename.replace(/\.md$/, '')).trim();
 
     const formattedDate = formatFrontmatterDate(data.date);
     const formattedUpdatedAt = formatFrontmatterDate(updatedAt);
+    validatePostFrontmatter(filename, data, formattedDate, formattedUpdatedAt, id);
+
+    if (usedPostIds.has(id)) {
+      throw new Error(`Duplicate post id "${id}" found in ${filename}.`);
+    }
+    usedPostIds.add(id);
+
     const normalizedAuthors = normalizeAuthors(author, authors);
     const category = normalizeCategory(data.category);
     const tags = normalizeTags(data.tags);
@@ -216,6 +289,7 @@ const friendFiles = fs.existsSync(FRIENDS_DIR)
   ? fs.readdirSync(FRIENDS_DIR).filter((file) => file.endsWith('.json'))
   : [];
 
+const seenFriendUrls = new Set();
 const friends = friendFiles.flatMap((filename) => {
   const filePath = path.join(FRIENDS_DIR, filename);
 
@@ -231,12 +305,21 @@ const friends = friendFiles.flatMap((filename) => {
       return [];
     }
 
+    const friendUrl = data.url.trim();
+    assertValidUrl(friendUrl, `friend ${filename} url`);
+
+    if (seenFriendUrls.has(friendUrl)) {
+      console.warn(`Skip duplicate friend file ${filename}: url ${friendUrl}`);
+      return [];
+    }
+    seenFriendUrls.add(friendUrl);
+
     return [
       {
         name: data.name.trim(),
         description: data.description.trim(),
         avatar: data.avatar.trim(),
-        url: data.url.trim()
+        url: friendUrl
       }
     ];
   } catch (error) {
@@ -268,7 +351,7 @@ const generateSitemap = () => {
     .map(
       (page) => `
   <url>
-    <loc>${SITE_URL}/${page.path}</loc>
+    <loc>${xmlEscape(new URL(page.path, `${SITE_URL}/`).toString())}</loc>
     <lastmod>${page.lastmod}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
@@ -279,7 +362,7 @@ const generateSitemap = () => {
     .map(
       (post) => `
   <url>
-    <loc>${SITE_URL}/post/${post.id}</loc>
+    <loc>${xmlEscape(`${SITE_URL}/post/${post.id}`)}</loc>
     <lastmod>${new Date(post.updatedAt || post.date).toISOString().split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -323,26 +406,26 @@ const generateRss = () => {
   const rssContent = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>${SITE_TITLE}</title>
-    <link>${SITE_URL}</link>
-    <description>${SITE_DESCRIPTION}</description>
+    <title>${xmlEscape(SITE_TITLE)}</title>
+    <link>${xmlEscape(SITE_URL)}</link>
+    <description>${xmlEscape(SITE_DESCRIPTION)}</description>
     <language>zh-CN</language>
     <lastBuildDate>${latestUpdate.toUTCString()}</lastBuildDate>
-    <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="${xmlEscape(`${SITE_URL}/feed.xml`)}" rel="self" type="application/rss+xml" />
     ${postsWithSearch
       .map(
         (post) => `
     <item>
       <title><![CDATA[${post.title}]]></title>
-      <link>${SITE_URL}/post/${post.id}</link>
-      <guid isPermaLink="true">${SITE_URL}/post/${post.id}</guid>
+      <link>${xmlEscape(`${SITE_URL}/post/${post.id}`)}</link>
+      <guid isPermaLink="true">${xmlEscape(`${SITE_URL}/post/${post.id}`)}</guid>
       <description><![CDATA[${post.excerpt}]]></description>
       <content:encoded><![CDATA[<article>${simpleMarkdownToHtml(post.content || '')}</article>]]></content:encoded>
       <pubDate>${new Date(post.date).toUTCString()}</pubDate>
       ${post.updatedAt ? `<atom:updated>${new Date(post.updatedAt).toISOString()}</atom:updated>` : ''}
-      <category>${post.category}</category>
-      ${(post.tags || []).map((tag) => `<category>${tag}</category>`).join('\n      ')}
-      <author>${post.authors?.[0]?.name || AUTHOR_NAME}</author>
+      <category>${xmlEscape(post.category)}</category>
+      ${(post.tags || []).map((tag) => `<category>${xmlEscape(tag)}</category>`).join('\n      ')}
+      <author>${xmlEscape(post.authors?.[0]?.name || AUTHOR_NAME)}</author>
     </item>`
       )
       .join('')}

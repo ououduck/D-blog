@@ -99,8 +99,11 @@ cd D-blog
 # 安装依赖
 npm install
 
-# 配置环境变量（可选）
+# 配置环境变量（可选，用于覆盖 sitemap/RSS/SEO 的站点 URL）
 cp .env.example .env
+
+# 类型检查
+npm run typecheck
 
 # 本地开发
 npm run dev
@@ -427,7 +430,8 @@ export const adsConfig: AdItem[] = [
 | Build output directory | `dist` |
 | Node version | 20 |
 
-在 Settings → Environment variables 中添加：
+在 Settings → Environment variables 中按需添加：
+- `VITE_SITE_URL`：站点公开访问地址，用于生成 sitemap、RSS 和预渲染 SEO URL；未设置时使用 `config/site.config.ts` 中的 `url`
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ZONE_ID`
 
