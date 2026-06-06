@@ -1,19 +1,49 @@
-export const registerServiceWorker = () => {
+const LEGACY_CACHE_PREFIXES = ['dblog-v'];
+
+const clearLegacyCaches = async () => {
+  if (typeof window === 'undefined' || !('caches' in window)) {
+    return;
+  }
+
+  try {
+    const cacheKeys = await caches.keys();
+    await Promise.all(
+      cacheKeys
+        .filter((key) => LEGACY_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix)))
+        .map((key) => caches.delete(key))
+    );
+  } catch {
+    // 静默失败，避免生产环境输出无用日志
+  }
+};
+
+const unregisterLegacyServiceWorkers = async () => {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     return;
   }
 
-  const register = () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      // 静默失败，避免生产环境输出无用日志
-    });
-  };
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+  } catch {
+    // 静默失败，避免生产环境输出无用日志
+  }
+}
 
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(register, { timeout: 2000 });
+export const registerServiceWorker = () => {
+  if (typeof window === 'undefined') {
     return;
   }
 
-  window.setTimeout(register, 1200);
+  const cleanup = () => {
+    void Promise.allSettled([unregisterLegacyServiceWorkers(), clearLegacyCaches()]);
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(cleanup, { timeout: 2000 });
+    return;
+  }
+
+  window.setTimeout(cleanup, 1200);
 };
 
