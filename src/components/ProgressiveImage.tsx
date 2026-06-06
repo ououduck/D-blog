@@ -55,6 +55,8 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
     wrapperStyle.aspectRatio = `${width} / ${height}`;
   }
 
+  const resolvedLoading = loadingProp || (props.fetchPriority === 'high' ? 'eager' : 'lazy');
+
   return (
     <div className={mergeClassName('relative overflow-hidden', wrapperClassName)} style={wrapperStyle}>
       <div
@@ -85,7 +87,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
           src={src}
           alt={alt}
           decoding={decoding}
-          loading={loadingProp || 'lazy'}
+          loading={resolvedLoading}
           width={width}
           height={height}
           sizes={sizes}

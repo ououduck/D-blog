@@ -30,7 +30,11 @@ if (!fs.existsSync(indexHtmlPath)) {
   logger.error('dist/index.html not found');
   process.exit(1);
 }
-const template = fs.readFileSync(indexHtmlPath, 'utf-8');
+const stripNonCriticalPreloads = (html) => html
+  .replace(/\n?\s*<link rel="modulepreload"[^>]+href="\.\/assets\/(?:syntax|katex|markdown|dompurify|mermaid)[^"]+"[^>]*>/g, '')
+  .replace(/\n?\s*<link rel="stylesheet"[^>]+href="\.\/assets\/(?:syntax|katex)[^"]+"[^>]*>/g, '');
+
+const template = stripNonCriticalPreloads(fs.readFileSync(indexHtmlPath, 'utf-8'));
 
 // Read posts
 if (!fs.existsSync(POSTS_FILE)) {
@@ -38,6 +42,19 @@ if (!fs.existsSync(POSTS_FILE)) {
   process.exit(1);
 }
 const posts = JSON.parse(fs.readFileSync(POSTS_FILE, 'utf-8'));
+
+const escapeHtmlAttribute = (value) => String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
+const createImagePreload = (imageUrl, imagesizes) => {
+  if (!imageUrl) {
+    return '';
+  }
+
+  const sizesAttr = imagesizes ? ` imagesizes="${escapeHtmlAttribute(imagesizes)}"` : '';
+  return `\n    <link rel="preload" as="image" href="${escapeHtmlAttribute(imageUrl)}" fetchpriority="high"${sizesAttr}>`;
+};
+
+const getHomeHeroPost = () => posts.find((post) => post.top !== undefined) || posts.find((post) => post.featured) || posts[0];
 
 const injectSeoMeta = (htmlTemplate, title, description, extraMeta = '') => {
   let html = htmlTemplate.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
@@ -136,7 +153,8 @@ posts.forEach(post => {
 
   const jsonLd = `\n    <script type="application/ld+json">${JSON.stringify([structuredData, breadcrumbData])}</script>`;
 
-  const extraMeta = `${ogMeta}${jsonLd}`;
+  const imagePreload = createImagePreload(coverImage, '(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1152px');
+  const extraMeta = `${imagePreload}${ogMeta}${jsonLd}`;
 
   writeHtml(`post/${post.id}`, title, description, extraMeta);
 });
@@ -155,6 +173,14 @@ const staticPages = [
 staticPages.forEach(page => {
   writeHtml(page.path, page.title, page.description);
 });
+
+const homeHeroPost = getHomeHeroPost();
+if (homeHeroPost?.coverImage) {
+  const homeCoverImage = toAbsoluteUrl(homeHeroPost.coverImage, SITE_URL);
+  const homePreload = createImagePreload(homeCoverImage, '(max-width: 767px) 100vw, 60vw');
+  const homeHtml = injectSeoMeta(template, siteTitle, siteConfig.description, homePreload);
+  fs.writeFileSync(indexHtmlPath, homeHtml);
+}
 
 writeStandaloneHtml('404.html', `页面不存在 - ${SITE_SUFFIX}`, '你访问的页面不存在，可能已经移动、重命名或链接已失效。');
 

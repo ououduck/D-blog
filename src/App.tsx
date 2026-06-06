@@ -4,7 +4,6 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { flushSync } from 'react-dom';
 import { Layout } from './components/Layout';
-import { CookieNotice } from './components/CookieNotice';
 import { siteConfig } from '@config/site.config';
 import { pageLoaders } from './utils/preload';
 
@@ -18,6 +17,7 @@ const Tags = lazy(pageLoaders['/tags']);
 const CoverGenerator = lazy(pageLoaders['/cover']);
 const Sponsor = lazy(pageLoaders['/sponsor']);
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
+const CookieNotice = lazy(() => import('./components/CookieNotice').then((m) => ({ default: m.CookieNotice })));
 
 const LoadingScreen: React.FC = () => {
   const letterVariants: Variants = {
@@ -196,7 +196,11 @@ const App: React.FC = () => {
         <Router>
           <AppRoutes />
           <AnimatePresence>{showLoadingScreen && <LoadingScreen />}</AnimatePresence>
-          {showCookieNotice && <CookieNotice />}
+          {showCookieNotice && (
+            <Suspense fallback={null}>
+              <CookieNotice />
+            </Suspense>
+          )}
         </Router>
       </ErrorBoundary>
     </HelmetProvider>

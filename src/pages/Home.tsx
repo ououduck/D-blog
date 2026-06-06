@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
@@ -6,13 +6,14 @@ import { getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
-import { ShareModal } from '../components/ShareModal';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { getDateTimestamp } from '@/utils/date';
 import { easeOut, easeSmooth, fadeInUp, staggerContainer } from '@/utils/motion';
 import { preloadPage } from '@/utils/preload';
+
+const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
 
 const ALL_CATEGORY = '全部';
 
@@ -169,7 +170,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
       <div className="group relative flex h-full flex-col overflow-hidden rounded-xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 dark:hover:border-zinc-700">
         <Link to={`/post/${post.id}`} className="group/image relative aspect-[16/9] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
-            <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" width={1600} height={1000} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
+            <ProgressiveImage src={post.coverImage} alt={post.title} loading={index === 0 ? 'eager' : 'lazy'} fetchPriority={index === 0 ? 'high' : 'auto'} width={1600} height={1000} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-300">
               <Sparkles className="h-10 w-10 opacity-50" />
@@ -547,7 +548,11 @@ export const Home = () => {
         )}
       </motion.div>
 
-      <ShareModal isOpen={!!sharePost} onClose={() => setSharePost(null)} title={sharePost?.title || ''} excerpt={sharePost?.excerpt || ''} url={sharePost ? `${window.location.origin}/post/${sharePost.id}` : ''} />
+      {sharePost && (
+        <Suspense fallback={null}>
+          <ShareModal isOpen={!!sharePost} onClose={() => setSharePost(null)} title={sharePost.title} excerpt={sharePost.excerpt} url={`${window.location.origin}/post/${sharePost.id}`} />
+        </Suspense>
+      )}
     </div>
   );
 };

@@ -4,6 +4,12 @@ import path from 'path';
 
 const appBase = process.env.VITE_BASE_PATH?.trim() || './';
 
+const SKIP_MODULE_PRELOAD_PATTERNS = [
+  /(?:^|\/)assets\/(?:mermaid|katex|markdown|syntax|dompurify)-/,
+  /(?:^|\/)assets\/Post-/,
+  /(?:^|\/)assets\/CoverGenerator-/,
+];
+
 const LARGE_VENDOR_LIBS: Array<[string, string]> = [
   ['@remix-run/router', 'router-core'],
   ['decode-named-character-reference', 'markdown'],
