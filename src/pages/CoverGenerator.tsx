@@ -215,10 +215,7 @@ export const CoverGenerator: React.FC = () => {
       { label: '4:3', w: 4, h: 3, active: false },
       { label: '21:9', w: 21, h: 9, active: false }
     ]);
-    setExportScale(1);
-    setExportFormat('png');
-    setExportFilename('cover');
-    resetStyleSettings();
+  }, [resetBackgroundImageControls, resetStyleSettings]);
 
   const activeRatio = exportRatios.find(r => r.active) || exportRatios[0];
   const canvasWidth = 1200;
@@ -234,6 +231,7 @@ export const CoverGenerator: React.FC = () => {
       { label: '导出', value: `${activeRatio.label} · ${exportFormat.toUpperCase()}` },
     ];
   }, [activeRatio.label, customIcon, exportFormat, layoutMode, leftText, rightText, selectedTemplate.name, showIcon, subText]);
+
 
 
   const drawPattern = (ctx: CanvasRenderingContext2D, pattern: PatternType, width: number, height: number) => {
@@ -1452,6 +1450,9 @@ export const CoverGenerator: React.FC = () => {
               </div>
             </>
           )}
+
+
+
 
           {/* ===== 导出标签页 ===== */}
           {activeTab === 'export' && (
