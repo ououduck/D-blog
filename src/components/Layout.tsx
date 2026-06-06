@@ -859,8 +859,8 @@ const Footer = ({ isPostPage = false }: { isPostPage?: boolean }) => {
       <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.18 }} transition={{ duration: 0.35, ease: easeSmooth }} className="mx-auto max-w-7xl px-6">
         {!isPostPage ? (
           <>
-            <div className="mb-8 grid grid-cols-1 gap-8 md:mb-12 md:grid-cols-3 md:gap-12">
-              <div className="flex flex-col items-center space-y-4 md:items-start">
+            <div className="mb-8 grid grid-cols-2 gap-6 md:mb-12 md:grid-cols-3 md:gap-12">
+              <div className="col-span-2 flex flex-col items-center space-y-4 md:col-span-1 md:items-start">
                 <div>
                   <span className="font-serif text-xl font-bold tracking-tight text-ink dark:text-white">{siteConfig.title}</span>
                   <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{siteConfig.subtitle}</p>

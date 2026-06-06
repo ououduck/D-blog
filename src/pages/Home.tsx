@@ -89,9 +89,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
       }
     }
   };
-  const hoverMotion = shouldReduceMotion
-    ? undefined
-    : { y: -2 };
+
 
   const CategoryBadge = ({ text }: { text: string }) => (
     <span className="z-10 rounded-full bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/60 dark:border-zinc-700/60 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-ink transition-transform group-hover:scale-105 dark:text-white">
@@ -110,16 +108,15 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
       <motion.article
         layout
         variants={cardVariants}
-        whileHover={hoverMotion}
         transition={{ duration: 0.3, ease: easeOut }}
         className="col-span-full w-full"
         onMouseEnter={() => preloadPage(`/post/${post.id}`)}
       >
-        <div className="relative flex h-auto flex-col overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 transition-all duration-500 hover:-translate-y-1 dark:hover:border-zinc-700 md:h-[440px] md:flex-row md:rounded-3xl">
+        <div className="relative flex h-auto flex-col overflow-hidden rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 md:h-[440px] md:flex-row md:rounded-2xl">
           <Link to={`/post/${post.id}`} className="group relative block h-56 w-full overflow-hidden md:h-full md:w-3/5" aria-label={`阅读文章：${post.title}`}>
             <div className="absolute inset-0 animate-pulse bg-zinc-200 dark:bg-zinc-800" />
             {post.coverImage ? (
-              <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="absolute inset-0" className="h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-105" />
+              <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="absolute inset-0" className="h-full w-full object-cover" />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
                 <Sparkles className="h-16 w-16 text-zinc-300" />
@@ -168,11 +165,11 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
   }
 
   return (
-    <motion.article layout variants={cardVariants} whileHover={hoverMotion} transition={{ duration: 0.3, ease: easeOut }} className="flex h-full flex-col min-w-0" onMouseEnter={() => preloadPage(`/post/${post.id}`)}>
-      <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 transition-all duration-500 hover:-translate-y-1 dark:hover:border-zinc-700">
+    <motion.article layout variants={cardVariants} transition={{ duration: 0.3, ease: easeOut }} className="flex h-full flex-col min-w-0" onMouseEnter={() => preloadPage(`/post/${post.id}`)}>
+      <div className="group relative flex h-full flex-col overflow-hidden rounded-xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 dark:hover:border-zinc-700">
         <Link to={`/post/${post.id}`} className="group/image relative aspect-[16/9] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
-            <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" width={1600} height={1000} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover/image:scale-105" />
+            <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" width={1600} height={1000} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-300">
               <Sparkles className="h-10 w-10 opacity-50" />
