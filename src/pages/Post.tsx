@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
@@ -13,15 +12,12 @@ import { getPostById, getPosts } from '@/services/posts';
 import { Post as PostType, PostAuthor } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
-import { ImageViewer } from '../components/ImageViewer';
-import { ShareModal } from '../components/ShareModal';
-import { TableOfContents } from '../components/TableOfContents';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { NotFoundState } from '@/components/NotFoundState';
-import { ReadingProgressBadge } from '@/components/ReadingProgressBadge';
 import { extractMarkdownHeadings, extractTextFromReactNode, slugifyHeading } from '@/utils/headings';
 import type { MarkdownHeading } from '@/utils/headings';
 import { formatDate } from '@/utils/date';
+
 
 type BlockCodeProps = {
   isBlock?: boolean;
@@ -78,6 +74,10 @@ const getDisplayAuthors = (post: PostType): PostAuthor[] => {
   ];
 };
 
+const ImageViewer = lazy(() => import('../components/ImageViewer').then((m) => ({ default: m.ImageViewer })));
+const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
+const TableOfContents = lazy(() => import('../components/TableOfContents').then((m) => ({ default: m.TableOfContents })));
+const ReadingProgressBadge = lazy(() => import('../components/ReadingProgressBadge').then((m) => ({ default: m.ReadingProgressBadge })));
 const MAX_CODE_LINES = 30;
 
 const extractLangFromChildren = (children: React.ReactNode): string | undefined => {
@@ -91,6 +91,7 @@ const extractLangFromChildren = (children: React.ReactNode): string | undefined 
 };
 
 const getLangDisplayName = (lang: string): string => {
+
   const langMap: Record<string, string> = {
     js: 'JavaScript', jsx: 'JSX', ts: 'TypeScript', tsx: 'TSX',
     py: 'Python', rb: 'Ruby', go: 'Go', rs: 'Rust',
@@ -671,15 +672,20 @@ export const Post = () => {
 
   return (
     <>
-      <ImageViewer src={previewImage?.src || null} alt={previewImage?.alt} onClose={() => setPreviewImage(null)} />
-      <ReadingProgressBadge targetRef={articleBodyRef} onVisibilityChange={setMobileFloatingVisible} />
-      <TableOfContents
-        headings={headings}
-        mobileShowTrigger={mobileFloatingVisible}
-        desktopShowTrigger={headings.length > 0}
-      />
+      <Suspense fallback={null}>
+        {previewImage && <ImageViewer src={previewImage.src} alt={previewImage.alt} onClose={() => setPreviewImage(null)} />}
+        <ReadingProgressBadge targetRef={articleBodyRef} onVisibilityChange={setMobileFloatingVisible} />
+        {headings.length > 0 && (
+          <TableOfContents
+            headings={headings}
+            mobileShowTrigger={mobileFloatingVisible}
+            desktopShowTrigger={headings.length > 0}
+          />
+        )}
+      </Suspense>
 
       <article>
+
         <Seo
           title={post.title}
           description={post.excerpt}
@@ -878,8 +884,19 @@ export const Post = () => {
         </div>
       </article>
 
-      <ShareModal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} title={post.title} excerpt={post.excerpt} url={`${typeof window !== 'undefined' ? window.location.origin : siteConfig.url}/post/${post.id}`} />
+      <Suspense fallback={null}>
+        {shareModalOpen && (
+          <ShareModal
+            isOpen={shareModalOpen}
+            onClose={() => setShareModalOpen(false)}
+            title={post.title}
+            excerpt={post.excerpt}
+            url={`${typeof window !== 'undefined' ? window.location.origin : siteConfig.url}/post/${post.id}`}
+          />
+        )}
+      </Suspense>
     </>
   );
 };
+
 

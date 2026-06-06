@@ -3,9 +3,17 @@ export const registerServiceWorker = () => {
     return;
   }
 
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((error) => {
-      console.error('Service worker registration failed:', error);
+  const register = () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // 静默失败，避免生产环境输出无用日志
     });
-  });
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(register, { timeout: 2000 });
+    return;
+  }
+
+  window.setTimeout(register, 1200);
 };
+

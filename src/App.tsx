@@ -1,10 +1,9 @@
-import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AnimatePresence, motion } from 'framer-motion';
 import { flushSync } from 'react-dom';
 import { Layout } from './components/Layout';
-import { CookieNotice } from './components/CookieNotice';
 import { siteConfig } from '@config/site.config';
 import { pageLoaders } from './utils/preload';
 
@@ -18,6 +17,11 @@ const Tags = lazy(pageLoaders['/tags']);
 const CoverGenerator = lazy(pageLoaders['/cover']);
 const Sponsor = lazy(pageLoaders['/sponsor']);
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
+const CookieNotice = lazy(() => import('./components/CookieNotice').then((m) => ({ default: m.CookieNotice })));
+
+type ViewTransitionDocument = Document & {
+  startViewTransition?: (callback: () => void) => void;
+};
 
 const LoadingScreen: React.FC = () => {
   const letterVariants = {
@@ -71,8 +75,8 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error) {
-    console.error('App Error:', error);
+  componentDidCatch() {
+    // 生产环境静默处理，避免额外日志开销
   }
 
   render() {
@@ -99,20 +103,21 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 const AppRoutes: React.FC = () => {
   const location = useLocation();
   const [displayLocation, setDisplayLocation] = useState(location);
-  const hasViewTransition = typeof document !== 'undefined' && 'startViewTransition' in document;
+  const transitionDocument = document as ViewTransitionDocument;
+  const hasViewTransition = typeof document !== 'undefined' && typeof transitionDocument.startViewTransition === 'function';
 
   useEffect(() => {
     if (location.pathname === displayLocation.pathname && location.search === displayLocation.search) {
       return;
     }
 
-    if (hasViewTransition) {
-      const x = (window.__lastClickX ?? window.innerWidth / 2) / window.innerWidth * 100;
-      const y = (window.__lastClickY ?? 0) / window.innerHeight * 100;
+    if (hasViewTransition && transitionDocument.startViewTransition) {
+      const x = ((window as Window & { __lastClickX?: number }).__lastClickX ?? window.innerWidth / 2) / window.innerWidth * 100;
+      const y = ((window as Window & { __lastClickY?: number }).__lastClickY ?? 0) / window.innerHeight * 100;
       document.documentElement.style.setProperty('--vt-origin-x', `${x}%`);
       document.documentElement.style.setProperty('--vt-origin-y', `${y}%`);
 
-      (document as any).startViewTransition(() => {
+      transitionDocument.startViewTransition(() => {
         flushSync(() => {
           setDisplayLocation(location);
         });
@@ -120,7 +125,7 @@ const AppRoutes: React.FC = () => {
     } else {
       setDisplayLocation(location);
     }
-  }, [location]);
+  }, [displayLocation.pathname, displayLocation.search, hasViewTransition, location, transitionDocument]);
 
   useEffect(() => {
     document.title = siteConfig.title;
@@ -128,8 +133,8 @@ const AppRoutes: React.FC = () => {
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      (window as any).__lastClickX = e.clientX;
-      (window as any).__lastClickY = e.clientY;
+      (window as Window & { __lastClickX?: number; __lastClickY?: number }).__lastClickX = e.clientX;
+      (window as Window & { __lastClickX?: number; __lastClickY?: number }).__lastClickY = e.clientY;
     };
     window.addEventListener('click', handler, { passive: true });
     return () => window.removeEventListener('click', handler);
@@ -163,21 +168,24 @@ const App: React.FC = () => {
 
     return sessionStorage.getItem('hasVisited') !== 'true';
   });
-
+  const [cookieNoticeReady, setCookieNoticeReady] = useState(false);
   const [showCookieNotice, setShowCookieNotice] = useState(false);
 
   useEffect(() => {
+    let timer = 0;
+
     if (!showLoadingScreen) {
-      // 非首次访问也延迟显示Cookie通知
-      const timer = window.setTimeout(() => {
+      timer = window.setTimeout(() => {
+        setCookieNoticeReady(true);
         setShowCookieNotice(true);
       }, 2000);
       return () => window.clearTimeout(timer);
     }
 
-    const timer = window.setTimeout(() => {
+    timer = window.setTimeout(() => {
       sessionStorage.setItem('hasVisited', 'true');
       setShowLoadingScreen(false);
+      setCookieNoticeReady(true);
       setShowCookieNotice(true);
     }, 900);
 
@@ -186,13 +194,25 @@ const App: React.FC = () => {
     };
   }, [showLoadingScreen]);
 
+  const cookieNotice = useMemo(() => {
+    if (!cookieNoticeReady || !showCookieNotice) {
+      return null;
+    }
+
+    return (
+      <Suspense fallback={null}>
+        <CookieNotice />
+      </Suspense>
+    );
+  }, [cookieNoticeReady, showCookieNotice]);
+
   return (
     <HelmetProvider>
       <ErrorBoundary>
         <Router>
           <AppRoutes />
           <AnimatePresence>{showLoadingScreen && <LoadingScreen />}</AnimatePresence>
-          {showCookieNotice && <CookieNotice />}
+          {cookieNotice}
         </Router>
       </ErrorBoundary>
     </HelmetProvider>
@@ -200,3 +220,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

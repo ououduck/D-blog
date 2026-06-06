@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Calendar, ArrowUpRight, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
@@ -6,13 +6,15 @@ import { getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
-import { ShareModal } from '../components/ShareModal';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { getDateTimestamp } from '@/utils/date';
 import { easeOut, easeSmooth, fadeInUp, staggerContainer, cardHover, chipHover } from '@/utils/motion';
 import { preloadPage } from '@/utils/preload';
+
+const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
+
 
 const ALL_CATEGORY = '全部';
 
@@ -542,8 +544,9 @@ export const Home = () => {
         )}
       </motion.div>
 
-      <ShareModal isOpen={!!sharePost} onClose={() => setSharePost(null)} title={sharePost?.title || ''} excerpt={sharePost?.excerpt || ''} url={sharePost ? `${window.location.origin}/post/${sharePost.id}` : ''} />
+      {shareModal}
     </div>
   );
 };
+
 

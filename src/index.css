@@ -16,11 +16,6 @@
     color-scheme: dark;
   }
 
-  /* Layout optimization */
-  body,
-  #root {
-  }
-
   body {
     cursor: default;
   }
@@ -179,30 +174,6 @@ html.theme-switching *:not(script):not(style)::after {
     }
   }
 
-  .bg-noise {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100vh;
-    background-image:
-      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px),
-      repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
-    opacity: 0.3;
-    z-index: -1;
-    pointer-events: none;
-    will-change: auto;
-    contain: strict;
-  }
-  .dark .bg-noise {
-    opacity: 0.2;
-    background-image:
-      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,.02) 2px, rgba(255,255,255,.02) 4px),
-      repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,.02) 2px, rgba(255,255,255,.02) 4px);
-  }
-
   html {
     scrollbar-gutter: stable;
   }
@@ -231,7 +202,7 @@ html.theme-switching *:not(script):not(style)::after {
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: transparent; 
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, rgba(168, 162, 158, 0.58), rgba(120, 113, 108, 0.48));
@@ -248,20 +219,13 @@ html.theme-switching *:not(script):not(style)::after {
     background: linear-gradient(180deg, rgba(113, 113, 122, 0.86), rgba(82, 82, 91, 0.8));
   }
 
-  
-  /* Premium text effects */
-  .text-glow {
-    text-shadow: 0 0 15px rgba(192, 57, 43, 0.2);
-  }
-
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
-
 }
 
 .mobile-nav-backdrop,
@@ -311,8 +275,6 @@ html.theme-switching *:not(script):not(style)::after {
 }
 
 /* ===== 排版增强 ===== */
-
-/* 表格样式增强 */
 .prose table {
   @apply w-full border-collapse text-sm md:text-[15px];
   font-variant-numeric: tabular-nums;
@@ -343,17 +305,14 @@ html.theme-switching *:not(script):not(style)::after {
   @apply px-3 py-2.5 align-middle text-zinc-700 dark:text-zinc-300 md:px-4 md:py-3;
 }
 
-/* 表格横向滚动容器 */
 .table-wrapper {
   @apply my-8 overflow-x-auto rounded-xl border border-zinc-200/80 dark:border-zinc-800/80;
   -webkit-overflow-scrolling: touch;
 }
 
-/* 引用块增强 */
 .prose blockquote p:first-of-type::before { content: ''; }
 .prose blockquote p:last-of-type::after { content: ''; }
 
-/* 水平线增强 */
 .prose hr {
   @apply relative border-0;
 }
@@ -362,30 +321,24 @@ html.theme-switching *:not(script):not(style)::after {
   @apply absolute left-1/2 top-1/2 h-px w-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-300 dark:bg-zinc-600;
 }
 
-/* 有序列表序号增强 */
 .prose ol > li::marker {
   @apply font-bold text-zinc-400 dark:text-zinc-500;
 }
 
-/* 标题锚点链接 */
 .heading-anchor-wrapper {
   @apply relative group/heading;
 }
 .heading-anchor {
-  @apply absolute -left-8 top-1/2 -translate-y-1/2 hidden text-zinc-300 opacity-0 transition-all hover:text-zinc-900 dark:text-zinc-600 dark:hover:text-zinc-100 md:inline-flex;
+  @apply absolute -left-8 top-1/2 hidden -translate-y-1/2 text-zinc-300 opacity-0 transition-all hover:text-zinc-900 dark:text-zinc-600 dark:hover:text-zinc-100 md:inline-flex;
 }
 .group\/heading:hover .heading-anchor {
   @apply opacity-100;
 }
 
-/* ===== 代码块增强 ===== */
-
-/* 语言标签 */
 .code-lang-badge {
   @apply absolute left-3 top-3 z-10 rounded-md bg-zinc-600/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-200 backdrop-blur-sm;
 }
 
-/* 代码块折叠 */
 .code-block-collapsed {
   max-height: 20rem;
 }
@@ -396,28 +349,24 @@ html.theme-switching *:not(script):not(style)::after {
   @apply absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center rounded-b-xl bg-gradient-to-t from-[#0d1117] via-[#0d1117]/90 to-transparent py-6 text-sm text-zinc-400 transition-colors hover:text-zinc-200;
 }
 
-/* 复制按钮动画 */
-.copy-btn-success {
-  @apply text-green-400;
-}
-
-/* ===== 返回顶部按钮 ===== */
 .back-to-top-btn {
   @apply fixed bottom-28 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-500 shadow-lg backdrop-blur-xl transition-all hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100 md:bottom-20;
 }
 
-/* ===== 上一篇/下一篇导航 ===== */
 .post-nav-item {
   @apply flex-1 rounded-2xl border border-zinc-200 p-4 transition-all hover:border-zinc-400 hover:shadow-md dark:border-zinc-800 dark:hover:border-zinc-600 md:p-6;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 80px;
 }
+
 .post-nav-label {
   @apply mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500;
 }
+
 .post-nav-title {
   @apply line-clamp-2 text-sm font-semibold text-ink dark:text-zinc-100 md:text-[15px];
 }
 
-/* ===== 图片说明文字 ===== */
 .image-caption {
   @apply mt-3 text-center text-[13px] leading-relaxed text-zinc-400 dark:text-zinc-500;
 }
@@ -426,22 +375,14 @@ html.theme-switching *:not(script):not(style)::after {
   @apply text-[10px];
 }
 
-/* ===== 暗色模式下图片边框 ===== */
 .dark .prose img:not(.no-dark-border) {
   @apply ring-1 ring-white/10;
 }
 
-/* ===== 键盘快捷键提示 ===== */
 .kbd {
   @apply inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 px-1.5 text-[11px] font-medium leading-none text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-400;
 }
 
-/* ===== TOC 阅读进度增强 ===== */
-.toc-progress-ring {
-  transition: stroke-dashoffset 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* ===== 暗色模式 prose 对比度增强 ===== */
 .dark .prose {
   --tw-prose-body: #d4d4d8;
   --tw-prose-headings: #fafafa;
@@ -461,11 +402,7 @@ html.theme-switching *:not(script):not(style)::after {
   --tw-prose-td-borders: #27272a;
 }
 
-/* ===== 移动端性能优化 ===== */
-
-/* 移动端禁用 backdrop-blur，用纯色半透明替代，大幅降低GPU消耗 */
 @media (max-width: 767px) {
-  /* 搜索modal遮罩 */
   [role="dialog"] .backdrop-blur-sm,
   .backdrop-blur-sm {
     -webkit-backdrop-filter: none !important;
@@ -483,22 +420,16 @@ html.theme-switching *:not(script):not(style)::after {
   }
 }
 
-/* content-visibility: 离屏内容跳过渲染 */
 footer {
   content-visibility: auto;
   contain-intrinsic-size: auto 500px;
 }
 
-.post-nav-item {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 80px;
-}
-
-/* 文章内容区域优化 */
 article .prose h2,
 article .prose h3,
 article .prose h4 {
   content-visibility: auto;
   contain-intrinsic-size: auto 48px;
 }
+
 
