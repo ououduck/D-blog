@@ -37,6 +37,14 @@ const MOBILE_TOC_SHEET_STYLE = {
 const MOBILE_SCROLL_STYLE = {
   WebkitOverflowScrolling: 'touch' as const
 };
+const HEADING_SCROLL_OFFSET = 104;
+
+const getHeadingTop = (element: HTMLElement) => element.getBoundingClientRect().top + window.scrollY;
+
+const getHeadingById = (id: string) => document.getElementById(id) as HTMLElement | null;
+
+const getHeadingScrollTop = (element: HTMLElement) => Math.max(0, getHeadingTop(element) - HEADING_SCROLL_OFFSET);
+
 
 
 
@@ -123,40 +131,58 @@ export const TableOfContents: React.FC<{
   }, [headingTree]);
 
   useEffect(() => {
-    if (headings.length === 0) {
+    if (headings.length === 0 || typeof window === 'undefined') {
       setActiveHeadingId(null);
       return;
     }
 
-    // 使用 Intersection Observer 替代滚动监听
-    const observerOptions = {
-      rootMargin: '-100px 0px -60% 0px',
-      threshold: 0
-    };
+    let animationFrameId: number | null = null;
 
-    const observerCallback: IntersectionObserverCallback = (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveHeadingId(entry.target.id);
+    const syncActiveHeading = () => {
+      animationFrameId = null;
+      const visibleBoundary = window.scrollY + HEADING_SCROLL_OFFSET + 1;
+      let nextActiveId = headings[0]?.id ?? null;
+
+      for (const heading of headings) {
+        const element = getHeadingById(heading.id);
+
+        if (!element) {
+          continue;
         }
-      });
+
+        if (getHeadingTop(element) <= visibleBoundary) {
+          nextActiveId = heading.id;
+        } else {
+          break;
+        }
+      }
+
+      setActiveHeadingId((currentId) => (currentId === nextActiveId ? currentId : nextActiveId));
     };
 
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
-
-    // 观察所有标题元素
-    headings.forEach((heading) => {
-      const element = document.getElementById(heading.id);
-      if (element) {
-        observer.observe(element);
+    const requestSyncActiveHeading = () => {
+      if (animationFrameId !== null) {
+        return;
       }
-    });
 
-    // 初始化时设置第一个标题为激活状态
+      animationFrameId = window.requestAnimationFrame(syncActiveHeading);
+    };
+
     setActiveHeadingId(headings[0]?.id ?? null);
+    requestSyncActiveHeading();
+
+    window.addEventListener('scroll', requestSyncActiveHeading, { passive: true });
+    window.addEventListener('resize', requestSyncActiveHeading);
+    window.addEventListener('hashchange', requestSyncActiveHeading);
 
     return () => {
-      observer.disconnect();
+      if (animationFrameId !== null) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+
+      window.removeEventListener('scroll', requestSyncActiveHeading);
+      window.removeEventListener('resize', requestSyncActiveHeading);
+      window.removeEventListener('hashchange', requestSyncActiveHeading);
     };
   }, [headings]);
 
@@ -225,14 +251,12 @@ export const TableOfContents: React.FC<{
   }, [activeHeadingId, expandedMap, isOpen]);
 
   const scrollToHeading = (id: string) => {
-    const element = document.getElementById(id);
+    const element = getHeadingById(id);
 
     if (!element) {
       return;
     }
 
-    const offset = 100;
-    const offsetPosition = element.getBoundingClientRect().top + window.pageYOffset - offset;
     const branchAncestorIds = getAncestorIds(id, parentMap);
     const branchRootId = getRootBranchId(id, parentMap);
 
@@ -256,9 +280,15 @@ export const TableOfContents: React.FC<{
     setActiveHeadingId(id);
 
     window.scrollTo({
-      top: offsetPosition,
+      top: getHeadingScrollTop(element),
       behavior: 'smooth'
     });
+
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.hash = id;
+      window.history.replaceState({}, '', url.toString());
+    }
 
     setIsOpen(false);
   };

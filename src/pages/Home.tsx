@@ -112,7 +112,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
       >
         <div className="relative flex h-auto flex-col overflow-hidden rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 md:h-[440px] md:flex-row md:rounded-2xl">
           <Link to={`/post/${post.id}`} className="group relative block h-56 w-full overflow-hidden md:h-full md:w-3/5" aria-label={`阅读文章：${post.title}`}>
-            <div className="absolute inset-0 animate-pulse bg-zinc-200 dark:bg-zinc-800" />
+
             {post.coverImage ? (
               <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="absolute inset-0" className="h-full w-full object-cover" effect="fade" />
             ) : (
@@ -120,7 +120,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
                 <Sparkles className="h-16 w-16 text-zinc-300" />
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-black/10" />
+
             <div className="absolute left-4 top-4 md:left-6 md:top-6">
               <CategoryBadge text={post.category} />
             </div>

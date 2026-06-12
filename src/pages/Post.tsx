@@ -293,27 +293,30 @@ const isSafeMarkdownHref = (href?: string) => {
 const createMarkdownComponents = (
   onPreviewImage: (image: { src: string; alt?: string }) => void,
   mermaidRenderer: MermaidRenderer | null,
-  headings: MarkdownHeading[],
-  headingIdMap: Map<string, string>
+  headings: MarkdownHeading[]
 ): Components => {
   let headingCursor = 0;
   const fallbackHeadingIds = new Map<string, number>();
 
   const resolveHeadingId = (level: number, children: React.ReactNode) => {
     const rawText = extractTextFromReactNode(children);
-    const slugId = slugifyHeading(rawText);
-    const cachedId = headingIdMap.get(slugId);
-    if (cachedId) return cachedId;
+    const text = rawText.trim();
 
     for (let index = headingCursor; index < headings.length; index += 1) {
       const heading = headings[index];
-      if (heading.level === level && heading.rawText === rawText) {
+      if (heading.level === level && heading.rawText === text) {
         headingCursor = index + 1;
         return heading.id;
       }
     }
 
-    const fallbackBaseId = slugId || 'section';
+    for (const heading of headings) {
+      if (heading.level === level && heading.rawText === text) {
+        return heading.id;
+      }
+    }
+
+    const fallbackBaseId = slugifyHeading(text) || 'section';
     const duplicateCount = (fallbackHeadingIds.get(fallbackBaseId) ?? 0) + 1;
     fallbackHeadingIds.set(fallbackBaseId, duplicateCount);
     return duplicateCount === 1 ? fallbackBaseId : `${fallbackBaseId}-${duplicateCount}`;
@@ -387,11 +390,11 @@ const createMarkdownComponents = (
       return <a href={safeHref} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
     },
     img: ({ title, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => (
-      <figure className="my-8 md:my-12">
+      <figure className="group/myimage my-8 md:my-12">
         <button
           type="button"
           onClick={() => onPreviewImage({ src: props.src || '', alt: props.alt })}
-          className="block w-full rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100"
+          className="relative block w-full overflow-hidden rounded-2xl border border-zinc-200/80 bg-zinc-100/70 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:border-zinc-800/80 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:focus-visible:outline-zinc-100"
           aria-label={props.alt ? `预览图片：${props.alt}` : '预览图片'}
         >
           <ProgressiveImage
@@ -399,12 +402,15 @@ const createMarkdownComponents = (
             loading="lazy"
             decoding="async"
             wrapperClassName="rounded-2xl"
-            className="cursor-zoom-in rounded-2xl shadow-lg"
+            className="cursor-zoom-in rounded-2xl shadow-lg transition duration-500 group-hover/myimage:scale-[1.015]"
           />
+          <span className="pointer-events-none absolute right-3 top-3 rounded-full border border-white/30 bg-black/45 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/90 opacity-0 shadow-lg backdrop-blur-md transition duration-300 group-hover/myimage:opacity-100 group-focus-visible/myimage:opacity-100">
+            点击预览
+          </span>
         </button>
-        {(title || props.alt) && (
-          <figcaption className="image-caption">
-            {title || props.alt}
+        {(props.alt || title) && (
+          <figcaption className="mt-3 text-center text-xs text-zinc-500 dark:text-zinc-400">
+            {props.alt || title}
           </figcaption>
         )}
       </figure>
@@ -458,9 +464,6 @@ export const Post = () => {
   const [mobileFloatingVisible, setMobileFloatingVisible] = useState(false);
   const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostMetadata | null; next: PostMetadata | null }>({ prev: null, next: null });
   const articleBodyRef = useRef<HTMLDivElement>(null);
-
-  // 使用 Map 缓存标题映射
-  const headingIdMapRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
@@ -576,16 +579,34 @@ export const Post = () => {
   }, [post?.content]);
 
   const headings = useMemo(() => extractMarkdownHeadings(post?.content ?? ''), [post?.content]);
-  
-  // 当标题列表变化时，重建映射缓存
+
   useEffect(() => {
-    const newMap = new Map<string, string>();
-    headings.forEach((heading) => {
-      const slugId = slugifyHeading(heading.text);
-      newMap.set(slugId, heading.id);
-    });
-    headingIdMapRef.current = newMap;
-  }, [headings]);
+    if (!post?.content || headings.length === 0 || typeof window === 'undefined') {
+      return;
+    }
+
+    const hashId = decodeURIComponent(window.location.hash.slice(1));
+
+    if (!hashId) {
+      return;
+    }
+
+    const scrollToHashHeading = () => {
+      const element = document.getElementById(hashId);
+
+      if (!element) {
+        return;
+      }
+
+      window.scrollTo({
+        top: Math.max(0, element.getBoundingClientRect().top + window.scrollY - 104),
+        behavior: 'auto'
+      });
+    };
+
+    const timeoutId = window.setTimeout(scrollToHashHeading, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [headings, post?.content]);
 
   // 加载相邻文章（上一篇/下一篇）
   useEffect(() => {
@@ -623,7 +644,7 @@ export const Post = () => {
   }, [previewImage, shareModalOpen, adjacentPosts, navigate]);
 
   const markdownComponents = useMemo(
-    () => createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, headings, headingIdMapRef.current),
+    () => createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, headings),
     [mermaidRenderer, headings]
   );
 

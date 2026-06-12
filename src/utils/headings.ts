@@ -9,6 +9,7 @@ const INLINE_MARKDOWN_PATTERNS: Array<[RegExp, string]> = [
   [/\\([\\`*_[\]{}()#+\-.!>])/g, '$1']
 ];
 const MARKDOWN_HEADING_PATTERN = /^(#{1,3})\s+(.+)$/gm;
+const FENCED_CODE_BLOCK_PATTERN = /^(```|~~~)[\s\S]*?^\1\s*$/gm;
 const TOC_EMOJI_PATTERN = /[\p{Extended_Pictographic}\p{Emoji_Modifier}\uFE0F\u200D\u20E3]/gu;
 
 export interface MarkdownHeading {
@@ -54,8 +55,9 @@ const createUniqueHeadingId = (baseId: string, seenIds: Map<string, number>) => 
 export const extractMarkdownHeadings = (content: string): MarkdownHeading[] => {
   const seenIds = new Map<string, number>();
   const headings: MarkdownHeading[] = [];
+  const contentWithoutCodeBlocks = content.replace(FENCED_CODE_BLOCK_PATTERN, '');
 
-  for (const match of content.matchAll(MARKDOWN_HEADING_PATTERN)) {
+  for (const match of contentWithoutCodeBlocks.matchAll(MARKDOWN_HEADING_PATTERN)) {
     const level = match[1]?.length ?? 1;
     const rawText = stripInlineMarkdown(match[2] ?? '');
     const text = stripEmojiFromHeadingText(rawText) || rawText;

@@ -121,9 +121,9 @@ export const Tags = () => {
 
   const getTagSize = (count: number) => {
     const ratio = count / maxCount;
-    if (ratio > 0.7) return 'text-2xl md:text-3xl';
-    if (ratio > 0.4) return 'text-xl md:text-2xl';
-    return 'text-base md:text-lg';
+    if (ratio > 0.7) return 'text-lg sm:text-2xl md:text-3xl';
+    if (ratio > 0.4) return 'text-base sm:text-xl md:text-2xl';
+    return 'text-sm sm:text-base md:text-lg';
   };
 
   const updateTagParam = (nextTag?: string) => {
@@ -193,8 +193,8 @@ export const Tags = () => {
 
           {!selectedTag ? (
             allTags.length > 0 ? (
-              <div className="rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 p-8 md:p-12">
-                <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
+              <div className="rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 p-4 sm:p-6 md:p-12">
+                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 md:gap-6">
                   {tags.map((tag, index) => (
                     <motion.button
                       key={tag.name}
@@ -202,11 +202,11 @@ export const Tags = () => {
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.2, delay: index * 0.015, ease: easeOut }}
                       onClick={() => updateTagParam(tag.name)}
-                      className={`${getTagSize(tag.count)} relative rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 px-5 py-2.5 font-bold text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-100 dark:hover:text-zinc-100`}
+                      className={`${getTagSize(tag.count)} relative rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 px-3 py-1.5 font-bold leading-tight text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-900 sm:rounded-xl sm:px-5 sm:py-2.5 dark:text-zinc-300 dark:hover:border-zinc-100 dark:hover:text-zinc-100`}
                   aria-label={`查看标签 ${tag.name}，共 ${tag.count} 篇文章`}
                 >
                   {tag.name}
-                  <span className="ml-2 text-xs opacity-60">({tag.count})</span>
+                  <span className="ml-1.5 text-[10px] opacity-60 sm:ml-2 sm:text-xs">({tag.count})</span>
                 </motion.button>
                   ))}
                 </div>
