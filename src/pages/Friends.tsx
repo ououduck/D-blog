@@ -6,7 +6,7 @@ import { getFriends } from '@/services/friends';
 import { Seo } from '../components/Seo';
 import { Friend } from '../types';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
-import { easeOut, fadeInUp, staggerContainer, cardHover } from '@/utils/motion';
+import { easeOut, fadeInUp, staggerContainer } from '@/utils/motion';
 
 export const Friends = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -91,19 +91,20 @@ export const Friends = () => {
   }, [friends, searchQuery]);
 
   return (
-    <div className="py-12 md:py-20">
+    <div className="pb-12 pt-8 md:pb-20 md:pt-12">
       <Seo title="友链" description="D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链。" />
 
-      <div className="mb-16 text-center">
-        <h1 className="mb-6 font-serif text-4xl font-bold text-zinc-900 dark:text-zinc-100 md:text-5xl">友情链接</h1>
-        <p className="mx-auto max-w-xl text-zinc-600 dark:text-zinc-400">
+      <header className="mb-12 border-b border-zinc-200 pb-8 dark:border-zinc-800 md:pb-10">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Friends Directory</p>
+        <h1 className="font-serif text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">友情链接</h1>
+        <p className="mt-4 max-w-2xl text-zinc-600 dark:text-zinc-400">
           这里汇集了一些优秀的技术博客和有趣的网站。如果你也想交换友链，可以直接在仓库里提交 PR。
         </p>
-        <p className="mt-4 inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 px-4 py-2 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-400">
+        <p className="mt-4 flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
           <Sparkles size={14} />
           以下排名不分先后，每次刷新都会随机排序
         </p>
-      </div>
+      </header>
 
       {/* 申请友链折叠卡片 */}
       <div className="mb-12 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
@@ -214,7 +215,7 @@ export const Friends = () => {
         </AnimatePresence>
       </div>
 
-      <div className="mb-8 rounded-2xl border border-zinc-200/80 bg-white/90 p-4 dark:border-zinc-800/80 dark:bg-zinc-900/90">
+      <div className="mb-8 border-y border-zinc-200 py-4 dark:border-zinc-800">
         <label className="group relative block">
           <span className="sr-only">搜索友链</span>
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-zinc-900 dark:group-focus-within:text-zinc-100" />
@@ -223,7 +224,7 @@ export const Friends = () => {
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="按站点名称、简介或域名搜索友链..."
-            className="w-full rounded-full border border-zinc-200 bg-white py-3 pl-11 pr-11 text-sm text-zinc-900 outline-none transition-colors focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-600"
+            className="w-full border border-zinc-300 bg-white py-3 pl-11 pr-11 text-sm text-zinc-900 outline-none transition-colors focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-100"
           />
           {searchQuery && (
             <button type="button" onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100" aria-label="清除友链搜索">
@@ -252,7 +253,7 @@ export const Friends = () => {
               href={friend.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative block overflow-hidden rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 p-6 transition-colors duration-150 dark:hover:border-zinc-700"
+              className="group relative block border-t border-zinc-200 py-5 transition-colors duration-150 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
             >
               <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:text-zinc-500">
                 <ExternalLink size={16} />
@@ -264,7 +265,7 @@ export const Friends = () => {
                 <div className="min-w-0 flex-1">
                   <h2 className="mb-1 truncate font-serif text-lg font-bold text-zinc-900 transition-colors group-hover:text-zinc-700 dark:text-zinc-100 dark:group-hover:text-zinc-300">{friend.name}</h2>
                   <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{friend.description}</p>
-                  <div className="mt-3 inline-flex max-w-full items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                  <div className="mt-3 inline-flex max-w-full items-center gap-1.5 border-b border-zinc-300 py-1 text-xs font-medium text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
                     <Globe2 size={12} />
                     <span className="truncate">{getFriendDomain(friend.url)}</span>
                   </div>
@@ -275,7 +276,7 @@ export const Friends = () => {
 
         {loading &&
           Array.from({ length: 3 }).map((_, index) => (
-            <motion.div key={`skeleton-${index}`} variants={itemVariants} className="animate-pulse rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 p-6">
+            <motion.div key={`skeleton-${index}`} variants={itemVariants} className="animate-pulse border-t border-zinc-200 py-5 dark:border-zinc-800">
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 flex-shrink-0 rounded-full bg-zinc-100 dark:bg-zinc-800" />
                 <div className="flex-1 space-y-3">
@@ -288,7 +289,7 @@ export const Friends = () => {
           ))}
 
         {!loading && !loadError && filteredFriends.length === 0 && (
-          <div className="col-span-full rounded-2xl border border-dashed border-zinc-200 bg-white/90 p-10 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-zinc-400">
+          <div className="col-span-full border-y border-dashed border-zinc-300 py-10 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
             没有找到匹配的友链，试试更短的关键词。
           </div>
         )}

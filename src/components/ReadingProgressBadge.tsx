@@ -1,7 +1,6 @@
 import React, { RefObject, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { BookOpenCheck } from 'lucide-react';
 
 interface ReadingProgressBadgeProps {
   targetRef: RefObject<HTMLElement | null>;
@@ -67,20 +66,15 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       ? createPortal(
           <div
             style={MOBILE_BADGE_STYLE}
-            className="pointer-events-none fixed z-40 rounded-2xl border border-zinc-200/80 bg-white/92 px-2.5 py-2 shadow-[0_16px_34px_-24px_rgba(24,24,27,0.28)] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/84 md:hidden"
+            className="pointer-events-none fixed z-40 rounded-xl border border-zinc-200 bg-white px-2.5 py-2 dark:border-zinc-800 dark:bg-zinc-900 md:hidden"
           >
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 dark:text-zinc-400">
-                <BookOpenCheck size={11} className="text-zinc-700 dark:text-zinc-300" />
-                进度
-              </span>
-              <span className="font-serif text-xs font-bold text-ink dark:text-white">
-                {percentage}%
-              </span>
+            <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+              <span>进度</span>
+              <span className="tabular-nums text-zinc-800 dark:text-zinc-200">{percentage}%</span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
+            <div className="h-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-zinc-700 via-zinc-900 to-zinc-950 dark:from-zinc-300 dark:via-zinc-100 dark:to-zinc-50"
+                className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
                 animate={{ width: `${percentage}%` }}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
               />
@@ -98,19 +92,14 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
             className="pointer-events-none fixed z-[50] hidden md:block"
             aria-hidden={!isVisible}
           >
-            <div className="min-w-[9.5rem] rounded-2xl border border-zinc-200/80 bg-white/92 px-4 py-3 shadow-[0_18px_48px_-30px_rgba(24,24,27,0.35)] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/84">
-              <div className="mb-2 flex items-center justify-between gap-3 md:mb-2.5">
-                <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">
-                  <BookOpenCheck size={14} className="text-zinc-700 dark:text-zinc-300" />
-                  阅读进度
-                </span>
-                <span className="font-serif text-lg font-bold text-ink dark:text-white">
-                  {percentage}%
-                </span>
+            <div className="min-w-[7rem] rounded-xl border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="mb-1 flex items-center justify-between gap-3 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                <span>阅读进度</span>
+                <span className="tabular-nums text-zinc-800 dark:text-zinc-200">{percentage}%</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
+              <div className="h-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
                 <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-zinc-700 via-zinc-900 to-zinc-950 dark:from-zinc-300 dark:via-zinc-100 dark:to-zinc-50"
+                  className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
                   animate={{ width: `${percentage}%` }}
                   transition={{ duration: 0.18, ease: 'easeOut' }}
                 />
@@ -126,8 +115,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       initial={false}
       animate={{
         opacity: isVisible ? 1 : 0,
-        y: isVisible ? 0 : 10,
-        scale: isVisible ? 1 : 0.98
+        y: isVisible ? 0 : 8
       }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
       aria-hidden={!isVisible}

@@ -899,36 +899,36 @@ export const CoverGenerator: React.FC = () => {
   }, [generateCover]);
 
   // ==================== UI 渲染 ====================
-  const inputClass = "w-full rounded-xl border border-zinc-200/80 bg-white px-4 py-2.5 text-ink outline-none transition-colors focus:border-ink dark:border-zinc-700/80 dark:bg-zinc-800 dark:text-white dark:focus:border-white";
+  const inputClass = "w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-ink outline-none transition-colors focus:border-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:focus:border-white";
   const rangeClass = "w-full accent-ink dark:accent-white";
-  const colorClass = "h-11 w-full cursor-pointer rounded-xl border border-zinc-200 dark:border-zinc-700";
-  const cardClass = "overflow-hidden rounded-3xl border border-zinc-200/70 bg-white transition-colors dark:border-zinc-800/80 dark:bg-zinc-900";
-  const dashedBtnClass = "flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-ink/5 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-white/5";
+  const colorClass = "h-11 w-full cursor-pointer rounded-lg border border-zinc-200 dark:border-zinc-700";
+  const cardClass = "overflow-hidden rounded-xl border border-zinc-200 bg-white transition-colors dark:border-zinc-800 dark:bg-zinc-900";
+  const dashedBtnClass = "flex items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-ink/5 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-white/5";
   const chipClass = "inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
 
   return (
     <div className="pb-20">
       <Seo title="封面生成" description="在线生成精美博客文章封面图片，支持自定义文字、图标、渐变背景与多种导出比例。" />
 
-      <div className="mb-8 rounded-[2rem] border border-zinc-200/70 bg-gradient-to-br from-zinc-50 via-white to-zinc-100/70 px-6 py-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.05)] dark:border-zinc-800/80 dark:bg-gradient-to-br dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950 md:px-10 md:py-10">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white/80 px-4 py-1.5 text-xs font-semibold tracking-[0.18em] text-zinc-500 shadow-sm dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-300">
+      <header className="mb-6 border-b border-zinc-200 px-1 pb-7 text-center dark:border-zinc-800 md:pb-9">
+        <div className="mb-3 inline-flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
           <Wand2 size={14} />
           COVER STUDIO
         </div>
-        <h1 className="mb-4 font-serif text-4xl font-bold tracking-tight text-ink dark:text-white md:text-6xl">封面生成器</h1>
-        <p className="mx-auto max-w-3xl text-base leading-7 text-zinc-500 dark:text-zinc-400 md:text-lg">
+        <h1 className="mb-3 font-serif text-3xl font-bold tracking-tight text-ink dark:text-white md:text-5xl">封面生成器</h1>
+        <p className="mx-auto max-w-3xl text-sm leading-6 text-zinc-500 dark:text-zinc-400 md:text-base">
           聚焦博客封面生成体验，保留现有的 <strong>纯黑</strong> 与 <strong>纯白</strong> 两种背景模板，补足更顺手的编辑、预览与导出能力。
         </p>
-      </div>
+      </header>
 
-      <div className="mb-6 flex flex-wrap justify-center gap-2 rounded-2xl border border-zinc-200/70 bg-white/75 p-2 shadow-sm backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-900/75">
+      <div className="mb-5 flex flex-wrap justify-center gap-1 border-b border-zinc-200 pb-3 dark:border-zinc-800">
         {(['content', 'style', 'layout', 'export'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition-all ${
+            className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors ${
               activeTab === tab
-                ? 'bg-ink text-white shadow-lg shadow-ink/20 dark:bg-white dark:text-ink dark:shadow-white/20'
+                ? 'bg-ink text-white dark:bg-white dark:text-ink'
                 : 'text-zinc-600 hover:bg-zinc-100 hover:text-ink dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'
             }`}
           >
@@ -937,8 +937,8 @@ export const CoverGenerator: React.FC = () => {
         ))}
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-1">
+      <div className="grid gap-5 lg:grid-cols-3 lg:gap-6">
+        <div className="order-2 space-y-4 lg:order-1 lg:col-span-1">
           {activeTab === 'content' && (
             <>
               <div className={cardClass}>
@@ -1032,7 +1032,7 @@ export const CoverGenerator: React.FC = () => {
                           <button
                             key={template.id}
                             onClick={() => setSelectedTemplate(template)}
-                            className={`group relative h-28 overflow-hidden rounded-2xl border transition-colors ${
+                            className={`group relative h-28 overflow-hidden rounded-xl border transition-colors ${
                               selectedTemplate.id === template.id
                                 ? 'border-ink ring-2 ring-ink/10 dark:border-white dark:ring-white/10'
                                 : 'border-zinc-200/80 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500'
@@ -1040,7 +1040,6 @@ export const CoverGenerator: React.FC = () => {
                             style={{ background: template.gradient }}
                             title={template.description || template.name}
                           >
-                            <div className={`absolute inset-0 ${template.id === 'white' ? 'bg-gradient-to-br from-black/0 via-black/0 to-black/5' : 'bg-gradient-to-br from-white/5 via-transparent to-white/10'}`} />
                             <div className="absolute inset-x-0 bottom-0 p-4 text-left">
                               <div className={`text-base font-bold ${template.id === 'white' ? 'text-ink' : 'text-white'}`}>{template.name}</div>
                               <div className={`mt-1 text-xs ${template.id === 'white' ? 'text-zinc-600' : 'text-white/70'}`}>{template.description}</div>
@@ -1051,7 +1050,7 @@ export const CoverGenerator: React.FC = () => {
                           </button>
                         ))}
                       </div>
-                      <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-700 dark:bg-zinc-800/60">
+                      <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-700 dark:bg-zinc-800/60">
                         <p className="mb-3 text-xs leading-6 text-zinc-500 dark:text-zinc-400">背景模板固定保留现有两种：<strong>纯黑</strong> 与 <strong>纯白</strong>。你仍可叠加自定义背景图片增强表现。</p>
                         <input ref={bgImageInputRef} type="file" accept="image/*" onChange={handleBgImageUpload} className="hidden" />
                         <button onClick={() => bgImageInputRef.current?.click()} className={dashedBtnClass + ' w-full'}>
@@ -1084,8 +1083,6 @@ export const CoverGenerator: React.FC = () => {
                     ].map((preset) => (
                       <motion.button
                         key={preset.name}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
                         onClick={preset.action}
                         className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-xs font-semibold text-zinc-700 transition-all hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-700"
                       >
@@ -1347,8 +1344,6 @@ export const CoverGenerator: React.FC = () => {
                     ]).map(({ mode, icon: Icon, label, desc }) => (
                       <motion.button
                         key={mode}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
                         onClick={() => setLayoutMode(mode)}
                         className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 transition-all ${
                           layoutMode === mode
@@ -1380,8 +1375,6 @@ export const CoverGenerator: React.FC = () => {
                     ]).map(({ align, icon: Icon, label }) => (
                       <motion.button
                         key={align}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
                         onClick={() => setTextAlign(align)}
                         className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 transition-all ${
                           textAlign === align
@@ -1521,31 +1514,25 @@ export const CoverGenerator: React.FC = () => {
 
               <div className="flex flex-col gap-2">
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                   onClick={generateCover}
                   disabled={isGenerating}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-zinc-100 px-4 py-3 font-semibold text-ink transition-all hover:bg-zinc-200 disabled:opacity-50 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 px-4 py-2.5 font-semibold text-ink transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
                 >
                   <RefreshCw size={18} className={isGenerating ? 'animate-spin' : ''} />
                   重新生成
                 </motion.button>
 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                   onClick={downloadCover}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-ink to-zinc-800 px-4 py-3 font-semibold text-white shadow-lg shadow-ink/25 transition-all hover:shadow-xl hover:shadow-ink/30 dark:from-white dark:to-zinc-200 dark:text-ink dark:shadow-white/25 dark:hover:shadow-white/30"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-ink bg-ink px-4 py-2.5 font-semibold text-white transition-colors hover:bg-zinc-800 dark:border-white dark:bg-white dark:text-ink dark:hover:bg-zinc-200"
                 >
                   <Download size={18} />
                   下载封面
                 </motion.button>
 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                   onClick={copyToClipboard}
-                  className={`flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 px-4 py-3 font-semibold transition-all ${
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 font-semibold transition-colors ${
                     copied
                       ? 'border-green-500 bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
                       : 'border-zinc-200 text-zinc-600 hover:border-ink dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-white'
@@ -1555,7 +1542,7 @@ export const CoverGenerator: React.FC = () => {
                   {copied ? '已复制' : '复制到剪贴板'}
                 </motion.button>
 
-                <button onClick={resetAllSettings} className="flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 px-4 py-3 text-sm font-semibold text-zinc-500 transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-red-500/40 dark:hover:bg-red-900/10 dark:hover:text-red-400">
+                <button onClick={resetAllSettings} className="flex items-center justify-center gap-2 rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-red-500/40 dark:hover:bg-red-900/10 dark:hover:text-red-400">
                   <RotateCcw size={16} />重置全部设置
                 </button>
               </div>
@@ -1564,8 +1551,8 @@ export const CoverGenerator: React.FC = () => {
         </div>
 
         {/* 右侧预览区域 */}
-        <div className="lg:col-span-2">
-          <div className="sticky top-24 rounded-[2rem] border border-zinc-200/70 bg-white/90 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-900/90 md:p-6">
+        <div className="order-1 lg:order-2 lg:col-span-2">
+          <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 md:p-5 lg:sticky lg:top-24">
             <div className="mb-4 flex flex-col gap-4 border-b border-zinc-200/70 pb-4 dark:border-zinc-800/80 md:flex-row md:items-start md:justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -1585,21 +1572,21 @@ export const CoverGenerator: React.FC = () => {
             </div>
 
             <div className="mb-4 flex flex-wrap gap-2">
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={randomizeStyle} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-all hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
+              <motion.button onClick={randomizeStyle} className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
                 <Shuffle size={16} />随机样式
               </motion.button>
-              <button onClick={generateCover} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-all hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
+              <button onClick={generateCover} className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-all hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
                 <RefreshCw size={16} className={isGenerating ? 'animate-spin' : ''} />刷新预览
               </button>
               {bgImage && (
-                <button onClick={resetBackgroundImageControls} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-all hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
+                <button onClick={resetBackgroundImageControls} className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-all hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
                   <RotateCcw size={16} />重置背景位置
                 </button>
               )}
             </div>
 
-            <div className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.7),rgba(244,244,245,0.9))] p-3 dark:border-zinc-700 dark:bg-[radial-gradient(circle_at_top,rgba(39,39,42,0.8),rgba(24,24,27,0.95))] md:p-4">
-              <div className="overflow-hidden rounded-[1.15rem] border border-zinc-200/70 bg-zinc-50 shadow-inner dark:border-zinc-700 dark:bg-zinc-800">
+            <div className="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 p-2 dark:border-zinc-700 dark:bg-zinc-800 md:p-3">
+              <div className="overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
                 <canvas
                   ref={canvasRef}
                   width={canvasSize.width}
@@ -1616,22 +1603,22 @@ export const CoverGenerator: React.FC = () => {
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-800/80">
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-800">
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">当前模板</div>
                 <div className="mt-2 text-lg font-bold text-ink dark:text-white">{selectedTemplate.name}</div>
                 <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">只保留现有黑白模板，避免风格面板过度分散。</p>
               </div>
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-800/80">
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-800">
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">预览提示</div>
                 <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{bgImage ? '已启用背景图：可拖拽移动，滚轮缩放。' : '当前为纯模板预览：上传背景图可增加层次感。'}</p>
               </div>
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-800/80">
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-800">
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">导出结果</div>
                 <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">文件将以 <strong>{exportFilename.trim() || 'cover'}</strong> 导出，格式为 <strong>{exportFormat.toUpperCase()}</strong>。</p>
               </div>
             </div>
 
-            <div className="mt-4 rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-800">
+            <div className="mt-4 rounded-xl bg-zinc-50 p-4 dark:bg-zinc-800">
               <div className="flex items-start gap-2">
                 <Sparkles className="mt-0.5 shrink-0 text-ink dark:text-white" size={16} />
                 <div className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -1664,7 +1651,7 @@ export const CoverGenerator: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-2xl rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900"
+              className="w-full max-w-2xl rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-4 flex items-center justify-between">

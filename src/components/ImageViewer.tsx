@@ -187,7 +187,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
           onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
-          className="fixed inset-0 z-[120] flex cursor-default items-center justify-center overflow-hidden bg-zinc-950/95 p-3 text-white backdrop-blur-md sm:p-6"
+          className="fixed inset-0 z-[120] flex cursor-default items-center justify-center overflow-hidden bg-zinc-950/95 p-3 text-white sm:p-6"
           role="dialog"
           aria-modal="true"
           aria-label={alt ? `图片预览：${alt}` : '图片预览'}
@@ -197,10 +197,8 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),transparent_34%),linear-gradient(180deg,rgba(0,0,0,0.1),rgba(0,0,0,0.48))]" />
-
           <div className="absolute left-3 right-3 top-3 z-50 flex items-center justify-between gap-3 sm:left-5 sm:right-5 sm:top-5">
-            <div className="min-w-0 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs text-white/65 shadow-2xl backdrop-blur-xl sm:px-4">
+            <div className="min-w-0 rounded-xl border border-white/15 bg-zinc-900 px-3 py-2 text-xs text-white/70 sm:px-4">
               <span className="hidden sm:inline">滚轮缩放 · 拖拽平移 · 双击放大</span>
               <span className="sm:hidden">双指缩放 · 双击放大</span>
             </div>
@@ -208,7 +206,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
               ref={closeButtonRef}
               type="button"
               onClick={(event) => { event.stopPropagation(); onClose(); }}
-              className="rounded-full border border-white/10 bg-white/10 p-2.5 text-white/75 shadow-2xl backdrop-blur-xl transition hover:bg-white/20 hover:text-white"
+              className="rounded-xl border border-white/15 bg-zinc-900 p-2.5 text-white/75 shadow-lg transition-colors hover:bg-zinc-800 hover:text-white"
               aria-label="关闭图片预览"
             >
               <X size={22} />
@@ -216,9 +214,9 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
           </div>
 
           <motion.div
-            initial={{ scale: 0.96, opacity: 0, y: 12 }}
+            initial={{ opacity: 0 }}
             animate={{ scale, opacity: isLoaded ? 1 : 0.35, x: position.x, y: position.y }}
-            exit={{ scale: 0.96, opacity: 0, y: 12 }}
+            exit={{ opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 260 }}
             className="relative max-h-[86vh] max-w-[94vw] touch-none select-none"
             style={{ cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in' }}
@@ -235,36 +233,36 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
               alt={alt || ''}
               draggable={false}
               onLoad={() => setIsLoaded(true)}
-              className="max-h-[86vh] max-w-[94vw] rounded-xl object-contain shadow-[0_30px_100px_rgba(0,0,0,0.55)] ring-1 ring-white/10"
+              className="max-h-[86vh] max-w-[94vw] rounded-xl object-contain shadow-lg ring-1 ring-white/10"
             />
           </motion.div>
 
-          <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/10 bg-zinc-950/55 p-1.5 shadow-2xl backdrop-blur-xl sm:bottom-6">
-            <button onClick={handleZoomOut} className="rounded-full p-2 text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-35" aria-label="缩小" title="缩小" disabled={scale <= MIN_SCALE}>
+          <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-white/15 bg-zinc-900 p-1.5 shadow-lg sm:bottom-6">
+            <button onClick={handleZoomOut} className="rounded-lg p-2 text-white/70 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-35" aria-label="缩小" title="缩小" disabled={scale <= MIN_SCALE}>
               <Minus size={17} />
             </button>
             <span className="min-w-[3.25rem] text-center text-xs font-semibold text-white/80 tabular-nums">{toolbarLabel}</span>
-            <button onClick={handleZoomIn} className="rounded-full p-2 text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-35" aria-label="放大" title="放大" disabled={scale >= MAX_SCALE}>
+            <button onClick={handleZoomIn} className="rounded-lg p-2 text-white/70 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-35" aria-label="放大" title="放大" disabled={scale >= MAX_SCALE}>
               <Plus size={17} />
             </button>
             <span className="mx-1 h-5 w-px bg-white/15" />
-            <button onClick={handleToggleZoom} className="rounded-full p-2 text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="切换缩放" title="切换缩放">
+            <button onClick={handleToggleZoom} className="rounded-lg p-2 text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="切换缩放" title="切换缩放">
               <Maximize2 size={16} />
             </button>
-            <button onClick={resetView} className="rounded-full p-2 text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="重置" title="重置">
+            <button onClick={resetView} className="rounded-lg p-2 text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="重置" title="重置">
               <RotateCcw size={16} />
             </button>
-            <button onClick={handleDownload} className="rounded-full p-2 text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="下载" title="下载原图">
+            <button onClick={handleDownload} className="rounded-lg p-2 text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="下载" title="下载原图">
               <Download size={16} />
             </button>
           </div>
 
           {alt && (
             <motion.p
-              initial={{ y: 16, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.12 }}
-              className="absolute bottom-[4.75rem] left-1/2 z-40 max-w-[min(42rem,88vw)] -translate-x-1/2 rounded-full border border-white/10 bg-black/25 px-4 py-2 text-center text-xs text-white/65 shadow-2xl backdrop-blur-xl sm:bottom-20 sm:text-sm"
+              className="absolute bottom-[4.75rem] left-1/2 z-40 max-w-[min(42rem,88vw)] -translate-x-1/2 rounded-xl border border-white/15 bg-zinc-900 px-4 py-2 text-center text-xs text-white/70 sm:bottom-20 sm:text-sm"
             >
               {alt}
             </motion.p>

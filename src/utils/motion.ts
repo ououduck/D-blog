@@ -6,7 +6,7 @@ export const easeSmooth = [0.22, 1, 0.36, 1] as const;
 
 /** 共享默认过渡 */
 export const defaultTransition: Transition = {
-  duration: 0.22,
+  duration: 0.18,
   ease: easeOut,
 };
 
@@ -15,7 +15,7 @@ export const fadeIn: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { duration: 0.18, ease: easeOut },
+    transition: { duration: 0.16, ease: easeOut },
   },
 };
 
@@ -24,7 +24,7 @@ export const fadeInUp: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { duration: 0.22, ease: easeSmooth },
+    transition: { duration: 0.18, ease: easeSmooth },
   },
 };
 

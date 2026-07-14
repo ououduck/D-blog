@@ -317,12 +317,12 @@ export const TableOfContents: React.FC<{
           return (
             <li key={item.id} ref={isActive ? activeItemRef : undefined}>
               <div
-                className={`rounded-2xl transition-all duration-200 ${
+                className={`rounded-xl transition-colors duration-200 ${
                   isActive
-                    ? 'bg-zinc-100 dark:bg-zinc-800 scale-[0.98]'
+                    ? 'bg-zinc-100 dark:bg-zinc-800'
                     : isInActiveBranch
-                      ? 'bg-zinc-100/80 dark:bg-zinc-900/70'
-                      : 'bg-transparent hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60'
+                      ? 'bg-zinc-50 dark:bg-zinc-900'
+                      : 'bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900'
                 }`}
               >
                 <div className="flex items-start gap-1.5 px-2.5 py-2">
@@ -364,7 +364,7 @@ export const TableOfContents: React.FC<{
                     <button
                       type="button"
                       onClick={() => toggleNode(item.id)}
-                      className={`mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
+                      className={`mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg transition-colors duration-200 ${
                         isInActiveBranch
                           ? 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300'
                           : 'text-zinc-400 hover:bg-zinc-200/80 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'
@@ -466,7 +466,7 @@ export const TableOfContents: React.FC<{
   const readingProgressDisplay = headings.length > 0 ? Math.round(((currentHeadingIndex + 1) / headings.length) * 100) : 0;
 
   const panelContent = (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:p-4.5">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-4 shadow-lg dark:border-zinc-800 dark:bg-zinc-900 sm:p-4.5">
       <div
         className="mb-3 flex justify-center lg:hidden"
         onTouchStart={handleSheetTouchStart}
@@ -505,7 +505,7 @@ export const TableOfContents: React.FC<{
         <div className="flex items-center gap-2.5">
           <div className="h-1 flex-1 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-zinc-500 to-zinc-900 dark:from-zinc-400 dark:to-zinc-100"
+              className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
               animate={{ width: `${readingProgressDisplay}%` }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
             />
@@ -577,14 +577,14 @@ export const TableOfContents: React.FC<{
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm lg:hidden"
+                className="fixed inset-0 z-[70] bg-black/40 lg:hidden"
                 onClick={() => setIsOpen(false)}
               />
 
               <motion.aside
-                initial={{ opacity: 0, y: 28, scale: 0.98 }}
-                animate={{ opacity: 1, y: dragOffsetY, scale: 1 }}
-                exit={{ opacity: 0, y: 28, scale: 0.98 }}
+                initial={{ opacity: 0, y: 28 }}
+                animate={{ opacity: 1, y: dragOffsetY }}
+                exit={{ opacity: 0, y: 28 }}
                 transition={{ duration: dragOffsetY > 0 ? 0 : 0.24, ease: 'easeOut' }}
                 style={{
                   ...MOBILE_TOC_SHEET_STYLE,
@@ -607,7 +607,7 @@ export const TableOfContents: React.FC<{
             type="button"
             onClick={() => setIsOpen((value) => !value)}
             style={MOBILE_TOC_TRIGGER_STYLE}
-            className="fixed z-[60] inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 transition-colors hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 lg:hidden"
+            className="fixed z-[60] inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 lg:hidden"
             aria-label={isOpen ? '关闭目录' : '打开目录'}
             aria-expanded={isOpen}
           >
@@ -627,9 +627,9 @@ export const TableOfContents: React.FC<{
           <AnimatePresence>
             {isOpen ? (
               <motion.aside
-                initial={{ opacity: 0, y: 12, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 12, scale: 0.98 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 style={DESKTOP_TOC_POPOVER_STYLE}
                 className="fixed z-[70] hidden h-[min(26rem,60vh)] w-[min(22rem,calc(100vw-3rem))] md:block"
@@ -649,7 +649,7 @@ export const TableOfContents: React.FC<{
             type="button"
             onClick={() => setIsOpen((value) => !value)}
             style={DESKTOP_TOC_TRIGGER_STYLE}
-            className="fixed z-[60] hidden items-center gap-2 rounded-full border border-zinc-200 bg-white/96 px-4 py-2.5 text-sm font-medium text-zinc-900 shadow-lg backdrop-blur-xl transition-all duration-300 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/94 dark:text-zinc-100 dark:hover:border-zinc-600 md:inline-flex"
+            className="fixed z-[60] hidden items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 md:inline-flex"
             aria-label={isOpen ? '关闭目录' : '打开目录'}
             aria-expanded={isOpen}
           >

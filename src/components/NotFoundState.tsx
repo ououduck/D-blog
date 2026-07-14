@@ -18,20 +18,15 @@ export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(({
   debugLabel
 }) => {
   return (
-      <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center px-4 py-10">
-        <div className="relative w-full overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-white/75 p-8 shadow-[0_24px_80px_-36px_rgba(24,24,27,0.28)] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/70 md:p-12">
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute left-[-8%] top-[-12%] h-40 w-40 rounded-full bg-zinc-200/50 blur-3xl dark:bg-zinc-800/50" />
-            <div className="absolute bottom-[-18%] right-[-6%] h-48 w-48 rounded-full bg-zinc-200/70 blur-3xl dark:bg-zinc-800/60" />
+      <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center px-4 py-10">
+        <div className="w-full border-y border-zinc-200 py-10 dark:border-zinc-800 md:py-14">
+          <div className="mb-6 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
+            <Compass size={14} />
+            Page Missing
           </div>
 
-          <div className="relative">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-100 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.28em] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
-              <Compass size={14} className="animate-[spin_4s_linear_infinite]" />
-              Page Missing
-            </div>
-
-            <div className="mb-5 font-serif text-7xl font-black leading-none bg-gradient-to-br from-zinc-300 to-zinc-200 bg-clip-text text-transparent dark:from-zinc-700 dark:to-zinc-800 md:text-8xl">
+          <div>
+            <div className="mb-5 font-serif text-7xl font-black leading-none text-zinc-200 dark:text-zinc-800 md:text-8xl">
               404
             </div>
 
@@ -44,7 +39,7 @@ export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(({
             </p>
 
             {debugLabel && (
-              <div className="mt-6 inline-flex max-w-full items-center rounded-2xl border border-zinc-200/80 bg-zinc-50/85 px-4 py-3 font-mono text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300">
+              <div className="mt-6 inline-flex max-w-full items-center border-l-2 border-zinc-300 bg-zinc-50 px-4 py-3 font-mono text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                 {debugLabel}
               </div>
             )}
@@ -52,7 +47,7 @@ export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(({
             <div className="mt-8">
               <Link
                 to={backTo}
-                className="inline-flex items-center rounded-full bg-ink px-6 py-3 text-sm font-bold tracking-[0.2em] text-white transition-transform hover:scale-[1.02] dark:bg-white dark:text-ink"
+                className="inline-flex items-center border border-ink bg-ink px-6 py-3 text-sm font-bold tracking-[0.12em] text-white transition-colors hover:bg-zinc-800 dark:border-white dark:bg-white dark:text-ink dark:hover:bg-zinc-200"
               >
                 <ArrowLeft size={16} className="mr-2" />
                 {backLabel}

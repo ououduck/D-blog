@@ -21,11 +21,11 @@ export const BackToTop = () => {
         if (entry.isIntersecting) {
           btn.style.opacity = '0';
           btn.style.pointerEvents = 'none';
-          btn.style.transform = 'scale(0.5)';
+          btn.style.transform = 'translateY(8px)';
         } else {
           btn.style.opacity = '1';
           btn.style.pointerEvents = 'auto';
-          btn.style.transform = 'scale(1)';
+          btn.style.transform = 'translateY(0)';
         }
       },
       { rootMargin: '-300px 0px 0px 0px' }
@@ -50,13 +50,13 @@ export const BackToTop = () => {
           ...MOBILE_OFFSET_STYLE,
           opacity: 0,
           pointerEvents: 'none',
-          transform: 'scale(0.5)',
+          transform: 'translateY(8px)',
           transition: 'opacity 0.2s ease, transform 0.2s ease',
         }}
-        className="group fixed z-40 rounded-full border border-zinc-200/80 bg-white/94 p-3 text-ink shadow-[0_18px_40px_-26px_rgba(28,25,23,0.3)] backdrop-blur-xl hover:scale-110 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/94 dark:text-white dark:hover:bg-zinc-700 md:bottom-8 md:right-8"
+        className="fixed z-40 rounded-xl border border-zinc-200 bg-white p-2.5 text-ink transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 md:bottom-8 md:right-8"
         aria-label="返回顶部"
       >
-        <ArrowUp size={20} className="transition-transform group-hover:-translate-y-1" />
+        <ArrowUp size={18} />
       </button>
     </>
   );

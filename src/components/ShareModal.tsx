@@ -109,16 +109,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       ariaDescribedby={descriptionId}
     >
 
-      {/* Windows 风格标题栏 */}
-      <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-5 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-            <div className="h-3 w-3 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-            <div className="h-3 w-3 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-          </div>
-          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">分享文章</span>
-        </div>
+      <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-3 dark:border-zinc-800">
+        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">分享文章</span>
         <button
           ref={closeButtonRef}
           onClick={onClose}

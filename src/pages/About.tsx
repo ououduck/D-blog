@@ -6,10 +6,10 @@ import { ProgressiveImage } from '@/components/ProgressiveImage';
 
 export const About = () => {
   return (
-    <div className="mx-auto max-w-4xl py-12 md:py-20">
+    <div className="mx-auto max-w-4xl pb-10 pt-6 md:pb-16 md:pt-10">
       <Seo title="关于" description="关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的用户界面。" />
 
-      <div className="mb-12 flex flex-col items-center gap-8 rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 p-8 text-center md:flex-row md:gap-12 md:p-12 md:text-left">
+      <header className="mb-12 flex flex-col items-center gap-8 border-b border-zinc-200 pb-10 text-center dark:border-zinc-800 md:flex-row md:gap-12 md:text-left">
         <div className="group relative">
           <div className="relative z-10 h-32 w-32 overflow-hidden rounded-full border-4 border-zinc-200 dark:border-zinc-800 md:h-40 md:w-40">
             <ProgressiveImage src={siteConfig.author.avatar} alt="Avatar" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
@@ -24,34 +24,34 @@ export const About = () => {
           <p className="mb-8 font-sans text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">{siteConfig.author.bio}</p>
 
           <div className="flex items-center justify-center gap-4 md:justify-start">
-            <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
+            <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 border border-zinc-900 bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-zinc-800 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
               <Github size={18} />
               <span>GitHub</span>
             </a>
-            <a href={siteConfig.social.email} className="flex items-center gap-2 rounded-full bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 px-5 py-2.5 text-sm font-bold text-zinc-900 transition-colors dark:text-zinc-100">
+            <a href={siteConfig.social.email} className="flex items-center gap-2 border border-zinc-300 px-5 py-2.5 text-sm font-bold text-zinc-900 transition-colors hover:border-zinc-900 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-100">
               <Mail size={18} />
               <span>Email</span>
             </a>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-        <div className="rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 p-8">
+      <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+        <div className="border-t border-zinc-200 pt-6 dark:border-zinc-800">
           <div className="mb-6 flex items-center gap-3 text-zinc-900 dark:text-zinc-100">
             <Code className="text-zinc-700 dark:text-zinc-300" />
             <h2 className="font-serif text-2xl font-bold">技术栈</h2>
           </div>
           <div className="flex flex-wrap gap-2">
-            {['React', 'TypeScript', 'Tailwind CSS', 'Next.js', 'Node.js', 'Vite', 'Framer Motion'].map((tech) => (
-              <span key={tech} className="rounded-lg bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/60 dark:border-zinc-700/60 px-3 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+            {['React', 'TypeScript', 'Tailwind CSS', 'Vite', 'Node.js', 'Framer Motion'].map((tech) => (
+              <span key={tech} className="border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
                 {tech}
               </span>
             ))}
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 p-8">
+        <div className="border-t border-zinc-200 pt-6 dark:border-zinc-800">
           <div className="mb-6 flex items-center gap-3 text-zinc-900 dark:text-zinc-100">
             <Terminal className="text-zinc-700 dark:text-zinc-300" />
             <h2 className="font-serif text-2xl font-bold">折腾记录</h2>

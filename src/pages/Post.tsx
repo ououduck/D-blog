@@ -3,11 +3,11 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { easeOut } from '@/utils/motion';
 import DOMPurify from 'dompurify';
 
-import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Shield, Share2, Copy, Check, Users, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Users, ExternalLink } from 'lucide-react';
 import { getPostById, getPosts } from '@/services/posts';
 import { Post as PostType, PostAuthor, PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
@@ -167,7 +167,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
   });
 
   return (
-    <div className="group relative my-5 md:my-6">
+    <div className="group relative my-5 md:my-7">
       {/* Language badge */}
       {lang && (
         <span className="code-lang-badge">{getLangDisplayName(lang)}</span>
@@ -195,7 +195,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
         <pre
           ref={preRef}
           {...props}
-          className={`${props.className || ''} !my-0 overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-600 touch-pan-x !p-3 !pt-10 md:!p-6 md:!pt-7 ${needsExpand && !isExpanded ? 'code-block-collapsed' : 'code-block-expanded'}`}
+          className={`${props.className || ''} !my-0 overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-600 touch-pan-x !p-3.5 !pt-10 md:!p-5 md:!pt-7 ${needsExpand && !isExpanded ? 'code-block-collapsed' : 'code-block-expanded'}`}
         >
           {childrenWithProps}
         </pre>
@@ -390,26 +390,26 @@ const createMarkdownComponents = (
       return <a href={safeHref} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
     },
     img: ({ title, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => (
-      <figure className="group/myimage my-8 md:my-12">
+      <figure className="group/myimage my-7 md:my-10">
         <button
           type="button"
           onClick={() => onPreviewImage({ src: props.src || '', alt: props.alt })}
-          className="relative block w-full overflow-hidden rounded-2xl border border-zinc-200/80 bg-zinc-100/70 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:border-zinc-800/80 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:focus-visible:outline-zinc-100"
+          className="relative block w-full overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 transition-colors duration-200 hover:border-zinc-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:focus-visible:outline-zinc-100 md:rounded-2xl"
           aria-label={props.alt ? `预览图片：${props.alt}` : '预览图片'}
         >
           <ProgressiveImage
             {...props}
             loading="lazy"
             decoding="async"
-            wrapperClassName="rounded-2xl"
-            className="cursor-zoom-in rounded-2xl shadow-lg transition duration-500 group-hover/myimage:scale-[1.015]"
+            wrapperClassName="rounded-xl md:rounded-2xl"
+            className="cursor-zoom-in rounded-xl transition-opacity duration-200 group-hover/myimage:opacity-95 md:rounded-2xl"
           />
-          <span className="pointer-events-none absolute right-3 top-3 rounded-full border border-white/30 bg-black/45 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/90 opacity-0 shadow-lg backdrop-blur-md transition duration-300 group-hover/myimage:opacity-100 group-focus-visible/myimage:opacity-100">
-            点击预览
+          <span className="pointer-events-none absolute right-3 top-3 rounded-full border border-white/20 bg-black/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 opacity-0 transition-opacity duration-200 group-hover/myimage:opacity-100 group-focus-visible/myimage:opacity-100">
+            预览
           </span>
         </button>
         {(props.alt || title) && (
-          <figcaption className="mt-3 text-center text-xs text-zinc-500 dark:text-zinc-400">
+          <figcaption className="mt-2.5 text-center text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
             {props.alt || title}
           </figcaption>
         )}
@@ -651,26 +651,26 @@ export const Post = () => {
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl pt-10">
-        <div className="mb-16 text-center">
-          <div className="mx-auto mb-10 h-6 w-24 overflow-hidden rounded-md shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
-          <div className="mx-auto mb-8 h-12 w-3/4 md:h-16 overflow-hidden rounded-lg shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
+        <div className="mb-16 animate-pulse text-center">
+          <div className="mx-auto mb-10 h-6 w-24 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+          <div className="mx-auto mb-8 h-12 w-3/4 rounded-lg bg-zinc-200 dark:bg-zinc-800 md:h-16" />
           <div className="flex justify-center space-x-6">
-            <div className="h-4 w-28 overflow-hidden rounded shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
-            <div className="h-4 w-32 overflow-hidden rounded shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
-            <div className="h-4 w-20 overflow-hidden rounded shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
+            <div className="h-4 w-28 rounded bg-zinc-200 dark:bg-zinc-800" />
+            <div className="h-4 w-32 rounded bg-zinc-200 dark:bg-zinc-800" />
+            <div className="h-4 w-20 rounded bg-zinc-200 dark:bg-zinc-800" />
           </div>
         </div>
 
-        <div className="mb-20 aspect-[21/9] w-full overflow-hidden rounded-3xl shadow-sm shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
+        <div className="mb-20 aspect-[21/9] w-full animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-800" />
 
-        <div className="mx-auto max-w-3xl space-y-6 pb-32">
-          <div className="h-5 w-full overflow-hidden rounded shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-5 w-11/12 overflow-hidden rounded shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-5 w-full overflow-hidden rounded shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-5 w-4/5 overflow-hidden rounded shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
-          <div className="my-10 h-40 w-full overflow-hidden rounded-xl shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-5 w-full overflow-hidden rounded shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-5 w-5/6 overflow-hidden rounded shimmer-mask bg-zinc-200 dark:bg-zinc-800" />
+        <div className="mx-auto max-w-3xl animate-pulse space-y-6 pb-32">
+          <div className="h-5 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-5 w-11/12 rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-5 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-5 w-4/5 rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="my-10 h-40 w-full rounded-lg bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-5 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-5 w-5/6 rounded bg-zinc-200 dark:bg-zinc-800" />
         </div>
       </div>
     );
@@ -755,35 +755,30 @@ export const Post = () => {
           structuredData={[postStructuredData, breadcrumbData]}
         />
 
-        <header className="mx-auto mb-10 max-w-4xl pt-6 text-center md:mb-16 md:pt-10">
-          <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-400 md:mb-6">
-            <Link to="/" className="transition-colors hover:text-zinc-900 dark:hover:text-zinc-100">
-              首页
+        <header className="mx-auto mb-8 max-w-3xl px-3 pt-4 text-center md:mb-12 md:pt-8">
+          <div className="mb-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-zinc-400 dark:text-zinc-600 md:mb-7">
+            <Link to="/" className="inline-flex items-center gap-1 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
+              <ArrowLeft size={13} />
+              返回文章
             </Link>
-            <ChevronRight size={14} className="text-zinc-300 dark:text-zinc-600" />
-            <Link to={`/?category=${encodeURIComponent(post.category)}`} className="transition-colors hover:text-zinc-900 dark:hover:text-zinc-100">
-              {post.category}
-            </Link>
-            <ChevronRight size={14} className="text-zinc-300 dark:text-zinc-600" />
-            <span className="max-w-[14rem] truncate text-zinc-500 dark:text-zinc-400 md:max-w-xl">{post.title}</span>
-          </nav>
-          <Link to="/" className="group mb-6 inline-flex items-center text-xs font-bold uppercase tracking-widest text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100 md:mb-10">
-            <ArrowLeft size={16} className="mr-2 transition-transform group-hover:-translate-x-1" />
-            返回文章
-          </Link>
+            <span aria-hidden="true">/</span>
+            <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5">
+              <Link to="/" className="transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
+                首页
+              </Link>
+              <ChevronRight size={11} aria-hidden="true" />
+              <Link to={`/?category=${encodeURIComponent(post.category)}`} className="truncate transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
+                {post.category}
+              </Link>
+            </nav>
+          </div>
 
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06, duration: 0.3, ease: easeOut }}>
-            <div className="mb-8 flex flex-col items-center gap-4">
-              <span className="rounded-full border border-zinc-200 bg-zinc-100 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
-                {post.category}
-              </span>
-            </div>
-
-            <h1 className="mb-6 font-serif text-3xl font-bold leading-[1.2] text-ink dark:text-white md:mb-8 md:text-5xl lg:text-6xl">
+            <h1 className="mb-5 text-balance font-serif text-3xl font-bold leading-[1.18] tracking-[-0.02em] text-ink dark:text-white md:mb-6 md:text-5xl lg:text-[3.5rem]">
               {post.title}
             </h1>
 
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 md:gap-x-6">
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500 md:gap-x-5 md:text-xs">
               <span className="flex items-center">
                 <Users size={14} className="mr-2" /> {authorsLabel}
               </span>
@@ -804,7 +799,7 @@ export const Post = () => {
                 <Clock size={14} className="mr-2" /> {post.readTime}
               </span>
               <span className="hidden h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700 md:block" />
-              <button type="button" onClick={() => setShareModalOpen(true)} className="flex items-center transition-colors hover:text-zinc-900 dark:hover:text-zinc-100" aria-label={`分享文章：${post.title}`}>
+              <button type="button" onClick={() => setShareModalOpen(true)} className="flex items-center transition-colors hover:text-zinc-800 dark:hover:text-zinc-200" aria-label={`分享文章：${post.title}`}>
                 <Share2 size={14} className="mr-1.5" /> 分享
               </button>
             </div>
@@ -812,33 +807,16 @@ export const Post = () => {
         </header>
 
         {post.coverImage && (
-          <button type="button" className="mx-auto block w-full max-w-6xl px-4 md:px-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 0.22, ease: easeOut }} className="mb-10 aspect-[4/3] cursor-zoom-in overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 sm:aspect-[16/9] md:mb-20 md:aspect-[21/9] md:rounded-3xl">
-              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" width={1600} height={686} aspectRatio="21/9" sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1152px" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
+          <button type="button" className="mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 0.22, ease: easeOut }} className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 sm:aspect-[16/8] md:mb-14 md:rounded-2xl lg:aspect-[21/9]">
+              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" width={1600} height={686} aspectRatio="21/9" sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
             </motion.div>
           </button>
         )}
 
-        <div ref={articleBodyRef} className="mx-auto flex max-w-4xl flex-col gap-4 px-2 pb-12 sm:max-w-5xl sm:gap-6 sm:px-4 md:max-w-6xl md:pb-16 lg:max-w-7xl lg:px-8 md:pb-24">
-          <div className="flex-1 rounded-xl bg-white px-5 py-6 shadow-sm dark:bg-zinc-900 sm:rounded-2xl sm:px-8 sm:py-8 md:px-10 md:py-12 lg:px-12">
-            <div className="prose prose-base mx-auto max-w-none prose-stone dark:prose-invert md:prose-lg
-              prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:font-bold prose-headings:text-ink dark:prose-headings:text-white
-              prose-h2:mb-6 prose-h2:mt-10 prose-h2:text-3xl md:prose-h2:mb-8 md:prose-h2:mt-14 md:prose-h2:text-5xl
-              prose-h3:mb-4 prose-h3:mt-8 prose-h3:text-2xl md:prose-h3:mb-5 md:prose-h3:mt-10 md:prose-h3:text-3xl
-              prose-h4:mb-3 prose-h4:mt-6 prose-h4:text-xl md:prose-h4:mb-4 md:prose-h4:mt-8 md:prose-h4:text-2xl
-              prose-p:font-sans prose-p:text-[16px] md:prose-p:text-[18px] prose-p:leading-[1.85] md:prose-p:leading-[1.9]
-              prose-a:break-words prose-a:font-semibold prose-a:decoration-zinc-300 prose-a:decoration-2 prose-a:underline-offset-[3px] hover:prose-a:decoration-zinc-900 hover:prose-a:underline-offset-[5px] dark:prose-a:decoration-zinc-700 dark:hover:prose-a:decoration-zinc-400
-              prose-strong:font-bold prose-strong:text-ink dark:prose-strong:text-white
-              prose-img:my-8 prose-img:h-auto prose-img:w-full prose-img:max-w-full prose-img:cursor-zoom-in prose-img:rounded-xl prose-img:shadow-lg hover:prose-img:scale-[1.005] dark:prose-img:rounded-2xl dark:prose-img:ring-1 dark:prose-img:ring-white/10 md:prose-img:my-12
-              prose-blockquote:my-7 prose-blockquote:rounded-r-xl prose-blockquote:border-l-4 prose-blockquote:border-l-accent prose-blockquote:bg-accent/5 prose-blockquote:px-6 prose-blockquote:py-5 prose-blockquote:font-serif prose-blockquote:not-italic prose-blockquote:text-[16px] md:prose-blockquote:text-[18px] prose-blockquote:leading-[1.8] dark:prose-blockquote:border-l-accent dark:prose-blockquote:bg-accent/5 dark:prose-blockquote:text-zinc-200 md:prose-blockquote:my-9 md:prose-blockquote:rounded-r-2xl md:prose-blockquote:px-8 md:prose-blockquote:py-6
-              prose-ul:my-6 prose-ul:space-y-2 md:prose-ul:my-8 md:prose-ul:space-y-3
-              prose-ol:my-6 prose-ol:space-y-2 md:prose-ol:my-8 md:prose-ol:space-y-3
-              prose-li:text-[16px] prose-li:leading-[1.85] md:prose-li:text-[18px] md:prose-li:leading-[1.9]
-              prose-hr:my-10 prose-hr:border-zinc-200 dark:prose-hr:border-zinc-800 md:prose-hr:my-14
-              prose-code:font-mono prose-code:text-[13px] prose-code:font-semibold md:prose-code:text-[14px]
-              prose-pre:overflow-hidden prose-pre:rounded-xl prose-pre:border prose-pre:border-zinc-700/80 prose-pre:bg-[#0d1117] prose-pre:p-0 md:prose-pre:rounded-2xl
-              dark:prose-body:text-zinc-300
-            ">
+        <div ref={articleBodyRef} className="mx-auto w-full max-w-5xl px-3 pb-12 sm:px-4 md:pb-20 lg:px-0">
+          <div className="mx-auto max-w-[46rem]">
+            <div className="prose prose-stone max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:tracking-tight prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-3 dark:prose-h2:border-zinc-800 prose-p:leading-8 prose-li:leading-8 prose-a:break-words prose-a:underline-offset-4 prose-img:rounded-lg prose-img:shadow-none prose-blockquote:rounded-r-lg prose-blockquote:border-l-accent prose-blockquote:bg-accent/5 prose-blockquote:not-italic prose-pre:rounded-lg prose-pre:border prose-pre:border-zinc-700/80 prose-pre:bg-[#0d1117] prose-pre:p-0">
               <ReactMarkdown
                 remarkPlugins={remarkPlugins}
                 rehypePlugins={rehypePlugins}
@@ -848,87 +826,67 @@ export const Post = () => {
               </ReactMarkdown>
             </div>
 
-            <div className="relative mt-16 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900/70 md:mt-20 md:rounded-2xl md:p-8">
-              <div className="absolute -right-6 -top-6 rotate-12 text-zinc-200 opacity-50 dark:text-zinc-800">
-                <Shield size={120} strokeWidth={0.5} />
-              </div>
-              <div className="relative z-10 flex flex-col items-start gap-6 md:flex-row">
-                <div className="flex-shrink-0">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
-                    <span className="font-serif text-xl font-bold">CC</span>
-                  </div>
-                </div>
-                <div>
-                  <h2 className="mb-2 text-lg font-serif font-bold text-ink dark:text-white">CC BY-SA 4.0 许可协议</h2>
-                  <p className="mb-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                    本文由 <strong className="text-ink dark:text-zinc-200">{authorsLabel}</strong> 原创。除非另有声明，本站文章采用
-                    <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="noopener noreferrer" className="mx-1 font-medium text-zinc-900 hover:underline dark:text-zinc-100">
-                      CC BY-SA 4.0
-                    </a>
-                    协议进行授权。
-                  </p>
-                  <div className="inline-block rounded-lg border border-zinc-200/50 bg-zinc-100 p-3 text-xs text-zinc-500 dark:border-zinc-800/50 dark:bg-zinc-950/50 dark:text-zinc-500">
-                    <strong>协议含义：</strong>
-                    您可以自由复制、传播、修改本作品，但必须 <span className="text-zinc-900 dark:text-zinc-100">署名作者</span>，并 <span className="text-zinc-900 dark:text-zinc-100">以相同许可协议发布</span> 衍生作品。
-                  </div>
-                </div>
-              </div>
-            </div>
+            <aside className="mt-14 border-l-2 border-zinc-200 pl-4 text-sm leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-16 md:pl-5" aria-labelledby="license-heading">
+              <h2 id="license-heading" className="mb-1 font-semibold text-zinc-700 dark:text-zinc-200">CC BY-SA 4.0 许可协议</h2>
+              <p>
+                本文由 <strong className="font-semibold text-zinc-700 dark:text-zinc-200">{authorsLabel}</strong> 原创。除非另有声明，可在署名并以相同协议发布衍生作品的前提下自由复制、传播和修改。详见
+                <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="noopener noreferrer" className="ml-1 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-800 dark:decoration-zinc-700 dark:hover:text-zinc-200">
+                  CC BY-SA 4.0
+                </a>
+                。
+              </p>
+            </aside>
 
-            <div className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800">
-              <div>
-                <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-400">作者</span>
-                <span className="font-serif text-lg font-bold text-ink dark:text-white">{authorsLabel}</span>
-              </div>
-            </div>
-
-            <div className="mt-8 flex items-center justify-center">
+            <div className="mt-8 flex flex-col gap-3 border-t border-zinc-200 pt-6 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
+              <p className="text-zinc-500 dark:text-zinc-400">
+                作者 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{authorsLabel}</span>
+              </p>
               <a
                 href={`${siteConfig.friendsPage.repoUrl}/blob/main/posts/${post.id}.md`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-100"
+                className="inline-flex items-center gap-1.5 text-zinc-500 underline decoration-zinc-300 underline-offset-4 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:decoration-zinc-700 dark:hover:text-zinc-100"
               >
-                <ExternalLink size={16} />
-                <span>此文章有问题？帮助改进！</span>
+                <ExternalLink size={14} />
+                <span>帮助改进本文</span>
               </a>
             </div>
 
             {/* 上一篇 / 下一篇导航 */}
-            <nav aria-label="文章导航" className="mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800 md:mt-16 md:pt-10">
-              <div className="flex flex-col gap-4 sm:flex-row">
+            <nav aria-label="文章导航" className="mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8">
+              <div className="grid gap-6 sm:grid-cols-2 sm:gap-10">
                 {adjacentPosts.prev ? (
                   <Link
                     to={`/post/${adjacentPosts.prev.id}`}
-                    className="post-nav-item group flex items-start gap-3"
+                    className="group flex min-w-0 items-start gap-3 text-left"
                   >
-                    <ArrowLeft size={18} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-600 dark:group-hover:text-zinc-100" />
-                    <div className="min-w-0 text-left">
-                      <span className="post-nav-label">上一篇</span>
-                      <span className="post-nav-title">{adjacentPosts.prev.title}</span>
-                    </div>
+                    <ArrowLeft size={17} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100" />
+                    <span className="min-w-0">
+                      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">上一篇</span>
+                      <span className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 transition-colors group-hover:text-zinc-950 dark:text-zinc-300 dark:group-hover:text-white">{adjacentPosts.prev.title}</span>
+                    </span>
                   </Link>
                 ) : (
-                  <div className="flex-1" />
+                  <span aria-hidden="true" />
                 )}
                 {adjacentPosts.next ? (
                   <Link
                     to={`/post/${adjacentPosts.next.id}`}
-                    className="post-nav-item group flex items-start justify-end gap-3 text-right"
+                    className="group flex min-w-0 items-start justify-end gap-3 text-right"
                   >
-                    <div className="min-w-0">
-                      <span className="post-nav-label justify-end">下一篇</span>
-                      <span className="post-nav-title">{adjacentPosts.next.title}</span>
-                    </div>
-                    <ArrowRight size={18} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-600 dark:group-hover:text-zinc-100" />
+                    <span className="min-w-0">
+                      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">下一篇</span>
+                      <span className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 transition-colors group-hover:text-zinc-950 dark:text-zinc-300 dark:group-hover:text-white">{adjacentPosts.next.title}</span>
+                    </span>
+                    <ArrowRight size={17} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100" />
                   </Link>
                 ) : (
-                  <div className="flex-1" />
+                  <span aria-hidden="true" />
                 )}
               </div>
 
               {/* 键盘快捷键提示 */}
-              <div className="mt-6 text-center">
+              <div className="mt-5 hidden text-center md:block">
                 <span className="text-[11px] text-zinc-400 dark:text-zinc-600">
                   快捷键：<kbd className="kbd">Alt</kbd> + <kbd className="kbd">←</kbd> 上一篇 · <kbd className="kbd">Alt</kbd> + <kbd className="kbd">→</kbd> 下一篇 · <kbd className="kbd">Esc</kbd> 关闭弹窗
                 </span>

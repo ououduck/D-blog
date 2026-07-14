@@ -33,6 +33,7 @@ const SEARCH_SCOPE_HINTS: Record<PostSearchScope, string> = {
 export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
@@ -113,18 +114,26 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
         return;
       }
 
-      const focusableElements = [inputRef.current, closeButtonRef.current].filter(Boolean) as HTMLElement[];
+      const focusableElements = Array.from(
+        modalRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      ).filter((element) => element.getAttribute('aria-hidden') !== 'true');
+
       if (focusableElements.length === 0) {
+        event.preventDefault();
+        modalRef.current?.focus();
         return;
       }
 
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
 
-      if (event.shiftKey && document.activeElement === firstElement) {
+      if (event.shiftKey && (activeElement === firstElement || !modalRef.current?.contains(activeElement))) {
         event.preventDefault();
         lastElement.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
+      } else if (!event.shiftKey && (activeElement === lastElement || !modalRef.current?.contains(activeElement))) {
         event.preventDefault();
         firstElement.focus();
       }
@@ -176,7 +185,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-16 sm:pt-24">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/55" />
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: modalEase }} className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
+          <motion.div ref={modalRef} tabIndex={-1} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: modalEase }} className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
             <div className="flex items-center border-b border-zinc-100 p-4 dark:border-zinc-800">
               <Search className="mr-3 text-zinc-600 dark:text-zinc-300" size={20} />
               <input

@@ -68,7 +68,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
       <div
         aria-hidden="true"
         className={mergeClassName(
-          'pointer-events-none absolute inset-0 bg-zinc-200/80 transition-opacity duration-500 dark:bg-zinc-800/80',
+          'pointer-events-none absolute inset-0 bg-zinc-200 transition-opacity duration-300 dark:bg-zinc-800',
           isLoaded || hasError ? 'opacity-0' : 'opacity-100',
           placeholderClassName
         )}
@@ -76,7 +76,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
       <div
         aria-hidden="true"
         className={mergeClassName(
-          'pointer-events-none absolute inset-0 flex items-center justify-center bg-zinc-100/70 transition-opacity duration-500 dark:bg-zinc-900/60',
+          'pointer-events-none absolute inset-0 flex items-center justify-center bg-zinc-100 transition-opacity duration-300 dark:bg-zinc-900',
           isLoaded || hasError ? 'opacity-0' : 'opacity-100'
         )}
       >

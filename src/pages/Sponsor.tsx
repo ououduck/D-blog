@@ -48,10 +48,10 @@ const sponsorOptions: SponsorOption[] = [
 
 export const Sponsor: React.FC = () => {
   return (
-    <div className="mx-auto max-w-5xl pb-16 pt-8 md:pb-24 md:pt-12">
+    <div className="mx-auto max-w-5xl pb-12 pt-6 md:pb-20 md:pt-10">
       <Seo title="赞助" description="支持 D-blog 的多种方式：贡献代码、撰写文章或通过赞助商链接帮助博客持续成长。" />
 
-      <header className="mb-8 rounded-2xl border border-zinc-200 bg-white px-5 py-8 text-center dark:border-zinc-800 dark:bg-zinc-900 md:mb-10 md:px-8 md:py-10">
+      <header className="mb-10 border-b border-zinc-200 pb-8 text-center dark:border-zinc-800 md:pb-10">
         <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.28em] text-zinc-500 dark:text-zinc-400">Support D-blog</p>
         <h1 className="mb-4 font-serif text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
           没有收款码的赞助
@@ -67,16 +67,16 @@ export const Sponsor: React.FC = () => {
           const Icon = option.icon;
           const cardContent = (
             <>
-              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
                 <Icon size={21} />
               </div>
               <h2 className="mb-2 font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100">{option.title}</h2>
               <p className="mb-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{option.description}</p>
               <p className="mb-5 text-xs leading-5 text-zinc-500 dark:text-zinc-500">{option.detail}</p>
-              <span className={`mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
+              <span className={`mt-auto inline-flex items-center gap-2 text-sm font-semibold transition-colors ${
                 option.disabled
-                  ? 'cursor-default border-zinc-200 bg-zinc-100 text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-400'
-                  : 'border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200'
+                  ? 'cursor-default text-zinc-400 dark:text-zinc-500'
+                  : 'text-zinc-900 hover:text-accent dark:text-zinc-100 dark:hover:text-accent-light'
               }`}>
                 {option.buttonText}
                 {!option.disabled && <ExternalLink size={14} />}
@@ -86,7 +86,7 @@ export const Sponsor: React.FC = () => {
 
           if (option.disabled || !option.buttonLink) {
             return (
-              <article key={option.id} className="flex min-h-64 flex-col rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+              <article key={option.id} className="flex min-h-64 flex-col border-t border-zinc-200 py-5 dark:border-zinc-800">
                 {cardContent}
               </article>
             );
@@ -98,7 +98,7 @@ export const Sponsor: React.FC = () => {
               href={option.buttonLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-64 flex-col rounded-2xl border border-zinc-200 bg-white p-5 transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/80"
+              className="flex min-h-64 flex-col border-t border-zinc-200 py-5 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
             >
               {cardContent}
             </a>
@@ -106,7 +106,7 @@ export const Sponsor: React.FC = () => {
         })}
       </section>
 
-      <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 md:mt-10 md:p-6" aria-label="赞助商广告">
+      <section className="mt-10 border-t border-zinc-200 pt-8 dark:border-zinc-800" aria-label="赞助商广告">
         <div className="mb-5 flex flex-col gap-2 border-b border-zinc-200 pb-4 dark:border-zinc-800 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Sponsor Ads</p>
@@ -123,7 +123,7 @@ export const Sponsor: React.FC = () => {
                 href={ad.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700"
+                className="block overflow-hidden border border-zinc-200 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
                 aria-label={`打开赞助商链接：${ad.title}`}
               >
                 <img
@@ -141,7 +141,7 @@ export const Sponsor: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-8 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+          <div className="border-y border-dashed border-zinc-300 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
             当前暂无赞助商广告。
           </div>
         )}
