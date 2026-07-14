@@ -527,7 +527,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
   return (
     <>
-      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95">
+      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 md:border-transparent md:bg-paper md:dark:border-transparent md:dark:bg-void">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, ease: easeSmooth }} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-16">
           <Link to="/" onMouseEnter={() => preloadPage('/')} className="group z-50 flex items-center space-x-2.5 sm:space-x-3">
             <ProgressiveImage src={siteConfig.logo} alt="Logo" fetchPriority="high" wrapperClassName="h-8 w-8 rounded-lg bg-white sm:h-9 sm:w-9" className="h-8 w-8 rounded-lg object-cover sm:h-9 sm:w-9" />
