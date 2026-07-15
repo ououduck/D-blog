@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ExternalLink, Copy, Check, GitPullRequest, Sparkles, ChevronDown, Search, X, Globe2 } from 'lucide-react';
+import { ExternalLink, Copy, Check, GitPullRequest, Sparkles, ChevronDown, Globe2 } from 'lucide-react';
+import { SearchField } from '@/components/SearchField';
 import { siteConfig } from '@config/site.config';
 import { getFriends } from '@/services/friends';
 import { Seo } from '../components/Seo';
@@ -152,7 +153,7 @@ export const Friends = () => {
                   <section className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
                     <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">本站信息（提交前请先添加本站友链）</h2>
                     <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                      <ProgressiveImage src={siteInfo.avatar} alt={siteInfo.name} wrapperClassName="h-12 w-12 flex-shrink-0 rounded-lg border border-zinc-200 bg-white dark:border-zinc-800" className="h-12 w-12 rounded-lg object-cover object-center" />
+                      <ProgressiveImage src={siteInfo.avatar} alt={siteInfo.name} wrapperClassName="h-12 w-12 flex-shrink-0 border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-void" className="h-12 w-12 object-cover object-center" />
                       <div className="w-full flex-1 space-y-1">
                         <div className="font-semibold text-zinc-900 dark:text-zinc-100">{siteInfo.name}</div>
                         <div className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{siteInfo.description}</div>
@@ -208,22 +209,14 @@ export const Friends = () => {
       </div>
 
       <div className="mb-8 border-y border-zinc-200 py-4 dark:border-zinc-800">
-        <label className="group relative block">
-          <span className="sr-only">搜索友链</span>
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-zinc-900 dark:group-focus-within:text-zinc-100" />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="按站点名称、简介或域名搜索友链..."
-            className="w-full border border-zinc-300 bg-white py-3 pl-11 pr-11 text-sm text-zinc-900 outline-none transition-colors focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-100"
-          />
-          {searchQuery && (
-            <button type="button" onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100" aria-label="清除友链搜索">
-              <X size={16} />
-            </button>
-          )}
-        </label>
+        <SearchField
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+          onClear={() => setSearchQuery('')}
+          clearLabel="清除友链搜索"
+          placeholder="按站点名称、简介或域名搜索友链..."
+          aria-label="搜索友链"
+        />
         {searchQuery && (
           <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">找到 {filteredFriends.length} 个匹配站点</p>
         )}
@@ -250,13 +243,13 @@ export const Friends = () => {
               href={friend.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative block h-full rounded-lg border border-zinc-200 bg-white p-5 transition-colors duration-150 hover:border-accent/35 hover:bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-accent-light/35 dark:hover:bg-zinc-900/80"
+              className="group relative block h-full border border-zinc-300 bg-paper p-5 transition-colors duration-150 hover:border-ink hover:bg-zinc-100 dark:border-zinc-700 dark:bg-void dark:hover:border-white dark:hover:bg-zinc-900"
             >
               <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:text-zinc-500">
                 <ExternalLink size={16} />
               </div>
               <div className="flex items-start gap-4 pr-5">
-                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800">
+                <div className="h-12 w-12 flex-shrink-0 overflow-hidden border border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900">
                   <ProgressiveImage src={friend.avatar} alt={friend.name} wrapperClassName="h-full w-full" className="h-full w-full object-cover object-center" effect="fade" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -274,13 +267,13 @@ export const Friends = () => {
         {loading && <LoadingStatus label="正在加载友情链接" className="col-span-full" />}
         {loading &&
           Array.from({ length: 3 }).map((_, index) => (
-            <motion.div key={`skeleton-${index}`} aria-hidden="true" variants={itemVariants} className="animate-pulse rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+            <motion.div key={`skeleton-${index}`} aria-hidden="true" variants={itemVariants} className="animate-pulse border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-start gap-4">
-                <div className="h-12 w-12 flex-shrink-0 rounded-lg bg-zinc-100 dark:bg-zinc-800" />
+                <div className="h-12 w-12 flex-shrink-0 bg-zinc-100 dark:bg-zinc-800" />
                 <div className="flex-1 space-y-3">
-                  <div className="h-5 w-1/3 rounded bg-zinc-100 dark:bg-zinc-800" />
-                  <div className="h-4 w-full rounded bg-zinc-100 dark:bg-zinc-800" />
-                  <div className="h-4 w-2/3 rounded bg-zinc-100 dark:bg-zinc-800" />
+                  <div className="h-5 w-1/3 bg-zinc-100 dark:bg-zinc-800" />
+                  <div className="h-4 w-full bg-zinc-100 dark:bg-zinc-800" />
+                  <div className="h-4 w-2/3 bg-zinc-100 dark:bg-zinc-800" />
                 </div>
               </div>
             </motion.div>

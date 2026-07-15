@@ -27,10 +27,14 @@
     color: #fafafa;
   }
 
-  /* Better focus states */
+  /* Neutral focus states */
   :focus-visible {
-    outline: 2px solid #c0392b;
-    outline-offset: 4px;
+    outline: 2px solid #3f3f46;
+    outline-offset: 3px;
+  }
+
+  html.dark :focus-visible {
+    outline-color: #d4d4d8;
   }
 
   /* View Transition for Theme Toggle */
@@ -81,19 +85,19 @@ html.theme-switching *:not(script):not(style)::after {
   }
 
   .editorial-surface {
-    @apply rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900;
+    @apply rounded-none border border-zinc-300 bg-paper shadow-none dark:border-zinc-700 dark:bg-zinc-900;
   }
 
   .editorial-button {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-white;
+    @apply inline-flex items-center justify-center gap-2 rounded-none border border-zinc-300 bg-paper px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white;
   }
 
   .editorial-button-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 active:bg-zinc-950 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200;
+    @apply inline-flex items-center justify-center gap-2 rounded-none border border-zinc-950 bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-none transition-colors hover:bg-zinc-800 active:bg-black dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-300;
   }
 
   .editorial-input {
-    @apply w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-zinc-600;
+    @apply w-full rounded-none border border-zinc-300 bg-paper px-4 py-3 text-sm text-ink shadow-none outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-zinc-400;
   }
 }
 
@@ -111,13 +115,13 @@ html.theme-switching *:not(script):not(style)::after {
   }
 
   ::selection {
-    background: rgba(192, 57, 43, 0.18);
-    color: #1c1917;
+    background: rgba(82, 82, 91, 0.22);
+    color: #18181b;
   }
 
   .dark ::selection {
-    background: rgba(231, 76, 60, 0.3);
-    color: #fafaf9;
+    background: rgba(212, 212, 216, 0.28);
+    color: #fafafa;
   }
 
   /* Custom scrollbar */
@@ -272,7 +276,7 @@ html.theme-switching *:not(script):not(style)::after {
 }
 
   .table-wrapper {
-    @apply my-7 overflow-x-auto rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800/80 dark:bg-zinc-950/40 md:my-9;
+    @apply my-7 overflow-x-auto rounded-none border border-zinc-300 bg-paper shadow-none dark:border-zinc-700 dark:bg-zinc-950/40 md:my-9;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -284,7 +288,7 @@ html.theme-switching *:not(script):not(style)::after {
 }
 .prose hr::after {
   content: '';
-  @apply absolute left-1/2 top-1/2 h-px w-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-300 dark:bg-zinc-600;
+  @apply absolute left-1/2 top-1/2 h-px w-16 -translate-x-1/2 -translate-y-1/2 rounded-none bg-zinc-300 dark:bg-zinc-600;
 }
 
 .prose ol > li::marker {
@@ -302,7 +306,7 @@ html.theme-switching *:not(script):not(style)::after {
 }
 
   .code-lang-badge {
-    @apply absolute left-3 top-3 z-10 rounded-md border border-zinc-600/60 bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-300;
+    @apply absolute left-3 top-3 z-10 rounded-none border border-zinc-600 bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-300;
   }
 
   .code-block-collapsed {
@@ -312,15 +316,15 @@ html.theme-switching *:not(script):not(style)::after {
     max-height: none;
   }
   .code-expand-btn {
-    @apply absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center rounded-b-xl border-t border-zinc-800 bg-[#0d1117]/95 py-4 text-sm text-zinc-400 transition-colors hover:text-zinc-200;
+    @apply absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center rounded-none border-t border-zinc-800 bg-[#0d0d0f]/95 py-4 text-sm text-zinc-400 transition-colors hover:text-zinc-200;
   }
 
 .back-to-top-btn {
-  @apply fixed bottom-24 right-4 z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-sm transition-colors hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100 md:bottom-6;
+  @apply fixed bottom-24 right-4 z-50 flex h-9 w-9 items-center justify-center rounded-none border border-zinc-300 bg-paper text-zinc-500 shadow-none transition-colors hover:border-zinc-500 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100 md:bottom-6;
 }
 
   .post-nav-item {
-    @apply flex-1 rounded-lg border border-zinc-200 bg-transparent p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:border-zinc-600 dark:hover:bg-zinc-900 md:p-5;
+    @apply flex-1 rounded-none border border-zinc-300 bg-transparent p-4 shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-900 md:p-5;
     content-visibility: auto;
     contain-intrinsic-size: auto 80px;
   }
@@ -340,7 +344,7 @@ html.theme-switching *:not(script):not(style)::after {
 }
 
 .kbd {
-  @apply inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 px-1.5 text-[11px] font-medium leading-none text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-400;
+  @apply inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-none border border-zinc-300 bg-zinc-100 px-1.5 text-[11px] font-medium leading-none text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-400;
 }
 
 .dark .prose {
@@ -355,7 +359,7 @@ html.theme-switching *:not(script):not(style)::after {
   --tw-prose-quotes: #e4e4e7;
   --tw-prose-quote-borders: #52525b;
   --tw-prose-captions: #a1a1aa;
-  --tw-prose-code: #f97316;
+  --tw-prose-code: #f4f4f5;
   --tw-prose-pre-code: #e4e4e7;
   --tw-prose-pre-bg: #09090b;
   --tw-prose-th-borders: #3f3f46;

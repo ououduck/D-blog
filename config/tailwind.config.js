@@ -55,10 +55,11 @@ export default {
         paper: '#f2f0e9',
         ink: '#1c1917',
         void: '#0a0a0a',
+        // Keep legacy accent utilities working while making them fully neutral.
         accent: {
-          DEFAULT: '#c0392b',
-          light: '#e74c3c',
-          dark: '#922b21'
+          DEFAULT: '#3f3f46',
+          light: '#d4d4d8',
+          dark: '#18181b'
         }
       },
       typography: (theme) => ({
@@ -117,20 +118,20 @@ export default {
               fontStyle: 'normal',
               borderLeftColor: theme('colors.accent.DEFAULT'),
               borderLeftWidth: '4px',
-              backgroundColor: 'rgba(192,57,43,0.03)',
+              backgroundColor: 'rgba(63,63,70,0.04)',
               padding: '1.4em 1.8em',
               marginTop: '1.8em',
               marginBottom: '1.8em',
-              borderRadius: '0 0.75rem 0.75rem 0',
+              borderRadius: '0',
             },
             'blockquote p:first-of-type::before': { content: 'none' },
             'blockquote p:last-of-type::after': { content: 'none' },
             
             code: {
-              color: theme('colors.accent.DEFAULT'),
-              backgroundColor: 'rgba(192,57,43,0.06)',
+              color: theme('colors.ink'),
+              backgroundColor: 'rgba(63,63,70,0.08)',
               padding: '0.15em 0.45em',
-              borderRadius: '0.3rem',
+              borderRadius: '0',
               fontWeight: '600',
               fontSize: '0.875em',
             },
@@ -138,8 +139,8 @@ export default {
             'code::after': { content: '""' },
             
             pre: {
-              backgroundColor: '#0d1117',
-              borderRadius: '0.75rem',
+              backgroundColor: '#0d0d0f',
+              borderRadius: '0',
               padding: '0',
               border: '1px solid rgba(63,63,70,0.8)',
               boxShadow: 'none',
@@ -158,7 +159,7 @@ export default {
             },
             
             img: {
-              borderRadius: '0.75rem',
+              borderRadius: '0',
               marginTop: '2em',
               marginBottom: '2em',
             },
@@ -191,13 +192,13 @@ export default {
             
             blockquote: {
               borderLeftColor: theme('colors.accent.light'),
-              backgroundColor: 'rgba(231,76,60,0.06)',
+              backgroundColor: 'rgba(212,212,216,0.06)',
               color: '#e4e4e7',
             },
             
             code: {
-              color: theme('colors.accent.light'),
-              backgroundColor: 'rgba(231,76,60,0.12)',
+              color: '#f4f4f5',
+              backgroundColor: 'rgba(212,212,216,0.1)',
             },
             
             a: {

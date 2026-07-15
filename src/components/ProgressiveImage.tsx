@@ -116,7 +116,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
           isLoaded || hasError ? 'opacity-0' : 'opacity-100'
         )}
       >
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-300/80 border-t-accent dark:border-zinc-700/80 dark:border-t-accent-light" />
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-300/80 border-t-ink dark:border-zinc-700/80 dark:border-t-white" />
       </div>
       {hasError ? (
         <div className="relative flex min-h-[6rem] items-center justify-center rounded-inherit border border-dashed border-zinc-200 bg-zinc-100/90 px-4 py-6 text-center text-xs font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400">

@@ -26,7 +26,7 @@ export const ContentStatus: React.FC<ContentStatusProps> = ({
     className={mergeClassName(
       'border-y py-10 text-center',
       variant === 'error'
-        ? 'border-dashed border-red-300 dark:border-red-900/60'
+        ? 'border-dashed border-zinc-500 dark:border-zinc-500'
         : 'border-zinc-200 dark:border-zinc-800',
       className
     )}
@@ -34,7 +34,7 @@ export const ContentStatus: React.FC<ContentStatusProps> = ({
     <p className={mergeClassName(
       'font-serif text-lg font-semibold',
       variant === 'error'
-        ? 'text-red-800 dark:text-red-200'
+        ? 'text-zinc-950 dark:text-zinc-100'
         : 'text-zinc-700 dark:text-zinc-300'
     )}>
       {title}

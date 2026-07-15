@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, Search, X } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock } from 'lucide-react';
+import { SearchField } from '@/components/SearchField';
 import { getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
@@ -169,24 +170,14 @@ export const Tags = () => {
       ) : (
         <>
           <div className="mb-8">
-            <div className="group relative max-w-md">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                <Search className="text-zinc-400 transition-colors group-focus-within:text-zinc-900 dark:group-focus-within:text-zinc-100" size={18} />
-              </div>
-              <input
-                type="text"
-                placeholder="搜索标签或文章..."
-                value={searchQuery}
-                onChange={(event) => handleSearchChange(event.target.value)}
-                className="w-full border border-zinc-300 bg-white py-3 pl-11 pr-11 text-sm text-ink outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-zinc-100"
-                aria-label="搜索标签或文章"
-              />
-              {searchQuery && (
-                <button onClick={handleClearSearch} className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100" aria-label="清除搜索">
-                  <X size={16} />
-                </button>
-              )}
-            </div>
+            <SearchField
+              value={searchQuery}
+              onValueChange={handleSearchChange}
+              onClear={handleClearSearch}
+              placeholder="搜索标签或文章..."
+              containerClassName="max-w-md"
+              aria-label="搜索标签或文章"
+            />
             {hasSearchQuery && (
               <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">
                 搜索 "<span className="font-bold text-zinc-900 dark:text-zinc-100">{searchQuery}</span>" 找到 {tags.length} 个标签
@@ -223,12 +214,12 @@ export const Tags = () => {
             <div>
               <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="min-w-0 font-serif text-2xl font-bold text-zinc-900 dark:text-zinc-100 md:text-3xl">
-                  标签: <span className="break-words text-accent dark:text-accent-light">{selectedTag}</span>
+                  标签: <span className="break-words underline decoration-zinc-400 underline-offset-4 dark:decoration-zinc-600">{selectedTag}</span>
                   <span className="ml-3 text-base text-zinc-400">({selectedTagInfo?.count ?? 0} 篇)</span>
                 </h2>
                 <button
                   onClick={() => updateTagParam()}
-                  className="inline-flex w-fit items-center gap-2 rounded-full border border-accent/25 bg-accent/5 px-4 py-2 text-sm font-bold text-accent transition-colors hover:border-accent/50 hover:bg-accent/10 dark:border-accent-light/30 dark:bg-accent-light/10 dark:text-accent-light"
+                  className="inline-flex w-fit items-center gap-2 border border-zinc-400 bg-paper px-4 py-2 text-sm font-bold text-ink transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-600 dark:bg-void dark:text-white dark:hover:border-white dark:hover:bg-zinc-900"
                 >
                   <ArrowLeft size={15} />
                   返回全部标签

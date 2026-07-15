@@ -35,7 +35,7 @@ export const CookieNotice: React.FC = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+          className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-300 bg-paper shadow-none dark:border-zinc-700 dark:bg-zinc-900"
           role="region"
           aria-label="Cookie 使用说明"
         >
@@ -63,13 +63,13 @@ export const CookieNotice: React.FC = () => {
               <div className="flex w-full items-center gap-2 sm:w-auto sm:flex-shrink-0">
                 <button
                   onClick={handleAccept}
-                  className="flex-1 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 dark:focus:ring-white sm:flex-initial"
+                  className="flex-1 border border-zinc-950 bg-zinc-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 focus:outline-none dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300 sm:flex-initial"
                 >
                   同意
                 </button>
                 <button
                   onClick={handleClose}
-                  className="flex min-h-11 min-w-11 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 dark:focus:ring-white"
+                  className="flex min-h-11 min-w-11 items-center justify-center border border-transparent text-zinc-500 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-700 focus:outline-none dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                   aria-label="关闭 Cookie 使用说明"
                 >
                   <X size={18} />

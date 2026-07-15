@@ -118,7 +118,7 @@ const ThemeToggle = () => {
   const nextThemeLabel = theme === 'light' ? TEXT.themeDark : theme === 'dark' ? TEXT.themeSystem : TEXT.themeLight;
 
   return (
-    <button onClick={toggleTheme} className="group relative rounded-full bg-zinc-100 p-2.5 text-ink transition-all duration-300 hover:ring-2 ring-zinc-900/20 dark:bg-zinc-800 dark:text-amber-300 dark:ring-zinc-100/20" aria-label={`切换外观主题，当前为${currentThemeLabel}，点击切换为${nextThemeLabel}`}>
+    <button onClick={toggleTheme} className="group relative border border-zinc-300 bg-zinc-100 p-2.5 text-ink transition-colors hover:border-zinc-500 hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-500" aria-label={`切换外观主题，当前为${currentThemeLabel}，点击切换为${nextThemeLabel}`}>
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={theme} initial={{ y: -10, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 10, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
           {theme === 'light' && <Sun size={18} />}
@@ -126,7 +126,7 @@ const ThemeToggle = () => {
           {theme === 'system' && <Monitor size={18} className="text-zinc-500 dark:text-zinc-400" />}
         </motion.div>
       </AnimatePresence>
-      <span className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+      <span className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap border border-zinc-700 bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
         {currentThemeLabel}
       </span>
     </button>
@@ -534,7 +534,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, ease: easeSmooth }} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-16">
           <Link to="/" onMouseEnter={() => preloadPage('/')} className="group z-50 flex items-center space-x-2.5 sm:space-x-3">
-            <ProgressiveImage src={siteConfig.logoSmall} alt={`${siteConfig.title} 站点标志`} fetchPriority="high" width={96} height={96} wrapperClassName="h-8 w-8 rounded-lg bg-white sm:h-9 sm:w-9" className="h-8 w-8 rounded-lg object-cover sm:h-9 sm:w-9" />
+            <ProgressiveImage src={siteConfig.logoSmall} alt={`${siteConfig.title} 站点标志`} fetchPriority="high" width={96} height={96} wrapperClassName="h-8 w-8 bg-white sm:h-9 sm:w-9" className="h-8 w-8 object-cover sm:h-9 sm:w-9" />
             <span className="font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
           </Link>
 
@@ -558,7 +558,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                       <span className="relative z-10">{item.label}</span>
                       <span
                         aria-hidden="true"
-                        className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-full bg-zinc-900 dark:bg-zinc-100 transition-all duration-250 ${
+                        className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-none bg-zinc-900 dark:bg-zinc-100 transition-all duration-250 ${
                           isActive
                             ? 'scale-x-100 opacity-100'
                             : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
@@ -571,11 +571,11 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             </motion.div>
 
             <div className="flex items-center gap-2 border-l border-zinc-300 pl-5 dark:border-zinc-700">
-              <motion.button variants={navItemVariants} onClick={onSearchClick} className="group flex items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800" aria-label="打开站内搜索">
+              <motion.button variants={navItemVariants} onClick={onSearchClick} className="group flex items-center gap-2 border border-zinc-300 bg-zinc-100 px-3 py-2 text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800" aria-label="打开站内搜索">
                 <Search size={16} />
                 <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">Ctrl+K</span>
               </motion.button>
-              <motion.a variants={navItemVariants} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 rounded-lg px-3 py-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white">
+              <motion.a variants={navItemVariants} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 border border-transparent px-3 py-2 text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-white">
                 <Rss size={16} />
                 <span className="text-xs font-medium">{TEXT.rssFeed}</span>
               </motion.a>
@@ -586,13 +586,13 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           </div>
 
           <div className="flex items-center gap-1.5 lg:hidden">
-            <button onClick={onSearchClick} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-700 shadow-sm shadow-zinc-900/5 transition-all duration-200 hover:border-zinc-300 hover:bg-zinc-50 hover:text-ink active:scale-95 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:shadow-black/20 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-white" aria-label="打开站内搜索">
+            <button onClick={onSearchClick} className="inline-flex h-11 w-11 items-center justify-center border border-zinc-300 bg-paper text-zinc-700 shadow-none transition-colors duration-200 hover:border-zinc-500 hover:bg-zinc-100 hover:text-ink active:scale-95 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white" aria-label="打开站内搜索">
               <Search size={18} />
             </button>
-            <button ref={mobileNavMenuButtonRef} onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className={`z-50 inline-flex h-11 w-11 items-center justify-center rounded-2xl border shadow-sm transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 ${
+            <button ref={mobileNavMenuButtonRef} onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className={`z-50 inline-flex h-11 w-11 items-center justify-center border shadow-none transition-colors duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 ${
               isMobileNavOpen
-                ? 'border-zinc-900 bg-zinc-900 text-white shadow-zinc-900/20 dark:border-white dark:bg-white dark:text-zinc-950 dark:shadow-white/10'
-                : 'border-zinc-200 bg-white text-zinc-700 shadow-zinc-900/5 hover:border-zinc-300 hover:bg-zinc-50 hover:text-ink dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:shadow-black/20 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-white'
+                ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950'
+                : 'border-zinc-300 bg-paper text-zinc-700 hover:border-zinc-500 hover:bg-zinc-100 hover:text-ink dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white'
             }`} aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
               <div className="relative flex h-[18px] w-[18px] items-center justify-center">
                 <Menu size={18} className={`absolute transition-all duration-300 ${isMobileNavOpen ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'}`} />
@@ -627,7 +627,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             data-interaction-locked={isMobileNavAnimating}
             data-locked={isMobileNavAnimating}
             data-swiping="false"
-            className="mobile-nav-panel !fixed inset-x-0 bottom-0 z-[80] overflow-hidden rounded-t-2xl border border-zinc-200 bg-white text-ink shadow-lg outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+            className="mobile-nav-panel !fixed inset-x-0 bottom-0 z-[80] overflow-hidden border border-zinc-300 bg-paper text-ink shadow-none outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
             style={mobileNavPanelStyle}
             tabIndex={-1}
             onTouchStart={handleTouchStart}
@@ -666,7 +666,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                       }`}
                       aria-current={isActive ? 'page' : undefined}
                     >
-                      <Icon size={17} strokeWidth={1.8} className={isActive ? 'text-accent' : 'text-zinc-400 dark:text-zinc-500'} />
+                      <Icon size={17} strokeWidth={1.8} className={isActive ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-400 dark:text-zinc-500'} />
                       <span className="flex-1 text-sm font-semibold">{item.label}</span>
                       <span className="text-xs text-zinc-400 dark:text-zinc-500">{item.hint}</span>
                     </button>
@@ -677,7 +677,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
               <div className="mt-3 grid grid-cols-3 gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
                 {mobileQuickActions.map((action) => {
                   const Icon = action.icon;
-                  const className = 'flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-950 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white';
+                  const className = 'flex items-center justify-center gap-2 border border-zinc-300 bg-paper px-3 py-2.5 text-xs font-semibold text-zinc-600 shadow-none transition-colors hover:border-zinc-500 hover:text-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-white';
                   const content = <><Icon size={15} /><span>{action.label}</span></>;
 
                   if ('onClick' in action) {
@@ -709,7 +709,7 @@ const Footer = ({ isPostPage = false }: { isPostPage?: boolean }) => {
       <div className="mx-auto max-w-7xl px-3 py-8 sm:px-6 md:py-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="max-w-xl">
-            <Link to="/" className="font-serif text-lg font-bold tracking-tight text-ink transition-colors hover:text-accent dark:text-white dark:hover:text-accent-light">
+            <Link to="/" className="font-serif text-lg font-bold tracking-tight text-ink transition-colors hover:text-zinc-600 dark:text-white dark:hover:text-zinc-300">
               {siteConfig.title}
             </Link>
             <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{siteConfig.description}</p>
@@ -743,12 +743,7 @@ const Footer = ({ isPostPage = false }: { isPostPage?: boolean }) => {
 
 const Background = () => {
   return (
-    <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden bg-paper dark:bg-void">
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 top-0 h-64 bg-[radial-gradient(ellipse_at_top,_rgba(192,57,43,0.055),_transparent_68%)] dark:bg-[radial-gradient(ellipse_at_top,_rgba(192,57,43,0.08),_transparent_68%)]"
-      />
-    </div>
+    <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden bg-paper dark:bg-void" />
   );
 };
 
@@ -821,7 +816,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) =
   }, [routeContentKey, hasViewTransition]);
 
   return (
-    <div className="relative flex min-h-screen flex-col selection:bg-accent selection:text-white">
+    <div className="relative flex min-h-screen flex-col">
       <Background />
       <Navbar onSearchClick={openSearch} />
       {hasOpenedSearch && (

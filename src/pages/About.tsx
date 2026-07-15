@@ -11,7 +11,7 @@ export const About = () => {
 
       <header className="mb-12 flex flex-col items-center gap-8 border-b border-zinc-200 pb-10 text-center dark:border-zinc-800 md:flex-row md:gap-12 md:text-left">
         <div className="group relative">
-          <div className="relative z-10 h-32 w-32 overflow-hidden rounded-full border-4 border-zinc-200 dark:border-zinc-800 md:h-40 md:w-40">
+          <div className="relative z-10 h-32 w-32 overflow-hidden border-4 border-zinc-300 dark:border-zinc-700 md:h-40 md:w-40">
             <ProgressiveImage src={siteConfig.author.avatar} alt="Avatar" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
           </div>
         </div>

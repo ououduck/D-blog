@@ -66,7 +66,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       ? createPortal(
           <div
             style={MOBILE_BADGE_STYLE}
-            className="pointer-events-none fixed z-40 rounded-xl border border-zinc-200 bg-white px-2.5 py-2 dark:border-zinc-800 dark:bg-zinc-900 md:hidden"
+            className="pointer-events-none fixed z-40 border border-zinc-300 bg-paper px-2.5 py-2 shadow-none dark:border-zinc-700 dark:bg-zinc-900 md:hidden"
           >
             <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
               <span>进度</span>
@@ -92,7 +92,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
             className="pointer-events-none fixed z-[50] hidden md:block"
             aria-hidden={!isVisible}
           >
-            <div className="min-w-[7rem] rounded-xl border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="min-w-[7rem] border border-zinc-300 bg-paper px-3 py-2 shadow-none dark:border-zinc-700 dark:bg-zinc-900">
               <div className="mb-1 flex items-center justify-between gap-3 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
                 <span>阅读进度</span>
                 <span className="tabular-nums text-zinc-800 dark:text-zinc-200">{percentage}%</span>

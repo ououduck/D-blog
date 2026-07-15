@@ -43,7 +43,7 @@ const LoadingScreen: React.FC = () => {
           ))}
         </div>
         <motion.div initial={{ scaleX: 0, opacity: 0 }} animate={{ scaleX: 1, opacity: 1 }} transition={{ delay: 0.8, duration: 0.8 }} className="relative mt-6 h-[2px] w-48 overflow-hidden rounded-full bg-zinc-800 md:w-64">
-          <motion.div className="absolute inset-y-0 left-0 w-full bg-accent" initial={{ x: '-100%' }} animate={{ x: '100%' }} transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }} />
+          <motion.div className="absolute inset-y-0 left-0 w-full bg-zinc-100" initial={{ x: '-100%' }} animate={{ x: '100%' }} transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }} />
         </motion.div>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.6 }} transition={{ delay: 1, duration: 0.6 }} className="mt-6 text-[10px] font-light uppercase tracking-[0.6em]">
           LOADING
@@ -84,7 +84,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
             <p className="mb-6 text-zinc-600 dark:text-zinc-400">抱歉，页面发生了意外错误，请刷新重试。</p>
             <button
               onClick={() => window.location.reload()}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="border border-zinc-950 bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
             >
               刷新页面
             </button>

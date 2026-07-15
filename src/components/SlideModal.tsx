@@ -150,11 +150,12 @@ export const SlideModal: React.FC<SlideModalProps> = ({
                 max-h-[85vh]
                 supports-[height:100dvh]:max-h-[85dvh]
                 overflow-hidden
-                rounded-t-2xl
+                rounded-none
                 border border-b-0
-                border-zinc-200
-                bg-white
-                dark:border-zinc-800
+                border-zinc-300
+                bg-paper
+                shadow-none
+                dark:border-zinc-700
                 dark:bg-zinc-900
                 ${className}
               `}
@@ -182,14 +183,13 @@ export const SlideModal: React.FC<SlideModalProps> = ({
                 max-h-[80vh]
                 supports-[height:100dvh]:max-h-[80dvh]
                 overflow-hidden
-                rounded-2xl
+                rounded-none
                 border
-                border-zinc-200
-                bg-white
-                shadow-lg
-                dark:border-zinc-800
+                border-zinc-300
+                bg-paper
+                shadow-none
+                dark:border-zinc-700
                 dark:bg-zinc-900
-                dark:shadow-black/40
                 ${className}
               `}
               variants={desktopVariants}

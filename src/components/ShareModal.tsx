@@ -115,7 +115,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           ref={closeButtonRef}
           type="button"
           onClick={onClose}
-          className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+          className="border border-transparent p-1.5 text-zinc-500 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
           aria-label="关闭分享弹窗"
         >
           <X size={16} />

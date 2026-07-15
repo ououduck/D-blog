@@ -1,7 +1,8 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Calendar, Search, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
+import { Calendar, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
+import { SearchField } from '@/components/SearchField';
 import { getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
@@ -154,7 +155,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
         className="col-span-full w-full"
         onMouseEnter={() => preloadPage(`/post/${post.id}`)}
       >
-        <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 md:grid md:grid-cols-5">
+        <div className="overflow-hidden border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 md:grid md:grid-cols-5">
           <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:col-span-3 md:aspect-auto md:min-h-80" aria-label={`阅读文章：${post.title}`}>
             {post.coverImage ? (
               <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
@@ -186,7 +187,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
             <div className="mt-5 flex items-center gap-3 border-t border-zinc-200 pt-4 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-auto">
               <span className="flex items-center gap-1.5"><Calendar size={12} />{post.date}</span>
               <span className="flex items-center gap-1.5"><Clock size={12} />{post.readTime}</span>
-              <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
+              <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
                 <Share2 size={13} />
               </button>
             </div>
@@ -198,7 +199,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
 
   return (
     <motion.article layout variants={cardVariants} transition={{ duration: 0.25, ease: easeOut }} className="flex h-full min-w-0 flex-col" onMouseEnter={() => preloadPage(`/post/${post.id}`)}>
-      <div className="flex h-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex h-full flex-col overflow-hidden border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <Link to={`/post/${post.id}`} className="block aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-800" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
             <ProgressiveImage src={post.coverImage} alt={post.title} loading={index === 0 ? 'eager' : 'lazy'} fetchPriority={index === 0 ? 'high' : 'auto'} width={1600} height={1000} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
@@ -225,7 +226,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
           <div className="mt-4 flex items-center gap-3 border-t border-zinc-200 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             <span className="flex items-center gap-1"><Calendar size={11} />{post.date}</span>
             <span className="flex items-center gap-1"><Clock size={11} />{post.readTime}</span>
-            <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
+            <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
               <Share2 size={12} />
             </button>
           </div>
@@ -253,10 +254,10 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
               key={category}
               onClick={() => onSelect(category)}
               aria-pressed={selected === category}
-              className={`whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+              className={`whitespace-nowrap border px-3.5 py-1.5 text-sm font-semibold transition-colors ${
                 selected === category
-                  ? 'border-accent bg-accent text-white dark:border-accent-light dark:bg-accent-light dark:text-white'
-                  : 'border-zinc-200 bg-white text-zinc-600 hover:border-accent/40 hover:text-ink dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-accent-light/50 dark:hover:text-white'
+                  ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
+                  : 'border-zinc-300 bg-paper text-zinc-700 hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white'
               }`}
             >
               {category}
@@ -264,7 +265,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
           ))}
         </div>
       </div>
-      <button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} className="flex shrink-0 items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-accent/40 hover:text-ink dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-accent-light/50 dark:hover:text-white">
+      <button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} className="flex shrink-0 items-center gap-1.5 border border-zinc-300 bg-paper px-3 py-1.5 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
         {sortOrder === 'newest' ? <ArrowDownWideNarrow size={14} /> : <ArrowUpWideNarrow size={14} />}
         <span>{sortOrder === 'newest' ? '最新' : '最早'}</span>
       </button>
@@ -484,31 +485,26 @@ export const Home = () => {
         <FilterBar categories={categories} selected={selectedCategory} onSelect={handleSelectCategory} sortOrder={sortOrder} onToggleSort={handleToggleSort} />
 
         <div className="mx-auto max-w-2xl">
-          <label className="group relative block">
-            <span className="sr-only">搜索文章</span>
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-600 dark:group-focus-within:text-zinc-300" />
-            <input
-              value={searchQuery}
-              onChange={(event) => handleSearchChange(event.target.value)}
-              type="search"
-              placeholder="搜索标题、摘要、分类与正文内容..."
-              className="w-full rounded-lg border border-zinc-300 bg-white py-2.5 pl-10 pr-4 text-sm text-ink outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-800"
-              aria-label="搜索文章"
-            />
-          </label>
+          <SearchField
+            value={searchQuery}
+            onValueChange={handleSearchChange}
+            onClear={handleClearSearch}
+            placeholder="搜索标题、摘要、分类与正文内容..."
+            aria-label="搜索文章"
+          />
         </div>
 
         {loading || isSearching ? (
           <motion.div variants={fadeInUp} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
             <LoadingStatus label={isSearching ? '正在搜索文章' : '正在加载文章列表'} className="col-span-full" />
             {Array.from({ length: postsPerPage }).map((_, index) => (
-              <div key={index} aria-hidden="true" className="animate-pulse overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
+              <div key={index} aria-hidden="true" className="animate-pulse overflow-hidden border border-zinc-200 dark:border-zinc-800">
                 <div className="aspect-[16/10] bg-zinc-200 dark:bg-zinc-800" />
                 <div className="space-y-3 p-4">
-                  <div className="h-3 w-20 rounded bg-zinc-200 dark:bg-zinc-800" />
-                  <div className="h-4 w-4/5 rounded bg-zinc-200 dark:bg-zinc-800" />
-                  <div className="h-3 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
-                  <div className="h-3 w-2/3 rounded bg-zinc-200 dark:bg-zinc-800" />
+                  <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-800" />
+                  <div className="h-4 w-4/5 bg-zinc-200 dark:bg-zinc-800" />
+                  <div className="h-3 w-full bg-zinc-200 dark:bg-zinc-800" />
+                  <div className="h-3 w-2/3 bg-zinc-200 dark:bg-zinc-800" />
                 </div>
               </div>
             ))}
@@ -551,7 +547,7 @@ export const Home = () => {
 
             {totalPages > 1 && (
               <nav className="flex flex-wrap items-center justify-center gap-2 border-t border-zinc-200 pt-5 dark:border-zinc-800" aria-label="分页导航">
-                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="inline-flex h-9 items-center gap-1 rounded-full border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-600 transition-colors hover:border-accent/40 hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-accent-light/50 dark:hover:text-white" aria-label="上一页">
+                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="inline-flex h-9 items-center gap-1 border border-zinc-300 bg-paper px-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white" aria-label="上一页">
                   <ChevronLeft size={15} />
                   <span className="hidden sm:inline">上一页</span>
                 </button>
@@ -564,17 +560,17 @@ export const Home = () => {
                       type="button"
                       onClick={() => paginate(item)}
                       aria-current={currentPage === item ? 'page' : undefined}
-                      className={`h-9 min-w-9 rounded-full border px-3 text-sm font-semibold transition-colors ${
+                      className={`h-9 min-w-9 border px-3 text-sm font-semibold transition-colors ${
                         currentPage === item
-                          ? 'border-accent bg-accent text-white dark:border-accent-light dark:bg-accent-light dark:text-white'
-                          : 'border-zinc-200 bg-white text-zinc-600 hover:border-accent/40 hover:text-ink dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-accent-light/50 dark:hover:text-white'
+                          ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
+                          : 'border-zinc-300 bg-paper text-zinc-700 hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white'
                       }`}
                     >
                       {item}
                     </button>
                   ))}
                 </div>
-                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="inline-flex h-9 items-center gap-1 rounded-full border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-600 transition-colors hover:border-accent/40 hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-accent-light/50 dark:hover:text-white" aria-label="下一页">
+                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="inline-flex h-9 items-center gap-1 border border-zinc-300 bg-paper px-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white" aria-label="下一页">
                   <span className="hidden sm:inline">下一页</span>
                   <ChevronRight size={15} />
                 </button>

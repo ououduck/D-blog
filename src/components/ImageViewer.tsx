@@ -202,7 +202,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
           onTouchEnd={handleTouchEnd}
         >
           <div className="absolute left-3 right-3 top-3 z-50 flex items-center justify-between gap-3 sm:left-5 sm:right-5 sm:top-5">
-            <div className="min-w-0 rounded-xl border border-white/15 bg-zinc-900 px-3 py-2 text-xs text-white/70 sm:px-4">
+            <div className="min-w-0 border border-white/20 bg-zinc-900 px-3 py-2 text-xs text-white/70 sm:px-4">
               <span className="hidden sm:inline">滚轮缩放 · 拖拽平移 · 双击放大</span>
               <span className="sm:hidden">双指缩放 · 双击放大</span>
             </div>
@@ -210,7 +210,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
               ref={closeButtonRef}
               type="button"
               onClick={(event) => { event.stopPropagation(); onClose(); }}
-              className="rounded-xl border border-white/15 bg-zinc-900 p-2.5 text-white/75 shadow-lg transition-colors hover:bg-zinc-800 hover:text-white"
+              className="border border-white/20 bg-zinc-900 p-2.5 text-white/75 shadow-none transition-colors hover:bg-zinc-800 hover:text-white"
               aria-label="关闭图片预览"
             >
               <X size={22} />
@@ -237,26 +237,26 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
               alt={alt || ''}
               draggable={false}
               onLoad={() => setIsLoaded(true)}
-              className="max-h-[86vh] supports-[height:100dvh]:max-h-[86dvh] max-w-[94vw] rounded-xl object-contain shadow-lg ring-1 ring-white/10"
+              className="max-h-[86vh] supports-[height:100dvh]:max-h-[86dvh] max-w-[94vw] object-contain shadow-none ring-1 ring-white/15"
             />
           </motion.div>
 
-          <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-white/15 bg-zinc-900 p-1.5 shadow-lg sm:bottom-6">
-            <button onClick={handleZoomOut} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-35" aria-label="缩小" title="缩小" disabled={scale <= MIN_SCALE}>
+          <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 border border-white/20 bg-zinc-900 p-1.5 shadow-none sm:bottom-6">
+            <button onClick={handleZoomOut} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-none text-white/70 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-35" aria-label="缩小" title="缩小" disabled={scale <= MIN_SCALE}>
               <Minus size={17} />
             </button>
             <span className="min-w-[3.25rem] text-center text-xs font-semibold text-white/80 tabular-nums">{toolbarLabel}</span>
-            <button onClick={handleZoomIn} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-35" aria-label="放大" title="放大" disabled={scale >= MAX_SCALE}>
+            <button onClick={handleZoomIn} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-none text-white/70 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-35" aria-label="放大" title="放大" disabled={scale >= MAX_SCALE}>
               <Plus size={17} />
             </button>
             <span className="mx-1 h-5 w-px bg-white/15" />
-            <button onClick={handleToggleZoom} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="切换缩放" title="切换缩放">
+            <button onClick={handleToggleZoom} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-none text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="切换缩放" title="切换缩放">
               <Maximize2 size={16} />
             </button>
-            <button onClick={resetView} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="重置" title="重置">
+            <button onClick={resetView} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-none text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="重置" title="重置">
               <RotateCcw size={16} />
             </button>
-            <button onClick={handleDownload} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="下载" title="下载原图">
+            <button onClick={handleDownload} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-none text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="下载" title="下载原图">
               <Download size={16} />
             </button>
           </div>
@@ -266,7 +266,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.12 }}
-              className="absolute bottom-[4.75rem] left-1/2 z-40 max-w-[min(42rem,88vw)] -translate-x-1/2 rounded-xl border border-white/15 bg-zinc-900 px-4 py-2 text-center text-xs text-white/70 sm:bottom-20 sm:text-sm"
+              className="absolute bottom-[4.75rem] left-1/2 z-40 max-w-[min(42rem,88vw)] -translate-x-1/2 border border-white/20 bg-zinc-900 px-4 py-2 text-center text-xs text-white/70 sm:bottom-20 sm:text-sm"
             >
               {alt}
             </motion.p>

@@ -67,7 +67,7 @@ export const Sponsor: React.FC = () => {
           const Icon = option.icon;
           const cardContent = (
             <>
-              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
+              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-none bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
                 <Icon size={21} />
               </div>
               <h2 className="mb-2 font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100">{option.title}</h2>
@@ -76,7 +76,7 @@ export const Sponsor: React.FC = () => {
               <span className={`mt-auto inline-flex items-center gap-2 text-sm font-semibold transition-colors ${
                 option.disabled
                   ? 'cursor-default text-zinc-400 dark:text-zinc-500'
-                  : 'text-zinc-900 hover:text-accent dark:text-zinc-100 dark:hover:text-accent-light'
+                  : 'text-zinc-900 hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300'
               }`}>
                 {option.buttonText}
                 {!option.disabled && <ExternalLink size={14} />}
