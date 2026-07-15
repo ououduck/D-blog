@@ -8,8 +8,8 @@ export const siteConfig = {
   url: 'https://blog.pldduck.com',
   social: {
     github: 'https://github.com/ououduck/',
-    email: 'mailto:dduck@qq.com',
-    rawEmail: 'dduck@qq.com'
+    email: 'mailto:pldduck@outlook.com',
+    rawEmail: 'pldduck@outlook.com'
   },
   author: {
     name: '跑路的duck',

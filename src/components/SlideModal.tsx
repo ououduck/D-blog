@@ -41,7 +41,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
     }
 
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+      setIsMobile(window.innerWidth < 768);
     };
 
     checkMobile();
@@ -142,10 +142,15 @@ export const SlideModal: React.FC<SlideModalProps> = ({
 
   const overlayDuration = reducedMotion ? 0.1 : 0.16;
   const modalDuration = reducedMotion ? 0 : 0.18;
-  const modalVariants = {
+  const desktopVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
     exit: { opacity: 0 }
+  };
+  const mobileVariants = {
+    hidden: { opacity: 0, y: reducedMotion ? 0 : 20 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: reducedMotion ? 0 : 16 }
   };
 
   return createPortal(
@@ -195,10 +200,10 @@ export const SlideModal: React.FC<SlideModalProps> = ({
                 ${className}
               `}
               style={{
-                paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
                 maxHeight: '85vh'
               }}
-              variants={modalVariants}
+              variants={mobileVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
@@ -207,13 +212,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
               <div className="flex justify-center px-4 pt-3">
                 <div className="h-1.5 w-14 rounded-full bg-zinc-300/80 dark:bg-zinc-700/80" />
               </div>
-              <div
-                className="overflow-y-auto"
-                style={{
-                  maxHeight: 'calc(85vh - 40px)',
-                  padding: '12px 16px 16px',
-                }}
-              >
+              <div className="overflow-y-auto" style={{ maxHeight: 'calc(85vh - 18px)' }}>
                 {children}
               </div>
             </motion.div>
@@ -230,26 +229,20 @@ export const SlideModal: React.FC<SlideModalProps> = ({
                 border
                 border-zinc-200
                 bg-white
-                shadow-xl
+                shadow-lg
                 dark:border-zinc-800
                 dark:bg-zinc-900
                 dark:shadow-black/40
                 ${className}
               `}
               style={{ maxHeight: '80vh' }}
-              variants={modalVariants}
+              variants={desktopVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
               transition={{ duration: modalDuration, ease: [0.4, 0, 0.2, 1] }}
             >
-              <div
-                className="overflow-y-auto"
-                style={{
-                  maxHeight: 'calc(80vh - 32px)',
-                  padding: '20px',
-                }}
-              >
+              <div className="overflow-y-auto" style={{ maxHeight: '80vh' }}>
                 {children}
               </div>
             </motion.div>
