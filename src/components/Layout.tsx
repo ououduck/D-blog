@@ -118,7 +118,7 @@ const ThemeToggle = () => {
   const nextThemeLabel = theme === 'light' ? TEXT.themeDark : theme === 'dark' ? TEXT.themeSystem : TEXT.themeLight;
 
   return (
-    <button onClick={toggleTheme} className="group relative border border-zinc-300 bg-zinc-100 p-2.5 text-ink transition-colors hover:border-zinc-500 hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-500" aria-label={`切换外观主题，当前为${currentThemeLabel}，点击切换为${nextThemeLabel}`}>
+    <button onClick={toggleTheme} className="group relative inline-flex h-11 w-11 items-center justify-center rounded-icon border border-zinc-300 bg-zinc-100 text-ink transition-colors hover:border-zinc-500 hover:bg-zinc-200 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-500" aria-label={`切换外观主题，当前为${currentThemeLabel}，点击切换为${nextThemeLabel}`}>
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={theme} initial={{ y: -10, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 10, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
           {theme === 'light' && <Sun size={18} />}
@@ -126,7 +126,7 @@ const ThemeToggle = () => {
           {theme === 'system' && <Monitor size={18} className="text-zinc-500 dark:text-zinc-400" />}
         </motion.div>
       </AnimatePresence>
-      <span className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap border border-zinc-700 bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+      <span className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-control border border-zinc-700 bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
         {currentThemeLabel}
       </span>
     </button>
@@ -571,11 +571,11 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             </motion.div>
 
             <div className="flex items-center gap-2 border-l border-zinc-300 pl-5 dark:border-zinc-700">
-              <motion.button variants={navItemVariants} onClick={onSearchClick} className="group flex items-center gap-2 border border-zinc-300 bg-zinc-100 px-3 py-2 text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800" aria-label="打开站内搜索">
+              <motion.button variants={navItemVariants} onClick={onSearchClick} className="group flex h-11 items-center gap-2 rounded-control border border-zinc-300 bg-zinc-100 px-3 text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-200 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800" aria-label="打开站内搜索">
                 <Search size={16} />
                 <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">Ctrl+K</span>
               </motion.button>
-              <motion.a variants={navItemVariants} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 border border-transparent px-3 py-2 text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-white">
+              <motion.a variants={navItemVariants} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex h-11 items-center gap-2 rounded-control border border-transparent px-3 text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950 active:scale-[0.98] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-white">
                 <Rss size={16} />
                 <span className="text-xs font-medium">{TEXT.rssFeed}</span>
               </motion.a>
@@ -586,10 +586,10 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           </div>
 
           <div className="flex items-center gap-1.5 lg:hidden">
-            <button onClick={onSearchClick} className="inline-flex h-11 w-11 items-center justify-center border border-zinc-300 bg-paper text-zinc-700 shadow-none transition-colors duration-200 hover:border-zinc-500 hover:bg-zinc-100 hover:text-ink active:scale-95 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white" aria-label="打开站内搜索">
+            <button onClick={onSearchClick} className="inline-flex h-11 w-11 items-center justify-center rounded-icon border border-zinc-300 bg-paper text-zinc-700 shadow-none transition-colors duration-200 hover:border-zinc-500 hover:bg-zinc-100 hover:text-ink active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white" aria-label="打开站内搜索">
               <Search size={18} />
             </button>
-            <button ref={mobileNavMenuButtonRef} onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className={`z-50 inline-flex h-11 w-11 items-center justify-center border shadow-none transition-colors duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 ${
+            <button ref={mobileNavMenuButtonRef} onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className={`z-50 inline-flex h-11 w-11 items-center justify-center rounded-icon border shadow-none transition-colors duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
               isMobileNavOpen
                 ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950'
                 : 'border-zinc-300 bg-paper text-zinc-700 hover:border-zinc-500 hover:bg-zinc-100 hover:text-ink dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white'
@@ -627,7 +627,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             data-interaction-locked={isMobileNavAnimating}
             data-locked={isMobileNavAnimating}
             data-swiping="false"
-            className="mobile-nav-panel !fixed inset-x-0 bottom-0 z-[80] overflow-hidden border border-zinc-300 bg-paper text-ink shadow-none outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+            className="mobile-nav-panel !fixed inset-x-0 bottom-0 z-[80] overflow-hidden editorial-sheet border border-b-0 border-zinc-300 bg-paper text-ink shadow-none outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
             style={mobileNavPanelStyle}
             tabIndex={-1}
             onTouchStart={handleTouchStart}
@@ -659,7 +659,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                       onClick={() => handleMobileNavItemSelect(item.path)}
                       onMouseEnter={() => preloadPage(item.path)}
                       disabled={isMobileNavAnimating}
-                      className={`flex w-full items-center gap-3 px-1 py-3.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                      className={`flex w-full items-center gap-3 rounded-control px-1 py-3.5 text-left transition-colors active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
                         isActive
                           ? 'text-ink dark:text-white'
                           : 'text-zinc-600 hover:text-ink dark:text-zinc-400 dark:hover:text-white'
@@ -677,7 +677,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
               <div className="mt-3 grid grid-cols-3 gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
                 {mobileQuickActions.map((action) => {
                   const Icon = action.icon;
-                  const className = 'flex items-center justify-center gap-2 border border-zinc-300 bg-paper px-3 py-2.5 text-xs font-semibold text-zinc-600 shadow-none transition-colors hover:border-zinc-500 hover:text-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-white';
+                  const className = 'flex min-h-11 items-center justify-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2.5 text-xs font-semibold text-zinc-600 shadow-none transition-colors hover:border-zinc-500 hover:text-zinc-950 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-white';
                   const content = <><Icon size={15} /><span>{action.label}</span></>;
 
                   if ('onClick' in action) {

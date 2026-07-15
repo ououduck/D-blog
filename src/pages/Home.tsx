@@ -155,7 +155,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
         className="col-span-full w-full"
         onMouseEnter={() => preloadPage(`/post/${post.id}`)}
       >
-        <div className="overflow-hidden border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 md:grid md:grid-cols-5">
+        <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 md:grid md:grid-cols-5">
           <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:col-span-3 md:aspect-auto md:min-h-80" aria-label={`阅读文章：${post.title}`}>
             {post.coverImage ? (
               <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
@@ -187,7 +187,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
             <div className="mt-5 flex items-center gap-3 border-t border-zinc-200 pt-4 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-auto">
               <span className="flex items-center gap-1.5"><Calendar size={12} />{post.date}</span>
               <span className="flex items-center gap-1.5"><Clock size={12} />{post.readTime}</span>
-              <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
+              <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
                 <Share2 size={13} />
               </button>
             </div>
@@ -199,7 +199,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
 
   return (
     <motion.article layout variants={cardVariants} transition={{ duration: 0.25, ease: easeOut }} className="flex h-full min-w-0 flex-col" onMouseEnter={() => preloadPage(`/post/${post.id}`)}>
-      <div className="flex h-full flex-col overflow-hidden border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600">
         <Link to={`/post/${post.id}`} className="block aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-800" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
             <ProgressiveImage src={post.coverImage} alt={post.title} loading={index === 0 ? 'eager' : 'lazy'} fetchPriority={index === 0 ? 'high' : 'auto'} width={1600} height={1000} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
@@ -226,7 +226,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
           <div className="mt-4 flex items-center gap-3 border-t border-zinc-200 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             <span className="flex items-center gap-1"><Calendar size={11} />{post.date}</span>
             <span className="flex items-center gap-1"><Clock size={11} />{post.readTime}</span>
-            <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
+            <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
               <Share2 size={12} />
             </button>
           </div>
@@ -254,7 +254,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
               key={category}
               onClick={() => onSelect(category)}
               aria-pressed={selected === category}
-              className={`whitespace-nowrap border px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+              className={`whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors active:scale-[.98] ${
                 selected === category
                   ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
                   : 'border-zinc-300 bg-paper text-zinc-700 hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white'
@@ -265,7 +265,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
           ))}
         </div>
       </div>
-      <button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} className="flex shrink-0 items-center gap-1.5 border border-zinc-300 bg-paper px-3 py-1.5 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
+      <button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} className="flex shrink-0 items-center gap-1.5 rounded-control border border-zinc-300 active:scale-[.98] bg-paper px-3 py-1.5 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
         {sortOrder === 'newest' ? <ArrowDownWideNarrow size={14} /> : <ArrowUpWideNarrow size={14} />}
         <span>{sortOrder === 'newest' ? '最新' : '最早'}</span>
       </button>
@@ -498,7 +498,7 @@ export const Home = () => {
           <motion.div variants={fadeInUp} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
             <LoadingStatus label={isSearching ? '正在搜索文章' : '正在加载文章列表'} className="col-span-full" />
             {Array.from({ length: postsPerPage }).map((_, index) => (
-              <div key={index} aria-hidden="true" className="animate-pulse overflow-hidden border border-zinc-200 dark:border-zinc-800">
+              <div key={index} aria-hidden="true" className="animate-pulse overflow-hidden rounded-surface border border-zinc-200 bg-white dark:bg-zinc-900 dark:border-zinc-800">
                 <div className="aspect-[16/10] bg-zinc-200 dark:bg-zinc-800" />
                 <div className="space-y-3 p-4">
                   <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-800" />
@@ -547,7 +547,7 @@ export const Home = () => {
 
             {totalPages > 1 && (
               <nav className="flex flex-wrap items-center justify-center gap-2 border-t border-zinc-200 pt-5 dark:border-zinc-800" aria-label="分页导航">
-                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="inline-flex h-9 items-center gap-1 border border-zinc-300 bg-paper px-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white" aria-label="上一页">
+                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="inline-flex h-9 items-center gap-1 rounded-full border border-zinc-300 active:scale-[.98] bg-paper px-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white" aria-label="上一页">
                   <ChevronLeft size={15} />
                   <span className="hidden sm:inline">上一页</span>
                 </button>
@@ -560,7 +560,7 @@ export const Home = () => {
                       type="button"
                       onClick={() => paginate(item)}
                       aria-current={currentPage === item ? 'page' : undefined}
-                      className={`h-9 min-w-9 border px-3 text-sm font-semibold transition-colors ${
+                      className={`h-9 min-w-9 rounded-full border px-3 text-sm font-semibold transition-colors active:scale-[.98] ${
                         currentPage === item
                           ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
                           : 'border-zinc-300 bg-paper text-zinc-700 hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white'
@@ -570,7 +570,7 @@ export const Home = () => {
                     </button>
                   ))}
                 </div>
-                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="inline-flex h-9 items-center gap-1 border border-zinc-300 bg-paper px-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white" aria-label="下一页">
+                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="inline-flex h-9 items-center gap-1 rounded-full border border-zinc-300 active:scale-[.98] bg-paper px-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white" aria-label="下一页">
                   <span className="hidden sm:inline">下一页</span>
                   <ChevronRight size={15} />
                 </button>

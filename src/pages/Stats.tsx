@@ -43,7 +43,7 @@ const SummaryCard = ({
   detail: string;
 }) => (
   <div className="border-t border-zinc-200 py-5 dark:border-zinc-800 sm:py-6">
-    <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-none bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 sm:h-12 sm:w-12">
+    <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-icon bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 sm:h-12 sm:w-12">
       <Icon size={20} className="sm:size-[22px]" />
     </div>
     <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 sm:text-[11px]">{title}</div>
@@ -132,7 +132,7 @@ export const Stats = () => {
           <LoadingStatus label="正在加载站点统计" className="col-span-full" />
           {Array.from({ length: 5 }).map((_, index) => (
             <div key={index} aria-hidden="true" className="animate-pulse border-t border-zinc-200 py-6 dark:border-zinc-800">
-              <div className="mb-5 h-10 w-10 rounded-none bg-zinc-200 dark:bg-zinc-800" />
+              <div className="mb-5 h-10 w-10 rounded-icon bg-zinc-200 dark:bg-zinc-800" />
               <div className="mb-3 h-3 w-20 bg-zinc-200 dark:bg-zinc-800" />
               <div className="mb-3 h-8 w-24 bg-zinc-200 dark:bg-zinc-800" />
               <div className="h-3 w-full bg-zinc-100 dark:bg-zinc-900" />
@@ -186,7 +186,7 @@ export const Stats = () => {
       </section>
       <section className="mt-10 border-t border-zinc-200 pt-8 dark:border-zinc-800 md:mt-12">
         <div className="mb-5 flex items-center gap-2.5 md:mb-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-none bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+          <div className="flex h-9 w-9 items-center justify-center rounded-icon bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
             <BarChart3 size={18} />
           </div>
           <h2 className="font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100 md:text-2xl">访问统计</h2>
@@ -201,7 +201,7 @@ export const Stats = () => {
             href="https://cloud.umami.is/share/lbt9NW1ZYgWpm1KO"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-14 w-full max-w-xl items-center justify-center gap-3 border border-zinc-900 bg-zinc-900 px-6 py-4 text-base font-bold text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:ring-offset-zinc-950 sm:text-lg"
+            className="inline-flex min-h-14 w-full max-w-xl items-center rounded-surface justify-center gap-3 border border-zinc-900 bg-zinc-900 px-6 py-4 text-base font-bold text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:ring-offset-zinc-950 sm:text-lg"
             title="查看 Umami 统计数据"
           >
             <BarChart3 size={20} />
@@ -212,7 +212,7 @@ export const Stats = () => {
 
       <section className="mt-10 border-t border-zinc-200 pt-8 dark:border-zinc-800 md:mt-12">
         <div className="mb-5 flex items-center gap-2.5 md:mb-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-none bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+          <div className="flex h-9 w-9 items-center justify-center rounded-icon bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
             <Activity size={18} />
           </div>
           <h2 className="font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100 md:text-2xl">运行状态</h2>
@@ -227,7 +227,7 @@ export const Stats = () => {
             href="https://stats.uptimerobot.com/NcIOI9kfVP"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-14 w-full max-w-xl items-center justify-center gap-3 border border-zinc-900 bg-zinc-900 px-6 py-4 text-base font-bold text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:ring-offset-zinc-950 sm:text-lg"
+            className="inline-flex min-h-14 w-full max-w-xl items-center rounded-surface justify-center gap-3 border border-zinc-900 bg-zinc-900 px-6 py-4 text-base font-bold text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:ring-offset-zinc-950 sm:text-lg"
             title="查看网站运行状态"
           >
             <Activity size={20} />

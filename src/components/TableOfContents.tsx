@@ -32,9 +32,9 @@ const DESKTOP_TOC_POPOVER_STYLE = {
   bottom: '15.75rem'
 } as const;
 const MOBILE_TOC_SHEET_STYLE = {
-  left: 'max(0.6rem, calc(env(safe-area-inset-left) + 0.6rem))',
-  right: 'max(0.6rem, calc(env(safe-area-inset-right) + 0.6rem))',
-  bottom: 'max(0.45rem, env(safe-area-inset-bottom))'
+  left: 'env(safe-area-inset-left, 0px)',
+  right: 'env(safe-area-inset-right, 0px)',
+  bottom: 'env(safe-area-inset-bottom, 0px)'
 } as const;
 const MOBILE_SCROLL_STYLE = {
   WebkitOverflowScrolling: 'touch' as const
@@ -311,7 +311,7 @@ export const TableOfContents: React.FC<{
           return (
             <li key={item.id} ref={isActive ? activeItemRef : undefined}>
               <div
-                className={`transition-colors duration-200 ${
+                className={`rounded-control transition-colors duration-200 ${
                   isActive
                     ? 'bg-zinc-100 dark:bg-zinc-800'
                     : isInActiveBranch
@@ -358,7 +358,7 @@ export const TableOfContents: React.FC<{
                     <button
                       type="button"
                       onClick={() => toggleNode(item.id)}
-                      className={`mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center transition-colors duration-200 ${
+                      className={`mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-icon transition-colors duration-200 active:scale-[0.98] ${
                         isInActiveBranch
                           ? 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300'
                           : 'text-zinc-400 hover:bg-zinc-200/80 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'
@@ -460,7 +460,7 @@ export const TableOfContents: React.FC<{
   const readingProgressDisplay = headings.length > 0 ? Math.round(((currentHeadingIndex + 1) / headings.length) * 100) : 0;
 
   const panelContent = (
-    <div className="relative flex h-full flex-col overflow-hidden border border-zinc-300 bg-paper p-4 shadow-none dark:border-zinc-700 dark:bg-void sm:p-4.5">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-overlay border border-zinc-300 bg-paper p-4 shadow-none dark:border-zinc-700 dark:bg-void sm:p-4.5">
       <div
         className="mb-3 flex justify-center lg:hidden"
         onTouchStart={handleSheetTouchStart}
@@ -474,7 +474,7 @@ export const TableOfContents: React.FC<{
       <div className="mb-3.5 space-y-3 border-b border-zinc-200 pb-3 dark:border-zinc-800">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-icon bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
               <List size={17} />
             </span>
             <div className="min-w-0">
@@ -488,7 +488,7 @@ export const TableOfContents: React.FC<{
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center bg-zinc-100 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-300 lg:hidden"
+            className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-icon bg-zinc-100 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-700 active:scale-[0.98] dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-300 lg:hidden"
             aria-label="关闭目录"
           >
             <X size={16} />
@@ -549,7 +549,7 @@ export const TableOfContents: React.FC<{
             window.scrollTo({ top: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth' });
             if (isMobileViewport) setIsOpen(false);
           }}
-          className="flex w-full items-center justify-center gap-2 py-2 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+          className="flex w-full items-center justify-center gap-2 rounded-control py-2 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 active:scale-[0.98] dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
           aria-label="回到顶部"
         >
           <ArrowUp size={14} />
@@ -603,13 +603,13 @@ export const TableOfContents: React.FC<{
             type="button"
             onClick={() => setIsOpen((value) => !value)}
             style={MOBILE_TOC_TRIGGER_STYLE}
-            className="fixed z-[60] inline-flex items-center gap-2 border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 lg:hidden"
+            className="fixed z-[60] inline-flex items-center gap-2 rounded-control border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 lg:hidden"
             aria-label={isOpen ? '关闭目录' : '打开目录'}
             aria-expanded={isOpen}
           >
             {isOpen ? <X size={16} /> : <List size={16} />}
             <span className="leading-none">目录</span>
-            <span className="bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
               {headings.length}
             </span>
           </button>,
@@ -645,13 +645,13 @@ export const TableOfContents: React.FC<{
             type="button"
             onClick={() => setIsOpen((value) => !value)}
             style={DESKTOP_TOC_TRIGGER_STYLE}
-            className="fixed z-[60] hidden items-center gap-2 border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 md:inline-flex"
+            className="fixed z-[60] hidden items-center gap-2 rounded-control border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 md:inline-flex"
             aria-label={isOpen ? '关闭目录' : '打开目录'}
             aria-expanded={isOpen}
           >
             {isOpen ? <X size={16} /> : <List size={16} />}
             <span className="leading-none">目录</span>
-            <span className="bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
+            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
               {headings.length}
             </span>
           </button>,

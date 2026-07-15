@@ -153,7 +153,7 @@ export const Friends = () => {
                   <section className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
                     <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">本站信息（提交前请先添加本站友链）</h2>
                     <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                      <ProgressiveImage src={siteInfo.avatar} alt={siteInfo.name} wrapperClassName="h-12 w-12 flex-shrink-0 border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-void" className="h-12 w-12 object-cover object-center" />
+                      <ProgressiveImage src={siteInfo.avatar} alt={siteInfo.name} wrapperClassName="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-void" className="h-12 w-12 object-cover object-center" />
                       <div className="w-full flex-1 space-y-1">
                         <div className="font-semibold text-zinc-900 dark:text-zinc-100">{siteInfo.name}</div>
                         <div className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{siteInfo.description}</div>
@@ -243,13 +243,13 @@ export const Friends = () => {
               href={friend.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative block h-full border border-zinc-300 bg-paper p-5 transition-colors duration-150 hover:border-ink hover:bg-zinc-100 dark:border-zinc-700 dark:bg-void dark:hover:border-white dark:hover:bg-zinc-900"
+              className="group relative block h-full rounded-surface border border-zinc-300 bg-white p-5 transition-colors duration-150 hover:border-ink dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-white"
             >
               <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:text-zinc-500">
                 <ExternalLink size={16} />
               </div>
               <div className="flex items-start gap-4 pr-5">
-                <div className="h-12 w-12 flex-shrink-0 overflow-hidden border border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900">
+                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full border border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900">
                   <ProgressiveImage src={friend.avatar} alt={friend.name} wrapperClassName="h-full w-full" className="h-full w-full object-cover object-center" effect="fade" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -267,9 +267,9 @@ export const Friends = () => {
         {loading && <LoadingStatus label="正在加载友情链接" className="col-span-full" />}
         {loading &&
           Array.from({ length: 3 }).map((_, index) => (
-            <motion.div key={`skeleton-${index}`} aria-hidden="true" variants={itemVariants} className="animate-pulse border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+            <motion.div key={`skeleton-${index}`} aria-hidden="true" variants={itemVariants} className="animate-pulse rounded-surface border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-start gap-4">
-                <div className="h-12 w-12 flex-shrink-0 bg-zinc-100 dark:bg-zinc-800" />
+                <div className="h-12 w-12 flex-shrink-0 rounded-full bg-zinc-100 dark:bg-zinc-800" />
                 <div className="flex-1 space-y-3">
                   <div className="h-5 w-1/3 bg-zinc-100 dark:bg-zinc-800" />
                   <div className="h-4 w-full bg-zinc-100 dark:bg-zinc-800" />

@@ -136,9 +136,9 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-16 sm:pt-24">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:px-4 sm:py-8">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/55" />
-          <motion.div ref={modalRef} tabIndex={-1} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: modalEase }} className="relative z-10 w-full max-w-2xl overflow-hidden border border-zinc-300 bg-paper shadow-none dark:border-zinc-700 dark:bg-void" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
+          <motion.div ref={modalRef} tabIndex={-1} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }} transition={{ duration: 0.18, ease: modalEase }} className="relative z-10 flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden editorial-sheet border border-b-0 border-zinc-300 bg-paper pb-[env(safe-area-inset-bottom,0px)] shadow-none supports-[height:100dvh]:max-h-[88dvh] dark:border-zinc-700 dark:bg-void sm:max-h-[80vh] sm:rounded-overlay sm:border-b sm:pb-0 supports-[height:100dvh]:sm:max-h-[80dvh]" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
             <h2 id="site-search-title" className="sr-only">站内搜索</h2>
             <div className="flex items-center border-b border-zinc-100 p-4 dark:border-zinc-800">
               <SearchField
@@ -153,7 +153,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 onClear={clearSearch}
                 aria-labelledby="site-search-title"
               />
-              <button onClick={onClose} className="inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800" aria-label="关闭站内搜索">
+              <button onClick={onClose} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-600 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:text-zinc-300 dark:hover:bg-zinc-800" aria-label="关闭站内搜索">
                 <X size={20} />
               </button>
             </div>
@@ -167,7 +167,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                     type="button"
                     onClick={() => setSearchScope(option.value)}
                     aria-pressed={searchScope === option.value}
-                    className={`border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors active:scale-[0.98] ${
                       searchScope === option.value
                         ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'
                         : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:text-ink dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:text-white'
@@ -180,7 +180,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               <p className="mt-2 text-xs text-zinc-700 dark:text-zinc-300">{activeScopeHint}</p>
             </div>
 
-            <div className="max-h-[60vh] supports-[height:100dvh]:max-h-[60dvh] overflow-y-auto" aria-busy={isSearching}>
+            <div className="min-h-0 flex-1 overflow-y-auto sm:max-h-[60vh] supports-[height:100dvh]:sm:max-h-[60dvh]" aria-busy={isSearching}>
               {isSearching ? (
                 <div className="p-12 text-center text-zinc-600 dark:text-zinc-300" role="status" aria-live="polite">
                   <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-zinc-900 border-t-transparent dark:border-zinc-100" aria-hidden="true" />
@@ -238,9 +238,9 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                   <div className="mb-3 px-2 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">搜索历史</div>
                   <div className="flex flex-wrap gap-2">
                     {searchHistory.map((query) => (
-                      <div key={query} className="group flex items-center border border-zinc-200 bg-zinc-50 py-1 pl-3 pr-1 text-sm text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-800">
+                      <div key={query} className="group flex items-center rounded-full border border-zinc-200 bg-zinc-50 py-1 pl-3 pr-1 text-sm text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-800">
                         <button type="button" className="mr-1 min-h-9 hover:text-zinc-900 dark:hover:text-white" onClick={() => handleSearch(query)}>{query}</button>
-                        <button type="button" className="inline-flex min-h-9 min-w-9 items-center justify-center text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200" onClick={(e) => removeHistory(query, e)} aria-label={`删除搜索历史：${query}`}>
+                        <button type="button" className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 active:scale-[0.98] dark:hover:bg-zinc-700 dark:hover:text-zinc-200" onClick={(e) => removeHistory(query, e)} aria-label={`删除搜索历史：${query}`}>
                           <X size={12} />
                         </button>
                       </div>
@@ -258,7 +258,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
             <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50 p-3 text-xs text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300">
               <span id="site-search-desc">{activeScopeHint}</span>
               <div className="flex items-center gap-2">
-                <kbd className="border border-zinc-200 bg-white px-2 py-0.5 font-mono dark:border-zinc-700 dark:bg-zinc-800">esc</kbd>
+                <kbd className="rounded-control border border-zinc-200 bg-white px-2 py-0.5 font-mono dark:border-zinc-700 dark:bg-zinc-800">esc</kbd>
                 <span>{TEXT.close}</span>
               </div>
             </div>

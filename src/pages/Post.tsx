@@ -178,7 +178,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
       <button
         type="button"
         onClick={handleCopy}
-        className={`absolute z-10 rounded-none border border-zinc-600 p-2 transition-colors ${
+        className={`absolute z-10 rounded-none border border-zinc-600 p-2 transition-colors active:scale-[.98] ${
           lang ? 'right-3 top-3' : 'right-3 top-3'
         } ${
           copied
@@ -215,7 +215,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
           <button
             type="button"
             onClick={() => setIsExpanded(false)}
-            className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2 border border-zinc-600 bg-zinc-800 px-3 py-1 text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
+            className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2 border border-zinc-600 bg-zinc-800 px-3 py-1 text-xs active:scale-[.98] text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
             aria-label="折叠代码"
           >
             折叠
@@ -395,17 +395,17 @@ const createMarkdownComponents = (
         <button
           type="button"
           onClick={() => onPreviewImage({ src: props.src || '', alt: props.alt })}
-          className="relative block w-full overflow-hidden rounded-none border border-zinc-300 bg-zinc-50 shadow-none transition-colors duration-200 hover:border-zinc-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-500 dark:focus-visible:outline-zinc-100"
+          className="relative block w-full overflow-hidden rounded-media border border-zinc-300 bg-zinc-50 shadow-none transition-colors duration-200 hover:border-zinc-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-500 dark:focus-visible:outline-zinc-100"
           aria-label={props.alt ? `预览图片：${props.alt}` : '预览图片'}
         >
           <ProgressiveImage
             {...props}
             loading="lazy"
             decoding="async"
-            wrapperClassName="rounded-none"
-            className="cursor-zoom-in rounded-none transition-opacity duration-200 group-hover/myimage:opacity-95"
+            wrapperClassName="rounded-media"
+            className="cursor-zoom-in rounded-media transition-opacity duration-200 group-hover/myimage:opacity-95"
           />
-          <span className="pointer-events-none absolute right-3 top-3 border border-white/20 bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 opacity-0 transition-opacity duration-200 group-hover/myimage:opacity-100 group-focus-visible/myimage:opacity-100">
+          <span className="pointer-events-none absolute right-3 top-3 rounded-micro border border-white/20 bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 opacity-0 transition-opacity duration-200 group-hover/myimage:opacity-100 group-focus-visible/myimage:opacity-100">
             预览
           </span>
         </button>
@@ -659,25 +659,25 @@ export const Post = () => {
       <div className="mx-auto max-w-4xl pt-10" aria-busy="true">
         <LoadingStatus label="正在加载文章内容" />
         <div aria-hidden="true" className="mb-16 animate-pulse text-center">
-          <div className="mx-auto mb-10 h-6 w-24 rounded-none bg-zinc-200 dark:bg-zinc-800" />
-          <div className="mx-auto mb-8 h-12 w-3/4 rounded-none bg-zinc-200 dark:bg-zinc-800 md:h-16" />
+          <div className="mx-auto mb-10 h-6 w-24 rounded-micro bg-zinc-200 dark:bg-zinc-800" />
+          <div className="mx-auto mb-8 h-12 w-3/4 rounded-micro bg-zinc-200 dark:bg-zinc-800 md:h-16" />
           <div className="flex justify-center space-x-6">
-            <div className="h-4 w-28 rounded-none bg-zinc-200 dark:bg-zinc-800" />
-            <div className="h-4 w-32 rounded-none bg-zinc-200 dark:bg-zinc-800" />
-            <div className="h-4 w-20 rounded-none bg-zinc-200 dark:bg-zinc-800" />
+            <div className="h-4 w-28 rounded-micro bg-zinc-200 dark:bg-zinc-800" />
+            <div className="h-4 w-32 rounded-micro bg-zinc-200 dark:bg-zinc-800" />
+            <div className="h-4 w-20 rounded-micro bg-zinc-200 dark:bg-zinc-800" />
           </div>
         </div>
 
-        <div aria-hidden="true" className="mb-20 aspect-[21/9] w-full animate-pulse rounded-none bg-zinc-200 dark:bg-zinc-800" />
+        <div aria-hidden="true" className="mb-20 aspect-[21/9] w-full animate-pulse rounded-media bg-zinc-200 dark:bg-zinc-800" />
 
         <div aria-hidden="true" className="mx-auto max-w-3xl animate-pulse space-y-6 pb-32">
-          <div className="h-5 w-full rounded-none bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-5 w-11/12 rounded-none bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-5 w-full rounded-none bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-5 w-4/5 rounded-none bg-zinc-200 dark:bg-zinc-800" />
-          <div className="my-10 h-40 w-full rounded-none bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-5 w-full rounded-none bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-5 w-5/6 rounded-none bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-5 w-full rounded-micro bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-5 w-11/12 rounded-micro bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-5 w-full rounded-micro bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-5 w-4/5 rounded-micro bg-zinc-200 dark:bg-zinc-800" />
+          <div className="my-10 h-40 w-full rounded-media bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-5 w-full rounded-micro bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-5 w-5/6 rounded-micro bg-zinc-200 dark:bg-zinc-800" />
         </div>
       </div>
     );
@@ -800,25 +800,25 @@ export const Post = () => {
             </h1>
 
             <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-500 md:gap-2.5 md:text-xs">
-              <span className="inline-flex max-w-full items-center gap-1.5 rounded-none border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
+              <span className="inline-flex max-w-full items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
                 <Users size={14} />
                 <span className="truncate">{authorsLabel}</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-none border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
+              <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
                 <Calendar size={14} />
                 <span>发布于 {formatMetaDate(post.date)}</span>
               </span>
               {post.updatedAt && post.updatedAt !== post.date && (
-                <span className="inline-flex items-center gap-1.5 rounded-none border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
+                <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
                   <Calendar size={14} />
                   <span>更新 {formatMetaDate(post.updatedAt)}</span>
                 </span>
               )}
-              <span className="inline-flex items-center gap-1.5 rounded-none border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
+              <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
                 <Clock size={14} />
                 <span>{post.readTime}</span>
               </span>
-              <button type="button" onClick={() => setShareModalOpen(true)} className="inline-flex items-center gap-1.5 rounded-none border border-zinc-400 bg-zinc-100 px-3 py-1.5 text-zinc-800 transition-colors hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400" aria-label={`分享文章：${post.title}`}>
+              <button type="button" onClick={() => setShareModalOpen(true)} className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-400 bg-zinc-100 px-3 py-1.5 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400" aria-label={`分享文章：${post.title}`}>
                 <Share2 size={14} />
                 分享
               </button>
@@ -828,7 +828,7 @@ export const Post = () => {
 
         {post.coverImage && (
           <button type="button" className="mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 0.22, ease: easeOut }} className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-none border border-zinc-300 bg-zinc-100 shadow-none dark:border-zinc-700 dark:bg-zinc-900 sm:aspect-[16/8] md:mb-14 lg:aspect-[21/9]">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 0.22, ease: easeOut }} className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-media border border-zinc-300 bg-zinc-100 shadow-none dark:border-zinc-700 dark:bg-zinc-900 sm:aspect-[16/8] md:mb-14 lg:aspect-[21/9]">
               <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" width={1600} height={686} aspectRatio="21/9" sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
             </motion.div>
           </button>
@@ -836,7 +836,7 @@ export const Post = () => {
 
         <div ref={articleBodyRef} className="mx-auto w-full max-w-5xl px-3 pb-12 sm:px-4 md:pb-20 lg:px-0">
           <div className="mx-auto max-w-[46rem]">
-            <div className="prose prose-stone max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:tracking-tight prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-3 dark:prose-h2:border-zinc-800 prose-p:leading-8 prose-li:leading-8 prose-a:break-words prose-a:underline-offset-4 prose-img:rounded-none prose-img:shadow-none prose-blockquote:rounded-none prose-blockquote:border-l-zinc-600 prose-blockquote:bg-zinc-100/70 prose-blockquote:not-italic dark:prose-blockquote:border-l-zinc-400 dark:prose-blockquote:bg-zinc-900 prose-pre:rounded-none prose-pre:border prose-pre:border-zinc-700 prose-pre:bg-[#0d0d0f] prose-pre:p-0">
+            <div className="prose prose-stone max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:tracking-tight prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-3 dark:prose-h2:border-zinc-800 prose-p:leading-8 prose-li:leading-8 prose-a:break-words prose-a:underline-offset-4 prose-img:rounded-media prose-img:shadow-none prose-blockquote:rounded-none prose-blockquote:border-l-zinc-600 prose-blockquote:bg-zinc-100/70 prose-blockquote:not-italic dark:prose-blockquote:border-l-zinc-400 dark:prose-blockquote:bg-zinc-900 prose-pre:rounded-none prose-pre:border prose-pre:border-zinc-700 prose-pre:bg-[#0d0d0f] prose-pre:p-0">
               <ReactMarkdown
                 remarkPlugins={remarkPlugins}
                 rehypePlugins={rehypePlugins}

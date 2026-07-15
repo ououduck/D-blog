@@ -219,7 +219,7 @@ export const Tags = () => {
                 </h2>
                 <button
                   onClick={() => updateTagParam()}
-                  className="inline-flex w-fit items-center gap-2 border border-zinc-400 bg-paper px-4 py-2 text-sm font-bold text-ink transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-600 dark:bg-void dark:text-white dark:hover:border-white dark:hover:bg-zinc-900"
+                  className="inline-flex w-fit items-center gap-2 rounded-control border border-zinc-400 active:scale-[.98] bg-paper px-4 py-2 text-sm font-bold text-ink transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-600 dark:bg-void dark:text-white dark:hover:border-white dark:hover:bg-zinc-900"
                 >
                   <ArrowLeft size={15} />
                   返回全部标签
@@ -231,7 +231,7 @@ export const Tags = () => {
                   <motion.div key={post.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, delay: index * 0.02, ease: easeOut }}>
                     <Link to={`/post/${post.id}`} className="group block border-t border-zinc-200 py-5 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600">
                       <div className="mb-3 flex items-center gap-2">
-                        <span className="border border-zinc-300 px-3 py-1 text-xs font-bold uppercase tracking-wider text-zinc-900 dark:border-zinc-700 dark:text-zinc-100">
+                        <span className="rounded-full border border-zinc-300 px-3 py-1 text-xs font-bold uppercase tracking-wider text-zinc-900 dark:border-zinc-700 dark:text-zinc-100">
                           {post.category}
                         </span>
                       </div>

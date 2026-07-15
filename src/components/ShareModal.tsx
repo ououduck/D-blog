@@ -115,7 +115,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           ref={closeButtonRef}
           type="button"
           onClick={onClose}
-          className="border border-transparent p-1.5 text-zinc-500 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-icon border border-transparent text-zinc-500 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900 active:scale-[0.98] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
           aria-label="关闭分享弹窗"
         >
           <X size={16} />
@@ -134,14 +134,14 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           </div>
           <h4 className="mb-2 line-clamp-2 text-base font-bold leading-snug text-zinc-900 dark:text-zinc-100">{title}</h4>
           <p id={descriptionId} className="mb-3 line-clamp-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{excerpt}</p>
-          <div className="break-all border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">{url}</div>
+          <div className="break-all rounded-control border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">{url}</div>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <button
             type="button"
             onClick={() => handleCopy('all')}
-            className="editorial-button-primary"
+            className="editorial-button-primary rounded-control active:scale-[0.98]"
             aria-label="复制标题、简介和链接"
           >
             {copiedType === 'all' ? <Check size={16} /> : <Copy size={16} />}
@@ -150,7 +150,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           <button
             type="button"
             onClick={() => handleCopy('link')}
-            className="editorial-button"
+            className="editorial-button rounded-control active:scale-[0.98]"
             aria-label="仅复制文章链接"
           >
             {copiedType === 'link' ? <Check size={16} /> : <LinkIcon size={16} />}

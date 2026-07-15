@@ -85,19 +85,28 @@ html.theme-switching *:not(script):not(style)::after {
   }
 
   .editorial-surface {
-    @apply rounded-none border border-zinc-300 bg-paper shadow-none dark:border-zinc-700 dark:bg-zinc-900;
+    @apply rounded-surface border border-zinc-300 bg-paper shadow-none dark:border-zinc-700 dark:bg-zinc-900;
+  }
+
+  .editorial-overlay {
+    @apply rounded-overlay border border-zinc-300 bg-paper shadow-none dark:border-zinc-700 dark:bg-zinc-900;
+  }
+
+  .editorial-sheet {
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
   }
 
   .editorial-button {
-    @apply inline-flex items-center justify-center gap-2 rounded-none border border-zinc-300 bg-paper px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white;
+    @apply inline-flex items-center justify-center gap-2 rounded-control border border-zinc-300 bg-paper px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white;
   }
 
   .editorial-button-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-none border border-zinc-950 bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-none transition-colors hover:bg-zinc-800 active:bg-black dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-300;
+    @apply inline-flex items-center justify-center gap-2 rounded-control border border-zinc-950 bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-none transition-colors hover:bg-zinc-800 active:bg-black dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-300;
   }
 
   .editorial-input {
-    @apply w-full rounded-none border border-zinc-300 bg-paper px-4 py-3 text-sm text-ink shadow-none outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-zinc-400;
+    @apply w-full rounded-control border border-zinc-300 bg-paper px-4 py-3 text-sm text-ink shadow-none outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-zinc-400;
   }
 }
 
@@ -339,12 +348,26 @@ html.theme-switching *:not(script):not(style)::after {
 
 
 
+.prose img {
+  @apply rounded-media;
+}
+
+.prose pre,
+.prose pre code,
+.prose table,
+.table-wrapper,
+.mermaid,
+.mermaid svg,
+.mermaid-container {
+  border-radius: 0;
+}
+
 .dark .prose img:not(.no-dark-border) {
   @apply ring-1 ring-white/10;
 }
 
 .kbd {
-  @apply inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-none border border-zinc-300 bg-zinc-100 px-1.5 text-[11px] font-medium leading-none text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-400;
+  @apply inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-micro border border-zinc-300 bg-zinc-100 px-1.5 text-[11px] font-medium leading-none text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-400;
 }
 
 .dark .prose {

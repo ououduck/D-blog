@@ -43,7 +43,7 @@ export const ContentStatus: React.FC<ContentStatusProps> = ({
       <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{description}</p>
     )}
     {actionLabel && onAction && (
-      <button type="button" onClick={onAction} className="editorial-button mt-4">
+      <button type="button" onClick={onAction} className="editorial-button mt-4 rounded-control active:scale-[.98]">
         {actionLabel}
       </button>
     )}

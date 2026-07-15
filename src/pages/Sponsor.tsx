@@ -67,7 +67,7 @@ export const Sponsor: React.FC = () => {
           const Icon = option.icon;
           const cardContent = (
             <>
-              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-none bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
+              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-control bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
                 <Icon size={21} />
               </div>
               <h2 className="mb-2 font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100">{option.title}</h2>
@@ -86,7 +86,7 @@ export const Sponsor: React.FC = () => {
 
           if (option.disabled || !option.buttonLink) {
             return (
-              <article key={option.id} className="flex min-h-64 flex-col border-t border-zinc-200 py-5 dark:border-zinc-800">
+              <article key={option.id} className="flex min-h-64 flex-col rounded-surface border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
                 {cardContent}
               </article>
             );
@@ -98,7 +98,7 @@ export const Sponsor: React.FC = () => {
               href={option.buttonLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-64 flex-col border-t border-zinc-200 py-5 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
+              className="flex min-h-64 flex-col rounded-surface border border-zinc-200 bg-white p-5 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600"
             >
               {cardContent}
             </a>
@@ -123,7 +123,7 @@ export const Sponsor: React.FC = () => {
                 href={ad.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block overflow-hidden border border-zinc-200 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
+                className="block overflow-hidden rounded-surface border border-zinc-200 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
                 aria-label={`打开赞助商链接：${ad.title}`}
               >
                 <img

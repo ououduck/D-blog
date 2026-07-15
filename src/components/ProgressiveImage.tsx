@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+export type ProgressiveImageRadius = 'none' | 'media' | 'icon' | 'surface' | 'overlay' | 'full';
+
 interface ProgressiveImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   wrapperClassName?: string;
   placeholderClassName?: string;
   aspectRatio?: string;
   effect?: 'blur' | 'fade' | 'none';
+  radius?: ProgressiveImageRadius;
   sources?: Array<{
     srcSet: string;
     type?: string;
@@ -15,20 +18,16 @@ interface ProgressiveImageProps extends React.ImgHTMLAttributes<HTMLImageElement
 
 const mergeClassName = (...values: Array<string | undefined | false>) => values.filter(Boolean).join(' ');
 
-const getPlaceholderColor = (seed: string, offset: number) => {
-  let hash = offset;
-  for (let index = 0; index < seed.length; index += 1) {
-    hash = (hash * 31 + seed.charCodeAt(index)) % 360;
-  }
-  return `hsl(${hash} 18% ${offset === 0 ? '86%' : '74%'})`;
+const radiusClasses: Record<ProgressiveImageRadius, string> = {
+  none: 'rounded-none',
+  media: 'rounded-media',
+  icon: 'rounded-icon',
+  surface: 'rounded-surface',
+  overlay: 'rounded-overlay',
+  full: 'rounded-full',
 };
 
-const createLowQualityPlaceholder = (seed: string) => {
-  const baseColor = getPlaceholderColor(seed, 0);
-  const midColor = getPlaceholderColor(seed, 83);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 20"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="${baseColor}"/><stop offset="1" stop-color="${midColor}"/></linearGradient></defs><rect width="32" height="20" fill="url(#g)"/><circle cx="8" cy="6" r="9" fill="rgba(255,255,255,.24)"/><circle cx="25" cy="17" r="10" fill="rgba(0,0,0,.08)"/></svg>`;
-  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-};
+const PAPER_PLACEHOLDER = 'linear-gradient(135deg, #eee9df 0%, #e4ddd1 52%, #d8cfc1 100%)';
 
 export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
   wrapperClassName,
@@ -42,6 +41,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
   alt,
   aspectRatio,
   effect = 'blur',
+  radius = 'none',
   width,
   height,
   sizes,
@@ -85,19 +85,18 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
   const imageTransitionClass = prefersReducedMotion || effect === 'none'
     ? 'opacity-100'
     : isLoaded ? 'opacity-100' : 'opacity-0';
-  const lowQualityPlaceholderStyle: React.CSSProperties | undefined = src
-    ? { backgroundImage: createLowQualityPlaceholder(String(src)) }
-    : undefined;
+  const placeholderStyle: React.CSSProperties = { backgroundImage: PAPER_PLACEHOLDER };
 
   return (
-    <div className={mergeClassName('relative overflow-hidden', wrapperClassName)} style={wrapperStyle}>
+    <div className={mergeClassName('relative overflow-hidden', radiusClasses[radius], wrapperClassName)} style={wrapperStyle}>
       <div
         aria-hidden="true"
         className={mergeClassName(
-          'pointer-events-none absolute inset-0 bg-zinc-200 transition-opacity duration-300 dark:bg-zinc-800',
+          'pointer-events-none absolute inset-0 bg-cover transition-opacity duration-300 dark:brightness-[0.42] dark:saturate-[0.55]',
           isLoaded || hasError ? 'opacity-0' : 'opacity-100',
           placeholderClassName
         )}
+        style={placeholderStyle}
       />
       {src && !hasError && (
         <div
@@ -106,7 +105,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
             'pointer-events-none absolute inset-0 scale-110 bg-cover bg-center opacity-40 blur-xl transition-opacity duration-500 dark:opacity-25',
             isLoaded ? 'opacity-0 dark:opacity-0' : undefined
           )}
-          style={lowQualityPlaceholderStyle}
+          style={placeholderStyle}
         />
       )}
       <div
@@ -119,7 +118,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-300/80 border-t-ink dark:border-zinc-700/80 dark:border-t-white" />
       </div>
       {hasError ? (
-        <div className="relative flex min-h-[6rem] items-center justify-center rounded-inherit border border-dashed border-zinc-200 bg-zinc-100/90 px-4 py-6 text-center text-xs font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400">
+        <div className="relative flex min-h-[6rem] h-full w-full items-center justify-center rounded-[inherit] border border-dashed border-zinc-200 bg-zinc-100/90 px-4 py-6 text-center text-xs font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400">
           <span className="line-clamp-2">图片暂时无法加载{alt ? `：${alt}` : ''}</span>
         </div>
       ) : (

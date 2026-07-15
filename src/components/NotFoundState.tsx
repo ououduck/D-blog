@@ -47,7 +47,7 @@ export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(({
             <div className="mt-8">
               <Link
                 to={backTo}
-                className="inline-flex items-center border border-ink bg-ink px-6 py-3 text-sm font-bold tracking-[0.12em] text-white transition-colors hover:bg-zinc-800 dark:border-white dark:bg-white dark:text-ink dark:hover:bg-zinc-200"
+                className="inline-flex items-center rounded-control border border-ink active:scale-[.98] bg-ink px-6 py-3 text-sm font-bold tracking-[0.12em] text-white transition-colors hover:bg-zinc-800 dark:border-white dark:bg-white dark:text-ink dark:hover:bg-zinc-200"
               >
                 <ArrowLeft size={16} className="mr-2" />
                 {backLabel}

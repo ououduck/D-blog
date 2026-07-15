@@ -62,6 +62,14 @@ export default {
           dark: '#18181b'
         }
       },
+      borderRadius: {
+        micro: '4px',
+        control: '6px',
+        icon: '8px',
+        surface: '8px',
+        overlay: '12px',
+        media: '8px',
+      },
       typography: (theme) => ({
         DEFAULT: {
           css: {
@@ -159,7 +167,7 @@ export default {
             },
             
             img: {
-              borderRadius: '0',
+              borderRadius: theme('borderRadius.media'),
               marginTop: '2em',
               marginBottom: '2em',
             },

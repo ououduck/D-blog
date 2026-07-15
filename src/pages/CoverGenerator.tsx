@@ -37,7 +37,7 @@ type SectionHeaderProps = {
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({ icon, title, sectionKey, collapsed, onToggle, action }) => (
   <div className="mb-4 flex items-center justify-between">
-    <button type="button" onClick={() => onToggle(sectionKey)} aria-expanded={!collapsed} className="flex items-center gap-2 text-left hover:opacity-80">
+    <button type="button" onClick={() => onToggle(sectionKey)} aria-expanded={!collapsed} className="flex items-center gap-2 text-left active:scale-[.98] hover:opacity-80">
       {icon}
       <h2 className="font-bold text-ink dark:text-white">{title}</h2>
       {collapsed ? <ChevronDown size={14} className="text-zinc-400" /> : <ChevronUp size={14} className="text-zinc-400" />}
@@ -601,12 +601,12 @@ export const CoverGenerator: React.FC = () => {
   }, [generateCover]);
 
   // ==================== UI 渲染 ====================
-  const inputClass = "w-full border border-zinc-300 bg-paper px-4 py-2.5 text-ink outline-none transition-colors focus:border-ink dark:border-zinc-700 dark:bg-void dark:text-white dark:focus:border-white";
+  const inputClass = "w-full rounded-control border border-zinc-300 bg-paper px-4 py-2.5 text-ink outline-none transition-colors focus:border-ink dark:border-zinc-700 dark:bg-void dark:text-white dark:focus:border-white";
   const rangeClass = "w-full accent-ink dark:accent-white";
-  const colorClass = "h-11 w-full cursor-pointer border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-void";
-  const cardClass = "overflow-hidden border border-zinc-300 bg-paper transition-colors dark:border-zinc-800 dark:bg-void";
-  const dashedBtnClass = "flex items-center justify-center gap-2 border border-dashed border-zinc-400 bg-paper px-4 py-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-600 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900";
-  const chipClass = "inline-flex items-center border border-zinc-300 bg-paper px-3 py-1 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:bg-void dark:text-zinc-300";
+  const colorClass = "h-11 w-full cursor-pointer rounded-control border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-void";
+  const cardClass = "overflow-hidden rounded-surface border border-zinc-300 bg-paper transition-colors dark:border-zinc-800 dark:bg-void";
+  const dashedBtnClass = "flex items-center justify-center gap-2 rounded-control border active:scale-[.98] border-dashed border-zinc-400 bg-paper px-4 py-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-600 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900";
+  const chipClass = "inline-flex items-center rounded-full border border-zinc-300 bg-paper px-3 py-1 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:bg-void dark:text-zinc-300";
 
   return (
     <div className="pb-20">
@@ -634,7 +634,7 @@ export const CoverGenerator: React.FC = () => {
             tabIndex={activeTab === tab ? 0 : -1}
             onClick={() => setActiveTab(tab)}
             onKeyDown={handleTabKeyDown}
-            className={`px-5 py-2.5 text-sm font-semibold transition-colors ${
+            className={`rounded-control px-5 py-2.5 text-sm font-semibold transition-colors active:scale-[.98] ${
               activeTab === tab
                 ? 'bg-ink text-white dark:bg-white dark:text-ink'
                 : 'text-zinc-600 hover:bg-zinc-100 hover:text-ink dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'
@@ -649,7 +649,7 @@ export const CoverGenerator: React.FC = () => {
         <div
           role={feedback.kind === 'error' ? 'alert' : 'status'}
           aria-live={feedback.kind === 'error' ? 'assertive' : 'polite'}
-          className={`mb-5 flex items-center justify-between gap-3 border px-4 py-3 text-sm ${
+          className={`mb-5 flex items-center justify-between gap-3 rounded-surface border px-4 py-3 text-sm ${
             feedback.kind === 'error'
               ? 'border-dashed border-ink bg-paper font-semibold text-ink dark:border-white dark:bg-void dark:text-white'
               : feedback.kind === 'success'
@@ -658,7 +658,7 @@ export const CoverGenerator: React.FC = () => {
           }`}
         >
           <span>{feedback.message}</span>
-          <button type="button" onClick={() => setFeedback(null)} aria-label="关闭提示" title="关闭提示" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center border-l border-current/20 hover:bg-black/5 dark:hover:bg-white/10">
+          <button type="button" onClick={() => setFeedback(null)} aria-label="关闭提示" title="关闭提示" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-control border-l active:scale-[.98] border-current/20 hover:bg-black/5 dark:hover:bg-white/10">
             <X size={16} aria-hidden="true" />
           </button>
         </div>
@@ -675,7 +675,7 @@ export const CoverGenerator: React.FC = () => {
                     title="文字内容"
                     sectionKey="text-content" collapsed={isCollapsed("text-content")} onToggle={toggleSection}
                     action={
-                      <button onClick={swapMainTexts} className="p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" title="交换左右文字">
+                      <button onClick={swapMainTexts} className="rounded-icon p-2 text-zinc-400 transition-colors active:scale-[.98] hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" title="交换左右文字">
                         <ArrowLeftRight size={16} />
                       </button>
                     }
@@ -714,7 +714,7 @@ export const CoverGenerator: React.FC = () => {
                     sectionKey="icon" collapsed={isCollapsed("icon")} onToggle={toggleSection}
                     action={
                       <label className="flex cursor-pointer items-center gap-2">
-                        <input type="checkbox" checked={showIcon} onChange={(e) => setShowIcon(e.target.checked)} className="rounded-none accent-ink dark:accent-white" />
+                        <input type="checkbox" checked={showIcon} onChange={(e) => setShowIcon(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
                         <span className="text-xs text-zinc-500 dark:text-zinc-400">显示</span>
                       </label>
                     }
@@ -745,7 +745,7 @@ export const CoverGenerator: React.FC = () => {
                     action={
                       <button
                         onClick={randomizeStyle}
-                        className="p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white"
+                        className="rounded-icon p-1.5 text-zinc-400 transition-colors active:scale-[.98] hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white"
                         title="随机风格"
                       >
                         <Shuffle size={16} />
@@ -759,7 +759,7 @@ export const CoverGenerator: React.FC = () => {
                           <button
                             key={template.id}
                             onClick={() => setSelectedTemplate(template)}
-                            className={`group relative h-28 overflow-hidden border transition-colors ${
+                            className={`group relative h-28 overflow-hidden rounded-surface border transition-colors ${
                               selectedTemplate.id === template.id
                                 ? 'border-ink ring-2 ring-ink/10 dark:border-white dark:ring-white/10'
                                 : 'border-zinc-200/80 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500'
@@ -772,12 +772,12 @@ export const CoverGenerator: React.FC = () => {
                               <div className={`mt-1 text-xs ${template.id === 'white' ? 'text-zinc-600' : 'text-white/70'}`}>{template.description}</div>
                             </div>
                             {selectedTemplate.id === template.id && (
-                              <div className="absolute right-3 top-3 bg-white/80 px-2 py-1 text-[11px] font-bold text-ink shadow-none dark:bg-zinc-800/80 dark:text-white">当前</div>
+                              <div className="absolute right-3 top-3 rounded-micro bg-white/80 px-2 py-1 text-[11px] font-bold text-ink shadow-none dark:bg-zinc-800/80 dark:text-white">当前</div>
                             )}
                           </button>
                         ))}
                       </div>
-                      <div className="border border-dashed border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-700 dark:bg-zinc-800/60">
+                      <div className="rounded-surface border border-dashed border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-700 dark:bg-zinc-800/60">
                         <p className="mb-3 text-xs leading-6 text-zinc-500 dark:text-zinc-400">背景模板固定保留现有两种：<strong>纯黑</strong> 与 <strong>纯白</strong>。你仍可叠加自定义背景图片增强表现。</p>
                         <input ref={bgImageInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleBgImageUpload} className="hidden" />
                         <button onClick={() => bgImageInputRef.current?.click()} className={dashedBtnClass + ' w-full'}>
@@ -811,13 +811,13 @@ export const CoverGenerator: React.FC = () => {
                       <motion.button
                         key={preset.name}
                         onClick={preset.action}
-                        className="border border-zinc-200 bg-zinc-50 px-3 py-3 text-xs font-semibold text-zinc-700 transition-all hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-700"
+                        className="rounded-control border border-zinc-200 bg-zinc-50 px-3 py-3 active:scale-[.98] text-xs font-semibold text-zinc-700 transition-all hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-700"
                       >
                         {preset.name}
                       </motion.button>
                     ))}
                   </div>
-                  <button onClick={resetStyleSettings} className="mt-3 flex w-full items-center justify-center gap-2 border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-all hover:border-ink hover:text-ink dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
+                  <button onClick={resetStyleSettings} className="mt-3 flex w-full items-center justify-center gap-2 rounded-control border active:scale-[.98] border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-all hover:border-ink hover:text-ink dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
                     <RotateCcw size={14} />重置样式参数
                   </button>
                 </div>
@@ -859,7 +859,7 @@ export const CoverGenerator: React.FC = () => {
                         <input type="range" min="100" max="900" step="100" value={fontWeight} onChange={(e) => setFontWeight(Number(e.target.value))} className={rangeClass} />
                       </div>
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={autoTextColor} onChange={(e) => setAutoTextColor(e.target.checked)} className="rounded-none accent-ink dark:accent-white" />
+                        <input type="checkbox" checked={autoTextColor} onChange={(e) => setAutoTextColor(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
                         <span className="text-xs text-zinc-500 dark:text-zinc-400">自动反色（根据背景）</span>
                       </label>
                       {!autoTextColor && (
@@ -886,7 +886,7 @@ export const CoverGenerator: React.FC = () => {
                     sectionKey="stroke" collapsed={isCollapsed("stroke")} onToggle={toggleSection}
                     action={
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={textStroke.enabled} onChange={(e) => setTextStroke({ ...textStroke, enabled: e.target.checked })} className="rounded-none accent-ink dark:accent-white" />
+                        <input type="checkbox" checked={textStroke.enabled} onChange={(e) => setTextStroke({ ...textStroke, enabled: e.target.checked })} className="rounded-control accent-ink dark:accent-white" />
                         <span className="text-xs text-zinc-500 dark:text-zinc-400">启用</span>
                       </label>
                     }
@@ -977,7 +977,7 @@ export const CoverGenerator: React.FC = () => {
                           <input type="range" min="0" max="50" value={iconBorderRadius} onChange={(e) => setIconBorderRadius(Number(e.target.value))} className={rangeClass} />
                         </div>
                         <label className="flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" checked={iconBgEnabled} onChange={(e) => setIconBgEnabled(e.target.checked)} className="rounded-none accent-ink dark:accent-white" />
+                          <input type="checkbox" checked={iconBgEnabled} onChange={(e) => setIconBgEnabled(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
                           <span className="text-xs text-zinc-500 dark:text-zinc-400">显示图标背景</span>
                         </label>
                       </div>
@@ -995,7 +995,7 @@ export const CoverGenerator: React.FC = () => {
                     sectionKey="overlay" collapsed={isCollapsed("overlay")} onToggle={toggleSection}
                     action={
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={overlayEnabled} onChange={(e) => setOverlayEnabled(e.target.checked)} className="rounded-none accent-ink dark:accent-white" />
+                        <input type="checkbox" checked={overlayEnabled} onChange={(e) => setOverlayEnabled(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
                         <span className="text-xs text-zinc-500 dark:text-zinc-400">启用</span>
                       </label>
                     }
@@ -1042,7 +1042,7 @@ export const CoverGenerator: React.FC = () => {
                           </label>
                           <input type="range" min="0" max="100" value={bgOpacity} onChange={(e) => setBgOpacity(Number(e.target.value))} className={rangeClass} />
                         </div>
-                        <button onClick={() => setBgImage(null)} className="flex w-full items-center justify-center gap-2 border border-dashed border-zinc-500 bg-paper px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-600 dark:bg-void dark:text-white dark:hover:border-white dark:hover:bg-zinc-900">
+                        <button onClick={() => setBgImage(null)} className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed active:scale-[.98] border-zinc-500 bg-paper px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-600 dark:bg-void dark:text-white dark:hover:border-white dark:hover:bg-zinc-900">
                           <X size={14} />移除背景图片
                         </button>
                       </div>
@@ -1073,7 +1073,7 @@ export const CoverGenerator: React.FC = () => {
                       <motion.button
                         key={mode}
                         onClick={() => setLayoutMode(mode)}
-                        className={`flex flex-col items-center gap-1 border-2 p-3 transition-all ${
+                        className={`flex flex-col items-center gap-1 rounded-control border-2 p-3 active:scale-[.98] transition-all ${
                           layoutMode === mode
                             ? 'border-ink bg-ink/5 dark:border-white dark:bg-white/10'
                             : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500'
@@ -1104,7 +1104,7 @@ export const CoverGenerator: React.FC = () => {
                       <motion.button
                         key={align}
                         onClick={() => setTextAlign(align)}
-                        className={`flex flex-col items-center gap-1 border-2 p-3 transition-all ${
+                        className={`flex flex-col items-center gap-1 rounded-control border-2 p-3 active:scale-[.98] transition-all ${
                           textAlign === align
                             ? 'border-ink bg-ink/5 dark:border-white dark:bg-white/10'
                             : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500'
@@ -1128,7 +1128,7 @@ export const CoverGenerator: React.FC = () => {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={showCorners} onChange={(e) => setShowCorners(e.target.checked)} className="rounded-none accent-ink dark:accent-white" />
+                        <input type="checkbox" checked={showCorners} onChange={(e) => setShowCorners(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
                         <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">角标装饰</span>
                       </label>
                     </div>
@@ -1149,7 +1149,7 @@ export const CoverGenerator: React.FC = () => {
 
                     <div className="flex items-center justify-between">
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={showSeparator} onChange={(e) => setShowSeparator(e.target.checked)} className="rounded-none accent-ink dark:accent-white" />
+                        <input type="checkbox" checked={showSeparator} onChange={(e) => setShowSeparator(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
                         <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">分隔线</span>
                       </label>
                     </div>
@@ -1196,7 +1196,7 @@ export const CoverGenerator: React.FC = () => {
                             key={ratio.label}
                             onClick={() => setActiveRatioLabel(ratio.label)}
                             aria-pressed={activeRatioLabel === ratio.label}
-                            className={`border-2 px-3 py-2 text-sm font-semibold transition-all ${
+                            className={`rounded-control border-2 px-3 py-2 text-sm font-semibold active:scale-[.98] transition-all ${
                               activeRatioLabel === ratio.label
                                 ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
                                 : 'border-zinc-200 text-zinc-600 hover:border-ink dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-white'
@@ -1215,7 +1215,7 @@ export const CoverGenerator: React.FC = () => {
                             key={f}
                             onClick={() => setExportFormat(f)}
                             aria-pressed={exportFormat === f}
-                            className={`border-2 px-3 py-2 text-sm font-semibold uppercase transition-all ${
+                            className={`rounded-control border-2 px-3 py-2 text-sm font-semibold active:scale-[.98] uppercase transition-all ${
                               exportFormat === f
                                 ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
                                 : 'border-zinc-200 text-zinc-600 hover:border-ink dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-white'
@@ -1246,7 +1246,7 @@ export const CoverGenerator: React.FC = () => {
                 <motion.button
                   onClick={generateCover}
                   disabled={isGenerating}
-                  className="flex flex-1 items-center justify-center gap-2 border border-zinc-200 bg-zinc-100 px-4 py-2.5 font-semibold text-ink transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-control border active:scale-[.98] border-zinc-200 bg-zinc-100 px-4 py-2.5 font-semibold text-ink transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
                 >
                   <RefreshCw size={18} className={isGenerating ? 'animate-spin' : ''} />
                   重新生成
@@ -1255,7 +1255,7 @@ export const CoverGenerator: React.FC = () => {
                 <motion.button
                   onClick={downloadCover}
                   disabled={isGenerating}
-                  className="flex flex-1 items-center justify-center gap-2 border border-ink bg-ink px-4 py-2.5 font-semibold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white dark:bg-white dark:text-ink dark:hover:bg-zinc-200"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-control border active:scale-[.98] border-ink bg-ink px-4 py-2.5 font-semibold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white dark:bg-white dark:text-ink dark:hover:bg-zinc-200"
                 >
                   <Download size={18} />
                   下载封面
@@ -1264,7 +1264,7 @@ export const CoverGenerator: React.FC = () => {
                 <motion.button
                   onClick={copyToClipboard}
                   disabled={isGenerating}
-                  className={`flex flex-1 items-center justify-center gap-2 border px-4 py-2.5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-control border active:scale-[.98] px-4 py-2.5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                     copied
                       ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
                       : 'border-zinc-400 text-zinc-700 hover:border-ink hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900'
@@ -1274,7 +1274,7 @@ export const CoverGenerator: React.FC = () => {
                   {copied ? '已复制' : '复制到剪贴板'}
                 </motion.button>
 
-                <button onClick={resetAllSettings} className="flex items-center justify-center gap-2 border border-dashed border-zinc-500 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white">
+                <button onClick={resetAllSettings} className="flex items-center justify-center gap-2 rounded-control border border-dashed active:scale-[.98] border-zinc-500 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white">
                   <RotateCcw size={16} />重置全部设置
                 </button>
               </div>
@@ -1284,7 +1284,7 @@ export const CoverGenerator: React.FC = () => {
 
         {/* 右侧预览区域 */}
         <div className="order-1 min-w-0 lg:order-2 lg:col-span-2">
-          <div className="min-w-0 border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 md:p-5 lg:sticky lg:top-24">
+          <div className="min-w-0 rounded-surface border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 md:p-5 lg:sticky lg:top-24">
             <div className="mb-4 flex flex-col gap-4 border-b border-zinc-200/70 pb-4 dark:border-zinc-800/80 md:flex-row md:items-start md:justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -1304,21 +1304,21 @@ export const CoverGenerator: React.FC = () => {
             </div>
 
             <div className="mb-4 flex flex-wrap gap-2">
-              <motion.button onClick={randomizeStyle} className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
+              <motion.button onClick={randomizeStyle} className="inline-flex items-center gap-2 rounded-control border border-zinc-200 bg-white active:scale-[.98] px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
                 <Shuffle size={16} />随机样式
               </motion.button>
-              <button onClick={generateCover} className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-all hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
+              <button onClick={generateCover} className="inline-flex items-center gap-2 rounded-control border border-zinc-200 bg-white active:scale-[.98] px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-all hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
                 <RefreshCw size={16} className={isGenerating ? 'animate-spin' : ''} />刷新预览
               </button>
               {bgImage && (
-                <button onClick={resetBackgroundImageControls} className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-all hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
+                <button onClick={resetBackgroundImageControls} className="inline-flex items-center gap-2 rounded-control border border-zinc-200 bg-white active:scale-[.98] px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-all hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
                   <RotateCcw size={16} />重置背景位置
                 </button>
               )}
             </div>
 
-            <div className="overflow-hidden border border-zinc-200 bg-zinc-100 p-2 dark:border-zinc-700 dark:bg-zinc-800 md:p-3">
-              <div className="overflow-hidden border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+            <div className="overflow-hidden rounded-surface border border-zinc-200 bg-zinc-100 p-2 dark:border-zinc-700 dark:bg-zinc-800 md:p-3">
+              <div className="overflow-hidden rounded-media border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
                 <canvas
                   ref={canvasRef}
                   width={canvasSize.width}
@@ -1336,22 +1336,22 @@ export const CoverGenerator: React.FC = () => {
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <div className="border border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-800">
+              <div className="rounded-surface border border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-800">
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">当前模板</div>
                 <div className="mt-2 text-lg font-bold text-ink dark:text-white">{selectedTemplate.name}</div>
                 <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">只保留现有黑白模板，避免风格面板过度分散。</p>
               </div>
-              <div className="border border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-800">
+              <div className="rounded-surface border border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-800">
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">预览提示</div>
                 <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{bgImage ? '已启用背景图：鼠标或触屏拖动可调整位置，滚轮可缩放。' : '当前为纯模板预览：上传背景图可增加层次感。'}</p>
               </div>
-              <div className="border border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-800">
+              <div className="rounded-surface border border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-800">
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">导出结果</div>
                 <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">文件将以 <strong>{exportFilename.trim() || 'cover'}</strong> 导出，格式为 <strong>{exportFormat.toUpperCase()}</strong>。</p>
               </div>
             </div>
 
-            <div className="mt-4 bg-zinc-50 p-4 dark:bg-zinc-800">
+            <div className="mt-4 rounded-surface bg-zinc-50 p-4 dark:bg-zinc-800">
               <div className="flex items-start gap-2">
                 <Sparkles className="mt-0.5 shrink-0 text-ink dark:text-white" size={16} />
                 <div className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -1387,12 +1387,12 @@ export const CoverGenerator: React.FC = () => {
               role="dialog"
               aria-modal="true"
               aria-labelledby="iconify-dialog-title"
-              className="w-full max-w-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"
+              className="w-full max-w-2xl rounded-overlay border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-4 flex items-center justify-between">
                 <h2 id="iconify-dialog-title" className="text-xl font-bold text-ink dark:text-white">搜索 Iconify 图标</h2>
-                <button type="button" onClick={closeIconifyModal} aria-label="关闭图标搜索" title="关闭" className="p-2 text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800">
+                <button type="button" onClick={closeIconifyModal} aria-label="关闭图标搜索" title="关闭" className="rounded-icon p-2 text-zinc-600 transition-colors active:scale-[.98] hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800">
                   <X size={20} aria-hidden="true" />
                 </button>
               </div>
@@ -1406,7 +1406,7 @@ export const CoverGenerator: React.FC = () => {
                   aria-label="搜索 Iconify 图标"
                 />
                 {searchError && (
-                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-2 flex items-center gap-2 border border-dashed border-ink bg-paper px-3 py-2 text-sm font-semibold text-ink dark:border-white dark:bg-void dark:text-white">
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-2 flex items-center gap-2 rounded-control border border-dashed border-ink bg-paper px-3 py-2 text-sm font-semibold text-ink dark:border-white dark:bg-void dark:text-white">
                     <X size={16} /><span>{searchError}</span>
                   </motion.div>
                 )}
@@ -1418,7 +1418,7 @@ export const CoverGenerator: React.FC = () => {
                   <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
                     {iconifyResults.map((icon) => (
                       <button key={icon} onClick={() => selectIconifyIcon(icon)}
-                        className="flex aspect-square items-center justify-center border-2 border-zinc-200 bg-zinc-50 p-3 transition-all hover:border-ink hover:bg-ink/5 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-white dark:hover:bg-white/5"
+                        className="flex aspect-square items-center justify-center rounded-control border-2 active:scale-[.98] border-zinc-200 bg-zinc-50 p-3 transition-all hover:border-ink hover:bg-ink/5 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-white dark:hover:bg-white/5"
                         title={icon}>
                         <img src={`https://api.iconify.design/${icon}.svg`} alt={icon} className="h-full w-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                       </button>

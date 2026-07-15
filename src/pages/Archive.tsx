@@ -270,7 +270,7 @@ export const ArchivePage = () => {
             onClick={toggleAll}
             disabled={groups.length === 0}
             aria-pressed={allGroupsExpanded}
-            className="inline-flex w-fit items-center gap-2 border border-zinc-900 bg-paper px-4 py-2 text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-paper disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-100 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-100 dark:hover:text-zinc-950"
+            className="inline-flex w-fit items-center gap-2 rounded-control border border-zinc-900 active:scale-[.98] bg-paper px-4 py-2 text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-paper disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-100 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-100 dark:hover:text-zinc-950"
           >
             {allGroupsExpanded ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
             {allGroupsExpanded ? '全部折叠' : '全部展开'}
@@ -281,7 +281,7 @@ export const ArchivePage = () => {
           <div className="space-y-6" aria-busy="true">
             <LoadingStatus label={isSearching ? '正在搜索归档文章' : '正在加载归档文章'} />
             {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} aria-hidden="true" className="h-32 animate-pulse border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-900" />
+              <div key={index} aria-hidden="true" className="h-32 animate-pulse rounded-surface border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-900" />
             ))}
           </div>
         ) : loadError || searchError ? (
@@ -326,7 +326,7 @@ export const ArchivePage = () => {
                         <div className="flex items-center gap-2">
                           <motion.div
                             animate={{ rotate: isYearExpanded ? 0 : -90 }}
-                            transition={{ duration: 0.2 }}
+                            transition={{ duration: 0.21, ease: easeOut }}
                           >
                             <ChevronDown size={20} className="text-zinc-400" />
                           </motion.div>
@@ -334,7 +334,7 @@ export const ArchivePage = () => {
                             {group.year}
                           </h2>
                         </div>
-                        <span className="border border-zinc-300 px-2.5 py-0.5 text-xs font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
+                        <span className="rounded-full border border-zinc-300 px-2.5 py-0.5 text-xs font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
                           {group.total} 篇
                         </span>
                         <div className="flex flex-wrap gap-1.5">
@@ -357,7 +357,7 @@ export const ArchivePage = () => {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
+                          transition={{ duration: 0.21, ease: easeOut }}
                           className="overflow-hidden"
                         >
                           <div className="space-y-8 pl-8 md:pl-10">
@@ -379,17 +379,17 @@ export const ArchivePage = () => {
                                     aria-expanded={isMonthExpanded}
                                     aria-label={`${isMonthExpanded ? '折叠' : '展开'} ${monthGroup.month}的文章`}
                                   >
-                                    <div className="absolute -left-[30px] top-1 h-2 w-2 border border-zinc-900 bg-paper dark:border-zinc-100 dark:bg-zinc-950 md:-left-[38px]" />
+                                    <div className="absolute -left-[30px] top-1 h-2 w-2 rounded-full border border-zinc-900 bg-paper dark:border-zinc-100 dark:bg-zinc-950 md:-left-[38px]" />
                                     <motion.div
                                       animate={{ rotate: isMonthExpanded ? 0 : -90 }}
-                                      transition={{ duration: 0.2 }}
+                                      transition={{ duration: 0.21, ease: easeOut }}
                                     >
                                       <ChevronDown size={16} className="text-zinc-400" />
                                     </motion.div>
                                     <h3 className="font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100 md:text-xl">
                                       {monthGroup.month}
                                     </h3>
-                                    <span className="border border-zinc-300 bg-paper px-2.5 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
+                                    <span className="rounded-full border border-zinc-300 bg-paper px-2.5 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
                                       {monthGroup.total} 篇
                                     </span>
                                   </button>
@@ -401,7 +401,7 @@ export const ArchivePage = () => {
                                         initial={{ height: 0, opacity: 0 }}
                                         animate={{ height: 'auto', opacity: 1 }}
                                         exit={{ height: 0, opacity: 0 }}
-                                        transition={{ duration: 0.25 }}
+                                        transition={{ duration: 0.21, ease: easeOut }}
                                         className="overflow-hidden"
                                       >
                                         <div className="space-y-4 pl-6">
@@ -413,7 +413,7 @@ export const ArchivePage = () => {
                                               transition={{ duration: 0.18, delay: postIndex * 0.015, ease: easeOut }}
                                               className="relative"
                                             >
-                                              <div className="absolute -left-[22px] top-3 h-1.5 w-1.5 bg-zinc-900 dark:bg-zinc-100" />
+                                              <div className="absolute -left-[22px] top-3 h-1.5 w-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100" />
 
                                               <Link 
                                                 to={`/post/${post.id}`} 
@@ -422,7 +422,7 @@ export const ArchivePage = () => {
                                                 <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300">
                                                   <time className="font-mono font-semibold">{formatDay(post.date)}</time>
                                                   <span className="text-zinc-300 dark:text-zinc-700">•</span>
-                                                  <span className="border border-zinc-300 bg-paper px-2 py-0.5 text-[11px] font-bold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+                                                  <span className="rounded-full border border-zinc-300 bg-paper px-2 py-0.5 text-[11px] font-bold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
                                                     {post.category}
                                                   </span>
                                                   <span className="text-zinc-300 dark:text-zinc-700">•</span>
