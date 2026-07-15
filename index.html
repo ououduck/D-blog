@@ -2,7 +2,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>D-blog</title>
     <link rel="icon" href="/favicon.ico" />
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -10,8 +10,19 @@
     <link rel="alternate" type="application/rss+xml" title="D-blog RSS" href="/feed.xml" />
     <meta name="description" content="跑路的duck的个人博客，分享前端技术、编程教程与生活感悟，探索极致的静态页面体验。" />
     <meta name="keywords" content="D-blog,跑路的duck,前端博客,技术分享,编程教程,React,TypeScript,Web开发" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f4" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#09090b" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f0e9" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a" />
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem('theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (theme === 'dark' || (theme !== 'light' && prefersDark)) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (_) {}
+      })();
+    </script>
 
     <!-- DNS 预解析和预连接优化 -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">

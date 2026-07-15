@@ -5,6 +5,12 @@ interface ProgressiveImageProps extends React.ImgHTMLAttributes<HTMLImageElement
   placeholderClassName?: string;
   aspectRatio?: string;
   effect?: 'blur' | 'fade' | 'none';
+  sources?: Array<{
+    srcSet: string;
+    type?: string;
+    media?: string;
+    sizes?: string;
+  }>;
 }
 
 const mergeClassName = (...values: Array<string | undefined | false>) => values.filter(Boolean).join(' ');
@@ -39,6 +45,8 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
   width,
   height,
   sizes,
+  srcSet,
+  sources,
   ...props
 }) => {
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -115,31 +123,43 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
           <span className="line-clamp-2">图片暂时无法加载{alt ? `：${alt}` : ''}</span>
         </div>
       ) : (
-        <img
-          {...props}
-          ref={imgRef}
-          src={src}
-          alt={alt}
-          decoding={decoding}
-          loading={resolvedLoading}
-          width={width}
-          height={height}
-          sizes={sizes}
-          className={mergeClassName(
-            'relative transition-all duration-500 ease-out',
-            imageTransitionClass,
-            className
-          )}
-          onLoad={(event) => {
-            setIsLoaded(true);
-            setHasError(false);
-            onLoad?.(event);
-          }}
-          onError={(event) => {
-            setHasError(true);
-            onError?.(event);
-          }}
-        />
+        <picture className="contents">
+          {sources?.map((source) => (
+            <source
+              key={`${source.type || 'image'}-${source.media || 'all'}-${source.srcSet}`}
+              srcSet={source.srcSet}
+              type={source.type}
+              media={source.media}
+              sizes={source.sizes || sizes}
+            />
+          ))}
+          <img
+            {...props}
+            ref={imgRef}
+            src={src}
+            alt={alt}
+            decoding={decoding}
+            loading={resolvedLoading}
+            width={width}
+            height={height}
+            sizes={sizes}
+            srcSet={srcSet}
+            className={mergeClassName(
+              'relative transition-all duration-500 ease-out',
+              imageTransitionClass,
+              className
+            )}
+            onLoad={(event) => {
+              setIsLoaded(true);
+              setHasError(false);
+              onLoad?.(event);
+            }}
+            onError={(event) => {
+              setHasError(true);
+              onError?.(event);
+            }}
+          />
+        </picture>
       )}
     </div>
   );

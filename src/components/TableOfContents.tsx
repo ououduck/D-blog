@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { ChevronDown, List, Search, X, ArrowUp } from 'lucide-react';
 
 
 import { siteConfig } from '@config/site.config';
+import { useModalOverlay } from '@/hooks/useModalOverlay';
 import type { MarkdownHeading } from '@/utils/headings';
 import {
   buildHeadingTree,
@@ -65,13 +66,23 @@ export const TableOfContents: React.FC<{
   const [dragOffsetY, setDragOffsetY] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const touchStartYRef = useRef<number | null>(null);
+  const mobileSheetRef = useRef<HTMLElement | null>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
   const headingTree = useMemo(() => buildHeadingTree(headings), [headings]);
   const parentMap = useMemo(() => buildParentMap(headingTree), [headingTree]);
   const navRef = useRef<HTMLElement | null>(null);
   const activeItemRef = useRef<HTMLLIElement | null>(null);
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
   const collapseInactiveRootBranches = siteConfig.toc?.collapseInactiveRootBranches ?? false;
+  const isMobileDialogOpen = isOpen && isMobileViewport;
+  const closeTableOfContents = useCallback(() => setIsOpen(false), []);
 
+  useModalOverlay({
+    isOpen: isMobileDialogOpen,
+    onClose: closeTableOfContents,
+    initialFocusRef: mobileSearchInputRef,
+    containerRef: mobileSheetRef
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -99,24 +110,6 @@ export const TableOfContents: React.FC<{
     mediaQuery.addListener(syncViewport);
     return () => mediaQuery.removeListener(syncViewport);
   }, []);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') {
-      return;
-    }
-
-    if (!(isOpen && isMobileViewport)) {
-      document.body.style.removeProperty('overflow');
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen, isMobileViewport]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -484,7 +477,7 @@ export const TableOfContents: React.FC<{
               <List size={17} />
             </span>
             <div className="min-w-0">
-              <h3 className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</h3>
+              <h3 id={isMobileDialogOpen ? 'mobile-toc-title' : undefined} className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</h3>
               <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">
                 {rootHeadingsCount} 个主章节 · 共 {headings.length} 节
               </p>
@@ -522,6 +515,7 @@ export const TableOfContents: React.FC<{
             <Search size={15} />
           </span>
           <input
+            ref={isMobileDialogOpen ? mobileSearchInputRef : undefined}
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
@@ -555,7 +549,8 @@ export const TableOfContents: React.FC<{
         <button
           type="button"
           onClick={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            const shouldReduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+            window.scrollTo({ top: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth' });
             if (isMobileViewport) setIsOpen(false);
           }}
           className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
@@ -582,6 +577,11 @@ export const TableOfContents: React.FC<{
               />
 
               <motion.aside
+                ref={mobileSheetRef}
+                tabIndex={-1}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="mobile-toc-title"
                 initial={{ opacity: 0, y: 28 }}
                 animate={{ opacity: 1, y: dragOffsetY }}
                 exit={{ opacity: 0, y: 28 }}
@@ -590,7 +590,7 @@ export const TableOfContents: React.FC<{
                   ...MOBILE_TOC_SHEET_STYLE,
                   touchAction: 'pan-y'
                 }}
-                className="fixed z-[80] h-[min(72vh,38rem)] lg:hidden"
+                className="fixed z-[80] h-[min(72vh,38rem)] supports-[height:100dvh]:h-[min(72dvh,38rem)] lg:hidden"
               >
                 {panelContent}
               </motion.aside>

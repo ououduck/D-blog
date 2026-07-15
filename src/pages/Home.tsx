@@ -9,6 +9,7 @@ import { Seo } from '../components/Seo';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
+import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { getDateTimestamp } from '@/utils/date';
 import { easeOut, easeSmooth, fadeInUp, staggerContainer } from '@/utils/motion';
 import { preloadPage } from '@/utils/preload';
@@ -185,7 +186,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
             <div className="mt-5 flex items-center gap-3 border-t border-zinc-200 pt-4 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-auto">
               <span className="flex items-center gap-1.5"><Calendar size={12} />{post.date}</span>
               <span className="flex items-center gap-1.5"><Clock size={12} />{post.readTime}</span>
-              <button type="button" onClick={handleShareClick} className="ml-auto rounded p-1.5 hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
+              <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
                 <Share2 size={13} />
               </button>
             </div>
@@ -224,7 +225,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
           <div className="mt-4 flex items-center gap-3 border-t border-zinc-200 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             <span className="flex items-center gap-1"><Calendar size={11} />{post.date}</span>
             <span className="flex items-center gap-1"><Clock size={11} />{post.readTime}</span>
-            <button type="button" onClick={handleShareClick} className="ml-auto rounded p-1 hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
+            <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
               <Share2 size={12} />
             </button>
           </div>
@@ -246,15 +247,12 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
   return (
     <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="flex items-center justify-between gap-3 border-y border-zinc-200 py-3 dark:border-zinc-800">
       <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-2" role="tablist" aria-label="文章分类筛选">
+        <div className="flex items-center gap-2" role="group" aria-label="文章分类筛选">
           {[ALL_CATEGORY, ...categories].map((category) => (
             <button
               key={category}
               onClick={() => onSelect(category)}
-              role="tab"
-              aria-selected={selected === category}
-              aria-controls="posts-grid"
-              tabIndex={selected === category ? 0 : -1}
+              aria-pressed={selected === category}
               className={`whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors ${
                 selected === category
                   ? 'border-accent bg-accent text-white dark:border-accent-light dark:bg-accent-light dark:text-white'
@@ -300,9 +298,10 @@ export const Home = () => {
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
-  const { searchQuery, isSearching, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
+  const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
     emptyResults: allPosts,
     initialQuery: queryFromUrl
   });
@@ -314,6 +313,7 @@ export const Home = () => {
     let cancelled = false;
 
     const loadHomeData = async () => {
+      setLoading(true);
       try {
         const posts = await getPosts();
         if (cancelled) {
@@ -340,7 +340,7 @@ export const Home = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadAttempt]);
 
   useEffect(() => {
     if (!categoryFromUrl) {
@@ -468,7 +468,8 @@ export const Home = () => {
 
   const paginate = (pageNumber: number) => {
     setCurrentPage(Math.min(Math.max(1, pageNumber), totalPages));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const shouldReduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth' });
   };
 
   const featuredPost = useMemo(() => currentPosts.find((post) => post.featured) ?? null, [currentPosts]);
@@ -498,9 +499,10 @@ export const Home = () => {
         </div>
 
         {loading || isSearching ? (
-          <motion.div variants={fadeInUp} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <motion.div variants={fadeInUp} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+            <LoadingStatus label={isSearching ? '正在搜索文章' : '正在加载文章列表'} className="col-span-full" />
             {Array.from({ length: postsPerPage }).map((_, index) => (
-              <div key={index} className="animate-pulse overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
+              <div key={index} aria-hidden="true" className="animate-pulse overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
                 <div className="aspect-[16/10] bg-zinc-200 dark:bg-zinc-800" />
                 <div className="space-y-3 p-4">
                   <div className="h-3 w-20 rounded bg-zinc-200 dark:bg-zinc-800" />
@@ -511,13 +513,18 @@ export const Home = () => {
               </div>
             ))}
           </motion.div>
-        ) : loadError ? (
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={listSwapTransition} className="border-y border-zinc-200 py-12 text-center dark:border-zinc-800">
-            <p className="mb-1 font-serif text-lg font-semibold text-zinc-700 dark:text-zinc-300">加载失败</p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">{loadError}</p>
+        ) : loadError || searchError ? (
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={listSwapTransition}>
+            <ContentStatus
+              variant="error"
+              title={loadError ? '文章加载失败' : '搜索失败'}
+              description={loadError || searchError || undefined}
+              actionLabel={loadError ? '重新加载' : '清除搜索'}
+              onAction={loadError ? () => setLoadAttempt((attempt) => attempt + 1) : handleClearSearch}
+            />
           </motion.div>
         ) : (
-          <div id="posts-panel" role="tabpanel" className="space-y-7">
+          <div id="posts-panel" className="space-y-7" aria-live="polite">
             <motion.div
               layout
               id="posts-grid"

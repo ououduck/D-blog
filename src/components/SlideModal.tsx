@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useModalOverlay } from '@/hooks/useModalOverlay';
 
 interface SlideModalProps {
   isOpen: boolean;
@@ -27,13 +28,20 @@ export const SlideModal: React.FC<SlideModalProps> = ({
 }) => {
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [isMobile, setIsMobile] = useState(false);
-  const previousActiveElementRef = useRef<HTMLElement | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const hasCalledOpenRef = useRef(false);
   const hasCalledCloseRef = useRef(false);
 
   const reducedMotion = typeof window !== 'undefined'
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false;
+
+  useModalOverlay({
+    isOpen,
+    onClose,
+    initialFocusRef,
+    containerRef: modalRef
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -58,18 +66,9 @@ export const SlideModal: React.FC<SlideModalProps> = ({
   }, [onOpen]);
 
   const restoreState = useCallback(() => {
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-
     if (!hasCalledCloseRef.current && onCloseCallback) {
       onCloseCallback();
       hasCalledCloseRef.current = true;
-    }
-
-    if (previousActiveElementRef.current) {
-      requestAnimationFrame(() => {
-        previousActiveElementRef.current?.focus();
-      });
     }
   }, [onCloseCallback]);
 
@@ -82,14 +81,6 @@ export const SlideModal: React.FC<SlideModalProps> = ({
       return;
     }
 
-    previousActiveElementRef.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
-
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow = 'hidden';
-    document.body.style.paddingRight = scrollbarWidth > 0 ? `${scrollbarWidth}px` : '';
-
     hasCalledOpenRef.current = false;
     hasCalledCloseRef.current = false;
     setShouldRender(true);
@@ -100,41 +91,6 @@ export const SlideModal: React.FC<SlideModalProps> = ({
 
     return () => window.cancelAnimationFrame(frame);
   }, [isOpen, shouldRender, reducedMotion, handleOpen, restoreState]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    if (initialFocusRef?.current) {
-      const timer = window.setTimeout(() => {
-        initialFocusRef.current?.focus();
-      }, reducedMotion ? 0 : (isMobile ? 150 : 200));
-
-      return () => {
-        window.clearTimeout(timer);
-        window.removeEventListener('keydown', handleKeyDown);
-      };
-    }
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, isMobile, onClose, initialFocusRef, reducedMotion]);
-
-  useEffect(() => {
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
-    };
-  }, []);
 
   if ((!shouldRender && !isOpen) || typeof document === 'undefined') {
     return null;
@@ -164,7 +120,9 @@ export const SlideModal: React.FC<SlideModalProps> = ({
     >
       {isOpen && (
         <motion.div
+          ref={modalRef}
           key="slide-modal"
+          tabIndex={-1}
           className={`fixed inset-0 z-[110] flex justify-center ${isMobile ? 'items-end' : 'items-center'}`}
           role="dialog"
           aria-modal="true"
@@ -190,6 +148,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
                 relative z-10
                 w-full
                 max-h-[85vh]
+                supports-[height:100dvh]:max-h-[85dvh]
                 overflow-hidden
                 rounded-t-2xl
                 border border-b-0
@@ -199,10 +158,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
                 dark:bg-zinc-900
                 ${className}
               `}
-              style={{
-                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-                maxHeight: '85vh'
-              }}
+              style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
               variants={mobileVariants}
               initial="hidden"
               animate="visible"
@@ -212,7 +168,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
               <div className="flex justify-center px-4 pt-3">
                 <div className="h-1.5 w-14 rounded-full bg-zinc-300/80 dark:bg-zinc-700/80" />
               </div>
-              <div className="overflow-y-auto" style={{ maxHeight: 'calc(85vh - 18px)' }}>
+              <div className="max-h-[calc(85vh-18px)] supports-[height:100dvh]:max-h-[calc(85dvh-18px)] overflow-y-auto">
                 {children}
               </div>
             </motion.div>
@@ -224,6 +180,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
                 w-full
                 max-w-lg
                 max-h-[80vh]
+                supports-[height:100dvh]:max-h-[80dvh]
                 overflow-hidden
                 rounded-2xl
                 border
@@ -235,14 +192,13 @@ export const SlideModal: React.FC<SlideModalProps> = ({
                 dark:shadow-black/40
                 ${className}
               `}
-              style={{ maxHeight: '80vh' }}
               variants={desktopVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
               transition={{ duration: modalDuration, ease: [0.4, 0, 0.2, 1] }}
             >
-              <div className="overflow-y-auto" style={{ maxHeight: '80vh' }}>
+              <div className="max-h-[80vh] supports-[height:100dvh]:max-h-[80dvh] overflow-y-auto">
                 {children}
               </div>
             </motion.div>

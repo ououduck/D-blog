@@ -20,6 +20,7 @@ export const usePostSearch = ({
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [results, setResults] = useState<PostSearchResult[]>(emptyResults);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const searchRequestIdRef = useRef(0);
   const emptyResultsRef = useRef<PostSearchResult[]>(emptyResults);
 
@@ -31,6 +32,7 @@ export const usePostSearch = ({
     if (!searchQuery.trim()) {
       setResults(emptyResults);
       setIsSearching(false);
+      setSearchError(null);
     }
   }, [emptyResults, searchQuery]);
 
@@ -41,10 +43,12 @@ export const usePostSearch = ({
     if (!currentQuery) {
       setResults(emptyResultsRef.current);
       setIsSearching(false);
+      setSearchError(null);
       return;
     }
 
     setIsSearching(true);
+    setSearchError(null);
 
     const timeoutId = window.setTimeout(async () => {
       try {
@@ -55,6 +59,7 @@ export const usePostSearch = ({
         }
 
         setResults(searchedPosts);
+        setSearchError(null);
       } catch (error) {
         if (requestId !== searchRequestIdRef.current) {
           return;
@@ -62,6 +67,7 @@ export const usePostSearch = ({
 
         console.error('Search failed:', error);
         setResults([]);
+        setSearchError('搜索暂时不可用，请稍后重试。');
       } finally {
         if (requestId === searchRequestIdRef.current) {
           setIsSearching(false);
@@ -83,11 +89,13 @@ export const usePostSearch = ({
     setSearchQuery('');
     setResults(emptyResultsRef.current);
     setIsSearching(false);
+    setSearchError(null);
   }, []);
 
   return {
     searchQuery,
     isSearching,
+    searchError,
     results,
     handleSearch,
     setSearchQuery: handleSearch,

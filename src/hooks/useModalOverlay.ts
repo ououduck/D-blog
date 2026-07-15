@@ -1,61 +1,164 @@
-import { useEffect, RefObject, useRef } from 'react';
+import { useEffect, type RefObject, useRef } from 'react';
 
 interface UseModalOverlayOptions {
   isOpen: boolean;
   onClose: () => void;
   initialFocusRef?: RefObject<HTMLElement | null>;
+  containerRef?: RefObject<HTMLElement | null>;
 }
 
-export function useModalOverlay({ isOpen, onClose, initialFocusRef }: UseModalOverlayOptions) {
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'area[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  'iframe',
+  'object',
+  'embed',
+  '[contenteditable="true"]',
+  '[tabindex]:not([tabindex="-1"])'
+].join(',');
+
+const openOverlayStack: symbol[] = [];
+let scrollLockCount = 0;
+let originalBodyOverflow = '';
+let originalBodyPaddingRight = '';
+
+const getFocusableElements = (container: HTMLElement) => (
+  Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((element) => {
+    if (element.getAttribute('aria-hidden') === 'true' || element.closest('[inert]')) {
+      return false;
+    }
+
+    const style = window.getComputedStyle(element);
+    return style.visibility !== 'hidden' && style.display !== 'none';
+  })
+);
+
+const lockBodyScroll = () => {
+  if (scrollLockCount === 0) {
+    originalBodyOverflow = document.body.style.overflow;
+    originalBodyPaddingRight = document.body.style.paddingRight;
+
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const currentPaddingRight = Number.parseFloat(window.getComputedStyle(document.body).paddingRight) || 0;
+
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${currentPaddingRight + scrollbarWidth}px`;
+    }
+  }
+
+  scrollLockCount += 1;
+};
+
+const unlockBodyScroll = () => {
+  scrollLockCount = Math.max(0, scrollLockCount - 1);
+
+  if (scrollLockCount === 0) {
+    document.body.style.overflow = originalBodyOverflow;
+    document.body.style.paddingRight = originalBodyPaddingRight;
+  }
+};
+
+export function useModalOverlay({
+  isOpen,
+  onClose,
+  initialFocusRef,
+  containerRef
+}: UseModalOverlayOptions) {
+  const overlayIdRef = useRef(Symbol('modal-overlay'));
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    // Save previous focus
-    previousActiveElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const overlayId = overlayIdRef.current;
+    previousActiveElementRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    openOverlayStack.push(overlayId);
+    lockBodyScroll();
 
-    // Set focus to modal
-    if (initialFocusRef?.current) {
-      // Use setTimeout to ensure the element is rendered and can receive focus
-      window.setTimeout(() => {
-        initialFocusRef.current?.focus();
-      }, 50);
-    }
+    const getContainer = () => containerRef?.current
+      ?? initialFocusRef?.current?.closest<HTMLElement>('[role="dialog"], [aria-modal="true"]')
+      ?? null;
 
-    // Scroll lock and prevent layout shift
-    const originalOverflow = document.body.style.overflow;
-    const originalPaddingRight = document.body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const focusFrame = window.requestAnimationFrame(() => {
+      const container = getContainer();
+      const focusTarget = initialFocusRef?.current
+        ?? (container ? getFocusableElements(container)[0] : null)
+        ?? container;
+      focusTarget?.focus({ preventScroll: true });
+    });
 
-    document.body.style.overflow = 'hidden';
-    if (scrollbarWidth > 0) {
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    }
-
-    // Handle ESC key
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (openOverlayStack[openOverlayStack.length - 1] !== overlayId) {
+        return;
+      }
+
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose();
+        event.stopPropagation();
+        onCloseRef.current();
+        return;
+      }
+
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const container = getContainer();
+      if (!container) {
+        return;
+      }
+
+      const focusableElements = getFocusableElements(container);
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        container.focus({ preventScroll: true });
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey && (activeElement === firstElement || !container.contains(activeElement))) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && (activeElement === lastElement || !container.contains(activeElement))) {
+        event.preventDefault();
+        firstElement.focus();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      // Restore scroll and padding
-      document.body.style.overflow = originalOverflow;
-      document.body.style.paddingRight = originalPaddingRight;
-
-      // Remove event listener
+      window.cancelAnimationFrame(focusFrame);
       window.removeEventListener('keydown', handleKeyDown);
 
-      // Restore focus
-      if (previousActiveElementRef.current) {
-        const elem = previousActiveElementRef.current;
-        window.setTimeout(() => elem.focus(), 0);
+      const stackIndex = openOverlayStack.lastIndexOf(overlayId);
+      if (stackIndex >= 0) {
+        openOverlayStack.splice(stackIndex, 1);
+      }
+      unlockBodyScroll();
+
+      const previousActiveElement = previousActiveElementRef.current;
+      previousActiveElementRef.current = null;
+      if (previousActiveElement?.isConnected) {
+        window.requestAnimationFrame(() => {
+          previousActiveElement.focus({ preventScroll: true });
+        });
       }
     };
-  }, [isOpen, onClose, initialFocusRef]);
+  }, [containerRef, initialFocusRef, isOpen]);
 }

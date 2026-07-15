@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Box, Search, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useModalOverlay } from '@/hooks/useModalOverlay';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import type { PostSearchScope } from '@/services/posts';
 import { easeSmooth } from '@/utils/motion';
@@ -35,8 +36,6 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   const location = useLocation();
   const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const previousActiveElementRef = useRef<HTMLElement | null>(null);
   const [searchScope, setSearchScope] = useState<PostSearchScope>('all');
   const [activeResultIndex, setActiveResultIndex] = useState(0);
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
@@ -49,12 +48,19 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     }
     return [];
   });
-  const { searchQuery, isSearching, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch({
+  const { searchQuery, isSearching, searchError, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch({
     scope: searchScope
   });
   const visibleResults = results.slice(0, 8);
   const activeScopeHint = SEARCH_SCOPE_HINTS[searchScope];
   const modalEase = easeSmooth;
+
+  useModalOverlay({
+    isOpen,
+    onClose,
+    initialFocusRef: inputRef,
+    containerRef: modalRef
+  });
 
   const saveHistory = (query: string) => {
     if (!query.trim()) return;
@@ -75,17 +81,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       clearSearch();
       setSearchScope('all');
       setActiveResultIndex(0);
-      previousActiveElementRef.current?.focus?.();
-      previousActiveElementRef.current = null;
-      return;
     }
-
-    previousActiveElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const timerId = window.setTimeout(() => inputRef.current?.focus(), 80);
-
-    return () => {
-      window.clearTimeout(timerId);
-    };
   }, [clearSearch, isOpen]);
 
   useEffect(() => {
@@ -98,50 +94,6 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   useEffect(() => {
     setActiveResultIndex(0);
   }, [searchQuery, searchScope, visibleResults.length]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-      }
-
-      if (event.key !== 'Tab') {
-        return;
-      }
-
-      const focusableElements = Array.from(
-        modalRef.current?.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
-        ) ?? []
-      ).filter((element) => element.getAttribute('aria-hidden') !== 'true');
-
-      if (focusableElements.length === 0) {
-        event.preventDefault();
-        modalRef.current?.focus();
-        return;
-      }
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-      const activeElement = document.activeElement;
-
-      if (event.shiftKey && (activeElement === firstElement || !modalRef.current?.contains(activeElement))) {
-        event.preventDefault();
-        lastElement.focus();
-      } else if (!event.shiftKey && (activeElement === lastElement || !modalRef.current?.contains(activeElement))) {
-        event.preventDefault();
-        firstElement.focus();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   const handleSelect = (id: string) => {
     saveHistory(searchQuery);
@@ -186,6 +138,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
         <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-16 sm:pt-24">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/55" />
           <motion.div ref={modalRef} tabIndex={-1} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: modalEase }} className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
+            <h2 id="site-search-title" className="sr-only">站内搜索</h2>
             <div className="flex items-center border-b border-zinc-100 p-4 dark:border-zinc-800">
               <Search className="mr-3 text-zinc-600 dark:text-zinc-300" size={20} />
               <input
@@ -198,7 +151,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 onKeyDown={handleInputKeyDown}
                 aria-labelledby="site-search-title"
               />
-              <button ref={closeButtonRef} onClick={onClose} className="rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800" aria-label="关闭站内搜索">
+              <button onClick={onClose} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800" aria-label="关闭站内搜索">
                 <X size={20} />
               </button>
             </div>
@@ -225,14 +178,21 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               <p className="mt-2 text-xs text-zinc-700 dark:text-zinc-300">{activeScopeHint}</p>
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto">
+            <div className="max-h-[60vh] supports-[height:100dvh]:max-h-[60dvh] overflow-y-auto" aria-busy={isSearching}>
               {isSearching ? (
-                <div className="p-12 text-center text-zinc-600 dark:text-zinc-300">
-                  <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-zinc-900 border-t-transparent dark:border-zinc-100" />
+                <div className="p-12 text-center text-zinc-600 dark:text-zinc-300" role="status" aria-live="polite">
+                  <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-zinc-900 border-t-transparent dark:border-zinc-100" aria-hidden="true" />
+                  <span className="sr-only">正在搜索</span>
+                </div>
+              ) : searchError ? (
+                <div className="p-12 text-center" role="alert">
+                  <p className="font-semibold text-red-700 dark:text-red-200">搜索暂时不可用</p>
+                  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{searchError}</p>
+                  <button type="button" onClick={clearSearch} className="editorial-button mt-4">清除搜索</button>
                 </div>
               ) : visibleResults.length > 0 ? (
                 <div className="p-2">
-                  <div id="site-search-title" className="px-3 pt-3 text-xs font-medium uppercase tracking-[0.2em] text-zinc-700 dark:text-zinc-300">
+                  <div className="px-3 pt-3 text-xs font-medium uppercase tracking-[0.2em] text-zinc-700 dark:text-zinc-300">
                     {results.length} {TEXT.resultsSuffix}
                   </div>
                   {visibleResults.map((post, index) => {
@@ -277,8 +237,8 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                   <div className="flex flex-wrap gap-2">
                     {searchHistory.map((query) => (
                       <div key={query} className="group flex items-center rounded-full border border-zinc-200 bg-zinc-50 py-1 pl-3 pr-1 text-sm text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-800">
-                        <button type="button" className="mr-1 hover:text-zinc-900 dark:hover:text-white" onClick={() => handleSearch(query)}>{query}</button>
-                        <button type="button" className="rounded-full p-1 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200" onClick={(e) => removeHistory(query, e)}>
+                        <button type="button" className="mr-1 min-h-9 hover:text-zinc-900 dark:hover:text-white" onClick={() => handleSearch(query)}>{query}</button>
+                        <button type="button" className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200" onClick={(e) => removeHistory(query, e)} aria-label={`删除搜索历史：${query}`}>
                           <X size={12} />
                         </button>
                       </div>

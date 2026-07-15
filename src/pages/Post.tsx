@@ -14,6 +14,7 @@ import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { NotFoundState } from '@/components/NotFoundState';
+import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { extractMarkdownHeadings, extractTextFromReactNode, slugifyHeading } from '@/utils/headings';
 import type { MarkdownHeading } from '@/utils/headings';
 import { formatDate } from '@/utils/date';
@@ -456,6 +457,8 @@ export const Post = () => {
   const navigate = useNavigate();
   const [post, setPost] = useState<PostType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt?: string } | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [remarkPlugins, setRemarkPlugins] = useState<MarkdownPlugin[]>([remarkGfm]);
@@ -480,6 +483,7 @@ export const Post = () => {
 
     setLoading(true);
     setPost(null);
+    setLoadError(null);
 
     getPostById(id)
       .then((data) => {
@@ -488,6 +492,7 @@ export const Post = () => {
         }
 
         setPost(data || null);
+        setLoadError(null);
       })
       .catch((error) => {
         if (cancelled) {
@@ -496,6 +501,7 @@ export const Post = () => {
 
         console.error('Failed to load post:', error);
         setPost(null);
+        setLoadError('文章内容加载失败，请检查网络后重试。');
       })
       .finally(() => {
         if (!cancelled) {
@@ -506,7 +512,7 @@ export const Post = () => {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, loadAttempt]);
 
   useEffect(() => {
     if (!post?.content) {
@@ -650,8 +656,9 @@ export const Post = () => {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl pt-10">
-        <div className="mb-16 animate-pulse text-center">
+      <div className="mx-auto max-w-4xl pt-10" aria-busy="true">
+        <LoadingStatus label="正在加载文章内容" />
+        <div aria-hidden="true" className="mb-16 animate-pulse text-center">
           <div className="mx-auto mb-10 h-6 w-24 rounded-md bg-zinc-200 dark:bg-zinc-800" />
           <div className="mx-auto mb-8 h-12 w-3/4 rounded-lg bg-zinc-200 dark:bg-zinc-800 md:h-16" />
           <div className="flex justify-center space-x-6">
@@ -661,9 +668,9 @@ export const Post = () => {
           </div>
         </div>
 
-        <div className="mb-20 aspect-[21/9] w-full animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-800" />
+        <div aria-hidden="true" className="mb-20 aspect-[21/9] w-full animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-800" />
 
-        <div className="mx-auto max-w-3xl animate-pulse space-y-6 pb-32">
+        <div aria-hidden="true" className="mx-auto max-w-3xl animate-pulse space-y-6 pb-32">
           <div className="h-5 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
           <div className="h-5 w-11/12 rounded bg-zinc-200 dark:bg-zinc-800" />
           <div className="h-5 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
@@ -672,6 +679,20 @@ export const Post = () => {
           <div className="h-5 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
           <div className="h-5 w-5/6 rounded bg-zinc-200 dark:bg-zinc-800" />
         </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="mx-auto max-w-3xl pt-10">
+        <ContentStatus
+          variant="error"
+          title="文章加载失败"
+          description={loadError}
+          actionLabel="重新加载"
+          onAction={() => setLoadAttempt((attempt) => attempt + 1)}
+        />
       </div>
     );
   }
@@ -756,7 +777,7 @@ export const Post = () => {
         />
 
         <header className="mx-auto mb-8 max-w-3xl px-3 pt-4 text-center md:mb-12 md:pt-8">
-          <div className="mb-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-zinc-400 dark:text-zinc-600 md:mb-7">
+          <div className="mb-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400 md:mb-7">
             <Link to="/" className="inline-flex items-center gap-1 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
               <ArrowLeft size={13} />
               返回文章
@@ -861,7 +882,7 @@ export const Post = () => {
                   >
                     <ArrowLeft size={17} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100" />
                     <span className="min-w-0">
-                      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">上一篇</span>
+                      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">上一篇</span>
                       <span className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 transition-colors group-hover:text-zinc-950 dark:text-zinc-300 dark:group-hover:text-white">{adjacentPosts.prev.title}</span>
                     </span>
                   </Link>
@@ -874,7 +895,7 @@ export const Post = () => {
                     className="group flex min-w-0 items-start justify-end gap-3 text-right"
                   >
                     <span className="min-w-0">
-                      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">下一篇</span>
+                      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">下一篇</span>
                       <span className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 transition-colors group-hover:text-zinc-950 dark:text-zinc-300 dark:group-hover:text-white">{adjacentPosts.next.title}</span>
                     </span>
                     <ArrowRight size={17} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100" />
@@ -886,7 +907,7 @@ export const Post = () => {
 
               {/* 键盘快捷键提示 */}
               <div className="mt-5 hidden text-center md:block">
-                <span className="text-[11px] text-zinc-400 dark:text-zinc-600">
+                <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
                   快捷键：<kbd className="kbd">Alt</kbd> + <kbd className="kbd">←</kbd> 上一篇 · <kbd className="kbd">Alt</kbd> + <kbd className="kbd">→</kbd> 下一篇 · <kbd className="kbd">Esc</kbd> 关闭弹窗
                 </span>
               </div>

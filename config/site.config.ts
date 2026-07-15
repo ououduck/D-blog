@@ -3,6 +3,7 @@ export const siteConfig = {
   subtitle: '跑路的duck',
   description: '跑路的duck的技术分享和生活随笔',
   logo: 'https://blog.pldduck.com/logo.png',
+  logoSmall: '/logo-96.png',
   seoImage: 'https://blog.pldduck.com/logo.png',
   footerText: '©2026 D工作室',
   url: 'https://blog.pldduck.com',

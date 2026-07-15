@@ -5,6 +5,7 @@ import { ArrowLeft, Calendar, Clock, Search, X } from 'lucide-react';
 import { getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
+import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { getDateTimestamp } from '@/utils/date';
 import { easeOut } from '@/utils/motion';
@@ -45,9 +46,10 @@ export const Tags = () => {
   const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const selectedTag = searchParams.get('tag');
   const queryFromUrl = searchParams.get('q') || '';
-  const { searchQuery, isSearching, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
+  const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
     emptyResults: allPosts,
     initialQuery: queryFromUrl
   });
@@ -55,6 +57,7 @@ export const Tags = () => {
   useEffect(() => {
     let cancelled = false;
 
+    setLoading(true);
     getPosts()
       .then((posts) => {
         if (cancelled) {
@@ -81,7 +84,7 @@ export const Tags = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadAttempt]);
 
   const handleSearchChange = (query: string) => {
     handleSearch(query);
@@ -151,13 +154,18 @@ export const Tags = () => {
       </header>
 
       {loading || isSearching ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-900 border-t-transparent dark:border-zinc-100" />
+        <div className="flex items-center justify-center py-20" aria-busy="true">
+          <LoadingStatus label={isSearching ? '正在搜索标签和文章' : '正在加载标签'} />
+          <div aria-hidden="true" className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-900 border-t-transparent dark:border-zinc-100" />
         </div>
-      ) : loadError ? (
-        <div className="border-y border-dashed border-zinc-300 py-8 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
-          {loadError}
-        </div>
+      ) : loadError || searchError ? (
+        <ContentStatus
+          variant="error"
+          title={loadError ? '标签加载失败' : '搜索失败'}
+          description={loadError || searchError || undefined}
+          actionLabel={loadError ? '重新加载' : '清除搜索'}
+          onAction={loadError ? () => setLoadAttempt((attempt) => attempt + 1) : handleClearSearch}
+        />
       ) : (
         <>
           <div className="mb-8">

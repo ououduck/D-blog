@@ -114,8 +114,11 @@ const ThemeToggle = () => {
     setTheme('light');
   };
 
+  const currentThemeLabel = theme === 'light' ? TEXT.themeLight : theme === 'dark' ? TEXT.themeDark : TEXT.themeSystem;
+  const nextThemeLabel = theme === 'light' ? TEXT.themeDark : theme === 'dark' ? TEXT.themeSystem : TEXT.themeLight;
+
   return (
-    <button onClick={toggleTheme} className="group relative rounded-full bg-zinc-100 p-2.5 text-ink transition-all duration-300 hover:ring-2 ring-zinc-900/20 dark:bg-zinc-800 dark:text-amber-300 dark:ring-zinc-100/20" aria-label="切换主题">
+    <button onClick={toggleTheme} className="group relative rounded-full bg-zinc-100 p-2.5 text-ink transition-all duration-300 hover:ring-2 ring-zinc-900/20 dark:bg-zinc-800 dark:text-amber-300 dark:ring-zinc-100/20" aria-label={`切换外观主题，当前为${currentThemeLabel}，点击切换为${nextThemeLabel}`}>
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={theme} initial={{ y: -10, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 10, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
           {theme === 'light' && <Sun size={18} />}
@@ -124,7 +127,7 @@ const ThemeToggle = () => {
         </motion.div>
       </AnimatePresence>
       <span className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-        {theme === 'light' ? TEXT.themeLight : theme === 'dark' ? TEXT.themeDark : TEXT.themeSystem}
+        {currentThemeLabel}
       </span>
     </button>
   );
@@ -161,6 +164,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     { path: '/sponsor', label: TEXT.navSponsor, hint: '赞助支持', icon: Heart },
     { path: '/about', label: TEXT.navAbout, hint: '站点介绍', icon: Info }
   ];
+  const isNavItemActive = (path: string) => location.pathname === path || (path === '/' && location.pathname.startsWith('/post/'));
   const mobileQuickActions = [
     {
       key: 'search',
@@ -527,39 +531,43 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
   return (
     <>
-      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 md:border-transparent md:bg-paper md:dark:border-transparent md:dark:bg-void">
+      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, ease: easeSmooth }} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-16">
           <Link to="/" onMouseEnter={() => preloadPage('/')} className="group z-50 flex items-center space-x-2.5 sm:space-x-3">
-            <ProgressiveImage src={siteConfig.logo} alt="Logo" fetchPriority="high" wrapperClassName="h-8 w-8 rounded-lg bg-white sm:h-9 sm:w-9" className="h-8 w-8 rounded-lg object-cover sm:h-9 sm:w-9" />
+            <ProgressiveImage src={siteConfig.logoSmall} alt={`${siteConfig.title} 站点标志`} fetchPriority="high" width={96} height={96} wrapperClassName="h-8 w-8 rounded-lg bg-white sm:h-9 sm:w-9" className="h-8 w-8 rounded-lg object-cover sm:h-9 sm:w-9" />
             <span className="font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
           </Link>
 
-          <div className="hidden items-center gap-6 md:flex">
+          <div className="hidden items-center gap-6 lg:flex">
             <motion.div className="flex gap-4" variants={navListVariants} initial="hidden" animate="visible">
-              {navItems.map((item) => (
-                <motion.div key={item.path} variants={navItemVariants}>
-                  <Link
-                    to={item.path}
-                    onMouseEnter={() => preloadPage(item.path)}
-                    aria-current={location.pathname === item.path ? 'page' : undefined}
-                    className={`group relative inline-flex h-10 items-center px-2 py-1 text-sm font-semibold tracking-wide transition-colors ${
-                      location.pathname === item.path
-                        ? 'text-ink dark:text-white'
-                        : 'text-zinc-700 hover:text-ink dark:text-zinc-300 dark:hover:text-white'
-                    }`}
-                  >
-                    <span className="relative z-10">{item.label}</span>
-                    <span
-                      aria-hidden="true"
-                      className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-full bg-zinc-900 dark:bg-zinc-100 transition-all duration-250 ${
-                        location.pathname === item.path
-                          ? 'scale-x-100 opacity-100'
-                          : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+              {navItems.map((item) => {
+                const isActive = isNavItemActive(item.path);
+
+                return (
+                  <motion.div key={item.path} variants={navItemVariants}>
+                    <Link
+                      to={item.path}
+                      onMouseEnter={() => preloadPage(item.path)}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`group relative inline-flex h-10 items-center px-2 py-1 text-sm font-semibold tracking-wide transition-colors ${
+                        isActive
+                          ? 'text-ink dark:text-white'
+                          : 'text-zinc-700 hover:text-ink dark:text-zinc-300 dark:hover:text-white'
                       }`}
-                    />
-                  </Link>
-                </motion.div>
-              ))}
+                    >
+                      <span className="relative z-10">{item.label}</span>
+                      <span
+                        aria-hidden="true"
+                        className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-full bg-zinc-900 dark:bg-zinc-100 transition-all duration-250 ${
+                          isActive
+                            ? 'scale-x-100 opacity-100'
+                            : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
+                        }`}
+                      />
+                    </Link>
+                  </motion.div>
+                );
+              })}
             </motion.div>
 
             <div className="flex items-center gap-2 border-l border-zinc-300 pl-5 dark:border-zinc-700">
@@ -577,7 +585,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 md:hidden">
+          <div className="flex items-center gap-1.5 lg:hidden">
             <button onClick={onSearchClick} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-700 shadow-sm shadow-zinc-900/5 transition-all duration-200 hover:border-zinc-300 hover:bg-zinc-50 hover:text-ink active:scale-95 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:shadow-black/20 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-white" aria-label="打开站内搜索">
               <Search size={18} />
             </button>
@@ -596,7 +604,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       </nav>
 
       {isMobileNavMounted && (
-        <div className="mobile-nav-root md:hidden">
+        <div className="mobile-nav-root lg:hidden">
           <div
             data-testid="mobile-nav-backdrop"
             data-open={isMobileNavOpen}
@@ -630,7 +638,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
               <div className="h-1 w-11 rounded-full bg-zinc-300 dark:bg-zinc-700" />
             </div>
 
-            <div className="flex max-h-[82vh] flex-col overflow-y-auto px-3.5 pb-4 pt-1 no-scrollbar sm:px-4">
+            <div className="mobile-nav-scroll flex flex-col overflow-y-auto px-3.5 pb-4 pt-1 no-scrollbar sm:px-4">
               <div className="flex items-center justify-between border-b border-zinc-200 px-1 pb-4 dark:border-zinc-800">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-500">Navigation</p>
@@ -641,7 +649,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
               <nav className="divide-y divide-zinc-200 dark:divide-zinc-800" aria-label="移动端主导航">
                 {navItems.map((item) => {
-                  const isActive = location.pathname === item.path;
+                  const isActive = isNavItemActive(item.path);
                   const Icon = item.icon;
 
                   return (
@@ -754,8 +762,12 @@ const routeShellVariants = routeTransition;
 
 export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [hasOpenedSearch, setHasOpenedSearch] = useState(false);
   const location = useLocation();
-  const openSearch = useCallback(() => setIsSearchOpen(true), []);
+  const openSearch = useCallback(() => {
+    setHasOpenedSearch(true);
+    setIsSearchOpen(true);
+  }, []);
   const closeSearch = useCallback(() => setIsSearchOpen(false), []);
   const scrollTimerRef = useRef<number | null>(null);
   const routeContentKey = location.pathname;
@@ -769,7 +781,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) =
         }
 
         event.preventDefault();
-        setIsSearchOpen(true);
+        openSearch();
         return;
       }
 
@@ -781,7 +793,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) =
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSearchOpen]);
+  }, [isSearchOpen, openSearch]);
 
   // Scroll to top after route transition
   useEffect(() => {
@@ -812,7 +824,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) =
     <div className="relative flex min-h-screen flex-col selection:bg-accent selection:text-white">
       <Background />
       <Navbar onSearchClick={openSearch} />
-      <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
+      {hasOpenedSearch && (
+        <Suspense fallback={null}>
+          <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
+        </Suspense>
+      )}
       <main className="relative flex-grow px-3 pt-20 sm:px-6 sm:pt-24 md:pt-24">
         {hasViewTransition ? (
           <div key={routeContentKey} style={{ viewTransitionName: 'route-content' }} className="mx-auto max-w-7xl">

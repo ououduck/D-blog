@@ -681,19 +681,19 @@ export const CoverGenerator: React.FC = () => {
                   />
                   {!isCollapsed('text-content') && (
                     <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
-                          <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">左侧/主要文字</label>
-                          <input type="text" value={leftText} onChange={(e) => setLeftText(e.target.value)} className={inputClass} placeholder="主标题" />
+                          <label htmlFor="cover-left-text" className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">左侧/主要文字</label>
+                          <input id="cover-left-text" type="text" value={leftText} onChange={(e) => setLeftText(e.target.value)} className={inputClass} placeholder="主标题" />
                         </div>
                         <div>
-                          <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">右侧文字</label>
-                          <input type="text" value={rightText} onChange={(e) => setRightText(e.target.value)} className={inputClass} placeholder="副标题" />
+                          <label htmlFor="cover-right-text" className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">右侧文字</label>
+                          <input id="cover-right-text" type="text" value={rightText} onChange={(e) => setRightText(e.target.value)} className={inputClass} placeholder="副标题" />
                         </div>
                       </div>
                       <div>
-                        <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">次要/描述文字</label>
-                        <input type="text" value={subText} onChange={(e) => setSubText(e.target.value)} className={inputClass} placeholder="可选描述文字（如：技术博客）" />
+                        <label htmlFor="cover-description-text" className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">次要/描述文字</label>
+                        <input id="cover-description-text" type="text" value={subText} onChange={(e) => setSubText(e.target.value)} className={inputClass} placeholder="可选描述文字（如：技术博客）" />
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <span className={chipClass}>主标题 {leftText.length} 字</span>
@@ -1188,12 +1188,13 @@ export const CoverGenerator: React.FC = () => {
                   </div>
                   <div className="space-y-4">
                     <div>
-                      <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">宽高比</label>
-                      <div className="grid grid-cols-4 gap-2">
+                      <span id="cover-ratio-label" className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">宽高比</span>
+                      <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-4" role="group" aria-labelledby="cover-ratio-label">
                         {COVER_RATIOS.map((ratio) => (
                           <button
                             key={ratio.label}
                             onClick={() => setActiveRatioLabel(ratio.label)}
+                            aria-pressed={activeRatioLabel === ratio.label}
                             className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold transition-all ${
                               activeRatioLabel === ratio.label
                                 ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
@@ -1206,12 +1207,13 @@ export const CoverGenerator: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">格式</label>
-                      <div className="grid grid-cols-2 gap-2">
+                      <span id="cover-format-label" className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">格式</span>
+                      <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="cover-format-label">
                         {(['png', 'jpeg'] as const).map(f => (
                           <button
                             key={f}
                             onClick={() => setExportFormat(f)}
+                            aria-pressed={exportFormat === f}
                             className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold uppercase transition-all ${
                               exportFormat === f
                                 ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
@@ -1224,16 +1226,16 @@ export const CoverGenerator: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                      <label htmlFor="cover-export-scale" className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                         <span>导出倍率</span>
                         <span className="tabular-nums text-ink dark:text-white">{exportScale}x</span>
                       </label>
-                      <input type="range" min="1" max="3" step="0.5" value={exportScale} onChange={(e) => setExportScale(Number(e.target.value))} className={rangeClass} />
+                      <input id="cover-export-scale" type="range" min="1" max="3" step="0.5" value={exportScale} onChange={(e) => setExportScale(Number(e.target.value))} aria-valuetext={`${exportScale} 倍`} className={rangeClass} />
                       <p className="mt-1 text-xs text-zinc-400">下载时将输出为 {Math.round(canvasSize.width * exportScale)} × {Math.round(canvasSize.height * exportScale)} px</p>
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">文件名</label>
-                      <input type="text" value={exportFilename} onChange={(e) => setExportFilename(e.target.value)} className={inputClass} placeholder="cover" />
+                      <label htmlFor="cover-export-filename" className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">文件名</label>
+                      <input id="cover-export-filename" type="text" value={exportFilename} onChange={(e) => setExportFilename(e.target.value)} className={inputClass} placeholder="cover" />
                     </div>
                   </div>
                 </div>

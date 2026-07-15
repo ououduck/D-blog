@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import { Seo } from '../components/Seo';
+import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { getSiteStats, SiteStats } from '../services/siteStats';
 
 const EMPTY_SITE_STATS: SiteStats = {
@@ -62,6 +63,9 @@ const RankingCard = ({
 }) => (
   <div className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
     <h3 className="mb-4 font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">{title}</h3>
+    {items.length === 0 ? (
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无可展示的数据。</p>
+    ) : (
     <div className="space-y-3">
       {items.map((item, index) => {
         const max = Math.max(...items.map((entry) => entry.count), 1);
@@ -78,6 +82,7 @@ const RankingCard = ({
         );
       })}
     </div>
+    )}
   </div>
 );
 
@@ -93,6 +98,7 @@ export const Stats = () => {
     }
 
     setSiteStatsLoading(true);
+    setSiteStatsError(false);
 
     try {
       const statsData = await getSiteStats();
@@ -122,9 +128,10 @@ export const Stats = () => {
       </header>
 
       {siteStatsLoading ? (
-        <div className="grid gap-x-6 py-10 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5" aria-label="正在加载站点统计">
+        <div className="grid gap-x-6 py-10 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5" aria-busy="true">
+          <LoadingStatus label="正在加载站点统计" className="col-span-full" />
           {Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="animate-pulse border-t border-zinc-200 py-6 dark:border-zinc-800">
+            <div key={index} aria-hidden="true" className="animate-pulse border-t border-zinc-200 py-6 dark:border-zinc-800">
               <div className="mb-5 h-10 w-10 rounded-lg bg-zinc-200 dark:bg-zinc-800" />
               <div className="mb-3 h-3 w-20 bg-zinc-200 dark:bg-zinc-800" />
               <div className="mb-3 h-8 w-24 bg-zinc-200 dark:bg-zinc-800" />
@@ -133,9 +140,17 @@ export const Stats = () => {
           ))}
         </div>
       ) : siteStatsError ? (
-        <div className="my-10 border-y border-dashed border-zinc-300 py-8 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
-          统计数据暂时无法加载，请稍后刷新重试。
-        </div>
+        <ContentStatus
+          variant="error"
+          title="统计数据加载失败"
+          description="统计数据暂时无法加载，请稍后重试。"
+          actionLabel="重新加载"
+          onAction={() => {
+            siteStatsLoadedRef.current = false;
+            void loadSiteStats();
+          }}
+          className="my-10"
+        />
       ) : (
         <>
       <section className="mt-8 md:mt-10" aria-labelledby="site-overview-title">

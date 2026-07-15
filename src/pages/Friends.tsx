@@ -6,6 +6,7 @@ import { getFriends } from '@/services/friends';
 import { Seo } from '../components/Seo';
 import { Friend } from '../types';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
+import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { easeOut, fadeInUp, staggerContainer } from '@/utils/motion';
 
 export const Friends = () => {
@@ -15,8 +16,10 @@ export const Friends = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
     getFriends()
       .then((data) => {
         setFriends(data);
@@ -27,7 +30,7 @@ export const Friends = () => {
         setLoadError('友链数据加载失败，请稍后刷新重试。');
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [loadAttempt]);
 
   const containerVariants = staggerContainer;
 
@@ -227,12 +230,17 @@ export const Friends = () => {
       </div>
 
       {loadError && !loading && (
-        <div className="mb-8 border-y border-dashed border-red-300 py-6 text-sm text-red-700 dark:border-red-900/60 dark:text-red-200">
-          {loadError}
-        </div>
+        <ContentStatus
+          variant="error"
+          title="友链加载失败"
+          description={loadError}
+          actionLabel="重新加载"
+          onAction={() => setLoadAttempt((attempt) => attempt + 1)}
+          className="mb-8"
+        />
       )}
 
-      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" aria-busy={loading}>
         {!loading && !loadError && filteredFriends.length > 0 &&
           filteredFriends.map((friend, index) => (
             <motion.a
@@ -263,9 +271,10 @@ export const Friends = () => {
             </motion.a>
           ))}
 
+        {loading && <LoadingStatus label="正在加载友情链接" className="col-span-full" />}
         {loading &&
           Array.from({ length: 3 }).map((_, index) => (
-            <motion.div key={`skeleton-${index}`} variants={itemVariants} className="animate-pulse rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+            <motion.div key={`skeleton-${index}`} aria-hidden="true" variants={itemVariants} className="animate-pulse rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 flex-shrink-0 rounded-lg bg-zinc-100 dark:bg-zinc-800" />
                 <div className="flex-1 space-y-3">

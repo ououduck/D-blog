@@ -24,6 +24,7 @@ const getTouchDistance = (touches: React.TouchList) => {
 };
 
 export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) => {
+  const viewerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -38,7 +39,8 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
   useModalOverlay({
     isOpen,
     onClose,
-    initialFocusRef: closeButtonRef
+    initialFocusRef: closeButtonRef,
+    containerRef: viewerRef
   });
 
   const resetView = useCallback(() => {
@@ -182,6 +184,8 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
     <AnimatePresence>
       {src && (
         <motion.div
+          ref={viewerRef}
+          tabIndex={-1}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -218,7 +222,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
             animate={{ scale, opacity: isLoaded ? 1 : 0.35, x: position.x, y: position.y }}
             exit={{ opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-            className="relative max-h-[86vh] max-w-[94vw] touch-none select-none"
+            className="relative max-h-[86vh] supports-[height:100dvh]:max-h-[86dvh] max-w-[94vw] touch-none select-none"
             style={{ cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in' }}
             onMouseDown={handleMouseDown}
             onDoubleClick={(event) => { event.stopPropagation(); handleToggleZoom(); }}
@@ -233,26 +237,26 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
               alt={alt || ''}
               draggable={false}
               onLoad={() => setIsLoaded(true)}
-              className="max-h-[86vh] max-w-[94vw] rounded-xl object-contain shadow-lg ring-1 ring-white/10"
+              className="max-h-[86vh] supports-[height:100dvh]:max-h-[86dvh] max-w-[94vw] rounded-xl object-contain shadow-lg ring-1 ring-white/10"
             />
           </motion.div>
 
           <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-white/15 bg-zinc-900 p-1.5 shadow-lg sm:bottom-6">
-            <button onClick={handleZoomOut} className="rounded-lg p-2 text-white/70 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-35" aria-label="缩小" title="缩小" disabled={scale <= MIN_SCALE}>
+            <button onClick={handleZoomOut} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-35" aria-label="缩小" title="缩小" disabled={scale <= MIN_SCALE}>
               <Minus size={17} />
             </button>
             <span className="min-w-[3.25rem] text-center text-xs font-semibold text-white/80 tabular-nums">{toolbarLabel}</span>
-            <button onClick={handleZoomIn} className="rounded-lg p-2 text-white/70 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-35" aria-label="放大" title="放大" disabled={scale >= MAX_SCALE}>
+            <button onClick={handleZoomIn} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-35" aria-label="放大" title="放大" disabled={scale >= MAX_SCALE}>
               <Plus size={17} />
             </button>
             <span className="mx-1 h-5 w-px bg-white/15" />
-            <button onClick={handleToggleZoom} className="rounded-lg p-2 text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="切换缩放" title="切换缩放">
+            <button onClick={handleToggleZoom} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="切换缩放" title="切换缩放">
               <Maximize2 size={16} />
             </button>
-            <button onClick={resetView} className="rounded-lg p-2 text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="重置" title="重置">
+            <button onClick={resetView} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="重置" title="重置">
               <RotateCcw size={16} />
             </button>
-            <button onClick={handleDownload} className="rounded-lg p-2 text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="下载" title="下载原图">
+            <button onClick={handleDownload} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-zinc-800 hover:text-white" aria-label="下载" title="下载原图">
               <Download size={16} />
             </button>
           </div>

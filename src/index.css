@@ -191,6 +191,11 @@ html.theme-switching *:not(script):not(style)::after {
   transition: none;
 }
 
+.mobile-nav-scroll {
+  max-height: 82vh;
+  max-height: 82dvh;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -357,7 +362,7 @@ html.theme-switching *:not(script):not(style)::after {
   --tw-prose-td-borders: #27272a;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .mobile-nav-backdrop {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
@@ -368,7 +373,9 @@ html.theme-switching *:not(script):not(style)::after {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
+}
 
+@media (max-width: 767px) {
   .back-to-top-btn {
     bottom: 5rem;
     right: 0.875rem;

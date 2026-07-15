@@ -5,6 +5,7 @@ import { Archive, Calendar, FolderTree, ArrowUpRight, Search, X, ChevronDown, Ch
 import { getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
+import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { formatDate, getDateTimestamp } from '@/utils/date';
 import { easeOut } from '@/utils/motion';
@@ -98,10 +99,11 @@ export const ArchivePage = () => {
   const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
   const latestDate = allPosts[0]?.date || '';
-  const { searchQuery, isSearching, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
+  const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
     emptyResults: allPosts,
     initialQuery: queryFromUrl
   });
@@ -109,6 +111,7 @@ export const ArchivePage = () => {
   useEffect(() => {
     let cancelled = false;
 
+    setLoading(true);
     getPosts()
       .then((posts) => {
         if (cancelled) {
@@ -133,7 +136,7 @@ export const ArchivePage = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadAttempt]);
 
   const handleSearchChange = (query: string) => {
     handleSearch(query);
@@ -333,17 +336,29 @@ export const ArchivePage = () => {
         </div>
 
         {loading || isSearching ? (
-          <div className="space-y-6">
+          <div className="space-y-6" aria-busy="true">
+            <LoadingStatus label={isSearching ? '正在搜索归档文章' : '正在加载归档文章'} />
             {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="h-32 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-900" />
+              <div key={index} aria-hidden="true" className="h-32 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-900" />
             ))}
           </div>
-        ) : loadError ? (
-          <div className="border-y border-dashed border-zinc-300 py-8 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
-            {loadError}
-          </div>
+        ) : loadError || searchError ? (
+          <ContentStatus
+            variant="error"
+            title={loadError ? '归档加载失败' : '搜索失败'}
+            description={loadError || searchError || undefined}
+            actionLabel={loadError ? '重新加载' : '清除搜索'}
+            onAction={loadError ? () => setLoadAttempt((attempt) => attempt + 1) : handleClearSearch}
+          />
+        ) : groups.length === 0 ? (
+          <ContentStatus
+            title={hasSearchQuery ? '未找到匹配文章' : '暂无归档文章'}
+            description={hasSearchQuery ? '尝试缩短关键词，或清除搜索条件后查看全部文章。' : '发布文章后，归档时间线会显示在这里。'}
+            actionLabel={hasSearchQuery ? '清除搜索' : undefined}
+            onAction={hasSearchQuery ? handleClearSearch : undefined}
+          />
         ) : (
-          <div className="relative">
+          <div className="relative" aria-live="polite">
             <div className="absolute bottom-0 left-[7px] top-0 w-[2px] bg-gradient-to-b from-accent via-zinc-300 to-transparent dark:from-accent-light dark:via-zinc-700 md:left-[9px]" />
 
             <div className="space-y-12">

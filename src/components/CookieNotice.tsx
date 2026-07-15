@@ -36,6 +36,8 @@ export const CookieNotice: React.FC = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
           className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+          role="region"
+          aria-label="Cookie 使用说明"
         >
           <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -67,8 +69,8 @@ export const CookieNotice: React.FC = () => {
                 </button>
                 <button
                   onClick={handleClose}
-                  className="flex items-center justify-center rounded-md p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 dark:focus:ring-white"
-                  aria-label="关闭"
+                  className="flex min-h-11 min-w-11 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 dark:focus:ring-white"
+                  aria-label="关闭 Cookie 使用说明"
                 >
                   <X size={18} />
                 </button>
