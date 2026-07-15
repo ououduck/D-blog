@@ -778,29 +778,28 @@ export const Post = () => {
               {post.title}
             </h1>
 
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500 md:gap-x-5 md:text-xs">
-              <span className="flex items-center">
-                <Users size={14} className="mr-2" /> {authorsLabel}
+            <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-500 md:gap-2.5 md:text-xs">
+              <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-zinc-200 bg-white/70 px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/70">
+                <Users size={14} />
+                <span className="truncate">{authorsLabel}</span>
               </span>
-              <span className="hidden h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700 md:block" />
-              <span className="flex items-center">
-                <Calendar size={14} className="mr-2" /> 发布于 {formatMetaDate(post.date)}
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/70 px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/70">
+                <Calendar size={14} />
+                <span>发布于 {formatMetaDate(post.date)}</span>
               </span>
               {post.updatedAt && post.updatedAt !== post.date && (
-                <>
-                  <span className="hidden h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700 md:block" />
-                  <span className="flex items-center">
-                    <Calendar size={14} className="mr-2" /> 最后更新 {formatMetaDate(post.updatedAt)}
-                  </span>
-                </>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/70 px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/70">
+                  <Calendar size={14} />
+                  <span>更新 {formatMetaDate(post.updatedAt)}</span>
+                </span>
               )}
-              <span className="hidden h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700 md:block" />
-              <span className="flex items-center">
-                <Clock size={14} className="mr-2" /> {post.readTime}
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/70 px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/70">
+                <Clock size={14} />
+                <span>{post.readTime}</span>
               </span>
-              <span className="hidden h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700 md:block" />
-              <button type="button" onClick={() => setShareModalOpen(true)} className="flex items-center transition-colors hover:text-zinc-800 dark:hover:text-zinc-200" aria-label={`分享文章：${post.title}`}>
-                <Share2 size={14} className="mr-1.5" /> 分享
+              <button type="button" onClick={() => setShareModalOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/5 px-3 py-1.5 text-accent transition-colors hover:border-accent/50 hover:bg-accent/10 dark:border-accent-light/30 dark:bg-accent-light/10 dark:text-accent-light" aria-label={`分享文章：${post.title}`}>
+                <Share2 size={14} />
+                分享
               </button>
             </div>
           </motion.div>

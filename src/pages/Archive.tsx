@@ -159,6 +159,7 @@ export const ArchivePage = () => {
 
   const groups = buildArchiveGroups(results);
   const totalPosts = groups.reduce((sum, group) => sum + group.total, 0);
+  const allGroupsExpanded = groups.length > 0 && expandedYears.size === groups.length;
 
   useEffect(() => {
     if (queryFromUrl !== searchQuery) {
@@ -293,30 +294,42 @@ export const ArchivePage = () => {
       </header>
 
       <section className="mt-10 md:mt-14">
-        <div className="mb-8">
-          <div className="group relative max-w-md">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-              <Search className="text-zinc-400 transition-colors group-focus-within:text-zinc-900 dark:group-focus-within:text-zinc-100" size={18} />
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="group relative max-w-md">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                <Search className="text-zinc-400 transition-colors group-focus-within:text-zinc-900 dark:group-focus-within:text-zinc-100" size={18} />
+              </div>
+              <input
+                type="text"
+                placeholder="搜索归档文章..."
+                value={searchQuery}
+                onChange={(event) => handleSearchChange(event.target.value)}
+                className="w-full border border-zinc-300 bg-white py-3 pl-11 pr-11 text-sm text-ink outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-zinc-100"
+                aria-label="搜索归档文章"
+              />
+              {searchQuery && (
+                <button onClick={handleClearSearch} className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100" aria-label="清除搜索">
+                  <X size={16} />
+                </button>
+              )}
             </div>
-            <input
-              type="text"
-              placeholder="搜索归档文章..."
-              value={searchQuery}
-              onChange={(event) => handleSearchChange(event.target.value)}
-              className="w-full border border-zinc-300 bg-white py-3 pl-11 pr-11 text-sm text-ink outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-zinc-100"
-              aria-label="搜索归档文章"
-            />
-            {searchQuery && (
-              <button onClick={handleClearSearch} className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100" aria-label="清除搜索">
-                <X size={16} />
-              </button>
+            {hasSearchQuery && (
+              <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">
+                搜索 "<span className="font-bold text-zinc-900 dark:text-zinc-100">{searchQuery}</span>" 找到 {totalPosts} 篇文章
+              </div>
             )}
           </div>
-          {hasSearchQuery && (
-            <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">
-              搜索 "<span className="font-bold text-zinc-900 dark:text-zinc-100">{searchQuery}</span>" 找到 {totalPosts} 篇文章
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={toggleAll}
+            disabled={groups.length === 0}
+            aria-pressed={allGroupsExpanded}
+            className="inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-600 transition-colors hover:border-accent/40 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-accent-light/50 dark:hover:text-white"
+          >
+            {allGroupsExpanded ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
+            {allGroupsExpanded ? '全部折叠' : '全部展开'}
+          </button>
         </div>
 
         {loading || isSearching ? (
@@ -331,7 +344,7 @@ export const ArchivePage = () => {
           </div>
         ) : (
           <div className="relative">
-            <div className="absolute bottom-0 left-[7px] top-0 w-[2px] bg-gradient-to-b from-zinc-900 via-zinc-300 to-transparent dark:from-zinc-100 dark:via-zinc-700 md:left-[9px]" />
+            <div className="absolute bottom-0 left-[7px] top-0 w-[2px] bg-gradient-to-b from-accent via-zinc-300 to-transparent dark:from-accent-light dark:via-zinc-700 md:left-[9px]" />
 
             <div className="space-y-12">
               {groups.map((group, groupIndex) => {
@@ -351,7 +364,7 @@ export const ArchivePage = () => {
                       aria-expanded={isYearExpanded}
                       aria-label={`${isYearExpanded ? '折叠' : '展开'} ${group.year} 年的文章`}
                     >
-                      <div className="relative z-10 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-900 dark:bg-zinc-100 md:h-5 md:w-5">
+                      <div className="relative z-10 flex h-4 w-4 items-center justify-center rounded-full bg-accent dark:bg-accent-light md:h-5 md:w-5">
                         <div className="h-2 w-2 rounded-full bg-white dark:bg-zinc-900 md:h-2.5 md:w-2.5" />
                       </div>
                       <div className="flex flex-1 flex-wrap items-center gap-3">

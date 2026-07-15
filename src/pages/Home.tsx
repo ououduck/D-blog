@@ -72,6 +72,42 @@ const filterAndSortPosts = (
   return sortPosts(filteredPosts, sortOrder);
 };
 
+type PaginationItem = number | 'ellipsis-start' | 'ellipsis-end';
+
+const getPaginationItems = (currentPage: number, totalPages: number, isMobile: boolean): PaginationItem[] => {
+  const maxVisible = isMobile ? 5 : 7;
+
+  if (totalPages <= maxVisible) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const siblingCount = isMobile ? 0 : 1;
+  const pages = new Set([1, totalPages, currentPage]);
+
+  for (let offset = 1; offset <= siblingCount; offset += 1) {
+    if (currentPage - offset > 1) pages.add(currentPage - offset);
+    if (currentPage + offset < totalPages) pages.add(currentPage + offset);
+  }
+
+  const sortedPages = Array.from(pages).sort((a, b) => a - b);
+  const items: PaginationItem[] = [];
+
+  sortedPages.forEach((page, index) => {
+    if (index > 0) {
+      const previousPage = sortedPages[index - 1];
+      if (page - previousPage === 2) {
+        items.push(previousPage + 1);
+      } else if (page - previousPage > 2) {
+        items.push(index === 1 ? 'ellipsis-start' : 'ellipsis-end');
+      }
+    }
+
+    items.push(page);
+  });
+
+  return items;
+};
+
 const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean; onShare: (post: PostMetadata) => void }> = ({ post, index, featured, onShare }) => {
   const shouldReduceMotion = useReducedMotion();
   const cardVariants = {
@@ -208,31 +244,29 @@ interface FilterBarProps {
 
 const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, sortOrder, onToggleSort }) => {
   return (
-    <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="flex items-center justify-between gap-4 border-y border-zinc-200 py-2 dark:border-zinc-800">
+    <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="flex items-center justify-between gap-3 border-y border-zinc-200 py-3 dark:border-zinc-800">
       <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
-        <div className="flex items-center" role="tablist" aria-label="文章分类筛选">
-          {[ALL_CATEGORY, ...categories].map((category, index) => (
-            <React.Fragment key={category}>
-              {index > 0 && <span className="mx-1 text-zinc-300 dark:text-zinc-700" aria-hidden="true">/</span>}
-              <button
-                onClick={() => onSelect(category)}
-                role="tab"
-                aria-selected={selected === category}
-                aria-controls="posts-grid"
-                tabIndex={selected === category ? 0 : -1}
-                className={`whitespace-nowrap px-2 py-1.5 text-sm transition-colors ${
-                  selected === category
-                    ? 'font-semibold text-ink dark:text-white'
-                    : 'text-zinc-500 hover:text-ink dark:text-zinc-400 dark:hover:text-white'
-                }`}
-              >
-                {category}
-              </button>
-            </React.Fragment>
+        <div className="flex items-center gap-2" role="tablist" aria-label="文章分类筛选">
+          {[ALL_CATEGORY, ...categories].map((category) => (
+            <button
+              key={category}
+              onClick={() => onSelect(category)}
+              role="tab"
+              aria-selected={selected === category}
+              aria-controls="posts-grid"
+              tabIndex={selected === category ? 0 : -1}
+              className={`whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                selected === category
+                  ? 'border-accent bg-accent text-white dark:border-accent-light dark:bg-accent-light dark:text-white'
+                  : 'border-zinc-200 bg-white text-zinc-600 hover:border-accent/40 hover:text-ink dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-accent-light/50 dark:hover:text-white'
+              }`}
+            >
+              {category}
+            </button>
           ))}
         </div>
       </div>
-      <button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} className="flex shrink-0 items-center gap-1.5 border-l border-zinc-200 pl-4 text-sm text-zinc-500 hover:text-ink dark:border-zinc-800 dark:text-zinc-400 dark:hover:text-white">
+      <button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} className="flex shrink-0 items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-accent/40 hover:text-ink dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-accent-light/50 dark:hover:text-white">
         {sortOrder === 'newest' ? <ArrowDownWideNarrow size={14} /> : <ArrowUpWideNarrow size={14} />}
         <span>{sortOrder === 'newest' ? '最新' : '最早'}</span>
       </button>
@@ -351,7 +385,8 @@ export const Home = () => {
     return { pinnedPosts, regularPosts, totalSlots, totalPages };
   }, [displayedPosts, isMobile, postsPerPage]);
 
-  const { pinnedPosts, regularPosts, totalPages } = paginationData;
+  const { totalPages } = paginationData;
+  const paginationItems = useMemo(() => getPaginationItems(currentPage, totalPages, isMobile), [currentPage, totalPages, isMobile]);
 
   useEffect(() => {
     setCurrentPage((previous) => Math.min(previous, totalPages));
@@ -508,19 +543,35 @@ export const Home = () => {
             </motion.div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-800" aria-label="分页导航">
-                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="flex items-center gap-1 rounded px-2 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white" aria-label="上一页">
+              <nav className="flex flex-wrap items-center justify-center gap-2 border-t border-zinc-200 pt-5 dark:border-zinc-800" aria-label="分页导航">
+                <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} className="inline-flex h-9 items-center gap-1 rounded-full border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-600 transition-colors hover:border-accent/40 hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-accent-light/50 dark:hover:text-white" aria-label="上一页">
                   <ChevronLeft size={15} />
-                  上一页
+                  <span className="hidden sm:inline">上一页</span>
                 </button>
-                <span className="text-sm text-zinc-500 dark:text-zinc-400" aria-live="polite">
-                  {currentPage} / {totalPages}
-                </span>
-                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="flex items-center gap-1 rounded px-2 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white" aria-label="下一页">
-                  下一页
+                <div className="flex items-center gap-1" aria-live="polite">
+                  {paginationItems.map((item) => item === 'ellipsis-start' || item === 'ellipsis-end' ? (
+                    <span key={item} className="flex h-9 min-w-9 items-center justify-center px-1 text-sm text-zinc-400 dark:text-zinc-600" aria-hidden="true">...</span>
+                  ) : (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => paginate(item)}
+                      aria-current={currentPage === item ? 'page' : undefined}
+                      className={`h-9 min-w-9 rounded-full border px-3 text-sm font-semibold transition-colors ${
+                        currentPage === item
+                          ? 'border-accent bg-accent text-white dark:border-accent-light dark:bg-accent-light dark:text-white'
+                          : 'border-zinc-200 bg-white text-zinc-600 hover:border-accent/40 hover:text-ink dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-accent-light/50 dark:hover:text-white'
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="inline-flex h-9 items-center gap-1 rounded-full border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-600 transition-colors hover:border-accent/40 hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-accent-light/50 dark:hover:text-white" aria-label="下一页">
+                  <span className="hidden sm:inline">下一页</span>
                   <ChevronRight size={15} />
                 </button>
-              </div>
+              </nav>
             )}
           </div>
         )}

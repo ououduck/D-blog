@@ -242,12 +242,12 @@ export const Friends = () => {
               href={friend.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative block border-t border-zinc-200 py-5 transition-colors duration-150 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
+              className="group relative block h-full rounded-lg border border-zinc-200 bg-white p-5 transition-colors duration-150 hover:border-accent/35 hover:bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-accent-light/35 dark:hover:bg-zinc-900/80"
             >
               <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:text-zinc-500">
                 <ExternalLink size={16} />
               </div>
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-4 pr-5">
                 <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800">
                   <ProgressiveImage src={friend.avatar} alt={friend.name} wrapperClassName="h-full w-full" className="h-full w-full object-cover object-center" effect="fade" />
                 </div>
@@ -265,7 +265,7 @@ export const Friends = () => {
 
         {loading &&
           Array.from({ length: 3 }).map((_, index) => (
-            <motion.div key={`skeleton-${index}`} variants={itemVariants} className="animate-pulse border-t border-zinc-200 py-5 dark:border-zinc-800">
+            <motion.div key={`skeleton-${index}`} variants={itemVariants} className="animate-pulse rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 flex-shrink-0 rounded-lg bg-zinc-100 dark:bg-zinc-800" />
                 <div className="flex-1 space-y-3">

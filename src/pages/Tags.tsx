@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Calendar, Clock, Search, X } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Search, X } from 'lucide-react';
 import { getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
@@ -213,16 +213,17 @@ export const Tags = () => {
             )
           ) : (
             <div>
-              <div className="mb-8 flex items-center justify-between">
-                <h2 className="font-serif text-2xl font-bold text-zinc-900 dark:text-zinc-100 md:text-3xl">
-                  标签: {selectedTag}
+              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="min-w-0 font-serif text-2xl font-bold text-zinc-900 dark:text-zinc-100 md:text-3xl">
+                  标签: <span className="break-words text-accent dark:text-accent-light">{selectedTag}</span>
                   <span className="ml-3 text-base text-zinc-400">({selectedTagInfo?.count ?? 0} 篇)</span>
                 </h2>
                 <button
                   onClick={() => updateTagParam()}
-                  className="border-b border-zinc-400 px-1 py-2 text-sm font-bold text-zinc-600 transition-colors hover:border-zinc-900 hover:text-zinc-900 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-zinc-100 dark:hover:text-zinc-100"
+                  className="inline-flex w-fit items-center gap-2 rounded-full border border-accent/25 bg-accent/5 px-4 py-2 text-sm font-bold text-accent transition-colors hover:border-accent/50 hover:bg-accent/10 dark:border-accent-light/30 dark:bg-accent-light/10 dark:text-accent-light"
                 >
-                  查看全部
+                  <ArrowLeft size={15} />
+                  返回全部标签
                 </button>
               </div>
 
