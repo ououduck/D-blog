@@ -7,7 +7,9 @@
     "gen:data": "node scripts/generate-site-data.mjs",
     "prerender": "node scripts/prerender.mjs",
     "typecheck": "tsc -p config/tsconfig.json --noEmit",
-    "check": "npm run typecheck && npm run gen:data",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run test && npm run gen:data",
     "dev": "npm run gen:data && vite",
     "build": "npm run gen:data && vite build && npm run prerender",
     "preview": "vite preview"
@@ -43,6 +45,7 @@
     "terser": "^5.36.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
-    "vite-plugin-purgecss": "^0.2.13"
+    "vite-plugin-purgecss": "^0.2.13",
+    "vitest": "^3.2.7"
   }
 }
