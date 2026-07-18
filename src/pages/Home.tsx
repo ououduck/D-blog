@@ -276,7 +276,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
 const Hero = () => {
   return (
     <div className="px-4 pb-8 pt-5 text-center md:pb-10 md:pt-8">
-      <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: easeOut }} className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
+      <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: easeOut }} className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
         {siteConfig.subtitle}
       </motion.p>
       <motion.h1 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03, duration: 0.3, ease: easeOut }} className="mb-3 font-serif text-4xl font-bold tracking-tight text-ink dark:text-white sm:text-5xl md:text-6xl">

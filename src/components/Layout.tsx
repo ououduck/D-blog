@@ -730,7 +730,7 @@ const Footer = ({ isPostPage = false }: { isPostPage?: boolean }) => {
           </div>
         </div>
 
-        <div className="mt-7 flex flex-col gap-2 border-t border-zinc-200/70 pt-5 text-xs text-zinc-500 dark:border-zinc-800/70 dark:text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-7 flex flex-col gap-2 border-t border-zinc-200/70 pt-5 text-xs text-zinc-600 dark:border-zinc-800/70 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
           <p>{siteConfig.footerText} · {siteConfig.author.name}</p>
           <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-ink dark:hover:text-white">
             {siteConfig.beian.text}
