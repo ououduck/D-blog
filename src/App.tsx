@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
@@ -112,29 +112,17 @@ const AppRoutes: React.FC = () => {
     }
 
     if (hasViewTransition) {
-      const x = ((window as unknown as { __lastClickX?: number }).__lastClickX ?? window.innerWidth / 2) / window.innerWidth * 100;
-      const y = ((window as unknown as { __lastClickY?: number }).__lastClickY ?? 0) / window.innerHeight * 100;
-      document.documentElement.style.setProperty('--vt-origin-x', `${x}%`);
-      document.documentElement.style.setProperty('--vt-origin-y', `${y}%`);
-
       (document as Document & { startViewTransition?: (callback: () => void) => void }).startViewTransition?.(() => {
         flushSync(() => {
           setDisplayLocation(location);
         });
+        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
       });
-    } else {
-      setDisplayLocation(location);
+      return;
     }
-  }, [location, displayLocation.pathname, displayLocation.search, hasViewTransition]);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      (window as unknown as { __lastClickX?: number }).__lastClickX = e.clientX;
-      (window as unknown as { __lastClickY?: number }).__lastClickY = e.clientY;
-    };
-    window.addEventListener('click', handler, { passive: true });
-    return () => window.removeEventListener('click', handler);
-  }, []);
+    setDisplayLocation(location);
+  }, [location, displayLocation.pathname, displayLocation.search, hasViewTransition]);
 
   return (
     <Layout hasViewTransition={hasViewTransition}>

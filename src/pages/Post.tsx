@@ -471,8 +471,6 @@ export const Post = () => {
   useEffect(() => {
     let cancelled = false;
 
-    window.scrollTo(0, 0);
-
     if (!id) {
       setPost(null);
       setLoading(false);

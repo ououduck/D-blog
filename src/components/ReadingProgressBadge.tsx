@@ -1,4 +1,4 @@
-import React, { RefObject, useEffect, useState } from 'react';
+import React, { RefObject, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 
@@ -22,13 +22,25 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
+  const progressRef = useRef(0);
+  const visibilityRef = useRef(false);
+
   useEffect(() => {
+    let animationFrame = 0;
+
     const updateProgress = () => {
+      animationFrame = 0;
       const target = targetRef.current;
 
       if (!target) {
-        setProgress(0);
-        setIsVisible(false);
+        if (progressRef.current !== 0) {
+          progressRef.current = 0;
+          setProgress(0);
+        }
+        if (visibilityRef.current) {
+          visibilityRef.current = false;
+          setIsVisible(false);
+        }
         return;
       }
 
@@ -39,19 +51,36 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       const totalScrollable = Math.max(rect.height - startOffset - endOffset, 1);
       const travelled = startOffset - rect.top;
       const nextProgress = clamp(travelled / totalScrollable, 0, 1);
+      const nextPercentage = Math.round(nextProgress * 100);
+      const currentPercentage = Math.round(progressRef.current * 100);
+      const nextVisible = rect.top < viewportHeight - startOffset && rect.bottom > endOffset;
 
-      setProgress(nextProgress);
-      setIsVisible(rect.top < viewportHeight - startOffset && rect.bottom > endOffset);
+      if (nextPercentage !== currentPercentage) {
+        progressRef.current = nextProgress;
+        setProgress(nextProgress);
+      }
+      if (nextVisible !== visibilityRef.current) {
+        visibilityRef.current = nextVisible;
+        setIsVisible(nextVisible);
+      }
     };
 
-    updateProgress();
+    const scheduleUpdate = () => {
+      if (!animationFrame) {
+        animationFrame = window.requestAnimationFrame(updateProgress);
+      }
+    };
 
-    window.addEventListener('scroll', updateProgress, { passive: true });
-    window.addEventListener('resize', updateProgress);
+    scheduleUpdate();
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
 
     return () => {
-      window.removeEventListener('scroll', updateProgress);
-      window.removeEventListener('resize', updateProgress);
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+      if (animationFrame) {
+        window.cancelAnimationFrame(animationFrame);
+      }
     };
   }, [targetRef]);
 

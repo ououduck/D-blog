@@ -67,16 +67,18 @@
 html.theme-switching,
 html.theme-switching body,
 html.theme-switching #root,
-html.theme-switching *:not(script):not(style),
-html.theme-switching *:not(script):not(style)::before,
-html.theme-switching *:not(script):not(style)::after {
+html.theme-switching .editorial-surface,
+html.theme-switching .editorial-overlay,
+html.theme-switching .editorial-button,
+html.theme-switching .editorial-button-primary,
+html.theme-switching .editorial-input {
   transition:
     background-color 200ms ease,
     border-color 200ms ease,
     color 200ms ease,
     fill 200ms ease,
     stroke 200ms ease,
-    box-shadow 200ms ease !important;
+    box-shadow 200ms ease;
 }
 
 @layer components {
