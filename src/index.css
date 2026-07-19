@@ -237,16 +237,10 @@ html.theme-switching .editorial-input {
 
 /* ===== 排版增强 ===== */
 
-.prose {
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
 .prose a,
-.prose code,
-.prose p,
-.prose li,
-.prose blockquote {
+.prose :not(pre) > code,
+.prose td,
+.prose th {
   overflow-wrap: anywhere;
 }
 

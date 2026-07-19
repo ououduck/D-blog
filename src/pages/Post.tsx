@@ -390,8 +390,8 @@ const createMarkdownComponents = (
 
       return <a href={safeHref} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
     },
-    img: ({ title, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => (
-      <figure className="group/myimage my-7 md:my-10">
+    img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
+      <figure className="group/myimage my-6 md:my-8">
         <button
           type="button"
           onClick={() => onPreviewImage({ src: props.src || '', alt: props.alt })}
@@ -409,11 +409,6 @@ const createMarkdownComponents = (
             预览
           </span>
         </button>
-        {(props.alt || title) && (
-          <figcaption className="mt-2.5 text-center text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-            {props.alt || title}
-          </figcaption>
-        )}
       </figure>
     ),
     pre: PreBlock,
@@ -834,7 +829,7 @@ export const Post = () => {
 
         <div ref={articleBodyRef} className="mx-auto w-full max-w-5xl px-3 pb-12 sm:px-4 md:pb-20 lg:px-0">
           <div className="mx-auto max-w-[46rem]">
-            <div className="prose prose-stone max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:tracking-tight prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-3 dark:prose-h2:border-zinc-800 prose-p:leading-8 prose-li:leading-8 prose-a:break-words prose-a:underline-offset-4 prose-img:rounded-media prose-img:shadow-none prose-blockquote:rounded-none prose-blockquote:border-l-zinc-600 prose-blockquote:bg-zinc-100/70 prose-blockquote:not-italic dark:prose-blockquote:border-l-zinc-400 dark:prose-blockquote:bg-zinc-900 prose-pre:rounded-none prose-pre:border prose-pre:border-zinc-700 prose-pre:bg-[#0d0d0f] prose-pre:p-0">
+            <div className="prose prose-stone max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:tracking-tight prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-3 dark:prose-h2:border-zinc-800 prose-p:leading-7 md:prose-p:leading-8 prose-li:leading-7 md:prose-li:leading-8 prose-a:break-words prose-a:underline-offset-4 prose-img:my-0 prose-img:rounded-media prose-img:shadow-none prose-blockquote:rounded-none prose-blockquote:border-l-zinc-600 prose-blockquote:bg-zinc-100/70 prose-blockquote:not-italic dark:prose-blockquote:border-l-zinc-400 dark:prose-blockquote:bg-zinc-900 prose-pre:rounded-none prose-pre:border prose-pre:border-zinc-700 prose-pre:bg-[#0d0d0f] prose-pre:p-0">
               <ReactMarkdown
                 remarkPlugins={remarkPlugins}
                 rehypePlugins={rehypePlugins}
