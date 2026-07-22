@@ -16,7 +16,6 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
       issues: write
 
     steps:
@@ -25,65 +24,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get changed posts
-        id: changed
+      - name: Post article notification
         env:
           BEFORE_SHA: ${{ github.event.before }}
           AFTER_SHA: ${{ github.sha }}
           MANUAL_POST_FILES: ${{ inputs.post_files }}
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            CHANGED="$MANUAL_POST_FILES"
-          elif [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            CHANGED=$(git show --pretty='' --name-only "$AFTER_SHA" -- 'posts/**/*.md')
-          else
-            CHANGED=$(git diff --name-only --diff-filter=AM "$BEFORE_SHA" "$AFTER_SHA" -- 'posts/**/*.md')
-          fi
-
-          if [ -z "$CHANGED" ]; then
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          {
-            echo "has_changes=true"
-            echo "files<<EOF"
-            echo "$CHANGED"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Check notification cooldown
-        id: cooldown
-        if: steps.changed.outputs.has_changes == 'true'
-        run: |
-          NOW=$(date +%s)
-          LAST=0
-
-          if [ -f .github/blog-notify-state.json ]; then
-            LAST=$(node -p "require('./.github/blog-notify-state.json').lastNotifiedAt || 0" 2>/dev/null || echo 0)
-          fi
-
-          if [ $((NOW - LAST)) -lt 1800 ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Notification cooldown is active."
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Post article notification
-        id: notify
-        if: steps.changed.outputs.has_changes == 'true' && steps.cooldown.outputs.skip == 'false'
-        env:
-          CHANGED_FILES: ${{ steps.changed.outputs.files }}
           ISSUE_NUMBER: ${{ vars.BLOG_NOTIFY_ISSUE_NUMBER || '6' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const childProcess = require('child_process');
             const fs = require('fs');
 
-            const changedFiles = process.env.CHANGED_FILES.split(/\r?\n/).filter(Boolean);
-            const posts = [];
+            function getChangedFiles() {
+              if (context.eventName === 'workflow_dispatch') {
+                return (process.env.MANUAL_POST_FILES || '').split(/\r?\n/).filter(Boolean);
+              }
+
+              const beforeSha = process.env.BEFORE_SHA;
+              const afterSha = process.env.AFTER_SHA;
+              const args = beforeSha === '0000000000000000000000000000000000000000'
+                ? ['show', '--pretty=', '--name-only', afterSha, '--', 'posts/**/*.md']
+                : ['diff', '--name-only', '--diff-filter=AM', beforeSha, afterSha, '--', 'posts/**/*.md'];
+
+              return childProcess.execFileSync('git', args, { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
+            }
 
             function getFrontmatter(content) {
               const match = content.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
@@ -95,53 +61,43 @@ jobs:
                   .filter((line) => /^([\w-]+):\s*/.test(line))
                   .map((line) => {
                     const separator = line.indexOf(':');
-                    const key = line.slice(0, separator).trim();
-                    const value = line.slice(separator + 1).trim().replace(/^['"]|['"]$/g, '');
-                    return [key, value];
+                    return [line.slice(0, separator).trim(), line.slice(separator + 1).trim().replace(/^['"]|['"]$/g, '')];
                   }),
               );
             }
 
-            function getPreview(content) {
-              const body = content.replace(/^---\s*\r?\n[\s\S]*?\r?\n---\s*/u, '');
-              const plainText = body
-                .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-                .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-                .replace(/```[\s\S]*?```/g, '')
-                .replace(/[#*_~`>|-]/g, '')
-                .replace(/\s+/g, ' ')
-                .trim();
-              return plainText.length > 120 ? `${plainText.slice(0, 120)}...` : plainText;
-            }
+            const changedFiles = getChangedFiles();
+            core.info(`Changed post files: ${changedFiles.join(', ') || 'none'}`);
 
-            for (const file of changedFiles) {
-              if (!fs.existsSync(file)) continue;
+            const posts = changedFiles.flatMap((file) => {
+              if (!fs.existsSync(file)) return [];
               const content = fs.readFileSync(file, 'utf8');
               const frontmatter = getFrontmatter(content);
-              if (frontmatter.draft === 'true') continue;
 
-              const id = frontmatter.id;
-              if (!id) {
-                core.warning(`Skipping ${file}: missing required id front matter.`);
-                continue;
+              if (frontmatter.draft === 'true') {
+                core.info(`Skipping draft: ${file}`);
+                return [];
               }
 
-              posts.push({
-                title: frontmatter.title || id,
-                excerpt: frontmatter.excerpt || getPreview(content),
+              if (!frontmatter.id) {
+                core.warning(`Skipping ${file}: missing required id front matter.`);
+                return [];
+              }
+
+              return [{
+                title: frontmatter.title || frontmatter.id,
+                excerpt: frontmatter.excerpt,
                 date: frontmatter.date,
-                url: `https://blog.pldduck.com/post/${encodeURIComponent(id)}`,
-              });
-            }
+                url: `https://blog.pldduck.com/post/${encodeURIComponent(frontmatter.id)}`,
+              }];
+            });
 
             if (posts.length === 0) {
               core.notice('No published posts to notify.');
-              core.setOutput('posted', 'false');
               return;
             }
 
             const commit = context.payload.head_commit;
-            const timestamp = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC');
             let body = '## D-blog has new article updates\n\n';
 
             for (const post of posts) {
@@ -150,24 +106,16 @@ jobs:
               if (post.date) body += `Published: ${post.date}\n\n`;
             }
 
-            body += `Updated: ${timestamp}\n`;
-            body += `Commit: [${commit.id.slice(0, 7)}](${commit.url}) - ${commit.message.split('\n')[0]}\n\n`;
+            if (commit) {
+              body += `Commit: [${commit.id.slice(0, 7)}](${commit.url}) - ${commit.message.split('\n')[0]}\n\n`;
+            }
             body += '---\n*This notification was posted automatically by GitHub Actions.*\n';
 
-            await github.rest.issues.createComment({
+            const result = await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: Number(process.env.ISSUE_NUMBER),
               body,
             });
-            core.setOutput('posted', 'true');
 
-      - name: Save notification timestamp
-        if: steps.notify.outputs.posted == 'true'
-        run: |
-          printf '{"lastNotifiedAt": %s}\n' "$(date +%s)" > .github/blog-notify-state.json
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add .github/blog-notify-state.json
-          git commit -m "chore: update blog notification cooldown [skip ci]"
-          git push
+            core.info(`Notification posted: ${result.data.html_url}`);
