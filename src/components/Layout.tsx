@@ -6,6 +6,7 @@ import { preloadPage } from '@/utils/preload';
 import { siteConfig } from '@config/site.config';
 
 import { ProgressiveImage } from './ProgressiveImage';
+import { IssueSubscriptionCard } from './IssueSubscriptionCard';
 import { easeSmooth, routeTransition } from '@/utils/motion';
 
 const SearchModal = lazy(() => import('./SearchModal').then((m) => ({ default: m.SearchModal })));
@@ -728,6 +729,10 @@ const Footer = ({ isPostPage = false }: { isPostPage?: boolean }) => {
             <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-ink dark:hover:text-white">GitHub</a>
             <a href={siteConfig.social.email} className="transition-colors hover:text-ink dark:hover:text-white">邮件</a>
           </div>
+        </div>
+
+        <div className="mt-7">
+          <IssueSubscriptionCard compact />
         </div>
 
         <div className="mt-7 flex flex-col gap-2 border-t border-zinc-200/70 pt-5 text-xs text-zinc-600 dark:border-zinc-800/70 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">

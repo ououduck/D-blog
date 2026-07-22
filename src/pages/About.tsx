@@ -4,6 +4,7 @@ import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { Surface } from '@/components/ui/Surface';
+import { IssueSubscriptionCard } from '@/components/IssueSubscriptionCard';
 
 export const About = () => {
   return (
@@ -79,6 +80,10 @@ export const About = () => {
             热衷于探索前端 Web 技术，喜欢构建极致性能和优秀交互的用户界面，目前正致力于开源项目的贡献与个人产品的打磨。
           </p>
         </Surface>
+      </div>
+
+      <div className="mt-6 md:mt-8">
+        <IssueSubscriptionCard />
       </div>
     </div>
   );
