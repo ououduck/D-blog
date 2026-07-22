@@ -39,7 +39,7 @@ jobs:
 
             function getChangedFiles() {
               if (context.eventName === 'workflow_dispatch') {
-                return (process.env.MANUAL_POST_FILES || '').split(/\r?\n/).filter(Boolean);
+                return (process.env.MANUAL_POST_FILES || '').split(/\r?\n/).map((file) => file.trim()).filter(Boolean);
               }
 
               const beforeSha = process.env.BEFORE_SHA;
@@ -48,7 +48,7 @@ jobs:
                 ? ['show', '--pretty=', '--name-only', afterSha, '--', 'posts/**/*.md']
                 : ['diff', '--name-only', '--diff-filter=AM', beforeSha, afterSha, '--', 'posts/**/*.md'];
 
-              return childProcess.execFileSync('git', args, { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
+              return childProcess.execFileSync('git', args, { encoding: 'utf8' }).split(/\r?\n/).map((file) => file.trim()).filter(Boolean);
             }
 
             function getFrontmatter(content) {
@@ -70,7 +70,11 @@ jobs:
             core.info(`Changed post files: ${changedFiles.join(', ') || 'none'}`);
 
             const posts = changedFiles.flatMap((file) => {
-              if (!fs.existsSync(file)) return [];
+              if (!fs.existsSync(file)) {
+                core.warning(`Skipping ${file}: file does not exist in this workflow checkout.`);
+                return [];
+              }
+
               const content = fs.readFileSync(file, 'utf8');
               const frontmatter = getFrontmatter(content);
 
@@ -80,8 +84,9 @@ jobs:
               }
 
               if (!frontmatter.id) {
-                core.warning(`Skipping ${file}: missing required id front matter.`);
-                return [];
+                const fallbackId = file.replace(/^posts\//, '').replace(/\.md$/, '');
+                core.warning(`Missing id front matter in ${file}; using filename fallback: ${fallbackId}.`);
+                frontmatter.id = fallbackId;
               }
 
               return [{
@@ -93,7 +98,7 @@ jobs:
             });
 
             if (posts.length === 0) {
-              core.notice('No published posts to notify.');
+              core.setFailed(`No published posts to notify. Changed files: ${changedFiles.join(', ') || 'none'}.`);
               return;
             }
 
