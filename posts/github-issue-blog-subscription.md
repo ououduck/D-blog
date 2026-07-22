@@ -262,6 +262,32 @@ posts/github-issue-blog-subscription.md
 
 这会立即针对该文章创建一条 Issue 评论，是检查权限、订阅入口与通知设置的最快方式。
 
+手动输入时每行填写一个相对于仓库根目录的路径，不要加反引号、引号或项目 URL。工作流会自动清理每行首尾空格，因此下面两种多篇文章写法都可用：
+
+```text
+posts/github-issue-blog-subscription.md
+posts/cf-tunnel.md
+```
+
+### 第七步：通过日志确认结果
+
+工作流的 `Post article notification` 步骤会输出关键诊断信息。正常执行时，日志会依次出现：
+
+```text
+Changed post files: posts/github-issue-blog-subscription.md
+Notification posted: https://github.com/ououduck/D-blog/issues/6#issuecomment-...
+```
+
+第二行给出的 URL 就是新建评论的永久链接。出现以下提示时可按对应方式处理：
+
+| 日志提示 | 含义与处理方式 |
+| --- | --- |
+| `Skipping draft` | 文章包含 `draft: true`，将其设为 `false` 或移除该字段后重新推送。 |
+| `file does not exist in this workflow checkout` | 手动填写的路径不存在或分支选择错误，检查路径、大小写和运行分支。 |
+| `Missing id front matter` | 工作流会用文件名作为临时 slug；建议补充 `id`，确保文章链接与站点路由一致。 |
+| `No published posts to notify` | 本次没有识别到可发布文章。检查推送是否修改了 `posts/**/*.md`，或手动触发时是否填了文章路径。 |
+| `Resource not accessible by integration` | `GITHUB_TOKEN` 没有 Issue 写权限，到仓库 Actions 设置中启用 **Read and write permissions**。 |
+
 ## 给读者的订阅入口
 
 自动通知做好后，最容易遗漏的是让读者知道它的存在。建议在以下位置放置相同链接：
@@ -296,7 +322,7 @@ posts/github-issue-blog-subscription.md
 
 ### 为什么我没有收到邮件？
 
-首先确认已在目标 Issue 上点击 Subscribe。其次检查 GitHub 的 Notifications 设置：GitHub 可以只显示站内通知，也可以按仓库、参与情况或关注状态发送邮件。
+先确认 Issue #6 中已经出现由 `github-actions[bot]` 创建的新评论，再确认已在目标 Issue 上点击 Subscribe。最后检查 GitHub 的 Notifications 设置：GitHub 可以只显示站内通知，也可以按仓库、参与情况或关注状态发送邮件。Issue 评论已创建但没有邮件时，通常是个人通知渠道配置，而不是博客工作流问题。
 
 ### 我需要配置仓库变量吗？
 
@@ -304,7 +330,7 @@ posts/github-issue-blog-subscription.md
 
 ### 为什么工作流成功却没有评论？
 
-先确认触发提交确实修改了 `posts/**/*.md`，且文章没有 `draft: true`。当前工作流会在日志中打印识别到的文章路径；若评论 API 没有权限，工作流会失败并显示具体错误，而不会静默跳过。
+先查看 `Post article notification` 步骤的 `Changed post files` 输出，确认它识别到正确的文件。然后检查文章不是 `draft: true`。当前工作流会在文件不存在、没有可发布文章或评论 API 没有权限时明确失败并显示具体原因，不会再静默跳过。
 
 ## 安全与维护建议
 
