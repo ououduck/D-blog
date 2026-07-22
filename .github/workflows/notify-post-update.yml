@@ -5,6 +5,12 @@ on:
     branches: [main]
     paths:
       - 'posts/**/*.md'
+  workflow_dispatch:
+    inputs:
+      post_files:
+        description: 'Markdown paths to notify, separated by new lines'
+        required: true
+        type: string
 
 jobs:
   notify:
@@ -15,7 +21,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -24,8 +30,11 @@ jobs:
         env:
           BEFORE_SHA: ${{ github.event.before }}
           AFTER_SHA: ${{ github.sha }}
+          MANUAL_POST_FILES: ${{ inputs.post_files }}
         run: |
-          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            CHANGED="$MANUAL_POST_FILES"
+          elif [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
             CHANGED=$(git show --pretty='' --name-only "$AFTER_SHA" -- 'posts/**/*.md')
           else
             CHANGED=$(git diff --name-only --diff-filter=AM "$BEFORE_SHA" "$AFTER_SHA" -- 'posts/**/*.md')
@@ -63,11 +72,11 @@ jobs:
 
       - name: Post article notification
         id: notify
-        if: steps.changed.outputs.has_changes == 'true' && steps.cooldown.outputs.skip == 'false' && vars.BLOG_NOTIFY_ISSUE_NUMBER != ''
+        if: steps.changed.outputs.has_changes == 'true' && steps.cooldown.outputs.skip == 'false'
         env:
           CHANGED_FILES: ${{ steps.changed.outputs.files }}
-          ISSUE_NUMBER: ${{ vars.BLOG_NOTIFY_ISSUE_NUMBER }}
-        uses: actions/github-script@v7
+          ISSUE_NUMBER: ${{ vars.BLOG_NOTIFY_ISSUE_NUMBER || '6' }}
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -162,8 +171,3 @@ jobs:
           git add .github/blog-notify-state.json
           git commit -m "chore: update blog notification cooldown [skip ci]"
           git push
-
-      - name: Explain missing configuration
-        if: steps.changed.outputs.has_changes == 'true' && vars.BLOG_NOTIFY_ISSUE_NUMBER == ''
-        run: |
-          echo "Set the BLOG_NOTIFY_ISSUE_NUMBER repository variable to the Issue number that should receive notifications."
