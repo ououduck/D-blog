@@ -53,11 +53,10 @@ flowchart LR
   A[推送文章到 main] --> B[GitHub Actions]
   B --> C[识别 posts/*.md 变更]
   C --> D[读取 Front Matter]
-  D --> E{草稿或冷却中?}
+  D --> E{是否为草稿?}
   E -->|是| F[结束]
   E -->|否| G[创建 Issue 评论]
   G --> H[订阅者收到 GitHub 通知]
-  G --> I[保存通知时间]
 ```
 
 ### 1. 用路径过滤减少无关执行
@@ -120,7 +119,6 @@ draft: false
 
 ```yaml
 permissions:
-  contents: write
   issues: write
 ```
 
@@ -133,7 +131,7 @@ await github.rest.issues.createComment({
 });
 ```
 
-这里不需要个人访问令牌。GitHub 会自动为工作流注入 `secrets.GITHUB_TOKEN`。`issues: write` 用于创建评论；`contents: write` 用于保存下文的通知时间状态。
+这里不需要个人访问令牌。GitHub 会自动为工作流注入 `secrets.GITHUB_TOKEN`。当前实现只需 `issues: write`，用于创建 Issue 评论。
 
 ## 实现教程
 
@@ -181,12 +179,17 @@ on:
     branches: [main]
     paths:
       - 'posts/**/*.md'
+  workflow_dispatch:
+    inputs:
+      post_files:
+        description: 'Markdown paths to notify, separated by new lines'
+        required: true
+        type: string
 
 jobs:
   notify:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
       issues: write
 
     steps:
@@ -197,90 +200,36 @@ jobs:
 
 这里的 `fetch-depth: 0` 会取得完整 Git 历史。虽然比浅克隆稍多一些数据，但能保证 `before` SHA 在同一次包含多个 commit 的 push 中可用于比较，逻辑更可靠。
 
-### 第四步：检测变更文章
-
-新增一个步骤，将文件列表通过 `$GITHUB_OUTPUT` 传给后续步骤：
-
-```yaml
-      - name: Get changed posts
-        id: changed
-        env:
-          BEFORE_SHA: ${{ github.event.before }}
-          AFTER_SHA: ${{ github.sha }}
-        run: |
-          CHANGED=$(git diff --name-only --diff-filter=AM "$BEFORE_SHA" "$AFTER_SHA" -- 'posts/**/*.md')
-
-          if [ -z "$CHANGED" ]; then
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          {
-            echo "has_changes=true"
-            echo "files<<EOF"
-            echo "$CHANGED"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-```
-
-多行内容不能简单写成 `files=$CHANGED`，因为文件列表包含换行。这里使用 GitHub Actions 的 heredoc 输出格式，能安全保存完整列表。
-
-### 第五步：设置冷却时间
-
-文章发布后通常还会修改错别字、封面或排版。如果每一次推送都评论一次，订阅 Issue 很快会变得嘈杂。因此可以保存最近一次成功通知的 Unix 时间戳，并在 30 分钟内跳过后续提醒。
-
-```yaml
-      - name: Check notification cooldown
-        id: cooldown
-        if: steps.changed.outputs.has_changes == 'true'
-        run: |
-          NOW=$(date +%s)
-          LAST=0
-
-          if [ -f .github/blog-notify-state.json ]; then
-            LAST=$(node -p "require('./.github/blog-notify-state.json').lastNotifiedAt || 0" 2>/dev/null || echo 0)
-          fi
-
-          if [ $((NOW - LAST)) -lt 1800 ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-```
-
-状态文件内容类似：
-
-```json
-{"lastNotifiedAt": 1784707200}
-```
-
-注意：只应在**评论创建成功以后**更新这个文件。若 API 调用失败却提前写入时间戳，会导致文章实际没有通知，却被错误地限流。
-
-### 第六步：生成并发布通知
+### 第四步：识别文章并发布通知
 
 推荐把多篇文章合并为一条 Issue 评论。一次批量发布三篇文章时，读者只会收到一条通知，评论中列出全部文章。
 
-下面是核心脚本的简化版：
+当前实现将变更检测、草稿过滤和评论发布放在同一个 `actions/github-script` 步骤中。这样只要匹配到非草稿文章，Action 就一定会调用评论 API；若权限或 API 调用失败，工作流会明确失败，不会再出现绿色成功但没有评论的情况。
+
+下面是核心逻辑的简化版：
 
 ```js
+const childProcess = require('child_process');
 const fs = require('fs');
 
-const files = process.env.CHANGED_FILES.split(/\r?\n/).filter(Boolean);
-const posts = [];
+const files = childProcess
+  .execFileSync('git', ['diff', '--name-only', '--diff-filter=AM', beforeSha, afterSha, '--', 'posts/**/*.md'], { encoding: 'utf8' })
+  .split(/\r?\n/)
+  .filter(Boolean);
 
-for (const file of files) {
+const posts = files.flatMap((file) => {
   const content = fs.readFileSync(file, 'utf8');
   const frontmatter = getFrontmatter(content);
 
-  if (frontmatter.draft === 'true' || !frontmatter.id) continue;
+  if (frontmatter.draft === 'true' || !frontmatter.id) return [];
 
-  posts.push({
+  return [{
     title: frontmatter.title || frontmatter.id,
-    excerpt: frontmatter.excerpt || getPreview(content),
+    excerpt: frontmatter.excerpt,
     date: frontmatter.date,
     url: `https://blog.pldduck.com/post/${encodeURIComponent(frontmatter.id)}`,
-  });
-}
+  }];
+});
 
 let body = '## D-blog has new article updates\n\n';
 for (const post of posts) {
@@ -292,25 +241,7 @@ for (const post of posts) {
 
 `encodeURIComponent` 不应省略。虽然 D-blog 的 `id` 通常是英文 slug，但对 URL 参数进行编码是稳妥的默认做法。
 
-### 第七步：保存成功通知的时间
-
-让发布评论的脚本输出 `posted=true`，保存步骤只在它为真时运行：
-
-```yaml
-      - name: Save notification timestamp
-        if: steps.notify.outputs.posted == 'true'
-        run: |
-          printf '{"lastNotifiedAt": %s}\n' "$(date +%s)" > .github/blog-notify-state.json
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add .github/blog-notify-state.json
-          git commit -m "chore: update blog notification cooldown [skip ci]"
-          git push
-```
-
-`[skip ci]` 可以防止仓库中其他会监听所有推送的工作流被该状态提交再次触发。当前工作流已经通过 `paths` 限定了文章目录，因此状态文件的提交不会触发它自身。
-
-### 第八步：授予工作流权限
+### 第五步：授予工作流权限
 
 除了 YAML 中的 `permissions`，还需要在仓库设置中允许工作流令牌写入：
 
@@ -319,7 +250,17 @@ for (const post of posts) {
 3. 选择 `Read and write permissions`。
 4. 保存设置。
 
-如果只保留只读权限，创建 Issue 评论或提交状态文件会收到 `Resource not accessible by integration` 一类的错误。
+如果只保留只读权限，创建 Issue 评论会收到 `Resource not accessible by integration` 一类的错误。
+
+### 第六步：手动验证通知
+
+除了在推送文章时自动执行，工作流也支持在 GitHub Actions 页面手动运行。打开 `Notify Blog Post Update`，点击 **Run workflow**，选择 `main` 分支，并在 `Markdown paths to notify` 中填写一个文章路径，例如：
+
+```text
+posts/github-issue-blog-subscription.md
+```
+
+这会立即针对该文章创建一条 Issue 评论，是检查权限、订阅入口与通知设置的最快方式。
 
 ## 给读者的订阅入口
 
@@ -361,16 +302,16 @@ for (const post of posts) {
 
 不需要。D-blog 默认使用 Issue `#6`。只有需要迁移订阅入口时，才配置可选变量 `BLOG_NOTIFY_ISSUE_NUMBER`。变量值只应是数字，例如 `12`，不要填写 `#12` 或完整 URL。
 
-### 30 分钟内有重要修复怎么办？
+### 为什么工作流成功却没有评论？
 
-可以等待冷却时间结束，也可以手动删除或修改 `.github/blog-notify-state.json` 中的时间戳后提交。更好的长期做法是把冷却时间抽成仓库变量，或为“重要通知”设计 `workflow_dispatch` 手动触发入口。
+先确认触发提交确实修改了 `posts/**/*.md`，且文章没有 `draft: true`。当前工作流会在日志中打印识别到的文章路径；若评论 API 没有权限，工作流会失败并显示具体错误，而不会静默跳过。
 
 ## 安全与维护建议
 
 - 不要将个人访问令牌写入工作流。优先使用 GitHub 自动提供的 `GITHUB_TOKEN`。
 - 为默认订阅 Issue 提供回退值，并用可选仓库变量覆盖它，避免遗漏配置导致工作流静默跳过通知。
 - 不要将用户邮箱或订阅名单提交到仓库。Issue 订阅由 GitHub 管理，博客不需要保存个人数据。
-- 使用最小权限。当前需要 `issues: write` 与 `contents: write`；如果改用外部数据库保存状态，可以移除 `contents: write`。
+- 使用最小权限。当前只需要 `issues: write`；不要额外授予仓库写入或个人访问令牌权限。
 - 为脚本保留草稿过滤与缺失 `id` 的告警，避免未完成文章或格式错误文章被推送出去。
 
 ## 总结
