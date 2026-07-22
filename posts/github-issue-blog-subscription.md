@@ -151,26 +151,23 @@ https://github.com/ououduck/D-blog/issues/6
 
 Issue 编号是 URL 最后的数字，本例为 `6`。
 
-### 第二步：配置接收 Issue 编号
+### 第二步：确定接收通知的 Issue
 
-不要把 Issue 编号直接写死在工作流里。将其放进仓库变量，迁移或更换 Issue 时不需要修改代码。
+D-blog 的工作流默认将提醒发送到 Issue `#6`，因此不需要额外创建仓库变量即可使用：
 
-打开仓库的 `Settings` -> `Secrets and variables` -> `Actions` -> `Variables`，新建变量：
+```yaml
+env:
+  ISSUE_NUMBER: ${{ vars.BLOG_NOTIFY_ISSUE_NUMBER || '6' }}
+```
+
+`BLOG_NOTIFY_ISSUE_NUMBER` 是可选的覆盖项。只有在未来需要更换订阅 Issue 时，才在仓库的 `Settings` -> `Secrets and variables` -> `Actions` -> `Variables` 中创建它：
 
 ```text
 Name: BLOG_NOTIFY_ISSUE_NUMBER
-Value: 6
+Value: 12
 ```
 
-工作流中通过 `vars.BLOG_NOTIFY_ISSUE_NUMBER` 获取它：
-
-```yaml
-if: vars.BLOG_NOTIFY_ISSUE_NUMBER != ''
-env:
-  ISSUE_NUMBER: ${{ vars.BLOG_NOTIFY_ISSUE_NUMBER }}
-```
-
-变量未配置时，工作流应打印提示并正常结束，避免每次发布文章都失败。
+配置后，通知会发送到 Issue `#12`；未配置时则始终发送到默认的 Issue `#6`。
 
 ### 第三步：创建工作流文件
 
@@ -193,7 +190,7 @@ jobs:
       issues: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 ```
@@ -360,9 +357,9 @@ for (const post of posts) {
 
 首先确认已在目标 Issue 上点击 Subscribe。其次检查 GitHub 的 Notifications 设置：GitHub 可以只显示站内通知，也可以按仓库、参与情况或关注状态发送邮件。
 
-### 工作流提示变量没有配置？
+### 我需要配置仓库变量吗？
 
-确认仓库变量名是 `BLOG_NOTIFY_ISSUE_NUMBER`，不要将它创建为 Secret，也不要包含 `#` 或完整 URL。它的值只应是数字，例如 `6`。
+不需要。D-blog 默认使用 Issue `#6`。只有需要迁移订阅入口时，才配置可选变量 `BLOG_NOTIFY_ISSUE_NUMBER`。变量值只应是数字，例如 `12`，不要填写 `#12` 或完整 URL。
 
 ### 30 分钟内有重要修复怎么办？
 
@@ -371,7 +368,7 @@ for (const post of posts) {
 ## 安全与维护建议
 
 - 不要将个人访问令牌写入工作流。优先使用 GitHub 自动提供的 `GITHUB_TOKEN`。
-- 将 Issue 编号放在仓库变量中，而不是硬编码到脚本。
+- 为默认订阅 Issue 提供回退值，并用可选仓库变量覆盖它，避免遗漏配置导致工作流静默跳过通知。
 - 不要将用户邮箱或订阅名单提交到仓库。Issue 订阅由 GitHub 管理，博客不需要保存个人数据。
 - 使用最小权限。当前需要 `issues: write` 与 `contents: write`；如果改用外部数据库保存状态，可以移除 `contents: write`。
 - 为脚本保留草稿过滤与缺失 `id` 的告警，避免未完成文章或格式错误文章被推送出去。
