@@ -36,7 +36,7 @@ export const IssueSubscriptionCard = ({ compact = false }: { compact?: boolean }
         href={ISSUE_SUBSCRIPTION_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="editorial-button min-h-10 shrink-0 px-4 text-sm"
+        className="editorial-button ml-[3.25rem] min-h-10 shrink-0 px-4 text-sm"
       >
         <Github size={16} aria-hidden="true" />
         <span>前往订阅</span>
