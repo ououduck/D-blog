@@ -9,7 +9,7 @@ tags:
   - 派小星DNS
   - PXXDNS
   - 模板
-coverImage: /posts-img/d-pxxdns-index-cover.png
+coverImage: /posts/posts-img/d-pxxdns-index-cover.png
 author: 跑路的duck
 ---
 
