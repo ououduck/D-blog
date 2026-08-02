@@ -9,7 +9,7 @@ tags:
   - 网络
   - Cloudflare
   - 内网穿透
-coverImage: /posts-img/cf-tunnel/cf-tunnel-cover.png
+coverImage: /posts/posts-img/cf-tunnel/cf-tunnel-cover.png
 author: 跑路的duck
 ---
 

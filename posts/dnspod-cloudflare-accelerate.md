@@ -13,7 +13,7 @@ tags:
   - CDN
   - DNS分流
   - 全球加速
-coverImage: /posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-cover.png
+coverImage: /posts/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-cover.png
 author: 跑路的duck
 ---
 

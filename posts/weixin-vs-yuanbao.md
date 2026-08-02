@@ -9,7 +9,7 @@ tags:
   - 腾讯元宝
   - 腾讯
   - 微信
-coverImage: /posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-cover.png
+coverImage: /posts/posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-cover.png
 author: 跑路的duck
 ---
 

@@ -254,7 +254,7 @@ category: 技术                    # 可选值：教程 / 技术 / 随笔 / 分
 tags:
   - React
   - Vite
-coverImage: /posts-img/example.png # 可选，封面图路径
+coverImage: /posts/posts-img/example.png # 可选，封面图路径
 author: 跑路的duck                 # 可选，作者（字符串或对象）
 featured: false                   # 是否首页精选展示
 top: 1                            # 置顶排序（数字越小优先级越高）

@@ -11,7 +11,7 @@ tags:
   - 宝塔面板 Swoole 安装失败
   - brotli-devel 安装
   - PHP Swoole 扩展安装
-coverImage: /posts-img/centos-bt-install-swoole5/centos-bt-install-swoole5-cover.png
+coverImage: /posts/posts-img/centos-bt-install-swoole5/centos-bt-install-swoole5-cover.png
 author: 跑路的duck
 ---
 
