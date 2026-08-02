@@ -9,7 +9,7 @@ tags:
   - 腾讯元宝
   - 腾讯
   - 微信
-coverImage: /posts/posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-cover.png
+coverImage: /posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-cover.png
 author: 跑路的duck
 ---
 
@@ -18,16 +18,16 @@ author: 跑路的duck
 ## 前情提要  
 **这两天 腾讯元宝推出了送10亿的活动**  
 **于是微信 QQ等各大平台全都被元宝的红包邀请广告刷屏**  
-![weixin-vs-yuanbao-ad](posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-ad.jpg)  
+![weixin-vs-yuanbao-ad](/posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-ad.jpg)  
 
 ## 主要事件  
 **结果......微信出手了**  
 **直接反手给元宝封了**  
-![weixin-vs-yuanbao-ban-01](posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-ban-01.jpg)  
-![weixin-vs-yuanbao-ban-02](posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-ban-02.jpg)  
+![weixin-vs-yuanbao-ban-01](/posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-ban-01.jpg)  
+![weixin-vs-yuanbao-ban-02](/posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-ban-02.jpg)  
 
 **很快 元宝也在微博发出了回应**  
-![weixin-vs-yuanbao-response](posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-response.jpg)  
+![weixin-vs-yuanbao-response](/posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-response.jpg)  
 
 ## 观点看法  
 **有的人认为这是腾讯内斗**  

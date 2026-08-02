@@ -154,7 +154,7 @@ D-blog/
 │   ├── postcss.config.js       # PostCSS 配置
 │   └── tsconfig.json           # TypeScript 配置
 ├── posts/                       # Markdown 文章内容
-│   └── posts-img/              # 文章配图（与文章同目录，便于 Obsidian 管理）
+├── posts-img/                    # 文章配图（位于仓库根目录，正文以 /posts-img/... 绝对链接引用）
 ├── friends/                     # 友情链接数据（JSON）
 ├── generated/                   # 构建时生成的 JSON 数据（自动生成，不提交）
 │   ├── posts.json              # 文章元数据
@@ -254,7 +254,7 @@ category: 技术                    # 可选值：教程 / 技术 / 随笔 / 分
 tags:
   - React
   - Vite
-coverImage: /posts/posts-img/example.png # 可选，封面图路径
+coverImage: /posts-img/example.png # 可选，封面图路径（如 /posts-img/文章id/xxx.png）
 author: 跑路的duck                 # 可选，作者（字符串或对象）
 featured: false                   # 是否首页精选展示
 top: 1                            # 置顶排序（数字越小优先级越高）

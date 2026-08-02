@@ -9,7 +9,7 @@ tags:
   - D-blog
   - D博客
   - 跑路的duck
-coverImage: /posts/posts-img/about-dblog/about-dblog-cover.png
+coverImage: /posts-img/about-dblog/about-dblog-cover.png
 author: 跑路的duck
 featured: true
 top: 1

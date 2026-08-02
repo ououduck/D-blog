@@ -5,12 +5,13 @@ import path from 'path';
 import type { IncomingMessage, ServerResponse } from 'http';
 
 /**
- * 文章配图已迁移至 posts/posts-img/（与 Markdown 内容同目录，便于 Obsidian 管理）。
+ * 文章配图位于仓库根目录 posts-img/（与 Markdown 中的 /posts-img/ 绝对链接对应，
+ * 便于 Obsidian 以 vault 根为基准预览）。
  * 该插件保持 /posts-img/* 的公开访问路径不变：
- * - 开发服务器：将 /posts-img/* 请求转发到 posts/posts-img/*
- * - 生产构建：构建完成后把 posts/posts-img/* 拷贝到 dist/posts-img/*
+ * - 开发服务器：将 /posts-img/* 请求转发到根目录 posts-img/*
+ * - 生产构建：构建完成后把根目录 posts-img/* 拷贝到 dist/posts-img/*
  */
-const POSTS_IMG_SOURCE_DIR = path.resolve(__dirname, './posts/posts-img');
+const POSTS_IMG_SOURCE_DIR = path.resolve(__dirname, './posts-img');
 const POSTS_IMG_URL_PREFIX = '/posts-img';
 
 const POSTS_IMG_MIME_TYPES: Record<string, string> = {

@@ -292,16 +292,12 @@ const isSafeMarkdownHref = (href?: string) => {
   }
 };
 
-// 文章正文使用相对路径（如 posts-img/foo.png，便于 Obsidian 预览），
-// 渲染时解析回 /posts-img/ 绝对路径。
+// 文章正文与封面均使用 /posts-img/... 绝对路径（以站点根为基准），
+// 渲染时仅对极少数未以 / 开头的相对路径做兜底归一化。
 const isAbsoluteAssetPath = (value: string) => value.startsWith('/') || /^[a-z][a-z0-9+.-]*:/i.test(value);
 
 const resolvePostsImgPath = (value: string) => {
-  let clean = value.replace(/^\.\/+/, '').replace(/^(\.\.\/)+/g, '');
-  // 兼容 posts/posts-img/... 这种以仓库根为基准的写法
-  if (clean.startsWith('posts/')) {
-    clean = clean.slice('posts/'.length);
-  }
+  const clean = value.replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/^(\.\.\/)+/g, '');
   return `/${clean}`;
 };
 

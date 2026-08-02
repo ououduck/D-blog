@@ -87,17 +87,26 @@ const isSafeRssUrl = (value) => {
   }
 };
 
-// 文章正文使用相对路径（如 posts-img/foo.png，便于 Obsidian 预览），
-// 生成 RSS 时需解析回 /posts-img/ 绝对路径。
+// 文章正文与封面均使用 /posts-img/... 绝对路径（以站点根为基准），
+// 生成 RSS 时仅对极少数未以 / 开头的相对路径做兜底归一化。
 const isAbsoluteAssetPath = (value) => value.startsWith('/') || /^[a-z][a-z0-9+.-]*:/i.test(value);
 
 const toPostsImgPath = (value) => {
-  let clean = String(value).replace(/^\.\/+/, '').replace(/^(\.\.\/)+/g, '');
-  // 兼容 posts/posts-img/... 这种以 vault 根为基准的写法
-  if (clean.startsWith('posts/')) {
-    clean = clean.slice('posts/'.length);
-  }
+  const clean = String(value).replace(/\\/g, '/').replace(/^\/+/, '').replace(/^(\.\.\/)+/g, '').replace(/^\.\/+/, '');
   return `/${clean}`;
+};
+
+// coverImage 统一解析为站点可访问的 /posts-img/... 绝对路径
+const normalizeCoverImage = (value) => {
+  if (!value) {
+    return undefined;
+  }
+  const raw = String(value);
+  // 外部 URL（http/https/data: 等）原样保留
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) {
+    return raw;
+  }
+  return toPostsImgPath(raw);
 };
 
 assertValidUrl(SITE_URL, 'siteConfig.url');
@@ -345,7 +354,7 @@ const postsWithSearch = files
     const filePath = path.join(POSTS_DIR, filename);
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     const { data, content } = matter(fileContent);
-    const { draft, readTime, author, authors, updatedAt, ...restData } = data;
+    const { draft, readTime, author, authors, updatedAt, coverImage, ...restData } = data;
 
     const id = String(data.id || filename.replace(/\.md$/, '')).trim();
 
@@ -374,6 +383,7 @@ const postsWithSearch = files
 
     return {
       ...restData,
+      coverImage: normalizeCoverImage(coverImage),
       category,
       tags,
       date: formattedDate,
@@ -519,7 +529,9 @@ const generateRss = () => {
         return `<img alt="${escapeHtmlAttribute(alt)}" src="${escapeHtmlAttribute(safeUrl)}" />`;
       })
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
-        const safeUrl = String(url).trim();
+        const rawUrl = String(url).trim().replace(/\s+["'][^"']*["']$/, '');
+        // 相对路径（如 posts-img/foo.png）兜底解析为 /posts-img/ 绝对路径
+        const safeUrl = isAbsoluteAssetPath(rawUrl) ? rawUrl : toPostsImgPath(rawUrl);
         if (!isSafeRssUrl(safeUrl)) {
           return text;
         }

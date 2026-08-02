@@ -9,13 +9,13 @@ tags:
   - 派小星DNS
   - PXXDNS
   - 模板
-coverImage: /posts/posts-img/d-pxxdns-index-cover.png
+coverImage: /posts-img/D-pxxdns-index/d-pxxdns-index-cover.png
 author: 跑路的duck
 ---
 
 # D-pxxdns-index
 ## 为PXXDNS定制的企业级首页模板  
-![D-pxxdns-index](posts-img/D-pxxdns-index/d-pxxdns-index-cover.png)
+![D-pxxdns-index](/posts-img/D-pxxdns-index/d-pxxdns-index-cover.png)
 ### 特点：不同于其他固定模板 实时从数据库中获取站点信息
 
 ---

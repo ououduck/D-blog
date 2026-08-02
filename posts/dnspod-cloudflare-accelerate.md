@@ -13,7 +13,7 @@ tags:
   - CDN
   - DNS分流
   - 全球加速
-coverImage: /posts/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-cover.png
+coverImage: /posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-cover.png
 author: 跑路的duck
 ---
 
@@ -54,41 +54,41 @@ author: 跑路的duck
 
 登录腾讯云，搜索 **内容分发网络 CDN**。
 
-![腾讯云 CDN 控制台](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-02.webp)
+![腾讯云 CDN 控制台](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-02.webp)
 
 进入域名管理，点击添加域名，**加速域名** 填写用户要实际访问的域名（如 `ym.com`），**源站** 选择自有源，**地址** 填写你的服务器 IP，然后点击下一步。
 
-![腾讯云添加加速域名](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-03.webp)
+![腾讯云添加加速域名](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-03.webp)
 
 选择 **跳过推荐**。
 
-![腾讯云跳过推荐](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-04.webp)
+![腾讯云跳过推荐](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-04.webp)
 
 如果域名本身就在腾讯云注册，这里可以点击 **一键配置**，也可以先点 **完成**，稍后自行手动配置。
 
-![腾讯云一键配置提示](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-05.webp)
+![腾讯云一键配置提示](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-05.webp)
 
 #### （2）Cloudflare
 
 登录 Cloudflare，点击 **添加域**。
 
-![Cloudflare 添加域](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-06.webp)
+![Cloudflare 添加域](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-06.webp)
 
 输入分流用的工具域名。
 
-![Cloudflare 输入工具域名](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-07.webp)
+![Cloudflare 输入工具域名](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-07.webp)
 
 选择 **Free 计划**。
 
-![Cloudflare 选择 Free 计划](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-08.webp)
+![Cloudflare 选择 Free 计划](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-08.webp)
 
 Cloudflare 会扫描域名已有的解析信息，通常新注册域名会是空白内容，然后点击 **继续前往激活**。
 
-![Cloudflare 扫描 DNS 记录](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-09.webp)
+![Cloudflare 扫描 DNS 记录](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-09.webp)
 
 根据提示前往你的域名注册商，将 **NameServer** 改成 Cloudflare 提供的 DNS 服务器。
 
-![Cloudflare NameServer 配置](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-10.webp)
+![Cloudflare NameServer 配置](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-10.webp)
 
 ### 4. 开通 Cloudflare for SaaS 服务
 
@@ -96,9 +96,9 @@ Cloudflare 会扫描域名已有的解析信息，通常新注册域名会是空
 - 需要绑定信用卡或 PayPal（需要帮忙可以联系我）
 - 前 100 个域名支持免费订阅，对大多数个人场景已经够用
 
-![开通 Cloudflare for SaaS](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-11.webp)
+![开通 Cloudflare for SaaS](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-11.webp)
 
-![Cloudflare for SaaS 开通确认](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-12.webp)
+![Cloudflare for SaaS 开通确认](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-12.webp)
 
 ---
 
@@ -110,13 +110,13 @@ Cloudflare 会扫描域名已有的解析信息，通常新注册域名会是空
 - 记录值指向源站 IP
 - 确保代理状态开启，也就是小黄云图标亮起
 
-![添加回退源 A 记录](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-13.webp)
+![添加回退源 A 记录](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-13.webp)
 
 ### 2. 配置回退源
 
 进入 `SSL/TLS` → `自定义主机名`，填写回退源地址，例如 `htname.ym.cn`。
 
-![配置回退源地址](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-14.webp)
+![配置回退源地址](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-14.webp)
 
 ### 3. 自定义主机名
 
@@ -126,11 +126,11 @@ Cloudflare 会扫描域名已有的解析信息，通常新注册域名会是空
 - 选择最低 TLS 版本
 - 证书验证方式选择 **HTTP 验证**
 
-![添加自定义主机名](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-15.webp)
+![添加自定义主机名](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-15.webp)
 
 添加之后下方可能暂时显示无效，这通常是因为回退源解析尚未完全生效。等后面的分流解析加上后，再等待 2 到 3 分钟，状态一般会恢复为有效。
 
-![自定义主机名状态示意](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-16.webp)
+![自定义主机名状态示意](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-16.webp)
 
 ---
 
@@ -138,7 +138,7 @@ Cloudflare 会扫描域名已有的解析信息，通常新注册域名会是空
 
 登录腾讯云，搜索 **云解析 DNS**。
 
-![进入云解析 DNS](posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-17.webp)
+![进入云解析 DNS](/posts-img/dnspod-cloudflare-accelerate/dnspod-cloudflare-17.webp)
 
 以 `www.xxxx.com` 为例，我们需要添加两个解析：
 
