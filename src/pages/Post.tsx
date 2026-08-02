@@ -291,6 +291,19 @@ const isSafeMarkdownHref = (href?: string) => {
   }
 };
 
+// 文章正文使用相对路径（如 posts-img/foo.png，便于 Obsidian 预览），
+// 渲染时解析回 /posts-img/ 绝对路径。
+const isAbsoluteAssetPath = (value: string) => value.startsWith('/') || /^[a-z][a-z0-9+.-]*:/i.test(value);
+
+const resolvePostsImgPath = (value: string) => {
+  let clean = value.replace(/^\.\/+/, '').replace(/^(\.\.\/)+/g, '');
+  // 兼容 posts/posts-img/... 这种以仓库根为基准的写法
+  if (clean.startsWith('posts/')) {
+    clean = clean.slice('posts/'.length);
+  }
+  return `/${clean}`;
+};
+
 const createMarkdownComponents = (
   onPreviewImage: (image: { src: string; alt?: string }) => void,
   mermaidRenderer: MermaidRenderer | null,
@@ -361,7 +374,9 @@ const createMarkdownComponents = (
 
   return {
     a: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
-      const safeHref = isSafeMarkdownHref(href) ? href : undefined;
+      const hrefIsImage = Boolean(href) && isImageUrl(href);
+      const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? href : resolvePostsImgPath(href)) : href;
+      const safeHref = isSafeMarkdownHref(resolvedHref) ? resolvedHref : undefined;
 
       if (safeHref && isImageUrl(safeHref)) {
         const imgAlt = React.Children.toArray(children)
@@ -390,32 +405,37 @@ const createMarkdownComponents = (
 
       return <a href={safeHref} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
     },
-    img: ({ title, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => (
-      <figure className="group/myimage my-7 md:my-10">
-        <button
-          type="button"
-          onClick={() => onPreviewImage({ src: props.src || '', alt: props.alt })}
-          className="relative block w-full overflow-hidden rounded-media border border-zinc-300 bg-zinc-50 shadow-none transition-colors duration-200 hover:border-zinc-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-500 dark:focus-visible:outline-zinc-100"
-          aria-label={props.alt ? `预览图片：${props.alt}` : '预览图片'}
-        >
-          <ProgressiveImage
-            {...props}
-            loading="lazy"
-            decoding="async"
-            wrapperClassName="rounded-media"
-            className="cursor-zoom-in rounded-media transition-opacity duration-200 group-hover/myimage:opacity-95"
-          />
-          <span className="pointer-events-none absolute right-3 top-3 rounded-micro border border-white/20 bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 opacity-0 transition-opacity duration-200 group-hover/myimage:opacity-100 group-focus-visible/myimage:opacity-100">
-            预览
-          </span>
-        </button>
-        {(props.alt || title) && (
-          <figcaption className="mt-2.5 text-center text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-            {props.alt || title}
-          </figcaption>
-        )}
-      </figure>
-    ),
+    img: ({ src, alt, title, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+      const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? src : resolvePostsImgPath(src)) : src;
+      return (
+        <figure className="group/myimage my-7 md:my-10">
+          <button
+            type="button"
+            onClick={() => onPreviewImage({ src: resolvedSrc || '', alt })}
+            className="relative block w-full overflow-hidden rounded-media border border-zinc-300 bg-zinc-50 shadow-none transition-colors duration-200 hover:border-zinc-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-500 dark:focus-visible:outline-zinc-100"
+            aria-label={alt ? `预览图片：${alt}` : '预览图片'}
+          >
+            <ProgressiveImage
+              {...props}
+              src={resolvedSrc}
+              alt={alt}
+              loading="lazy"
+              decoding="async"
+              wrapperClassName="rounded-media"
+              className="cursor-zoom-in rounded-media transition-opacity duration-200 group-hover/myimage:opacity-95"
+            />
+            <span className="pointer-events-none absolute right-3 top-3 rounded-micro border border-white/20 bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 opacity-0 transition-opacity duration-200 group-hover/myimage:opacity-100 group-focus-visible/myimage:opacity-100">
+              预览
+            </span>
+          </button>
+          {(alt || title) && (
+            <figcaption className="mt-2.5 text-center text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+              {alt || title}
+            </figcaption>
+          )}
+        </figure>
+      );
+    },
     pre: PreBlock,
     table: ({ children, ...props }: React.TableHTMLAttributes<HTMLTableElement>) => (
       <div className="table-wrapper">

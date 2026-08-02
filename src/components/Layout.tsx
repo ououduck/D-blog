@@ -697,11 +697,20 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   );
 };
 
-const Footer = ({ isPostPage = false }: { isPostPage?: boolean }) => {
+const Footer = () => {
   const footerLinks = [
+    { label: TEXT.navPosts, to: '/' },
     { label: TEXT.navArchive, to: '/archive' },
     { label: TEXT.navTags, to: '/tags' },
+    { label: TEXT.navStats, to: '/stats' },
+    { label: TEXT.navFriends, to: '/friends' },
+    { label: TEXT.navSponsor, to: '/sponsor' },
     { label: TEXT.navAbout, to: '/about' }
+  ];
+  const footerExternalLinks = [
+    { label: '\u90ae\u4ef6', href: siteConfig.social.email, external: false },
+    { label: 'GitHub', href: siteConfig.social.github, external: true },
+    { label: TEXT.rssFeed, href: '/feed.xml', external: true }
   ];
 
   return (
@@ -716,17 +725,22 @@ const Footer = ({ isPostPage = false }: { isPostPage?: boolean }) => {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-            {isPostPage && (
-              <Link to="/" className="transition-colors hover:text-ink dark:hover:text-white">首页</Link>
-            )}
             {footerLinks.map((item) => (
               <Link key={item.to} to={item.to} className="transition-colors hover:text-ink dark:hover:text-white">
                 {item.label}
               </Link>
             ))}
-            <a href="/feed.xml" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-ink dark:hover:text-white">RSS</a>
-            <a href={siteConfig.social.github} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-ink dark:hover:text-white">GitHub</a>
-            <a href={siteConfig.social.email} className="transition-colors hover:text-ink dark:hover:text-white">邮件</a>
+            {footerExternalLinks.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                target={item.external ? '_blank' : undefined}
+                rel={item.external ? 'noopener noreferrer' : undefined}
+                className="transition-colors hover:text-ink dark:hover:text-white"
+              >
+                {item.label}
+              </a>
+            ))}
           </div>
         </div>
 
@@ -765,7 +779,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) =
   }, []);
   const closeSearch = useCallback(() => setIsSearchOpen(false), []);
   const routeContentKey = location.pathname;
-  const isPostPage = location.pathname.startsWith('/post/');
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -818,7 +831,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) =
       <Suspense fallback={null}>
         <BackToTop />
       </Suspense>
-      <Footer isPostPage={isPostPage} />
+      <Footer />
     </div>
   );
 };

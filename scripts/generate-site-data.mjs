@@ -87,6 +87,19 @@ const isSafeRssUrl = (value) => {
   }
 };
 
+// 文章正文使用相对路径（如 posts-img/foo.png，便于 Obsidian 预览），
+// 生成 RSS 时需解析回 /posts-img/ 绝对路径。
+const isAbsoluteAssetPath = (value) => value.startsWith('/') || /^[a-z][a-z0-9+.-]*:/i.test(value);
+
+const toPostsImgPath = (value) => {
+  let clean = String(value).replace(/^\.\/+/, '').replace(/^(\.\.\/)+/g, '');
+  // 兼容 posts/posts-img/... 这种以 vault 根为基准的写法
+  if (clean.startsWith('posts/')) {
+    clean = clean.slice('posts/'.length);
+  }
+  return `/${clean}`;
+};
+
 assertValidUrl(SITE_URL, 'siteConfig.url');
 
 const markdownToSearchText = (markdown) =>
@@ -315,7 +328,18 @@ const validatePostFrontmatter = (filename, data, formattedDate, formattedUpdated
 
 const usedPostIds = new Set();
 
-const files = fs.readdirSync(POSTS_DIR).filter((file) => file.endsWith('.md'));
+const files = fs.readdirSync(POSTS_DIR).filter((file) => {
+  if (!file.endsWith('.md')) {
+    return false;
+  }
+
+  // 只保留常规文件，跳过 posts/posts-img 等子目录，避免图片被误当作文章处理
+  try {
+    return fs.statSync(path.join(POSTS_DIR, file)).isFile();
+  } catch {
+    return false;
+  }
+});
 const postsWithSearch = files
   .map((filename) => {
     const filePath = path.join(POSTS_DIR, filename);
@@ -487,7 +511,8 @@ const generateRss = () => {
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/`(.+?)`/g, '<code>$1</code>')
       .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
-        const safeUrl = String(url).trim();
+        const rawUrl = String(url).trim();
+        const safeUrl = isAbsoluteAssetPath(rawUrl) ? rawUrl : toPostsImgPath(rawUrl);
         if (!isSafeRssUrl(safeUrl)) {
           return escapeHtmlAttribute(alt);
         }

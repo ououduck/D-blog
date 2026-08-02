@@ -5,7 +5,7 @@ export const siteConfig = {
   logo: 'https://blog.pldduck.com/logo.png',
   logoSmall: '/logo-96.png',
   seoImage: 'https://blog.pldduck.com/logo.png',
-  footerText: '©2026 D工作室',
+  footerText: '©2026 PLDDUCK',
   url: 'https://blog.pldduck.com',
   social: {
     github: 'https://github.com/ououduck/',

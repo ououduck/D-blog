@@ -22,6 +22,7 @@
 - [项目结构](#项目结构)
 - [内容管理](#内容管理)
   - [新建文章](#新建文章)
+  - [文章分类](#文章分类)
   - [Markdown 增强](#markdown-增强)
   - [新建友链](#新建友链)
   - [封面生成器](#封面生成器)
@@ -40,23 +41,23 @@
 
 ### 内容与写作
 
-- **Markdown 驱动** - 使用 Markdown 文件管理内容，支持 Front Matter 元数据
-- **全文搜索** - 构建时生成搜索索引，前端按标题/分类/正文/标签多维度权重评分搜索，支持搜索范围筛选（标题、分类、正文内容）和搜索历史记录
-- **增强渲染** - 代码高亮（highlight.js）、数学公式（KaTeX）、Mermaid 图表、GFM 表格、图片预览
-- **阅读体验** - 目录导航（自动折叠非活跃分支）、阅读进度徽章、文章封面图、阅读时间估算
+- **Markdown 驱动** - 使用 Markdown 文件管理内容，支持 Front Matter 元数据，分类白名单与草稿过滤在构建时校验
+- **全文搜索** - 构建时生成搜索索引，前端按标题/分类/摘要/正文/标签多维度权重评分搜索，支持搜索范围筛选（标题、分类、正文内容）和搜索历史记录
+- **增强渲染** - 代码高亮（highlight.js）、数学公式（KaTeX）、Mermaid 图表、GFM 表格、图片预览、DOMPurify 净化安全渲染
+- **阅读体验** - 目录导航（自动折叠非活跃分支）、阅读进度徽章、文章封面图、阅读时间与字数统计
 
 ### 用户体验
 
 - **主题系统** - 浅色/深色/跟随系统三种模式，切换时支持 CSS View Transitions API 动画过渡
-- **页面过渡** - 支持 CSS View Transitions API 圆形揭示动画（兜底使用 Framer Motion），点击位置决定动画原点
+- **页面过渡** - 路由切换优先使用 CSS View Transitions API，兜底使用 Framer Motion 动画
 - **导航体验** - 全局搜索弹窗（Ctrl+K 快捷键）、响应式导航栏、移动端底部菜单（下滑手势关闭）
 - **品牌加载动画** - 首次访问时显示字母打字动画 + 进度条的品牌加载效果
 
 ### 性能与构建
 
-- **预渲染** - 为每篇文章和静态页面生成独立 HTML，注入精准的 SEO meta 标签和 JSON-LD 结构化数据
-- **代码分割** - 基于路由懒加载，第三方库按功能分包（React 核心、路由、动画、Markdown、代码高亮、Mermaid 图表等）
-- **资源优化** - 构建时压缩（Terser）、去 console、文件名哈希缓存、CSS 代码分割
+- **预渲染** - 为每篇文章和静态页面生成独立 HTML，注入精准的 SEO meta 标签和 JSON-LD 结构化数据，并预加载文章封面图
+- **代码分割** - 基于路由懒加载，第三方库按功能分包（React 核心、路由、动画、Markdown、代码高亮、Mermaid 图表等），并剥离非关键预加载资源
+- **资源优化** - 构建时 esbuild 压缩与去 console/debugger、文件名哈希缓存、CSS 代码分割
 - **PWA 支持** - Service Worker 缓存策略，manifest 配置，支持离线访问
 
 ### SEO 与订阅
@@ -64,6 +65,12 @@
 - **自动 SEO** - 每篇文章生成 OG/Twitter Card meta、JSON-LD（Article + BreadcrumbList）结构化数据
 - **RSS 订阅** - 自动生成含全文内容的 RSS 2.0 Feed
 - **站点地图** - 自动生成 sitemap.xml
+
+### 质量保障
+
+- **类型检查** - TypeScript 严格模式全量校验（`npm run typecheck`）
+- **单元测试** - Vitest 覆盖归档折叠逻辑与封面生成器等纯函数（`npm run test`）
+- **一键校验** - `npm run check` 依次执行类型检查、单元测试与数据生成，数据非法（如日期格式错误、分类不在白名单、友链 URL 无效）会直接构建报错
 
 ## 技术栈
 
@@ -76,11 +83,13 @@
 | 样式方案 | Tailwind CSS + PostCSS |
 | 动画库 | Framer Motion + CSS View Transitions API |
 | Markdown 渲染 | react-markdown + remark-gfm + remark-math + rehype-highlight + rehype-katex |
+| 安全净化 | DOMPurify |
 | 图表渲染 | Mermaid |
 | SEO 优化 | react-helmet-async |
 | 图标库 | Lucide React |
+| 测试框架 | Vitest |
+| 代码压缩 | esbuild |
 | 包管理 | npm |
-| 代码压缩 | Terser |
 
 ## 快速开始
 
@@ -102,8 +111,8 @@ npm install
 # 配置环境变量（可选，用于覆盖 sitemap/RSS/SEO 的站点 URL）
 cp .env.example .env
 
-# 类型检查
-npm run typecheck
+# 类型检查 + 单元测试 + 数据生成
+npm run check
 
 # 本地开发
 npm run dev
@@ -128,7 +137,7 @@ graph LR
   C --> D[dist/]
 ```
 
-1. **数据生成** (`npm run gen:data`) - 读取 `posts/` 目录的 Markdown 文件和 `friends/` 目录的 JSON 文件，生成 `src/generated/` 下的 JSON 数据索引，同时输出 `public/sitemap.xml` 和 `public/feed.xml`
+1. **数据生成** (`npm run gen:data`) - 读取 `posts/` 目录的 Markdown 文件和 `friends/` 目录的 JSON 文件，生成 `generated/` 下的 JSON 数据索引，同时输出 `public/sitemap.xml` 和 `public/feed.xml`
 2. **Vite 构建** (`npm run build`) - 将 `src/` 编译为 `dist/` 静态资源
 3. **预渲染** (`npm run prerender`) - 为每篇文章（`/post/:id`）和静态页面（`/archive`、`/tags`、`/stats`、`/about`、`/friends`、`/cover`、`/sponsor`、404）生成独立的 `index.html`，注入对应的 SEO meta 标签和 JSON-LD 结构化数据
 
@@ -138,14 +147,22 @@ graph LR
 D-blog/
 ├── config/                      # 配置文件
 │   ├── site.config.ts          # 站点全局配置（标题、作者、社交链接、备案等）
+│   ├── content.config.json     # 文章分类白名单配置
+│   ├── content.config.ts       # 分类配置的类型定义与导出
 │   ├── ads.config.ts           # 广告数据配置
 │   ├── tailwind.config.js      # Tailwind CSS 配置
 │   ├── postcss.config.js       # PostCSS 配置
 │   └── tsconfig.json           # TypeScript 配置
 ├── posts/                       # Markdown 文章内容
+│   └── posts-img/              # 文章配图（与文章同目录，便于 Obsidian 管理）
 ├── friends/                     # 友情链接数据（JSON）
+├── generated/                   # 构建时生成的 JSON 数据（自动生成，不提交）
+│   ├── posts.json              # 文章元数据
+│   ├── posts-search.json       # 全文搜索索引
+│   ├── friends.json            # 友链数据
+│   └── site-stats.json         # 站点统计
 ├── public/                      # 静态资源
-│   ├── posts-img/              # 文章配图
+│   ├── ads-img/                # 广告配图
 │   ├── ads-img/                # 广告配图
 │   ├── feed.xml                # RSS 订阅（自动生成）
 │   ├── sitemap.xml             # 站点地图（自动生成）
@@ -153,28 +170,34 @@ D-blog/
 │   ├── sw.js                   # Service Worker
 │   ├── offline.html            # 离线页面
 │   ├── robots.txt              # 爬虫规则
+│   ├── logo.png                # 站点 Logo
+│   ├── logo-96.png             # 小尺寸 Logo
 │   ├── pwa-192.png             # PWA 图标
 │   ├── pwa-512.png             # PWA 图标
-│   ├── logo.png                # 站点 Logo
 │   └── favicon.ico             # 站点图标
 ├── scripts/                     # 构建脚本
 │   ├── generate-site-data.mjs  # 数据生成脚本（Markdown → JSON + RSS + Sitemap）
-│   └── prerender.mjs           # 预渲染脚本（生成静态 HTML + SEO 标签）
+│   ├── prerender.mjs           # 预渲染脚本（生成静态 HTML + SEO 标签）
+│   ├── site-config-loader.mjs  # 站点配置解析（支持 VITE_SITE_URL 环境变量覆盖）
+│   └── build-logger.mjs        # 构建日志输出工具
 ├── src/                         # 源代码
 │   ├── components/             # React 组件
-│   │   ├── Layout.tsx          # 布局框架（导航栏 + 搜索弹窗 + 页脚 + 背景）
+│   │   ├── Layout.tsx          # 布局框架（导航栏 + 搜索弹窗 + 页脚 + 主题切换）
 │   │   ├── BackToTop.tsx       # 回到顶部
+│   │   ├── ContentStatus.tsx   # 内容空状态 / 错误状态
 │   │   ├── CookieNotice.tsx    # Cookie 通知弹窗
 │   │   ├── DBlogLoader.tsx     # 品牌加载动画
-│   │   ├── GlobalLiquidGlass.tsx # 全局毛玻璃效果
 │   │   ├── ImageViewer.tsx     # 图片预览
 │   │   ├── NotFoundState.tsx   # 404 状态组件
 │   │   ├── ProgressiveImage.tsx # 渐进式图片加载
 │   │   ├── ReadingProgressBadge.tsx # 阅读进度徽章
+│   │   ├── SearchField.tsx     # 搜索输入框
+│   │   ├── SearchModal.tsx     # 全局搜索弹窗（含搜索历史）
 │   │   ├── Seo.tsx             # SEO meta 标签管理
 │   │   ├── ShareModal.tsx      # 分享弹窗
 │   │   ├── SlideModal.tsx      # 滑动弹窗
-│   │   └── TableOfContents.tsx # 文章目录导航
+│   │   ├── TableOfContents.tsx # 文章目录导航
+│   │   └── ui/                 # 基础 UI 组件（Button、Surface、modalStyles）
 │   ├── pages/                  # 页面组件（懒加载）
 │   │   ├── Home.tsx            # 首页
 │   │   ├── Post.tsx            # 文章详情页
@@ -185,7 +208,9 @@ D-blog/
 │   │   ├── About.tsx           # 关于页面
 │   │   ├── CoverGenerator.tsx  # 封面生成器
 │   │   ├── Sponsor.tsx         # 赞助支持
-│   │   └── NotFound.tsx        # 404 页面
+│   │   ├── NotFound.tsx        # 404 页面
+│   │   ├── archive/            # 归档折叠逻辑（含单元测试）
+│   │   └── cover/              # 封面生成核心逻辑（含单元测试）
 │   ├── services/               # 数据服务层
 │   │   ├── posts.ts            # 文章数据获取与全文搜索
 │   │   ├── friends.ts          # 友链数据获取（随机排序）
@@ -198,16 +223,12 @@ D-blog/
 │   │   ├── date.ts             # 日期格式化
 │   │   ├── debounce.ts         # 防抖函数
 │   │   ├── headings.ts         # 标题提取工具
+│   │   ├── toc.ts              # 目录树构建（自动折叠）
 │   │   ├── motion.ts           # Framer Motion 动画配置
 │   │   └── preload.ts          # 页面预加载
 │   ├── config/                 # 前端配置
 │   │   ├── sponsorConfig.ts    # 赞助选项配置
 │   │   └── coverTemplates.ts   # 封面模板配置
-│   ├── generated/              # 构建时生成的 JSON 数据（自动生成，不提交）
-│   │   ├── posts.json          # 文章元数据
-│   │   ├── posts-search.json   # 全文搜索索引
-│   │   ├── friends.json        # 友链数据
-│   │   └── site-stats.json     # 站点统计
 │   ├── App.tsx                 # 应用入口（路由配置 + 错误边界 + 加载动画）
 │   ├── types.ts                # TypeScript 类型定义
 │   ├── index.tsx               # 渲染入口
@@ -234,10 +255,7 @@ tags:
   - React
   - Vite
 coverImage: /posts-img/example.png # 可选，封面图路径
-authors:                           # 可选，多作者支持
-  - name: 跑路的duck
-    avatar: https://q1.qlogo.cn/g?b=qq&nk=2472652060&s=100
-    role: 前端菜鸟
+author: 跑路的duck                 # 可选，作者（字符串或对象）
 featured: false                   # 是否首页精选展示
 top: 1                            # 置顶排序（数字越小优先级越高）
 draft: false                      # 是否为草稿
@@ -252,18 +270,33 @@ draft: false                      # 是否为草稿
 
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
-| `id` | 是 | 文章唯一标识，对应路由 `/post/:id` |
+| `id` | 是 | 文章唯一标识，对应路由 `/post/:id`，重复会构建报错 |
 | `title` | 是 | 文章标题 |
 | `excerpt` | 是 | 文章摘要，用于列表展示和 SEO |
-| `date` | 是 | 发布日期（YYYY-MM-DD），缺失会导致构建报错 |
-| `updatedAt` | 否 | 最后修改日期 |
-| `category` | 否 | 文章分类，默认 `其他`，可选值：教程 / 技术 / 随笔 / 分享 / 其他 |
+| `date` | 是 | 发布日期（YYYY-MM-DD），格式错误会导致构建报错 |
+| `updatedAt` | 否 | 最后修改日期（YYYY-MM-DD） |
+| `category` | 否 | 文章分类，必须属于 `config/content.config.json` 白名单，非法值回退为 `其他` |
 | `tags` | 否 | 标签数组 |
 | `coverImage` | 否 | 封面图路径 |
-| `authors` | 否 | 作者信息数组，支持多作者，每项含 `name`/`avatar`/`role`/`bio`/`url` |
+| `author` | 否 | 作者，支持字符串（如 `跑路的duck`）或对象（含 `name`/`avatar`/`role`/`bio`/`url`） |
+| `authors` | 否 | 作者信息数组，支持多作者，每项同 `author` 对象结构 |
 | `featured` | 否 | 是否作为首页精选展示 |
 | `top` | 否 | 置顶排序（数字越小优先级越高） |
 | `draft` | 否 | 是否为草稿（`true` 时构建自动过滤） |
+
+### 文章分类
+
+分类白名单配置在 `config/content.config.json`：
+
+```json
+{
+  "postCategories": ["教程", "技术", "随笔", "分享", "其他"],
+  "fallbackCategory": "其他"
+}
+```
+
+- `postCategories`：合法的分类列表，文章 Front Matter 中的 `category` 必须在此列表中，否则回退为 `fallbackCategory`
+- `fallbackCategory`：未填写或非法分类时的兜底值
 
 ### Markdown 增强
 
@@ -308,13 +341,15 @@ graph TD
 }
 ```
 
+四个字段均为必填，`url` 与 `avatar` 必须是合法的 http(s) 链接，缺失或重复的友链文件会在构建时被跳过并告警。
+
 友链申请流程请查看 [友链页面公告](https://blog.pldduck.com/friends)，提交 GitHub PR 即可。
 
 ### 封面生成器
 
 项目内置了网页版封面生成器（路由 `/cover`），支持：
 
-- 多种背景模板（纯色/渐变/几何图案）
+- 多种背景模板（纯色/渐变背景 + 点阵、网格、波浪、六边形、三角形、圆形、对角线等几何图案）
 - 自定义标题、副标题、作者、日期文字
 - 多种导出比例（16:9 / 1:1 / 4:3 / 3:4 / 9:16）
 - 右击图片即可保存到本地
@@ -419,6 +454,10 @@ export const adsConfig: AdItem[] = [
 | `npm run preview` | 预览生产构建结果 |
 | `npm run gen:data` | 仅运行数据生成脚本，从 Markdown 生成 JSON 索引、RSS 和 Sitemap |
 | `npm run prerender` | 仅运行预渲染脚本，生成静态 HTML（需先 `npm run build`） |
+| `npm run typecheck` | TypeScript 类型检查 |
+| `npm run test` | 运行 Vitest 单元测试 |
+| `npm run test:watch` | 监听模式运行单元测试 |
+| `npm run check` | 一键校验：类型检查 + 单元测试 + 数据生成 |
 
 ## 部署指南
 
@@ -432,8 +471,7 @@ export const adsConfig: AdItem[] = [
 
 在 Settings → Environment variables 中按需添加：
 - `VITE_SITE_URL`：站点公开访问地址，用于生成 sitemap、RSS 和预渲染 SEO URL；未设置时使用 `config/site.config.ts` 中的 `url`
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ZONE_ID`
+- `VITE_BASE_PATH`：站点部署在子路径时使用（如 GitHub Pages 的 `/repo/`），留空为根路径
 
 ### 其他平台
 
@@ -472,7 +510,7 @@ location / {
 
 1. Fork 本仓库
 2. 创建特性分支
-3. 提交更改
+3. 提交更改（建议先运行 `npm run check` 通过校验）
 4. 推送到分支
 5. 创建 Pull Request
 
