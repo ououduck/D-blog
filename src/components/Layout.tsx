@@ -6,6 +6,7 @@ import { preloadPage } from '@/utils/preload';
 import { siteConfig } from '@config/site.config';
 
 import { ProgressiveImage } from './ProgressiveImage';
+import { IssueSubscriptionCard } from './IssueSubscriptionCard';
 import { easeSmooth, routeTransition } from '@/utils/motion';
 
 const SearchModal = lazy(() => import('./SearchModal').then((m) => ({ default: m.SearchModal })));
@@ -741,6 +742,7 @@ const Footer = () => {
                 {item.label}
               </a>
             ))}
+            <IssueSubscriptionCard compact />
           </div>
         </div>
 

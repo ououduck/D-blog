@@ -123,7 +123,7 @@ export const Sponsor: React.FC = () => {
                 href={ad.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block overflow-hidden rounded-surface border border-zinc-200 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
+                className="block"
                 aria-label={`打开赞助商链接：${ad.title}`}
               >
                 <img
@@ -133,10 +133,6 @@ export const Sponsor: React.FC = () => {
                   decoding="async"
                   className="h-auto w-full"
                 />
-                <div className="flex items-center justify-between border-t border-zinc-200 px-4 py-3 text-sm dark:border-zinc-800">
-                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">{ad.title}</span>
-                  <ExternalLink size={15} className="text-zinc-500" />
-                </div>
               </a>
             ))}
           </div>

@@ -53,7 +53,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       const nextProgress = clamp(travelled / totalScrollable, 0, 1);
       const nextPercentage = Math.round(nextProgress * 100);
       const currentPercentage = Math.round(progressRef.current * 100);
-      const nextVisible = rect.top < viewportHeight - startOffset && rect.bottom > endOffset;
+      const nextVisible = rect.bottom > endOffset;
 
       if (nextPercentage !== currentPercentage) {
         progressRef.current = nextProgress;
@@ -95,7 +95,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       ? createPortal(
           <div
             style={MOBILE_BADGE_STYLE}
-            className="pointer-events-none fixed z-40 rounded-control border border-zinc-300 bg-paper px-2.5 py-2 shadow-none dark:border-zinc-700 dark:bg-zinc-900 md:hidden"
+            className="pointer-events-none fixed z-40 rounded-control border border-zinc-300 bg-paper px-2.5 py-2 shadow-none dark:border-zinc-700 dark:bg-zinc-900 lg:hidden"
           >
             <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
               <span>进度</span>
@@ -118,7 +118,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       ? createPortal(
           <div
             style={DESKTOP_BADGE_STYLE}
-            className="pointer-events-none fixed z-[50] hidden md:block"
+            className="pointer-events-none fixed z-[50] hidden lg:block"
             aria-hidden={!isVisible}
           >
             <div className="min-w-[7rem] rounded-control border border-zinc-300 bg-paper px-3 py-2 shadow-none dark:border-zinc-700 dark:bg-zinc-900">

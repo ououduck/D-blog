@@ -11,9 +11,9 @@ export default {
     extend: {
       fontFamily: {
         sans: [
+          '"Microsoft YaHei"',
+          '"PingFang SC"',
           '"Plus Jakarta Sans"',
-          '"PingFang SC"', 
-          '"Microsoft YaHei"', 
           'ui-sans-serif', 
           'system-ui', 
           '-apple-system', 

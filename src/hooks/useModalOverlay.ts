@@ -24,7 +24,6 @@ const FOCUSABLE_SELECTOR = [
 const openOverlayStack: symbol[] = [];
 let scrollLockCount = 0;
 let originalBodyOverflow = '';
-let originalBodyPaddingRight = '';
 
 const getFocusableElements = (container: HTMLElement) => (
   Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((element) => {
@@ -40,15 +39,7 @@ const getFocusableElements = (container: HTMLElement) => (
 const lockBodyScroll = () => {
   if (scrollLockCount === 0) {
     originalBodyOverflow = document.body.style.overflow;
-    originalBodyPaddingRight = document.body.style.paddingRight;
-
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    const currentPaddingRight = Number.parseFloat(window.getComputedStyle(document.body).paddingRight) || 0;
-
     document.body.style.overflow = 'hidden';
-    if (scrollbarWidth > 0) {
-      document.body.style.paddingRight = `${currentPaddingRight + scrollbarWidth}px`;
-    }
   }
 
   scrollLockCount += 1;
@@ -59,7 +50,6 @@ const unlockBodyScroll = () => {
 
   if (scrollLockCount === 0) {
     document.body.style.overflow = originalBodyOverflow;
-    document.body.style.paddingRight = originalBodyPaddingRight;
   }
 };
 

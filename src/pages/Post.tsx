@@ -14,6 +14,7 @@ import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { NotFoundState } from '@/components/NotFoundState';
+import { IssueSubscriptionCard } from '@/components/IssueSubscriptionCard';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { extractMarkdownHeadings, extractTextFromReactNode, slugifyHeading } from '@/utils/headings';
 import type { MarkdownHeading } from '@/utils/headings';
@@ -888,6 +889,10 @@ export const Post = () => {
                 <ExternalLink size={14} />
                 <span>帮助改进本文</span>
               </a>
+            </div>
+
+            <div className="mt-8">
+              <IssueSubscriptionCard />
             </div>
 
             {/* 上一篇 / 下一篇导航 */}
