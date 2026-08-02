@@ -26,6 +26,7 @@
   - [Markdown 增强](#markdown-增强)
   - [新建友链](#新建友链)
   - [封面生成器](#封面生成器)
+  - [订阅更新](#订阅更新)
 - [配置指南](#配置指南)
   - [站点配置](#站点配置)
   - [赞助页面配置](#赞助页面配置)
@@ -41,10 +42,13 @@
 
 ### 内容与写作
 
-- **Markdown 驱动** - 使用 Markdown 文件管理内容，支持 Front Matter 元数据，分类白名单与草稿过滤在构建时校验
+- **Markdown 驱动** - 使用 Markdown 文件管理内容，支持 Front Matter 元数据与多作者，分类白名单与草稿过滤在构建时校验
 - **全文搜索** - 构建时生成搜索索引，前端按标题/分类/摘要/正文/标签多维度权重评分搜索，支持搜索范围筛选（标题、分类、正文内容）和搜索历史记录
-- **增强渲染** - 代码高亮（highlight.js）、数学公式（KaTeX）、Mermaid 图表、GFM 表格、图片预览、DOMPurify 净化安全渲染
-- **阅读体验** - 目录导航（自动折叠非活跃分支）、阅读进度徽章、文章封面图、阅读时间与字数统计
+- **增强渲染** - 代码高亮（highlight.js）、数学公式（KaTeX）、Mermaid 图表、GFM 表格、图片预览、DOMPurify 净化安全渲染；高亮/公式/Mermaid 按正文内容按需懒加载
+- **代码块体验** - 代码块显示语言徽标、支持一键复制，超过 30 行自动折叠并可展开
+- **阅读体验** - 目录导航（自动折叠非活跃分支）、阅读进度徽章、文章封面图、阅读时间与字数统计、标题锚点一键复制链接、CC BY-SA 4.0 许可声明与「帮助改进本文」入口
+- **文章导航** - 上一篇/下一篇导航（`Alt + ←/→` 快捷键）、面包屑导航、多作者信息展示
+- **一键分享** - 首页卡片与文章详情页均支持打开分享弹窗
 
 ### 用户体验
 
@@ -52,6 +56,8 @@
 - **页面过渡** - 路由切换优先使用 CSS View Transitions API，兜底使用 Framer Motion 动画
 - **导航体验** - 全局搜索弹窗（Ctrl+K 快捷键）、响应式导航栏、移动端底部菜单（下滑手势关闭）
 - **品牌加载动画** - 首次访问时显示字母打字动画 + 进度条的品牌加载效果
+- **首页信息流** - 精选横版大图卡片与置顶文章、分类筛选、最新/最早排序、分页与内联全文搜索
+- **辅助细节** - 回到顶部按钮、Cookie 隐私提示、图片渐进式加载、加载骨架屏与错误重试状态
 
 ### 性能与构建
 
@@ -65,6 +71,7 @@
 - **自动 SEO** - 每篇文章生成 OG/Twitter Card meta、JSON-LD（Article + BreadcrumbList）结构化数据
 - **RSS 订阅** - 自动生成含全文内容的 RSS 2.0 Feed
 - **站点地图** - 自动生成 sitemap.xml
+- **GitHub Issue 订阅** - 文章页与页脚提供订阅入口，GitHub Actions 在文章更新时自动向 Issue 发布通知（详见 [订阅更新](#订阅更新)）
 
 ### 质量保障
 
@@ -84,7 +91,10 @@
 | 动画库 | Framer Motion + CSS View Transitions API |
 | Markdown 渲染 | react-markdown + remark-gfm + remark-math + rehype-highlight + rehype-katex |
 | 安全净化 | DOMPurify |
+| 排版增强 | @tailwindcss/typography |
 | 图表渲染 | Mermaid |
+| Front Matter 解析 | gray-matter |
+| 环境变量 | dotenv |
 | SEO 优化 | react-helmet-async |
 | 图标库 | Lucide React |
 | 测试框架 | Vitest |
@@ -145,6 +155,8 @@ graph LR
 
 ```text
 D-blog/
+├── index.html                   # HTML 入口（字体、Clarity / Cloudflare / Umami 分析注入）
+├── .env.example                 # 环境变量示例（VITE_SITE_URL）
 ├── config/                      # 配置文件
 │   ├── site.config.ts          # 站点全局配置（标题、作者、社交链接、备案等）
 │   ├── content.config.json     # 文章分类白名单配置
@@ -155,6 +167,10 @@ D-blog/
 │   └── tsconfig.json           # TypeScript 配置
 ├── posts/                       # Markdown 文章内容
 ├── posts-img/                    # 文章配图（位于仓库根目录，正文以 /posts-img/... 绝对链接引用）
+├── .obsidian/                   # Obsidian Vault 配置（配合 posts-img 实现正文图片本地预览）
+├── .github/                      # GitHub 工作流
+│   └── workflows/
+│       └── notify-post-update.yml # 文章更新自动发布 GitHub Issue 通知
 ├── friends/                     # 友情链接数据（JSON）
 ├── generated/                   # 构建时生成的 JSON 数据（自动生成，不提交）
 │   ├── posts.json              # 文章元数据
@@ -162,7 +178,6 @@ D-blog/
 │   ├── friends.json            # 友链数据
 │   └── site-stats.json         # 站点统计
 ├── public/                      # 静态资源
-│   ├── ads-img/                # 广告配图
 │   ├── ads-img/                # 广告配图
 │   ├── feed.xml                # RSS 订阅（自动生成）
 │   ├── sitemap.xml             # 站点地图（自动生成）
@@ -188,6 +203,7 @@ D-blog/
 │   │   ├── CookieNotice.tsx    # Cookie 通知弹窗
 │   │   ├── DBlogLoader.tsx     # 品牌加载动画
 │   │   ├── ImageViewer.tsx     # 图片预览
+│   │   ├── IssueSubscriptionCard.tsx # GitHub Issue 订阅卡片
 │   │   ├── NotFoundState.tsx   # 404 状态组件
 │   │   ├── ProgressiveImage.tsx # 渐进式图片加载
 │   │   ├── ReadingProgressBadge.tsx # 阅读进度徽章
@@ -203,7 +219,7 @@ D-blog/
 │   │   ├── Post.tsx            # 文章详情页
 │   │   ├── Archive.tsx         # 文章归档
 │   │   ├── Tags.tsx            # 标签云
-│   │   ├── Stats.tsx           # 站点统计（含 Cloudflare 分析数据）
+│   │   ├── Stats.tsx           # 站点统计（含 Umami 访问统计与 UptimeRobot 运行状态）
 │   │   ├── Friends.tsx         # 友情链接
 │   │   ├── About.tsx           # 关于页面
 │   │   ├── CoverGenerator.tsx  # 封面生成器
@@ -347,14 +363,24 @@ graph TD
 
 ### 封面生成器
 
-项目内置了网页版封面生成器（路由 `/cover`），支持：
+项目内置网页版封面生成器（路由 `/cover`），基于 Canvas 实时渲染，可直接下载成品：
 
-- 多种背景模板（纯色/渐变背景 + 点阵、网格、波浪、六边形、三角形、圆形、对角线等几何图案）
-- 自定义标题、副标题、作者、日期文字
-- 多种导出比例（16:9 / 1:1 / 4:3 / 3:4 / 9:16）
-- 右击图片即可保存到本地
+- **背景** - 预设纯色/渐变模板（含点阵、网格、波浪、六边形、三角形、圆形、对角线等几何图案），也可上传本地图片并调整位置、缩放、模糊与透明度，支持叠加背景遮罩
+- **图标** - 内置站点 Logo、上传自定义图标，或从 Iconify 在线图标库搜索选用
+- **文字** - 主副标题自定义，支持字重、字号、字距、颜色、描边、阴影与自动配色
+- **字体** - 支持上传自定义字体（WOFF / WOFF2 / TTF / OTF）
+- **排版** - 多种布局模式（图标分割 / 堆叠 / 仅图标 / 仅文字）、文本对齐与四角、分隔线装饰
+- **导出** - 比例 16:9 / 1:1 / 4:3 / 21:9，缩放 0.5×–4×，PNG / JPEG 格式，下载到本地
 
-封面模板配置位于 `src/config/coverTemplates.ts`，可自由扩展。
+预设背景模板位于 `src/config/coverTemplates.ts`，可自由扩展；核心渲染逻辑位于 `src/pages/cover/`（含单元测试）。
+
+### 订阅更新
+
+站点支持通过 GitHub Issue 订阅新文章提醒：
+
+- 文章页底部与页脚均提供**订阅**入口，点击进入 GitHub Issue 页面，点击 **Subscribe** 即可订阅更新
+- 仓库内置 GitHub Actions 工作流（`.github/workflows/notify-post-update.yml`）：每当 `posts/**/*.md` 有新增或修改（且非草稿）时，自动在指定 Issue 中发布更新通知；也可通过 `workflow_dispatch` 手动指定文章文件推送通知
+- 可通过仓库变量 `BLOG_NOTIFY_ISSUE_NUMBER`（默认 `6`）指定用于发布通知的 Issue 编号
 
 ## 配置指南
 
