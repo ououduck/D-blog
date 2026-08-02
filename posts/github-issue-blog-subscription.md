@@ -10,7 +10,7 @@ tags:
   - 静态博客
   - 自动化
   - RSS
-coverImage: /posts/posts-img/github-issue-blog-subscription/github-issue-blog-subscription.png
+coverImage: \posts\posts-img\github-issue-blog-subscription\github-issue-blog-subscription.png
 author: 跑路的duck
 ---
 
