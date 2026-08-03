@@ -26,7 +26,7 @@ export const siteConfig = {
     repoFriendsUrl: 'https://github.com/ououduck/D-blog/tree/main/friends',
     repoFriendsDir: 'friends',
     applicationEmail: 'i@pldduck.com',
-    announcement: '请在线填写下方模板并输入纯英文文件名。点击完成后会自动下载 JSON 文件、复制完整内容并打开邮件发送入口；请在邮件中使用主题“D-blog友链申请”，将刚刚下载的 JSON 文件作为附件发送。提交前请确认已添加本站友链，我们会不定期清理无法访问、头像异常或内容不合适的站点。'
+    announcement: '友链申请请按步骤完成：填写站点名称、简介、头像地址、站点地址和纯英文文件名；点击完成后下载 JSON 文件并自动复制完整内容；点击前往发送，收件邮箱为 i@pldduck.com，邮件主题必须为“D-blog友链申请”，正文为完整 JSON；最后请在邮件客户端中手动添加刚下载的 JSON 文件作为附件。提交前请确认已添加本站友链，我们会不定期清理无法访问、头像异常或内容不合适的站点。'
   },
   beian: {
     text: '湘ICP备2025101669号',

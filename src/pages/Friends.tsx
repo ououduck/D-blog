@@ -30,7 +30,6 @@ const EMPTY_APPLICATION_VALUES: FriendLinkApplicationValues = {
 
 export const Friends = () => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -66,23 +65,6 @@ export const Friends = () => {
     description: siteConfig.description,
     url: siteConfig.url,
     avatar: siteConfig.logo
-  };
-
-  const templateText = `{
-  "name": "",
-  "description": "",
-  "avatar": "",
-  "url": ""
-}`;
-
-  const handleCopyTemplate = async () => {
-    try {
-      await copyText(templateText);
-      setIsCopied(true);
-      window.setTimeout(() => setIsCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy friend link template:', error);
-    }
   };
 
   const handleApplicationFieldChange = (field: keyof FriendLinkApplicationValues, value: string) => {
@@ -150,7 +132,7 @@ export const Friends = () => {
 
   return (
     <div className="pb-12 pt-8 md:pb-20 md:pt-12">
-      <Seo title="友链" description="D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎在线填写模板申请交换友链。" />
+      <Seo title="友链" description="D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎在线填写申请信息。" />
 
       <header className="mb-12 border-b border-zinc-200 pb-8 dark:border-zinc-800 md:pb-10">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Friends Directory</p>
@@ -172,9 +154,15 @@ export const Friends = () => {
           aria-expanded={isExpanded}
           aria-controls="friend-link-panel"
         >
-          <div>
-            <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">申请友链</span>
-            <p className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">在线填写模板，下载 JSON 后发送申请邮件。</p>
+          <div className="min-w-0 flex-1">
+            <span className="text-base font-semibold text-zinc-950 dark:text-white">申请友链</span>
+            <p className="mt-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">填写信息 → 下载并复制 JSON → 添加附件发送邮件</p>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold">
+              <span className="inline-flex items-center gap-1.5 rounded-control border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+                收件邮箱：{siteConfig.friendsPage.applicationEmail}
+              </span>
+              <span className="text-zinc-600 dark:text-zinc-400">主题：{FRIEND_LINK_EMAIL_SUBJECT}</span>
+            </div>
           </div>
           <motion.div
             animate={{ rotate: isExpanded ? 180 : 0 }}
@@ -198,10 +186,25 @@ export const Friends = () => {
             >
               <div className="border-t border-zinc-200 pb-5 pt-5 dark:border-zinc-800 sm:pb-6 sm:pt-6">
                 <div className="space-y-6">
-                  <div className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">公告：</span>
-                    {siteConfig.friendsPage.announcement}
-                  </div>
+                  <section className="rounded-surface border border-amber-300 bg-amber-50/80 p-4 dark:border-amber-700/80 dark:bg-amber-950/30 sm:p-5" aria-labelledby="friend-link-application-guide">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <h2 id="friend-link-application-guide" className="text-base font-bold text-amber-950 dark:text-amber-100">申请说明</h2>
+                        <p className="mt-1 text-sm leading-relaxed text-amber-900/90 dark:text-amber-200/90">请按以下步骤完成申请，邮件发送前请确认 JSON 文件已作为附件添加。</p>
+                      </div>
+                      <div className="flex-shrink-0 rounded-control border-2 border-amber-500 bg-white px-3 py-2 text-left dark:border-amber-500 dark:bg-zinc-950">
+                        <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">收件邮箱</div>
+                        <div className="mt-0.5 break-all font-mono text-sm font-bold text-amber-950 dark:text-amber-100">{siteConfig.friendsPage.applicationEmail}</div>
+                      </div>
+                    </div>
+                    <ol className="mt-4 grid gap-3 text-sm leading-relaxed text-amber-950 dark:text-amber-100 sm:grid-cols-2">
+                      <li className="flex gap-3"><span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white">1</span><span>填写站点名称、简介、头像地址、站点地址，以及纯英文文件名。</span></li>
+                      <li className="flex gap-3"><span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white">2</span><span>点击“完成并生成 JSON”，浏览器会下载文件并自动复制完整 JSON。</span></li>
+                      <li className="flex gap-3"><span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white">3</span><span>在结果弹窗点击“前往发送”，邮件主题必须是 <strong>D-blog友链申请</strong>，正文为完整 JSON。</span></li>
+                      <li className="flex gap-3"><span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white">4</span><span>在邮件客户端中手动添加刚下载的 <strong>.json</strong> 文件作为附件后发送。</span></li>
+                    </ol>
+                    <p className="mt-4 border-t border-amber-300/80 pt-3 text-xs leading-relaxed text-amber-900/90 dark:border-amber-700/80 dark:text-amber-200/90">提交前请先添加本站友链。我们会不定期清理无法访问、头像异常或内容不合适的站点。</p>
+                  </section>
 
                   <section className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
                     <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">本站信息（提交前请先添加本站友链）</h2>
@@ -216,23 +219,10 @@ export const Friends = () => {
                     </div>
                   </section>
 
-                  <section className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
-                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">友链 JSON 模板</h2>
-                      <button type="button" onClick={handleCopyTemplate} className="editorial-button px-3 py-1.5 text-xs sm:self-auto">
-                        {isCopied ? <Check size={14} /> : <Copy size={14} />}
-                        {isCopied ? '已复制' : '复制模板'}
-                      </button>
-                    </div>
-                    <pre className="select-all whitespace-pre-wrap border border-zinc-200 bg-zinc-50 p-3 font-mono text-xs leading-relaxed text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-                      {templateText}
-                    </pre>
-                  </section>
-
                   <form noValidate onSubmit={handleCompleteApplication} className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
                     <div className="mb-4">
-                      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">在线填写申请</h2>
-                      <p className="mt-1 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">填写完成后将下载 JSON 文件、自动复制内容，并显示发送邮件入口。</p>
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">在线填写申请</h2>
+                      <p className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">填写完成后将下载 JSON 文件、自动复制内容，并显示发送邮件入口。收件邮箱为 <strong className="text-zinc-900 dark:text-zinc-100">{siteConfig.friendsPage.applicationEmail}</strong>，邮件主题必须为 <strong className="text-zinc-900 dark:text-zinc-100">{FRIEND_LINK_EMAIL_SUBJECT}</strong>。</p>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       {([
