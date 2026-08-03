@@ -9,7 +9,7 @@ tags:
   - 加密
   - 解密
   - 安全
-coverImage: posts-img/localfileencrypt/file-20260803105341655.png
+coverImage: /posts-img/localfileencrypt/localfileencrypt.png
 author: 跑路的duck
 ---
 
