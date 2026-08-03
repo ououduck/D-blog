@@ -3,7 +3,7 @@ id: deepseek-v4
 title: Deepseek V4众望所归
 excerpt: 时隔一年半 Deepseek V4 众望所归
 date: 2026-04-24
-updatedAt: 2026-05-03
+updatedAt: 2026-08-03
 category: 随笔
 tags:
   - AI
@@ -52,4 +52,4 @@ author: 跑路的duck
 
 ## 总结
 **时隔一年半 Deepseek V4 不负众望**  
-**也是拿出了自己的实力 V4在各个方面都有不小的提升 尤其是算力方面 我认为是非常屌的**  
+**也是拿出了自己的实力 V4在各个方面都有不小的提升 尤其是算力方面 我认为是非常不错的**  
