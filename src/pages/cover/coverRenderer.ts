@@ -1,6 +1,6 @@
 import type { PatternType } from '../../config/coverTemplates';
 import { CANVAS_SAFE_MARGIN } from './coverConstants';
-import { fitText, getEffectiveLayout, getSubtitleFontWeight, normalizeFontWeight } from './coverLayout';
+import { fitText, getEffectiveLayout, getImageFitScale, getSubtitleFontWeight, normalizeFontWeight } from './coverLayout';
 import type { CoverRenderOptions, TextAlign } from './coverTypes';
 import { loadImage } from './coverFiles';
 
@@ -175,16 +175,22 @@ async function drawIcon(ctx: CanvasRenderingContext2D, source: string | CanvasIm
 export async function renderCover(ctx: CanvasRenderingContext2D, options: CoverRenderOptions): Promise<void> {
   const { width, height } = options.size;
   ctx.save(); ctx.clearRect(0, 0, width, height);
+  if (!options.transparentBackground) {
+    ctx.fillStyle = createTemplateFill(ctx, options.template.gradient, width, height);
+    ctx.fillRect(0, 0, width, height);
+  }
   if (options.backgroundImage) {
     const background = options.backgroundImage;
     const dimensions = imageDimensions(background.image);
-    const coverScale = Math.max(width / dimensions.width, height / dimensions.height) * background.scale;
-    ctx.save(); ctx.filter = background.blur > 0 ? `blur(${background.blur}px)` : 'none';
-    ctx.globalAlpha = background.opacity / 100; ctx.translate(width / 2 + background.x, height / 2 + background.y);
-    ctx.scale(coverScale, coverScale); ctx.drawImage(background.image, -dimensions.width / 2, -dimensions.height / 2); ctx.restore();
+    const imageScale = getImageFitScale(dimensions, options.size, background.fit) * background.scale;
+    ctx.save();
+    ctx.filter = background.blur > 0 ? `blur(${background.blur}px)` : 'none';
+    ctx.globalAlpha = background.opacity / 100;
+    ctx.translate(width / 2 + background.x, height / 2 + background.y);
+    ctx.scale(background.flipX ? -imageScale : imageScale, background.flipY ? -imageScale : imageScale);
+    ctx.drawImage(background.image, -dimensions.width / 2, -dimensions.height / 2);
+    ctx.restore();
   }
-  ctx.globalAlpha = options.backgroundImage ? 0.8 : 1;
-  ctx.fillStyle = createTemplateFill(ctx, options.template.gradient, width, height); ctx.fillRect(0, 0, width, height); ctx.globalAlpha = 1;
   if (options.overlay.enabled && options.overlay.blur > 0) {
     const backgroundLayer = document.createElement('canvas');
     backgroundLayer.width = width;

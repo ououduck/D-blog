@@ -9,11 +9,14 @@ import { Seo } from '../components/Seo';
 import { SearchField } from '../components/SearchField';
 import { useModalOverlay } from '../hooks/useModalOverlay';
 import { coverTemplates as templates, defaultTemplate, type CoverTemplate } from '../config/coverTemplates';
-import { COVER_RATIOS, DEFAULT_TEXT_SHADOW } from './cover/coverConstants';
-import { getCanvasSize, getExportFilename } from './cover/coverLayout';
+import {
+  COVER_RATIOS, DEFAULT_TEXT_SHADOW, MAX_BACKGROUND_SCALE, MAX_EXPORT_SCALE,
+  MIN_BACKGROUND_SCALE, MIN_EXPORT_SCALE
+} from './cover/coverConstants';
+import { clamp, getCanvasSize, getExportFilename } from './cover/coverLayout';
 import { loadFontFile, loadImageFile } from './cover/coverFiles';
 import { renderCover } from './cover/coverRenderer';
-import type { LayoutMode, ShadowConfig, TextAlign } from './cover/coverTypes';
+import type { BackgroundFit, LayoutMode, ShadowConfig, TextAlign } from './cover/coverTypes';
 
 const DEFAULT_ICON_SOURCE = '/logo.png';
 
@@ -73,6 +76,13 @@ export const CoverGenerator: React.FC = () => {
   const [bgImageScale, setBgImageScale] = useState(1);
   const [bgBlur, setBgBlur] = useState(0);
   const [bgOpacity, setBgOpacity] = useState(100);
+  const [bgFit, setBgFit] = useState<BackgroundFit>('cover');
+  const [bgFlipX, setBgFlipX] = useState(false);
+  const [bgFlipY, setBgFlipY] = useState(false);
+  const [bgFileName, setBgFileName] = useState<string | null>(null);
+  const [bgDragActive, setBgDragActive] = useState(false);
+  const [transparentBackground, setTransparentBackground] = useState(false);
+  const [jpegQuality, setJpegQuality] = useState(92);
   const [isDragging, setIsDragging] = useState(false);
   const dragStateRef = useRef({ pointerId: -1, startX: 0, startY: 0, imageX: 0, imageY: 0 });
 
@@ -178,6 +188,9 @@ export const CoverGenerator: React.FC = () => {
     setBgImageY(0);
     setBgBlur(0);
     setBgOpacity(100);
+    setBgFit('cover');
+    setBgFlipX(false);
+    setBgFlipY(false);
   }, []);
 
   const swapMainTexts = useCallback(() => {
@@ -219,7 +232,10 @@ export const CoverGenerator: React.FC = () => {
     setLayoutMode('icon-split');
     setTextAlign('center');
     setBgImage(null);
+    setBgFileName(null);
     resetBackgroundImageControls();
+    setTransparentBackground(false);
+    setJpegQuality(92);
     setShowIcon(true);
     setCustomIcon(DEFAULT_ICON_SOURCE);
     setIconifyIconName(null);
@@ -255,23 +271,48 @@ export const CoverGenerator: React.FC = () => {
 
 
 
-  const handleBgImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.currentTarget;
+  const handleBgImageFile = useCallback(async (file: File) => {
     try {
-      const file = input.files?.[0];
-      if (!file) return;
       const image = await loadImageFile(file, 'background');
       setBgImage(image);
+      setBgFileName(file.name);
       setBgImageScale(1);
       setBgImageX(0);
       setBgImageY(0);
+      setBgBlur(0);
+      setBgOpacity(100);
+      setBgFit('cover');
+      setBgFlipX(false);
+      setBgFlipY(false);
       setFeedback({ kind: 'success', message: '背景图片已加载' });
     } catch (error) {
       setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '背景图片加载失败' });
-    } finally {
-      input.value = '';
     }
-  }, [canvasSize]);
+  }, []);
+
+  const handleBgImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
+    const file = input.files?.[0];
+    if (file) await handleBgImageFile(file);
+    input.value = '';
+  }, [handleBgImageFile]);
+
+  const handleBgDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setBgDragActive(true);
+  }, []);
+
+  const handleBgDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setBgDragActive(false);
+  }, []);
+
+  const handleBgDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setBgDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await handleBgImageFile(file);
+  }, [handleBgImageFile]);
 
   const handleIconUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget;
@@ -405,8 +446,16 @@ export const CoverGenerator: React.FC = () => {
     if (!bgImage || dragStateRef.current.pointerId !== e.pointerId) return;
     const rect = e.currentTarget.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-    setBgImageX(dragStateRef.current.imageX + (e.clientX - dragStateRef.current.startX) * canvasSize.width / rect.width);
-    setBgImageY(dragStateRef.current.imageY + (e.clientY - dragStateRef.current.startY) * canvasSize.height / rect.height);
+    setBgImageX(clamp(
+      dragStateRef.current.imageX + (e.clientX - dragStateRef.current.startX) * canvasSize.width / rect.width,
+      -canvasSize.width,
+      canvasSize.width
+    ));
+    setBgImageY(clamp(
+      dragStateRef.current.imageY + (e.clientY - dragStateRef.current.startY) * canvasSize.height / rect.height,
+      -canvasSize.height,
+      canvasSize.height
+    ));
   }, [bgImage, canvasSize.height, canvasSize.width]);
 
   const handleCanvasPointerEnd = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -420,7 +469,7 @@ export const CoverGenerator: React.FC = () => {
     if (!bgImage) return;
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setBgImageScale(prev => Math.max(0.1, Math.min(prev * delta, 10)));
+    setBgImageScale(prev => Math.max(MIN_BACKGROUND_SCALE, Math.min(prev * delta, MAX_BACKGROUND_SCALE)));
   }, [bgImage]);
 
   const generateCover = useCallback(async () => {
@@ -461,8 +510,12 @@ export const CoverGenerator: React.FC = () => {
           y: bgImageY,
           scale: bgImageScale,
           blur: bgBlur,
-          opacity: bgOpacity
+          opacity: bgOpacity,
+          fit: bgFit,
+          flipX: bgFlipX,
+          flipY: bgFlipY
         } : null,
+        transparentBackground: exportFormat === 'png' && transparentBackground,
         overlay: {
           enabled: overlayEnabled,
           blur: overlayBlur,
@@ -502,12 +555,12 @@ export const CoverGenerator: React.FC = () => {
       if (renderId === renderIdRef.current) setIsGenerating(false);
     }
   }, [
-    autoTextColor, bgBlur, bgImage, bgImageScale, bgImageX, bgImageY, bgOpacity,
-    canvasSize, cornerColor, cornerOpacity, customFont, customIcon, fontSize, fontWeight,
+    autoTextColor, bgBlur, bgFit, bgFlipX, bgFlipY, bgImage, bgImageScale, bgImageX, bgImageY, bgOpacity,
+    canvasSize, cornerColor, cornerOpacity, customFont, customIcon, exportFormat, fontSize, fontWeight,
     iconBgEnabled, iconBorderRadius, iconSize, layoutMode, leftText, overlayBlur,
     overlayColor, overlayEnabled, overlayOpacity, rightText, selectedTemplate,
     separatorColor, separatorOpacity, showCorners, showIcon, showSeparator, spacing,
-    subFontSize, subSpacing, subText, textAlign, textColor, textShadow, textStroke
+    subFontSize, subSpacing, subText, textAlign, textColor, textShadow, textStroke, transparentBackground
   ]);
 
   const canvasToBlob = useCallback((canvas: HTMLCanvasElement, type: string, quality?: number) => (
@@ -531,10 +584,14 @@ export const CoverGenerator: React.FC = () => {
       if (!outputCtx) throw new Error('浏览器无法创建导出画布');
       outputCtx.imageSmoothingEnabled = true;
       outputCtx.imageSmoothingQuality = 'high';
+      if (exportFormat === 'jpeg' && transparentBackground) {
+        outputCtx.fillStyle = selectedTemplate.id === 'white' ? '#ffffff' : '#000000';
+        outputCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+      }
       outputCtx.drawImage(canvas, 0, 0, outputCanvas.width, outputCanvas.height);
 
       const mimeType = exportFormat === 'jpeg' ? 'image/jpeg' : 'image/png';
-      const blob = await canvasToBlob(outputCanvas, mimeType, exportFormat === 'jpeg' ? 0.92 : undefined);
+      const blob = await canvasToBlob(outputCanvas, mimeType, exportFormat === 'jpeg' ? jpegQuality / 100 : undefined);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = getExportFilename(exportFilename, exportFormat, exportScale);
@@ -547,7 +604,7 @@ export const CoverGenerator: React.FC = () => {
     } catch (error) {
       setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '下载封面失败' });
     }
-  }, [canvasSize.height, canvasSize.width, canvasToBlob, exportFilename, exportFormat, exportScale, isGenerating]);
+  }, [canvasSize.height, canvasSize.width, canvasToBlob, exportFilename, exportFormat, exportScale, isGenerating, jpegQuality, selectedTemplate, transparentBackground]);
 
   const copyToClipboard = useCallback(async () => {
     const canvas = canvasRef.current;
@@ -777,12 +834,20 @@ export const CoverGenerator: React.FC = () => {
                           </button>
                         ))}
                       </div>
-                      <div className="rounded-surface border border-dashed border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-700 dark:bg-zinc-800/60">
-                        <p className="mb-3 text-xs leading-6 text-zinc-500 dark:text-zinc-400">背景模板固定保留现有两种：<strong>纯黑</strong> 与 <strong>纯白</strong>。你仍可叠加自定义背景图片增强表现。</p>
+                      <div
+                        className={`rounded-surface border border-dashed p-3 transition-colors ${bgDragActive
+                          ? 'border-ink bg-ink/5 dark:border-white dark:bg-white/10'
+                          : 'border-zinc-200 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-800/60'}`}
+                        onDragOver={handleBgDragOver}
+                        onDragLeave={handleBgDragLeave}
+                        onDrop={handleBgDrop}
+                      >
+                        <p className="mb-3 text-xs leading-6 text-zinc-500 dark:text-zinc-400">背景模板固定保留现有两种：<strong>纯黑</strong> 与 <strong>纯白</strong>。自定义图片会叠加在底色上，可在白底下调节透明度。</p>
                         <input ref={bgImageInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleBgImageUpload} className="hidden" />
-                        <button onClick={() => bgImageInputRef.current?.click()} className={dashedBtnClass + ' w-full'}>
-                          <Upload size={14} />上传自定义背景图片
+                        <button type="button" onClick={() => bgImageInputRef.current?.click()} className={dashedBtnClass + ' w-full'}>
+                          <Upload size={14} />{bgDragActive ? '松开即可导入' : '上传或拖入背景图片'}
                         </button>
+                        <p className="mt-2 text-center text-[11px] text-zinc-400">支持 PNG、JPEG、WebP，最大 10MB</p>
                       </div>
                     </div>
                   )}
@@ -1023,20 +1088,61 @@ export const CoverGenerator: React.FC = () => {
                   <div className="p-5">
                     <SectionHeader icon={<ImageIcon size={18} className="text-ink dark:text-white" />} title="背景图片" sectionKey="bg-image" collapsed={isCollapsed("bg-image")} onToggle={toggleSection} />
                     {!isCollapsed('bg-image') && (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
+                        {bgFileName && (
+                          <div className="flex items-center gap-3 rounded-control bg-zinc-50 p-2.5 dark:bg-zinc-800">
+                            <div className="h-12 w-16 shrink-0 overflow-hidden rounded-micro bg-zinc-200 dark:bg-zinc-700">
+                              {bgImage && <img src={bgImage.src} alt="背景图片缩略图" className="h-full w-full object-cover" />}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs font-semibold text-ink dark:text-white">{bgFileName}</p>
+                              <p className="mt-1 text-[11px] text-zinc-400">{bgImage ? `${bgImage.naturalWidth} × ${bgImage.naturalHeight}px` : '已加载'} · 可继续调整</p>
+                            </div>
+                            <button type="button" onClick={() => bgImageInputRef.current?.click()} className="rounded-control px-2 py-1 text-xs font-semibold text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700">替换</button>
+                          </div>
+                        )}
                         <div>
                           <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                            <span>模糊</span><span className="tabular-nums">{bgBlur}px</span>
+                            <span>缩放</span><span className="tabular-nums">{bgImageScale.toFixed(2)}x</span>
                           </label>
+                          <input type="range" min={MIN_BACKGROUND_SCALE} max={MAX_BACKGROUND_SCALE} step="0.05" value={bgImageScale} onChange={(e) => setBgImageScale(Number(e.target.value))} className={rangeClass} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400"><span>水平位置</span><span>{bgImageX}px</span></label>
+                            <input type="range" min={-canvasSize.width} max={canvasSize.width} value={bgImageX} onChange={(e) => setBgImageX(Number(e.target.value))} className={rangeClass} />
+                          </div>
+                          <div>
+                            <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400"><span>垂直位置</span><span>{bgImageY}px</span></label>
+                            <input type="range" min={-canvasSize.height} max={canvasSize.height} value={bgImageY} onChange={(e) => setBgImageY(Number(e.target.value))} className={rangeClass} />
+                          </div>
+                        </div>
+                        <div>
+                          <span className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">图片适配</span>
+                          <div className="grid grid-cols-2 gap-2">
+                            {([{ value: 'cover' as BackgroundFit, label: '铺满裁剪' }, { value: 'contain' as BackgroundFit, label: '完整显示' }]).map(option => (
+                              <button type="button" key={option.value} onClick={() => { setBgFit(option.value); setBgImageX(0); setBgImageY(0); }} aria-pressed={bgFit === option.value} className={`rounded-control border-2 px-3 py-2 text-xs font-semibold transition-colors ${bgFit === option.value ? 'border-ink bg-ink/5 text-ink dark:border-white dark:bg-white/10 dark:text-white' : 'border-zinc-200 text-zinc-500 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-400'}`}>{option.label}</button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button type="button" onClick={() => setBgFlipX(value => !value)} aria-pressed={bgFlipX} className="rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">水平翻转 {bgFlipX ? '✓' : ''}</button>
+                          <button type="button" onClick={() => setBgFlipY(value => !value)} aria-pressed={bgFlipY} className="rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">垂直翻转 {bgFlipY ? '✓' : ''}</button>
+                        </div>
+                        <button type="button" onClick={() => setSelectedTemplate(templates.find(template => template.id === 'white') || selectedTemplate)} className="w-full rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">切换到纯白底</button>
+                        <div>
+                          <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400"><span>模糊</span><span className="tabular-nums">{bgBlur}px</span></label>
                           <input type="range" min="0" max="20" value={bgBlur} onChange={(e) => setBgBlur(Number(e.target.value))} className={rangeClass} />
                         </div>
                         <div>
-                          <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                            <span>不透明度</span><span className="tabular-nums">{bgOpacity}%</span>
-                          </label>
+                          <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400"><span>不透明度</span><span className="tabular-nums">{bgOpacity}%</span></label>
                           <input type="range" min="0" max="100" value={bgOpacity} onChange={(e) => setBgOpacity(Number(e.target.value))} className={rangeClass} />
                         </div>
-                        <button onClick={() => setBgImage(null)} className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-zinc-500 bg-paper px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink hover:bg-zinc-100 active:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white dark:hover:border-white dark:hover:bg-zinc-800 dark:active:bg-zinc-800">
+                        <div className="grid grid-cols-2 gap-2">
+                          <button type="button" onClick={() => { setBgImageX(0); setBgImageY(0); }} className="rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">居中</button>
+                          <button type="button" onClick={resetBackgroundImageControls} className="rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">重置参数</button>
+                        </div>
+                        <button type="button" onClick={() => { setBgImage(null); setBgFileName(null); resetBackgroundImageControls(); }} className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-zinc-500 bg-paper px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink hover:bg-zinc-100 active:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white dark:hover:border-white dark:hover:bg-zinc-800 dark:active:bg-zinc-800">
                           <X size={14} />移除背景图片
                         </button>
                       </div>
@@ -1220,9 +1326,23 @@ export const CoverGenerator: React.FC = () => {
                         <span>导出倍率</span>
                         <span className="tabular-nums text-ink dark:text-white">{exportScale}x</span>
                       </label>
-                      <input id="cover-export-scale" type="range" min="1" max="3" step="0.5" value={exportScale} onChange={(e) => setExportScale(Number(e.target.value))} aria-valuetext={`${exportScale} 倍`} className={rangeClass} />
+                      <input id="cover-export-scale" type="range" min={MIN_EXPORT_SCALE} max={MAX_EXPORT_SCALE} step="0.5" value={exportScale} onChange={(e) => setExportScale(Number(e.target.value))} aria-valuetext={`${exportScale} 倍`} className={rangeClass} />
                       <p className="mt-1 text-xs text-zinc-400">下载时将输出为 {Math.round(canvasSize.width * exportScale)} × {Math.round(canvasSize.height * exportScale)} px</p>
                     </div>
+                    <div>
+                      <span id="cover-background-label" className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">导出背景</span>
+                      <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="cover-background-label">
+                        <button type="button" onClick={() => setTransparentBackground(false)} aria-pressed={!transparentBackground} className={`rounded-control border-2 px-3 py-2 text-xs font-semibold ${!transparentBackground ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink' : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'}`}>跟随模板底色</button>
+                        <button type="button" onClick={() => { if (exportFormat === 'png') setTransparentBackground(true); }} disabled={exportFormat !== 'png'} aria-pressed={transparentBackground && exportFormat === 'png'} className={`rounded-control border-2 px-3 py-2 text-xs font-semibold ${transparentBackground && exportFormat === 'png' ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink' : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'} disabled:cursor-not-allowed disabled:opacity-40`}>透明背景（PNG）</button>
+                      </div>
+                      <p className="mt-1 text-xs text-zinc-400">透明背景会在预览中显示棋盘格，JPEG 始终使用模板底色。</p>
+                    </div>
+                    {exportFormat === 'jpeg' && (
+                      <div>
+                        <label htmlFor="cover-jpeg-quality" className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400"><span>JPEG 质量</span><span className="tabular-nums">{jpegQuality}%</span></label>
+                        <input id="cover-jpeg-quality" type="range" min="60" max="100" value={jpegQuality} onChange={(e) => setJpegQuality(Number(e.target.value))} className={rangeClass} />
+                      </div>
+                    )}
                     <div>
                       <label htmlFor="cover-export-filename" className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">文件名</label>
                       <input id="cover-export-filename" type="text" value={exportFilename} onChange={(e) => setExportFilename(e.target.value)} className={inputClass} placeholder="cover" />
@@ -1306,7 +1426,9 @@ export const CoverGenerator: React.FC = () => {
             </div>
 
             <div className="overflow-hidden rounded-surface border border-zinc-200 bg-zinc-100 p-2 dark:border-zinc-700 dark:bg-zinc-800 md:p-3">
-              <div className="overflow-hidden rounded-media border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+              <div
+                className={`overflow-hidden rounded-media border border-zinc-200 dark:border-zinc-700 ${transparentBackground && exportFormat === 'png' ? 'bg-[length:16px_16px] bg-[linear-gradient(45deg,#e4e4e7_25%,transparent_25%),linear-gradient(-45deg,#e4e4e7_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e4e4e7_75%),linear-gradient(-45deg,transparent_75%,#e4e4e7_75%)] bg-[position:0_0,0_8px,8px_-8px,-8px_0] bg-zinc-50 dark:bg-zinc-900 dark:bg-[linear-gradient(45deg,#3f3f46_25%,transparent_25%),linear-gradient(-45deg,#3f3f46_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#3f3f46_75%),linear-gradient(-45deg,transparent_75%,#3f3f46_75%)]' : 'bg-zinc-50 dark:bg-zinc-900'}`}
+              >
                 <canvas
                   ref={canvasRef}
                   width={canvasSize.width}

@@ -5,6 +5,7 @@ export type { CoverTemplate } from '../../config/coverTemplates';
 export type LayoutMode = 'icon-split' | 'stacked' | 'icon-only' | 'text-only';
 export type TextAlign = 'left' | 'center' | 'right';
 export type ExportFormat = 'png' | 'jpeg';
+export type BackgroundFit = 'cover' | 'contain';
 
 export interface CanvasSize {
   width: number;
@@ -50,6 +51,9 @@ export interface BackgroundImageConfig {
   scale: number;
   blur: number;
   opacity: number;
+  fit: BackgroundFit;
+  flipX: boolean;
+  flipY: boolean;
 }
 
 export interface IconConfig {
@@ -88,6 +92,7 @@ export interface CoverRenderOptions {
   textShadow: ShadowConfig;
   textStroke: StrokeConfig;
   backgroundImage?: BackgroundImageConfig | null;
+  transparentBackground?: boolean;
   overlay: OverlayConfig;
   icon: IconConfig;
   decorations: DecorationConfig;

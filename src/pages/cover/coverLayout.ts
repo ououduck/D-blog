@@ -1,5 +1,5 @@
 import { BASE_CANVAS_WIDTH, CANVAS_SAFE_MARGIN } from './coverConstants';
-import type { CanvasSize, CoverRatio, FittedText, LayoutMode, Point } from './coverTypes';
+import type { BackgroundFit, CanvasSize, CoverRatio, FittedText, LayoutMode, Point } from './coverTypes';
 
 export type TextMeasure = (text: string, fontSize: number) => number;
 export interface FitTextOptions {
@@ -30,9 +30,15 @@ export function scalePoint(point: Point, from: CanvasSize, to: CanvasSize): Poin
   return { x: point.x * to.width / from.width, y: point.y * to.height / from.height };
 }
 
-export function getCoverImageScale(image: CanvasSize, canvas: CanvasSize): number {
+export function getImageFitScale(image: CanvasSize, canvas: CanvasSize, fit: BackgroundFit = 'cover'): number {
   if (image.width <= 0 || image.height <= 0 || canvas.width <= 0 || canvas.height <= 0) return 1;
-  return Math.max(canvas.width / image.width, canvas.height / image.height);
+  return fit === 'contain'
+    ? Math.min(canvas.width / image.width, canvas.height / image.height)
+    : Math.max(canvas.width / image.width, canvas.height / image.height);
+}
+
+export function getCoverImageScale(image: CanvasSize, canvas: CanvasSize): number {
+  return getImageFitScale(image, canvas, 'cover');
 }
 
 export function normalizeFontWeight(weight: number): number {
