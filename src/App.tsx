@@ -4,10 +4,10 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { flushSync } from 'react-dom';
 import { Layout } from './components/Layout';
+import { Home } from './pages/Home';
 import { siteConfig } from '@config/site.config';
 import { pageLoaders } from './utils/preload';
 
-const Home = lazy(pageLoaders['/']);
 const Post = lazy(() => import('./pages/Post').then((m) => ({ default: m.Post })));
 const About = lazy(pageLoaders['/about']);
 const ArchivePage = lazy(pageLoaders['/archive']);

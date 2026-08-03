@@ -17,6 +17,10 @@ export interface AdItem {
   link: string;
   /** 图片 alt 文本 */
   alt: string;
+  /** 图片固有宽度，用于在加载前预留布局空间 */
+  width: number;
+  /** 图片固有高度，用于在加载前预留布局空间 */
+  height: number;
 }
 
 /**
@@ -28,6 +32,8 @@ export const adsConfig: AdItem[] = [
     title: '腾讯云广告',
     image: '/ads-img/tencent-cloud.png',
     link: 'https://curl.qcloud.com/fBu6YgLR',
-    alt: '腾讯云广告'
+    alt: '腾讯云广告',
+    width: 984,
+    height: 168
   }
 ];

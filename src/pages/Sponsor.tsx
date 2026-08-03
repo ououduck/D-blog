@@ -129,6 +129,8 @@ export const Sponsor: React.FC = () => {
                 <img
                   src={ad.image}
                   alt={ad.alt}
+                  width={ad.width}
+                  height={ad.height}
                   loading="lazy"
                   decoding="async"
                   className="h-auto w-full"

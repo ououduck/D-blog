@@ -1,6 +1,8 @@
+import generatedPosts from '../../generated/posts.json';
 import { Post, PostMetadata } from '../types';
 
-let postsDataCache: PostMetadata[] | null = null;
+const initialPosts = generatedPosts as PostMetadata[];
+let postsDataCache: PostMetadata[] | null = initialPosts;
 let postsSearchIndexCache: SearchIndexEntry[] | null = null;
 const SEARCH_CACHE_LIMIT = 80;
 const searchResultsCache = new Map<string, PostSearchResult[]>();
@@ -110,6 +112,8 @@ const getFieldMatchScore = (value: string, terms: string[], fullQuery: string, w
 
   return score;
 };
+
+export const getInitialPosts = (): PostMetadata[] => initialPosts;
 
 export const getPosts = async (): Promise<PostMetadata[]> => {
   return loadPostsData();

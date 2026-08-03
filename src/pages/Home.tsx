@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Calendar, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
-import { getPosts } from '@/services/posts';
+import { getInitialPosts, getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
@@ -18,6 +18,7 @@ import { preloadPage } from '@/utils/preload';
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
 
 const ALL_CATEGORY = '全部';
+const initialPosts = getInitialPosts();
 
 const listSwapTransition = {
   duration: 0.2,
@@ -42,6 +43,60 @@ const gridExitVariants = {
     transition: { duration: 0.14, ease: easeSmooth },
   },
 } as const;
+
+const getCategories = (posts: PostMetadata[]) => Array.from(new Set(posts.map((post) => post.category)));
+
+const SkeletonBlock: React.FC<{ className?: string }> = ({ className }) => (
+  <div className={`animate-pulse bg-zinc-200 dark:bg-zinc-800 ${className || ''}`} />
+);
+
+const FeaturedPostSkeleton = () => (
+  <div aria-hidden="true" className="col-span-full overflow-hidden rounded-surface border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="md:grid md:min-h-80 md:grid-cols-5">
+      <SkeletonBlock className="aspect-[16/9] md:col-span-3 md:aspect-auto" />
+      <div className="flex flex-col p-5 md:col-span-2 md:p-7">
+        <div className="mb-4 flex items-center gap-3">
+          <SkeletonBlock className="h-3 w-16" />
+          <SkeletonBlock className="h-3 w-12" />
+        </div>
+        <SkeletonBlock className="mb-3 h-8 w-4/5" />
+        <SkeletonBlock className="mb-2 h-3 w-full" />
+        <SkeletonBlock className="mb-4 h-3 w-3/4" />
+        <div className="mt-auto flex items-center gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+          <SkeletonBlock className="h-3 w-20" />
+          <SkeletonBlock className="h-3 w-16" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const PostCardSkeleton = () => (
+  <div aria-hidden="true" className="overflow-hidden rounded-surface border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+    <SkeletonBlock className="aspect-[16/10]" />
+    <div className="space-y-3 p-4 md:p-5">
+      <SkeletonBlock className="h-3 w-20" />
+      <SkeletonBlock className="h-4 w-4/5" />
+      <SkeletonBlock className="h-3 w-full" />
+      <SkeletonBlock className="h-3 w-2/3" />
+      <div className="mt-4 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+        <SkeletonBlock className="h-3 w-28" />
+      </div>
+    </div>
+  </div>
+);
+
+const LoadingGrid: React.FC<{ isMobile: boolean; label: string }> = ({ isMobile, label }) => {
+  const regularSkeletonCount = isMobile ? 4 : 8;
+
+  return (
+    <motion.div variants={fadeInUp} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+      <LoadingStatus label={label} className="col-span-full" />
+      <FeaturedPostSkeleton />
+      {Array.from({ length: regularSkeletonCount }).map((_, index) => <PostCardSkeleton key={index} />)}
+    </motion.div>
+  );
+};
 
 const sortPosts = (posts: PostMetadata[], sortOrder: 'newest' | 'oldest') =>
   posts.slice().sort((a, b) => {
@@ -158,7 +213,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
         <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 md:grid md:grid-cols-5">
           <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:col-span-3 md:aspect-auto md:min-h-80" aria-label={`阅读文章：${post.title}`}>
             {post.coverImage ? (
-              <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
+              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
             ) : (
               <div className="flex h-full min-h-56 items-center justify-center bg-zinc-100 dark:bg-zinc-800">
                 <Sparkles className="h-12 w-12 text-zinc-300 dark:text-zinc-600" />
@@ -293,11 +348,11 @@ export const Home = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryFromUrl = searchParams.get('category');
   const queryFromUrl = searchParams.get('q') || '';
-  const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [allPosts, setAllPosts] = useState<PostMetadata[]>(initialPosts);
+  const [categories, setCategories] = useState<string[]>(() => getCategories(initialPosts));
   const [selectedCategory, setSelectedCategory] = useState(() => categoryFromUrl || ALL_CATEGORY);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialPosts.length === 0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -314,7 +369,10 @@ export const Home = () => {
     let cancelled = false;
 
     const loadHomeData = async () => {
-      setLoading(true);
+      if (loadAttempt > 0 || allPosts.length === 0) {
+        setLoading(true);
+      }
+
       try {
         const posts = await getPosts();
         if (cancelled) {
@@ -322,7 +380,7 @@ export const Home = () => {
         }
 
         setAllPosts(posts);
-        setCategories(Array.from(new Set(posts.map((post) => post.category))));
+        setCategories(getCategories(posts));
         setLoadError(null);
       } catch (error) {
         console.error('Failed to load home data:', error);
@@ -495,20 +553,7 @@ export const Home = () => {
         </div>
 
         {loading || isSearching ? (
-          <motion.div variants={fadeInUp} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
-            <LoadingStatus label={isSearching ? '正在搜索文章' : '正在加载文章列表'} className="col-span-full" />
-            {Array.from({ length: postsPerPage }).map((_, index) => (
-              <div key={index} aria-hidden="true" className="animate-pulse overflow-hidden rounded-surface border border-zinc-200 bg-white dark:bg-zinc-900 dark:border-zinc-800">
-                <div className="aspect-[16/10] bg-zinc-200 dark:bg-zinc-800" />
-                <div className="space-y-3 p-4">
-                  <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-800" />
-                  <div className="h-4 w-4/5 bg-zinc-200 dark:bg-zinc-800" />
-                  <div className="h-3 w-full bg-zinc-200 dark:bg-zinc-800" />
-                  <div className="h-3 w-2/3 bg-zinc-200 dark:bg-zinc-800" />
-                </div>
-              </div>
-            ))}
-          </motion.div>
+          <LoadingGrid isMobile={isMobile} label={isSearching ? '正在搜索文章' : '正在加载文章列表'} />
         ) : loadError || searchError ? (
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={listSwapTransition}>
             <ContentStatus
