@@ -10,6 +10,7 @@ import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { SlideModal } from '@/components/SlideModal';
+import { Surface } from '@/components/ui/Surface';
 import { easeOut, fadeInUp, staggerContainer } from '@/utils/motion';
 import {
   copyText,
@@ -158,7 +159,7 @@ export const Friends = () => {
             <span className="text-base font-semibold text-zinc-950 dark:text-white">申请友链</span>
             <p className="mt-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">填写信息 → 下载并复制 JSON → 添加附件发送邮件</p>
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold">
-              <span className="inline-flex items-center gap-1.5 rounded-control border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+              <span className="inline-flex items-center gap-1.5 rounded-control border border-zinc-300 bg-paper px-2.5 py-1.5 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                 收件邮箱：{siteConfig.friendsPage.applicationEmail}
               </span>
               <span className="text-zinc-600 dark:text-zinc-400">主题：{FRIEND_LINK_EMAIL_SUBJECT}</span>
@@ -186,28 +187,28 @@ export const Friends = () => {
             >
               <div className="border-t border-zinc-200 pb-5 pt-5 dark:border-zinc-800 sm:pb-6 sm:pt-6">
                 <div className="space-y-6">
-                  <section className="rounded-surface border border-amber-300 bg-amber-50/80 p-4 dark:border-amber-700/80 dark:bg-amber-950/30 sm:p-5" aria-labelledby="friend-link-application-guide">
+                  <Surface variant="panel" className="p-4 sm:p-5" aria-labelledby="friend-link-application-guide">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <h2 id="friend-link-application-guide" className="text-base font-bold text-amber-950 dark:text-amber-100">申请说明</h2>
-                        <p className="mt-1 text-sm leading-relaxed text-amber-900/90 dark:text-amber-200/90">请按以下步骤完成申请，邮件发送前请确认 JSON 文件已作为附件添加。</p>
+                        <h2 id="friend-link-application-guide" className="text-base font-bold text-zinc-950 dark:text-zinc-100">申请说明</h2>
+                        <p className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">请按以下步骤完成申请，邮件发送前请确认 JSON 文件已作为附件添加。</p>
                       </div>
-                      <div className="flex-shrink-0 rounded-control border-2 border-amber-500 bg-white px-3 py-2 text-left dark:border-amber-500 dark:bg-zinc-950">
-                        <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">收件邮箱</div>
-                        <div className="mt-0.5 break-all font-mono text-sm font-bold text-amber-950 dark:text-amber-100">{siteConfig.friendsPage.applicationEmail}</div>
+                      <div className="flex-shrink-0 rounded-control border border-zinc-400 bg-paper px-3 py-2 text-left dark:border-zinc-600 dark:bg-zinc-950">
+                        <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">收件邮箱</div>
+                        <div className="mt-0.5 break-all font-mono text-sm font-bold text-zinc-950 dark:text-zinc-100">{siteConfig.friendsPage.applicationEmail}</div>
                       </div>
                     </div>
-                    <ol className="mt-4 grid gap-3 text-sm leading-relaxed text-amber-950 dark:text-amber-100 sm:grid-cols-2">
-                      <li className="flex gap-3"><span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white">1</span><span>填写站点名称、简介、头像地址、站点地址，以及纯英文文件名。</span></li>
-                      <li className="flex gap-3"><span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white">2</span><span>点击“完成并生成 JSON”，浏览器会下载文件并自动复制完整 JSON。</span></li>
-                      <li className="flex gap-3"><span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white">3</span><span>在结果弹窗点击“前往发送”，邮件主题必须是 <strong>D-blog友链申请</strong>，正文为完整 JSON。</span></li>
-                      <li className="flex gap-3"><span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white">4</span><span>在邮件客户端中手动添加刚下载的 <strong>.json</strong> 文件作为附件后发送。</span></li>
+                    <ol className="mt-5 grid gap-4 text-sm leading-relaxed text-zinc-800 dark:text-zinc-200 sm:grid-cols-2">
+                      <li className="flex gap-3"><span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-950">1</span><span>填写站点名称、简介、头像地址、站点地址，以及纯英文文件名。</span></li>
+                      <li className="flex gap-3"><span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-950">2</span><span>点击“完成并生成 JSON”，浏览器会下载文件并自动复制完整 JSON。</span></li>
+                      <li className="flex gap-3"><span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-950">3</span><span>在结果弹窗点击“前往发送”，邮件主题必须是 <strong>D-blog友链申请</strong>，正文为完整 JSON。</span></li>
+                      <li className="flex gap-3"><span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-950">4</span><span>在邮件客户端中手动添加刚下载的 <strong>.json</strong> 文件作为附件后发送。</span></li>
                     </ol>
-                    <p className="mt-4 border-t border-amber-300/80 pt-3 text-xs leading-relaxed text-amber-900/90 dark:border-amber-700/80 dark:text-amber-200/90">提交前请先添加本站友链。我们会不定期清理无法访问、头像异常或内容不合适的站点。</p>
-                  </section>
+                    <p className="mt-5 border-t border-zinc-200 pt-3 text-xs leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">提交前请先添加本站友链。我们会不定期清理无法访问、头像异常或内容不合适的站点。</p>
+                  </Surface>
 
-                  <section className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
-                    <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">本站信息（提交前请先添加本站友链）</h2>
+                  <Surface variant="card" className="p-4 sm:p-5" aria-labelledby="friend-link-site-info">
+                    <h2 id="friend-link-site-info" className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">本站信息（提交前请先添加本站友链）</h2>
                     <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
                       <ProgressiveImage src={siteInfo.avatar} alt={siteInfo.name} wrapperClassName="h-14 w-14 flex-shrink-0 overflow-hidden rounded-full border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-void" className="h-14 w-14 object-cover object-center" />
                       <div className="w-full flex-1 space-y-1">
@@ -217,7 +218,7 @@ export const Friends = () => {
                         <div className="break-all font-mono text-xs leading-relaxed text-zinc-700 dark:text-zinc-400 select-all">LOGO：{siteInfo.avatar}</div>
                       </div>
                     </div>
-                  </section>
+                  </Surface>
 
                   <form noValidate onSubmit={handleCompleteApplication} className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
                     <div className="mb-4">
@@ -238,7 +239,7 @@ export const Friends = () => {
                             value={applicationValues[field]}
                             onChange={(event) => handleApplicationFieldChange(field, event.target.value)}
                             placeholder={placeholder}
-                            className="w-full rounded-control border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-300"
+                            className="editorial-input"
                             aria-invalid={Boolean(applicationErrors[field])}
                             aria-describedby={applicationErrors[field] ? `${field}-error` : undefined}
                           />
@@ -311,7 +312,7 @@ export const Friends = () => {
               href={friend.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative block h-full rounded-surface border border-zinc-300 bg-white p-5 transition-colors duration-150 hover:border-ink dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-white"
+              className="group relative block h-full rounded-surface border border-zinc-300 bg-paper p-5 transition-colors duration-150 hover:border-ink dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-white"
             >
               <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:text-zinc-500">
                 <ExternalLink size={16} />
@@ -335,7 +336,7 @@ export const Friends = () => {
         {loading && <LoadingStatus label="正在加载友情链接" className="col-span-full" />}
         {loading &&
           Array.from({ length: 3 }).map((_, index) => (
-            <motion.div key={`skeleton-${index}`} aria-hidden="true" variants={itemVariants} className={`${shouldReduceMotion ? '' : 'animate-pulse '}rounded-surface border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900`}>
+            <motion.div key={`skeleton-${index}`} aria-hidden="true" variants={itemVariants} className={`${shouldReduceMotion ? '' : 'animate-pulse '}rounded-surface border border-zinc-200 bg-paper p-5 dark:border-zinc-800 dark:bg-zinc-900`}>
               <div className="flex items-start gap-4">
                 <div className="h-14 w-14 flex-shrink-0 rounded-full bg-zinc-100 dark:bg-zinc-800" />
                 <div className="flex-1 space-y-3">
