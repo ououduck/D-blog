@@ -28,11 +28,13 @@ const POSTS_IMG_MIME_TYPES: Record<string, string> = {
 
 const postsImgPublicPlugin = (): Plugin => {
   let outDir = 'dist';
+  let isBuild = false;
 
   return {
     name: 'posts-img-public-mapping',
     configResolved(config) {
       outDir = config.build.outDir;
+      isBuild = config.command === 'build';
     },
     configureServer(server: ViteDevServer) {
       server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
@@ -64,6 +66,12 @@ const postsImgPublicPlugin = (): Plugin => {
       });
     },
     closeBundle() {
+      // 仅在真正的构建（vite build）时把配图拷贝进产物目录；
+      // vitest 会以 dev server 方式加载本插件，并把 build.outDir 覆盖为
+      // 占位符 "dummy-non-existing-folder"，此时必须跳过，避免生成垃圾目录。
+      if (!isBuild) {
+        return;
+      }
       if (fs.existsSync(POSTS_IMG_SOURCE_DIR)) {
         fs.cpSync(POSTS_IMG_SOURCE_DIR, path.join(outDir, 'posts-img'), { recursive: true });
       }
