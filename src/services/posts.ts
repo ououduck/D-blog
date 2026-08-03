@@ -1,7 +1,10 @@
-import generatedPosts from '../../generated/posts.json';
 import { Post, PostMetadata } from '../types';
 
-const initialPosts = generatedPosts as PostMetadata[];
+const generatedPostModules = import.meta.glob<PostMetadata[]>('../../generated/posts.json', {
+  eager: true,
+  import: 'default'
+});
+const initialPosts = Object.values(generatedPostModules)[0] ?? [];
 let postsDataCache: PostMetadata[] | null = initialPosts;
 let postsSearchIndexCache: SearchIndexEntry[] | null = null;
 const SEARCH_CACHE_LIMIT = 80;
@@ -10,13 +13,7 @@ const searchResultsCache = new Map<string, PostSearchResult[]>();
 const postFiles = import.meta.glob('../../posts/*.md', { query: '?raw', import: 'default' });
 
 const loadPostsData = async (): Promise<PostMetadata[]> => {
-  if (postsDataCache) {
-    return postsDataCache;
-  }
-
-  const data = await import('../../generated/posts.json');
-  postsDataCache = data.default as PostMetadata[];
-  return postsDataCache;
+  return postsDataCache || initialPosts;
 };
 
 const loadPostsSearchData = async (): Promise<Array<PostMetadata & { searchText?: string }>> => {

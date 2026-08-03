@@ -87,7 +87,7 @@ const PostCardSkeleton = () => (
 );
 
 const LoadingGrid: React.FC<{ isMobile: boolean; label: string }> = ({ isMobile, label }) => {
-  const regularSkeletonCount = isMobile ? 4 : 8;
+  const regularSkeletonCount = isMobile ? 4 : 6;
 
   return (
     <motion.div variants={fadeInUp} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
