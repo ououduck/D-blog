@@ -25,6 +25,10 @@ type BlockCodeProps = {
   isBlock?: boolean;
 };
 
+type MarkdownImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+  previewSrc?: string;
+};
+
 type MarkdownPlugin = unknown;
 
 type MermaidRenderer = {
@@ -156,7 +160,9 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
       try {
         const ok = document.execCommand('copy');
         if (ok) markCopied();
-      } catch { /* ignore */ }
+      } catch {
+        // Clipboard fallback is best effort; the temporary textarea is still removed below.
+      }
       document.body.removeChild(textArea);
     }
   };
@@ -170,18 +176,14 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
 
   return (
     <div className="group relative my-5 md:my-7">
-      {/* Language badge */}
       {lang && (
         <span className="code-lang-badge">{getLangDisplayName(lang)}</span>
       )}
 
-      {/* Copy button */}
       <button
         type="button"
         onClick={handleCopy}
-        className={`absolute z-10 rounded-none border border-zinc-600 p-2 transition-colors active:scale-[.98] ${
-          lang ? 'right-3 top-3' : 'right-3 top-3'
-        } ${
+        className={`absolute right-3 top-3 z-10 rounded-none border border-zinc-600 p-2 transition-colors active:scale-[.98] ${
           copied
             ? 'bg-zinc-100 text-zinc-950'
             : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white md:opacity-0 md:group-hover:opacity-100'
@@ -192,7 +194,6 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
         {copied ? <Check size={16} /> : <Copy size={16} />}
       </button>
 
-      {/* Code block with optional collapse */}
       <div className="relative">
         <pre
           ref={preRef}
@@ -202,7 +203,6 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
           {childrenWithProps}
         </pre>
 
-        {/* Expand/collapse overlay */}
         {needsExpand && !isExpanded && (
           <button
             onClick={() => setIsExpanded(true)}
@@ -232,8 +232,8 @@ const MermaidBlock = ({ children, renderer }: { children: string; renderer: Merm
   const mermaidIdRef = useRef(`mermaid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`);
 
   useEffect(() => {
+    setSvg('');
     if (!renderer) {
-      setSvg('');
       return;
     }
 
@@ -246,7 +246,10 @@ const MermaidBlock = ({ children, renderer }: { children: string; renderer: Merm
           setSvg(renderedSvg);
         }
       } catch (error) {
-        console.error('Mermaid render error:', error);
+        if (!cancelled) {
+          console.error('Mermaid render error:', error);
+          setSvg('');
+        }
       }
     };
 
@@ -257,7 +260,7 @@ const MermaidBlock = ({ children, renderer }: { children: string; renderer: Merm
     };
   }, [children, renderer]);
 
-  if (!renderer && !svg) {
+  if (!svg) {
     return (
       <pre className="my-8 overflow-x-auto rounded-none border border-zinc-800 bg-[#0d0d0f] p-4 text-sm text-zinc-300">
         <code>{children}</code>
@@ -376,6 +379,15 @@ const createMarkdownComponents = (
       const safeHref = isSafeMarkdownHref(resolvedHref) ? resolvedHref : undefined;
 
       if (safeHref && isImageUrl(safeHref)) {
+        const imageChild = React.Children.toArray(children).find(
+          (child): child is React.ReactElement<MarkdownImageProps> =>
+            React.isValidElement(child) && typeof (child.props as Record<string, unknown>).src === 'string'
+        );
+
+        if (imageChild) {
+          return React.cloneElement(imageChild, { previewSrc: safeHref });
+        }
+
         const imgAlt = React.Children.toArray(children)
           .map((child) => {
             if (React.isValidElement(child) && (child.props as Record<string, unknown>).alt) {
@@ -402,13 +414,14 @@ const createMarkdownComponents = (
 
       return <a href={safeHref} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
     },
-    img: ({ src, alt, title, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+    img: ({ src, alt, title, previewSrc, ...props }: MarkdownImageProps) => {
       const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? src : resolvePostsImgPath(src)) : src;
+      const previewTarget = previewSrc || resolvedSrc || '';
       return (
         <figure className="group/myimage my-7 md:my-10">
           <button
             type="button"
-            onClick={() => onPreviewImage({ src: resolvedSrc || '', alt })}
+            onClick={() => onPreviewImage({ src: previewTarget, alt })}
             className="relative block w-full overflow-hidden rounded-media border border-zinc-300 bg-zinc-50 shadow-none transition-colors duration-200 hover:border-zinc-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-500 dark:focus-visible:outline-zinc-100"
             aria-label={alt ? `预览图片：${alt}` : '预览图片'}
           >
@@ -490,6 +503,7 @@ export const Post = () => {
 
     if (!id) {
       setPost(null);
+      setLoadError(null);
       setLoading(false);
       return () => {
         cancelled = true;
@@ -581,7 +595,17 @@ export const Post = () => {
         })());
       }
 
-      await Promise.all(tasks);
+      try {
+        await Promise.all(tasks);
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load markdown enhancements:', error);
+          setRemarkPlugins([remarkGfm]);
+          setRehypePlugins([]);
+          setMermaidRenderer(null);
+        }
+        return;
+      }
 
       if (cancelled) {
         return;
@@ -629,24 +653,28 @@ export const Post = () => {
     return () => window.clearTimeout(timeoutId);
   }, [headings, post?.content]);
 
-  // 加载相邻文章（上一篇/下一篇）
   useEffect(() => {
     if (!post) return;
     let cancelled = false;
 
-    getPosts().then((allPosts) => {
-      if (cancelled) return;
-      const currentIndex = allPosts.findIndex((p) => p.id === post.id);
-      setAdjacentPosts({
-        prev: currentIndex > 0 ? allPosts[currentIndex - 1] : null,
-        next: currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : null,
+    getPosts()
+      .then((allPosts) => {
+        if (cancelled) return;
+        const currentIndex = allPosts.findIndex((p) => p.id === post.id);
+        setAdjacentPosts({
+          prev: currentIndex > 0 ? allPosts[currentIndex - 1] : null,
+          next: currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : null,
+        });
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Failed to load adjacent posts:', error);
+        }
       });
-    });
 
     return () => { cancelled = true; };
   }, [post]);
 
-  // 键盘快捷键
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -891,7 +919,6 @@ export const Post = () => {
               <IssueSubscriptionCard />
             </div>
 
-            {/* 上一篇 / 下一篇导航 */}
             <nav aria-label="文章导航" className="mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8">
               <div className="grid gap-6 sm:grid-cols-2 sm:gap-10">
                 {adjacentPosts.prev ? (
@@ -924,7 +951,6 @@ export const Post = () => {
                 )}
               </div>
 
-              {/* 键盘快捷键提示 */}
               <div className="mt-5 hidden text-center md:block">
                 <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
                   快捷键：<kbd className="kbd">Alt</kbd> + <kbd className="kbd">←</kbd> 上一篇 · <kbd className="kbd">Alt</kbd> + <kbd className="kbd">→</kbd> 下一篇 · <kbd className="kbd">Esc</kbd> 关闭弹窗

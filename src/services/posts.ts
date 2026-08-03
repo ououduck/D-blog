@@ -115,10 +115,6 @@ export const getPosts = async (): Promise<PostMetadata[]> => {
   return loadPostsData();
 };
 
-export const preloadPosts = async (): Promise<void> => {
-  await loadPostsData();
-};
-
 export const getPostById = async (id: string): Promise<Post | undefined> => {
   const allPosts = await loadPostsData();
   const meta = allPosts.find((post) => post.id === id);
@@ -131,8 +127,9 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
   const loader = postFiles[relativePath];
 
   if (!loader) {
-    console.error(`Markdown file not found: ${relativePath}`);
-    return undefined;
+    const error = new Error(`Markdown file not found: ${relativePath}`);
+    console.error(error);
+    throw error;
   }
 
   try {
@@ -144,7 +141,7 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
     };
   } catch (error) {
     console.error(error);
-    return undefined;
+    throw error;
   }
 };
 
@@ -346,14 +343,3 @@ export const searchPosts = async (
   setSearchCache(cacheKey, resolvedResults);
   return resolvedResults;
 };
-
-export const preloadPostSearch = async (): Promise<void> => {
-  await loadPostsSearchIndex();
-};
-
-export const getAllCategories = async (): Promise<string[]> => {
-  const allPosts = await loadPostsData();
-  const categories = new Set(allPosts.map((post) => post.category));
-  return Array.from(categories);
-};
-

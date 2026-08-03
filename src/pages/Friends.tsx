@@ -110,7 +110,6 @@ export const Friends = () => {
         </p>
       </header>
 
-      {/* 申请友链 */}
       <div className="mb-12 border-y border-zinc-200 dark:border-zinc-800">
         <button
           type="button"

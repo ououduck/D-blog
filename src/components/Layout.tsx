@@ -45,8 +45,12 @@ const ThemeToggle = () => {
   const hasInitializedThemeRef = useRef(false);
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme') as Theme;
-      return saved || 'system';
+      try {
+        const saved = localStorage.getItem('theme') as Theme;
+        return saved || 'system';
+      } catch {
+        return 'system';
+      }
     }
     return 'system';
   });
@@ -95,7 +99,11 @@ const ThemeToggle = () => {
 
     applyTheme(theme);
     hasInitializedThemeRef.current = true;
-    localStorage.setItem('theme', theme);
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      // Theme persistence is optional when browser storage is unavailable.
+    }
 
     const detachSystemListener = attachSystemListener();
     return () => detachSystemListener();

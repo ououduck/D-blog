@@ -42,7 +42,7 @@ export const BackToTop = () => {
 
   return (
     <>
-      {/* Sentinel element at the top of the page */}
+      {/* Visibility sentinel observed by IntersectionObserver. */}
       <div ref={sentinelRef} aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, width: 1, height: 1 }} />
       <button
         ref={buttonRef}

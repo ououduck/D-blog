@@ -32,23 +32,40 @@ const SEARCH_SCOPE_HINTS: Record<PostSearchScope, string> = {
   title: '只匹配文章标题，适合按标题关键字快速定位'
 };
 
+const SEARCH_HISTORY_KEY = 'searchHistory';
+
+const readSearchHistory = (): string[] => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || '[]');
+    return Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeSearchHistory = (history: string[]) => {
+  try {
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
+  } catch {
+    // Search history is optional and should not block navigation.
+  }
+};
+
 export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const previousPathnameRef = useRef(location.pathname);
   const [searchScope, setSearchScope] = useState<PostSearchScope>('all');
   const [activeResultIndex, setActiveResultIndex] = useState(0);
-  const [searchHistory, setSearchHistory] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return JSON.parse(localStorage.getItem('searchHistory') || '[]');
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  });
+  const [searchHistory, setSearchHistory] = useState<string[]>(readSearchHistory);
   const { searchQuery, isSearching, searchError, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch({
     scope: searchScope
   });
@@ -67,14 +84,14 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     if (!query.trim()) return;
     const newHistory = [query, ...searchHistory.filter(q => q !== query)].slice(0, 5);
     setSearchHistory(newHistory);
-    localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+    writeSearchHistory(newHistory);
   };
 
   const removeHistory = (query: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const newHistory = searchHistory.filter(q => q !== query);
     setSearchHistory(newHistory);
-    localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+    writeSearchHistory(newHistory);
   };
 
   useEffect(() => {
@@ -86,11 +103,15 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   }, [clearSearch, isOpen]);
 
   useEffect(() => {
+    if (previousPathnameRef.current === location.pathname) {
+      return;
+    }
+
+    previousPathnameRef.current = location.pathname;
     if (isOpen) {
       onClose();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
+  }, [isOpen, location.pathname, onClose]);
 
   useEffect(() => {
     setActiveResultIndex(0);

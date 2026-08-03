@@ -19,7 +19,11 @@ export const CookieNotice: React.FC = () => {
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
+    try {
+      localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
+    } catch {
+      // Consent persistence is best effort when browser storage is unavailable.
+    }
     setIsVisible(false);
   };
 
@@ -41,14 +45,11 @@ export const CookieNotice: React.FC = () => {
         >
           <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-              {/* 左侧标题和文字内容 */}
               <div className="flex flex-1 flex-col gap-2 pr-4 sm:flex-row sm:items-start sm:gap-4">
-                {/* Cookie使用标题 */}
                 <div className="flex-shrink-0">
                   <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Cookie 使用</span>
                 </div>
                 
-                {/* 文字内容 */}
                 <div className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
                   <p className="mb-1">
                     <span className="font-medium text-zinc-900 dark:text-zinc-100">我们尊重您的隐私。</span>
@@ -59,7 +60,6 @@ export const CookieNotice: React.FC = () => {
                 </div>
               </div>
 
-              {/* 按钮组 */}
               <div className="flex w-full items-center gap-2 sm:w-auto sm:flex-shrink-0">
                 <button
                   onClick={handleAccept}

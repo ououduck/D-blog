@@ -150,7 +150,11 @@ const App: React.FC = () => {
       return false;
     }
 
-    return sessionStorage.getItem('hasVisited') !== 'true';
+    try {
+      return sessionStorage.getItem('hasVisited') !== 'true';
+    } catch {
+      return true;
+    }
   });
 
   const [showCookieNotice, setShowCookieNotice] = useState(false);
@@ -164,7 +168,11 @@ const App: React.FC = () => {
     }
 
     const timer = window.setTimeout(() => {
-      sessionStorage.setItem('hasVisited', 'true');
+      try {
+        sessionStorage.setItem('hasVisited', 'true');
+      } catch {
+        // The loading screen still completes when session storage is unavailable.
+      }
       setShowLoadingScreen(false);
       setShowCookieNotice(true);
     }, 900);

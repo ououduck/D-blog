@@ -213,7 +213,7 @@ D-blog/
 │   │   ├── ShareModal.tsx      # 分享弹窗
 │   │   ├── SlideModal.tsx      # 滑动弹窗
 │   │   ├── TableOfContents.tsx # 文章目录导航
-│   │   └── ui/                 # 基础 UI 组件（Button、Surface、modalStyles）
+│   │   └── ui/                 # 基础 UI 组件（Surface、modalStyles）
 │   ├── pages/                  # 页面组件（懒加载）
 │   │   ├── Home.tsx            # 首页
 │   │   ├── Post.tsx            # 文章详情页
@@ -237,7 +237,6 @@ D-blog/
 │   │   └── usePostSearch.ts    # 文章搜索逻辑
 │   ├── utils/                  # 工具函数
 │   │   ├── date.ts             # 日期格式化
-│   │   ├── debounce.ts         # 防抖函数
 │   │   ├── headings.ts         # 标题提取工具
 │   │   ├── toc.ts              # 目录树构建（自动折叠）
 │   │   ├── motion.ts           # Framer Motion 动画配置

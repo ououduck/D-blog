@@ -253,7 +253,6 @@ export const CoverGenerator: React.FC = () => {
 
 
 
-  // ==================== 背景图片上传 ====================
   const handleBgImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget;
     try {
@@ -288,7 +287,6 @@ export const CoverGenerator: React.FC = () => {
     }
   }, []);
 
-  // ==================== Iconify 搜索 ====================
   const iconifyDebounceRef = useRef<number | null>(null);
   const searchIconify = useCallback(async (query: string) => {
     const normalizedQuery = query.trim();
@@ -367,7 +365,6 @@ export const CoverGenerator: React.FC = () => {
     }
   }, [iconColor, iconifyIconName]);
 
-  // ==================== 字体上传 ====================
   const handleFontUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget;
     try {
@@ -384,7 +381,6 @@ export const CoverGenerator: React.FC = () => {
     }
   }, []);
 
-  // ==================== 画布交互 ====================
   const handleCanvasPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!bgImage) return;
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -420,7 +416,6 @@ export const CoverGenerator: React.FC = () => {
     setBgImageScale(prev => Math.max(0.1, Math.min(prev * delta, 10)));
   }, [bgImage]);
 
-  // ==================== 核心渲染 ====================
   const generateCover = useCallback(async () => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -508,7 +503,6 @@ export const CoverGenerator: React.FC = () => {
     subFontSize, subSpacing, subText, textAlign, textColor, textShadow, textStroke
   ]);
 
-  // ==================== 导出 ====================
   const canvasToBlob = useCallback((canvas: HTMLCanvasElement, type: string, quality?: number) => (
     new Promise<Blob>((resolve, reject) => {
       try {
@@ -565,7 +559,6 @@ export const CoverGenerator: React.FC = () => {
     }
   }, [canvasToBlob, isGenerating]);
 
-  // ==================== 随机风格 ====================
   const randomizeStyle = useCallback(() => {
     const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
     setSelectedTemplate(randomTemplate);
@@ -601,7 +594,6 @@ export const CoverGenerator: React.FC = () => {
     generateCover();
   }, [generateCover]);
 
-  // ==================== UI 渲染 ====================
   const inputClass = "editorial-input py-2.5";
   const rangeClass = "w-full accent-ink dark:accent-white";
   const colorClass = "h-11 w-full cursor-pointer rounded-control border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-zinc-900";
@@ -825,7 +817,6 @@ export const CoverGenerator: React.FC = () => {
               </div>
 
 
-              {/* 文字样式 */}
               <div className={cardClass}>
                 <div className="p-5">
                   <SectionHeader icon={<Type size={18} className="text-ink dark:text-white" />} title="文字样式" sectionKey="text-style" collapsed={isCollapsed("text-style")} onToggle={toggleSection} />
@@ -878,7 +869,6 @@ export const CoverGenerator: React.FC = () => {
                 </div>
               </div>
 
-              {/* 文字描边 */}
               <div className={cardClass}>
                 <div className="p-5">
                   <SectionHeader
@@ -909,7 +899,6 @@ export const CoverGenerator: React.FC = () => {
                 </div>
               </div>
 
-              {/* 文字阴影 */}
               <div className={cardClass}>
                 <div className="p-5">
                   <SectionHeader icon={<Type size={18} className="text-ink dark:text-white" />} title="文字阴影" sectionKey="shadow" collapsed={isCollapsed("shadow")} onToggle={toggleSection} />
@@ -954,7 +943,6 @@ export const CoverGenerator: React.FC = () => {
                 </div>
               </div>
 
-              {/* 图标样式 */}
               {showIcon && (
                 <div className={cardClass}>
                   <div className="p-5">
@@ -987,7 +975,6 @@ export const CoverGenerator: React.FC = () => {
                 </div>
               )}
 
-              {/* 背景遮罩 */}
               <div className={cardClass}>
                 <div className="p-5">
                   <SectionHeader
@@ -1024,7 +1011,6 @@ export const CoverGenerator: React.FC = () => {
                 </div>
               </div>
 
-              {/* 背景图片控制 */}
               {bgImage && (
                 <div className={cardClass}>
                   <div className="p-5">
@@ -1054,10 +1040,8 @@ export const CoverGenerator: React.FC = () => {
             </div>
           )}
 
-          {/* ===== 排版标签页 ===== */}
           {activeTab === 'layout' && (
             <div id="cover-panel-layout" role="tabpanel" aria-labelledby="cover-tab-layout" className="space-y-4">
-              {/* 布局模式 */}
               <div className={cardClass}>
                 <div className="p-5">
                   <div className="mb-3 flex items-center gap-2">
@@ -1089,7 +1073,6 @@ export const CoverGenerator: React.FC = () => {
                 </div>
               </div>
 
-              {/* 文字对齐 */}
               <div className={cardClass}>
                 <div className="p-5">
                   <div className="mb-3 flex items-center gap-2">
@@ -1119,7 +1102,6 @@ export const CoverGenerator: React.FC = () => {
                 </div>
               </div>
 
-              {/* 装饰元素 */}
               <div className={cardClass}>
                 <div className="p-5">
                   <div className="mb-3 flex items-center gap-2">
@@ -1179,7 +1161,6 @@ export const CoverGenerator: React.FC = () => {
 
 
 
-          {/* ===== 导出标签页 ===== */}
           {activeTab === 'export' && (
             <div id="cover-panel-export" role="tabpanel" aria-labelledby="cover-tab-export" className="space-y-4">
               <div className={cardClass}>
@@ -1283,7 +1264,6 @@ export const CoverGenerator: React.FC = () => {
           )}
         </div>
 
-        {/* 右侧预览区域 */}
         <div className="order-1 min-w-0 lg:order-2 lg:col-span-2">
           <div className="editorial-surface min-w-0 p-4 md:p-5 lg:sticky lg:top-24">
             <div className="mb-4 flex flex-col gap-4 border-b border-zinc-200/70 pb-4 dark:border-zinc-800/80 md:flex-row md:items-start md:justify-between">
@@ -1371,7 +1351,6 @@ export const CoverGenerator: React.FC = () => {
         </div>
       </div>
 
-      {/* Iconify 搜索弹窗 */}
       <AnimatePresence>
         {showIconifyModal && (
           <motion.div

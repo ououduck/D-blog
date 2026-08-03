@@ -495,7 +495,6 @@ export const TableOfContents: React.FC<{
           </button>
         </div>
 
-        {/* Reading progress bar */}
         <div className="flex items-center gap-2.5">
           <div className="h-1 flex-1 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
             <motion.div
@@ -540,7 +539,6 @@ export const TableOfContents: React.FC<{
         )}
       </nav>
 
-      {/* Back to top button */}
       <div className="mt-2 border-t border-zinc-100 pt-2 dark:border-zinc-800">
         <button
           type="button"
