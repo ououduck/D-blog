@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Box, Search, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import type { PostSearchScope } from '@/services/posts';
 import { easeSmooth } from '@/utils/motion';
@@ -71,6 +72,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   });
   const visibleResults = results.slice(0, 8);
   const activeScopeHint = SEARCH_SCOPE_HINTS[searchScope];
+  const prefersReducedMotion = useReducedMotion();
   const modalEase = easeSmooth;
 
   useModalOverlay({
@@ -157,9 +159,9 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:px-4 sm:py-8">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/55" />
-          <motion.div ref={modalRef} tabIndex={-1} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }} transition={{ duration: 0.18, ease: modalEase }} className="relative z-10 flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden editorial-sheet border border-b-0 border-zinc-300 bg-paper pb-[env(safe-area-inset-bottom,0px)] shadow-none supports-[height:100dvh]:max-h-[88dvh] dark:border-zinc-700 dark:bg-void sm:max-h-[80vh] sm:rounded-overlay sm:border-b sm:pb-0 supports-[height:100dvh]:sm:max-h-[80dvh]" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
+        <div className="fixed inset-0 z-modal flex items-end justify-center sm:items-center sm:px-4 sm:py-8">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: prefersReducedMotion ? 0 : 0.16, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/55" aria-hidden="true" />
+          <motion.div ref={modalRef} tabIndex={-1} initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }} transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: modalEase }} className="relative z-10 flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden editorial-sheet border border-b-0 border-zinc-300 bg-paper pb-[env(safe-area-inset-bottom,0px)] shadow-none supports-[height:100dvh]:max-h-[88dvh] dark:border-zinc-700 dark:bg-void sm:max-h-[80vh] sm:rounded-overlay sm:border-b sm:pb-0 supports-[height:100dvh]:sm:max-h-[80dvh]" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
             <h2 id="site-search-title" className="sr-only">站内搜索</h2>
             <div className="flex items-center border-b border-zinc-100 p-4 dark:border-zinc-800">
               <SearchField
@@ -214,7 +216,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                   <button type="button" onClick={clearSearch} className="editorial-button mt-4">清除搜索</button>
                 </div>
               ) : visibleResults.length > 0 ? (
-                <div className="p-2">
+                <div className="p-2" role="listbox" aria-label="搜索结果" aria-activedescendant={visibleResults[activeResultIndex] ? `site-search-result-${visibleResults[activeResultIndex].id}` : undefined}>
                   <div className="px-3 pt-3 text-xs font-medium uppercase tracking-[0.2em] text-zinc-700 dark:text-zinc-300">
                     {results.length} {TEXT.resultsSuffix}
                   </div>
@@ -223,6 +225,9 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                     return (
                       <button
                         key={post.id}
+                        id={`site-search-result-${post.id}`}
+                        role="option"
+                        aria-selected={isActive}
                         onMouseEnter={() => setActiveResultIndex(index)}
                         onClick={() => handleSelect(post.id)}
                         className={`group block w-full p-4 text-left transition-colors ${
@@ -277,7 +282,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
             </div>
 
             <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50 p-3 text-xs text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300">
-              <span id="site-search-desc">{activeScopeHint}</span>
+              <span id="site-search-desc">使用方向键浏览结果，按 Enter 打开文章</span>
               <div className="flex items-center gap-2">
                 <kbd className="rounded-control border border-zinc-200 bg-white px-2 py-0.5 font-mono dark:border-zinc-700 dark:bg-zinc-800">esc</kbd>
                 <span>{TEXT.close}</span>

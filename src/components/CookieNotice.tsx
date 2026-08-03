@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 const COOKIE_CONSENT_KEY = 'cookie-consent';
 
 export const CookieNotice: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [noticeElement, setNoticeElement] = useState<HTMLDivElement | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     try {
@@ -17,6 +20,29 @@ export const CookieNotice: React.FC = () => {
       setIsVisible(true);
     }
   }, []);
+
+  useEffect(() => {
+    const notice = noticeElement;
+    const root = document.documentElement;
+
+    if (!notice) {
+      root.style.removeProperty('--cookie-notice-height');
+      return;
+    }
+
+    const syncNoticeHeight = () => {
+      root.style.setProperty('--cookie-notice-height', `${notice.getBoundingClientRect().height}px`);
+    };
+
+    syncNoticeHeight();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(syncNoticeHeight);
+    observer?.observe(notice);
+
+    return () => {
+      observer?.disconnect();
+      root.style.removeProperty('--cookie-notice-height');
+    };
+  }, [noticeElement]);
 
   const handleAccept = () => {
     try {
@@ -35,11 +61,12 @@ export const CookieNotice: React.FC = () => {
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0 }}
+          ref={setNoticeElement}
+          initial={shouldReduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="fixed bottom-0 left-0 right-0 z-50 editorial-sheet border border-b-0 border-zinc-300 bg-paper pb-[env(safe-area-inset-bottom,0px)] shadow-none dark:border-zinc-700 dark:bg-zinc-900"
+          exit={shouldReduceMotion ? undefined : { opacity: 0 }}
+          transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, ease: 'easeOut' }}
+          className="fixed bottom-0 left-0 right-0 z-nav editorial-sheet border border-b-0 border-zinc-300 bg-paper pb-[env(safe-area-inset-bottom,0px)] shadow-none dark:border-zinc-700 dark:bg-zinc-900"
           role="region"
           aria-label="Cookie 使用说明"
         >

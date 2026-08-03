@@ -1,6 +1,7 @@
 import React, { RefObject, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 interface ReadingProgressBadgeProps {
   targetRef: RefObject<HTMLElement | null>;
@@ -9,16 +10,17 @@ interface ReadingProgressBadgeProps {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 const MOBILE_BADGE_STYLE = {
-  right: 'max(1rem, calc(env(safe-area-inset-right) + 1rem))',
-  bottom: 'max(5rem, calc(env(safe-area-inset-bottom) + 5rem))',
-  width: 'min(10rem, calc(100vw - 2rem - env(safe-area-inset-left) - env(safe-area-inset-right)))'
+  right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+  bottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 5rem), calc(var(--cookie-notice-height, 0px) + 5rem))',
+  width: 'min(10rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)))'
 } as const;
 const DESKTOP_BADGE_STYLE = {
   right: '1.5rem',
-  bottom: '5rem'
+  bottom: 'calc(var(--cookie-notice-height, 0px) + 5rem)'
 } as const;
 
 export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.memo(({ targetRef, onVisibilityChange }) => {
+  const shouldReduceMotion = useReducedMotion();
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -95,7 +97,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       ? createPortal(
           <div
             style={MOBILE_BADGE_STYLE}
-            className="pointer-events-none fixed z-40 rounded-control border border-zinc-300 bg-paper px-2.5 py-2 shadow-none dark:border-zinc-700 dark:bg-zinc-900 lg:hidden"
+            className="pointer-events-none fixed z-floating rounded-control border border-zinc-300 bg-paper px-2.5 py-2 shadow-none dark:border-zinc-700 dark:bg-zinc-900 lg:hidden"
           >
             <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
               <span>进度</span>
@@ -105,7 +107,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
               <motion.div
                 className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
                 animate={{ width: `${percentage}%` }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
+                transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, ease: 'easeOut' }}
               />
             </div>
           </div>,
@@ -118,7 +120,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       ? createPortal(
           <div
             style={DESKTOP_BADGE_STYLE}
-            className="pointer-events-none fixed z-[50] hidden lg:block"
+            className="pointer-events-none fixed z-floating hidden lg:block"
             aria-hidden={!isVisible}
           >
             <div className="min-w-[7rem] rounded-control border border-zinc-300 bg-paper px-3 py-2 shadow-none dark:border-zinc-700 dark:bg-zinc-900">
@@ -130,7 +132,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
                 <motion.div
                   className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
                   animate={{ width: `${percentage}%` }}
-                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, ease: 'easeOut' }}
                 />
               </div>
             </div>
@@ -146,7 +148,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
         opacity: isVisible ? 1 : 0,
         y: isVisible ? 0 : 8
       }}
-      transition={{ duration: 0.22, ease: 'easeOut' }}
+      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
       aria-hidden={!isVisible}
     >
       {mobileBadge}

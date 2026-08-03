@@ -6,6 +6,11 @@ export interface PostAuthor {
   url?: string;
 }
 
+export interface ImageDimensions {
+  width: number;
+  height: number;
+}
+
 export interface PostMetadata {
   id: string;
   title: string;
@@ -18,6 +23,9 @@ export interface PostMetadata {
   filePath: string;
   searchText?: string;
   coverImage?: string;
+  coverWidth?: number;
+  coverHeight?: number;
+  imageDimensions?: Record<string, ImageDimensions>;
   readTime: string;
   featured?: boolean;
   top?: number;

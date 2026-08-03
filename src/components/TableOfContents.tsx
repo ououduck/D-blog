@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { ChevronDown, List, X, ArrowUp } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
-
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 import { siteConfig } from '@config/site.config';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
@@ -20,21 +20,21 @@ import {
 
 const formatIndex = (value: number) => String(value).padStart(2, '0');
 const MOBILE_TOC_TRIGGER_STYLE = {
-  right: 'max(1rem, calc(env(safe-area-inset-right) + 1rem))',
-  bottom: 'max(8.5rem, calc(env(safe-area-inset-bottom) + 8.5rem))'
+  right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
+  bottom: 'max(calc(var(--cookie-notice-height, 0px) + 8.5rem), calc(env(safe-area-inset-bottom, 0px) + 8.5rem))'
 } as const;
 const DESKTOP_TOC_TRIGGER_STYLE = {
   right: '1.5rem',
-  bottom: '9rem'
+  bottom: 'calc(var(--cookie-notice-height, 0px) + 9rem)'
 } as const;
 const DESKTOP_TOC_POPOVER_STYLE = {
   right: '1.5rem',
-  bottom: '12.5rem'
+  bottom: 'calc(var(--cookie-notice-height, 0px) + 12.5rem)'
 } as const;
 const MOBILE_TOC_SHEET_STYLE = {
   left: 'env(safe-area-inset-left, 0px)',
   right: 'env(safe-area-inset-right, 0px)',
-  bottom: 'env(safe-area-inset-bottom, 0px)'
+  bottom: 'calc(var(--cookie-notice-height, 0px) + env(safe-area-inset-bottom, 0px))'
 } as const;
 const MOBILE_SCROLL_STYLE = {
   WebkitOverflowScrolling: 'touch' as const
@@ -66,6 +66,7 @@ export const TableOfContents: React.FC<{
   const [isClient, setIsClient] = useState(false);
   const [dragOffsetY, setDragOffsetY] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const shouldReduceMotion = useReducedMotion();
   const touchStartYRef = useRef<number | null>(null);
   const mobileSheetRef = useRef<HTMLElement | null>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
@@ -240,9 +241,9 @@ export const TableOfContents: React.FC<{
 
     navElement.scrollTo({
       top: Math.max(0, targetScrollTop),
-      behavior: 'smooth'
+      behavior: shouldReduceMotion ? 'auto' : 'smooth'
     });
-  }, [activeHeadingId, expandedMap, isOpen]);
+  }, [activeHeadingId, expandedMap, isOpen, shouldReduceMotion]);
 
   const scrollToHeading = (id: string) => {
     const element = getHeadingById(id);
@@ -275,7 +276,7 @@ export const TableOfContents: React.FC<{
 
     window.scrollTo({
       top: getHeadingScrollTop(element),
-      behavior: 'smooth'
+      behavior: shouldReduceMotion ? 'auto' : 'smooth'
     });
 
     if (typeof window !== 'undefined') {
@@ -377,10 +378,10 @@ export const TableOfContents: React.FC<{
                 <AnimatePresence initial={false}>
                   {hasChildren && isExpanded && (
                     <motion.div
-                      initial={{ height: 0, opacity: 0 }}
+                      initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
+                      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, ease: 'easeOut' }}
                       className="overflow-hidden px-2.5 pb-2"
                     >
                       {renderNodes(item.children, depth + 1)}
@@ -460,7 +461,7 @@ export const TableOfContents: React.FC<{
   const readingProgressDisplay = headings.length > 0 ? Math.round(((currentHeadingIndex + 1) / headings.length) * 100) : 0;
 
   const panelContent = (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-overlay border border-zinc-300 bg-paper p-4 shadow-none dark:border-zinc-700 dark:bg-void sm:p-4.5">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-overlay border border-zinc-300 bg-paper p-4 shadow-none dark:border-zinc-700 dark:bg-void sm:p-[1.125rem]">
       <div
         className="mb-3 flex justify-center lg:hidden"
         onTouchStart={handleSheetTouchStart}
@@ -500,7 +501,7 @@ export const TableOfContents: React.FC<{
             <motion.div
               className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
               animate={{ width: `${readingProgressDisplay}%` }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }}
             />
           </div>
           <span className="min-w-[2.2rem] text-right text-[11px] font-semibold tabular-nums text-zinc-500 dark:text-zinc-400">
@@ -543,7 +544,6 @@ export const TableOfContents: React.FC<{
         <button
           type="button"
           onClick={() => {
-            const shouldReduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
             window.scrollTo({ top: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth' });
             if (isMobileViewport) setIsOpen(false);
           }}
@@ -563,10 +563,11 @@ export const TableOfContents: React.FC<{
           <AnimatePresence>
             <>
               <motion.div
-                initial={{ opacity: 0 }}
+                initial={shouldReduceMotion ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[70] bg-black/40 lg:hidden"
+                exit={shouldReduceMotion ? undefined : { opacity: 0 }}
+                transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
+                className="fixed inset-0 z-popover bg-black/40 lg:hidden"
                 onClick={() => setIsOpen(false)}
               />
 
@@ -576,15 +577,15 @@ export const TableOfContents: React.FC<{
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="mobile-toc-title"
-                initial={{ opacity: 0, y: 28 }}
-                animate={{ opacity: 1, y: dragOffsetY }}
-                exit={{ opacity: 0, y: 28 }}
-                transition={{ duration: dragOffsetY > 0 ? 0 : 0.24, ease: 'easeOut' }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 28 }}
+                animate={{ opacity: 1, y: shouldReduceMotion ? 0 : dragOffsetY }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, y: 28 }}
+                transition={shouldReduceMotion || dragOffsetY > 0 ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }}
                 style={{
                   ...MOBILE_TOC_SHEET_STYLE,
                   touchAction: 'pan-y'
                 }}
-                className="fixed z-[80] h-[min(72vh,38rem)] supports-[height:100dvh]:h-[min(72dvh,38rem)] lg:hidden"
+                className="fixed z-nav-panel h-[min(72vh,38rem)] supports-[height:100dvh]:h-[min(72dvh,38rem)] lg:hidden"
               >
                 {panelContent}
               </motion.aside>
@@ -601,7 +602,7 @@ export const TableOfContents: React.FC<{
             type="button"
             onClick={() => setIsOpen((value) => !value)}
             style={MOBILE_TOC_TRIGGER_STYLE}
-            className="fixed z-[60] inline-flex items-center gap-2 rounded-control border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 lg:hidden"
+            className="fixed z-floating inline-flex items-center gap-2 rounded-control border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 lg:hidden"
             aria-label={isOpen ? '关闭目录' : '打开目录'}
             aria-expanded={isOpen}
           >
@@ -621,12 +622,12 @@ export const TableOfContents: React.FC<{
           <AnimatePresence>
             {isOpen ? (
               <motion.aside
-                initial={{ opacity: 0, y: 8 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, y: 8 }}
+                transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
                 style={DESKTOP_TOC_POPOVER_STYLE}
-                className="fixed z-[70] hidden h-[min(26rem,60vh)] w-[min(22rem,calc(100vw-3rem))] md:block"
+                className="fixed z-popover hidden h-[min(26rem,60vh)] w-[min(22rem,calc(100vw-3rem))] md:block"
               >
                 {panelContent}
               </motion.aside>
@@ -643,7 +644,7 @@ export const TableOfContents: React.FC<{
             type="button"
             onClick={() => setIsOpen((value) => !value)}
             style={DESKTOP_TOC_TRIGGER_STYLE}
-            className="fixed z-[60] hidden items-center gap-2 rounded-control border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 md:inline-flex"
+            className="fixed z-floating hidden items-center gap-2 rounded-control border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 md:inline-flex"
             aria-label={isOpen ? '关闭目录' : '打开目录'}
             aria-expanded={isOpen}
           >

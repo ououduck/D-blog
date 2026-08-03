@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ExternalLink, Copy, Check, GitPullRequest, Sparkles, ChevronDown, Globe2 } from 'lucide-react';
+import { ExternalLink, Copy, Check, Download, Mail, Sparkles, ChevronDown, Globe2, X } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
 import { siteConfig } from '@config/site.config';
 import { getFriends } from '@/services/friends';
@@ -8,7 +8,25 @@ import { Seo } from '../components/Seo';
 import { Friend } from '../types';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { SlideModal } from '@/components/SlideModal';
 import { easeOut, fadeInUp, staggerContainer } from '@/utils/motion';
+import {
+  copyText,
+  createFriendLinkApplication,
+  createFriendLinkMailto,
+  downloadTextFile,
+  FRIEND_LINK_EMAIL_SUBJECT,
+  type FriendLinkApplicationValues,
+  validateFriendLinkApplication
+} from './friends/friendLinkApplication';
+
+const EMPTY_APPLICATION_VALUES: FriendLinkApplicationValues = {
+  name: '',
+  description: '',
+  avatar: '',
+  url: ''
+};
 
 export const Friends = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -18,6 +36,13 @@ export const Friends = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [applicationValues, setApplicationValues] = useState<FriendLinkApplicationValues>(EMPTY_APPLICATION_VALUES);
+  const [applicationFilename, setApplicationFilename] = useState('');
+  const [applicationErrors, setApplicationErrors] = useState<ReturnType<typeof validateFriendLinkApplication>>({});
+  const [applicationResult, setApplicationResult] = useState<ReturnType<typeof createFriendLinkApplication> | null>(null);
+  const [isResultCopied, setIsResultCopied] = useState(false);
+  const [resultCopyError, setResultCopyError] = useState<string | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     setLoading(true);
@@ -33,9 +58,8 @@ export const Friends = () => {
       .finally(() => setLoading(false));
   }, [loadAttempt]);
 
-  const containerVariants = staggerContainer;
-
-  const itemVariants = fadeInUp;
+  const containerVariants = shouldReduceMotion ? undefined : staggerContainer;
+  const itemVariants = shouldReduceMotion ? undefined : fadeInUp;
 
   const siteInfo = {
     name: siteConfig.title,
@@ -51,27 +75,54 @@ export const Friends = () => {
   "url": ""
 }`;
 
-  const copyToClipboard = async (value: string) => {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(value);
+  const handleCopyTemplate = async () => {
+    try {
+      await copyText(templateText);
+      setIsCopied(true);
+      window.setTimeout(() => setIsCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy friend link template:', error);
+    }
+  };
+
+  const handleApplicationFieldChange = (field: keyof FriendLinkApplicationValues, value: string) => {
+    setApplicationValues((current) => ({ ...current, [field]: value }));
+    setApplicationErrors((current) => ({ ...current, [field]: undefined }));
+  };
+
+  const handleCompleteApplication = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const errors = validateFriendLinkApplication(applicationValues, applicationFilename);
+    setApplicationErrors(errors);
+    if (Object.keys(errors).length > 0) {
       return;
     }
 
-    const textArea = document.createElement('textarea');
-    textArea.value = value;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-9999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
+    const result = createFriendLinkApplication(applicationValues, applicationFilename);
+    downloadTextFile(result.json, result.filename);
+    setApplicationResult(result);
+    setIsResultCopied(false);
+    setResultCopyError(null);
+
+    try {
+      await copyText(result.json);
+      setIsResultCopied(true);
+    } catch (error) {
+      console.error('Failed to copy friend link application:', error);
+      setResultCopyError('自动复制失败，请在弹窗中点击“复制 JSON”。');
+    }
   };
 
-  const handleCopyTemplate = async () => {
-    await copyToClipboard(templateText);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+  const handleCopyResult = async () => {
+    if (!applicationResult) return;
+    try {
+      await copyText(applicationResult.json);
+      setIsResultCopied(true);
+      setResultCopyError(null);
+    } catch (error) {
+      console.error('Failed to copy friend link application:', error);
+      setResultCopyError('复制失败，请检查浏览器权限后重试。');
+    }
   };
 
   const getFriendDomain = (url: string) => {
@@ -82,6 +133,9 @@ export const Friends = () => {
     }
   };
 
+  const resultMailto = applicationResult
+    ? createFriendLinkMailto(applicationResult.json, siteConfig.friendsPage.applicationEmail)
+    : '';
   const filteredFriends = useMemo(() => {
     const keyword = searchQuery.trim().toLocaleLowerCase();
     if (!keyword) {
@@ -96,13 +150,13 @@ export const Friends = () => {
 
   return (
     <div className="pb-12 pt-8 md:pb-20 md:pt-12">
-      <Seo title="友链" description="D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链。" />
+      <Seo title="友链" description="D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎在线填写模板申请交换友链。" />
 
       <header className="mb-12 border-b border-zinc-200 pb-8 dark:border-zinc-800 md:pb-10">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Friends Directory</p>
         <h1 className="font-serif text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">友情链接</h1>
         <p className="mt-4 max-w-2xl text-zinc-600 dark:text-zinc-400">
-          这里汇集了一些优秀的技术博客和有趣的网站。如果你也想交换友链，可以直接在仓库里提交 PR。
+          这里汇集了一些优秀的技术博客和有趣的网站。如果你也想交换友链，可以在线填写申请信息。
         </p>
         <p className="mt-4 flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
           <Sparkles size={14} />
@@ -120,11 +174,11 @@ export const Friends = () => {
         >
           <div>
             <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">申请友链</span>
-            <p className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">按模板提交 PR，就能更快完成收录。</p>
+            <p className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">在线填写模板，下载 JSON 后发送申请邮件。</p>
           </div>
           <motion.div
             animate={{ rotate: isExpanded ? 180 : 0 }}
-            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
             className="flex-shrink-0"
           >
             <ChevronDown size={18} className="text-zinc-500 dark:text-zinc-400" />
@@ -136,10 +190,10 @@ export const Friends = () => {
             <motion.div
               id="friend-link-panel"
               key="friend-link-content"
-              initial={{ height: 0, opacity: 0 }}
+              initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
               className="overflow-hidden"
             >
               <div className="border-t border-zinc-200 pb-5 pt-5 dark:border-zinc-800 sm:pb-6 sm:pt-6">
@@ -152,7 +206,7 @@ export const Friends = () => {
                   <section className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
                     <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">本站信息（提交前请先添加本站友链）</h2>
                     <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                      <ProgressiveImage src={siteInfo.avatar} alt={siteInfo.name} wrapperClassName="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-void" className="h-12 w-12 object-cover object-center" />
+                      <ProgressiveImage src={siteInfo.avatar} alt={siteInfo.name} wrapperClassName="h-14 w-14 flex-shrink-0 overflow-hidden rounded-full border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-void" className="h-14 w-14 object-cover object-center" />
                       <div className="w-full flex-1 space-y-1">
                         <div className="font-semibold text-zinc-900 dark:text-zinc-100">{siteInfo.name}</div>
                         <div className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{siteInfo.description}</div>
@@ -175,31 +229,56 @@ export const Friends = () => {
                     </pre>
                   </section>
 
-                  <a
-                    href={siteConfig.friendsPage.repoFriendsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-center justify-between gap-4 border-t border-zinc-200 pt-5 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
-                  >
-                    <div>
-                      <div className="font-semibold text-zinc-900 dark:text-zinc-100">GitHub PR</div>
-                      <div className="break-all text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                        在仓库 {siteConfig.friendsPage.repoFriendsDir} 目录下新增一个 JSON 文件并提交 PR
-                      </div>
+                  <form noValidate onSubmit={handleCompleteApplication} className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
+                    <div className="mb-4">
+                      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">在线填写申请</h2>
+                      <p className="mt-1 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">填写完成后将下载 JSON 文件、自动复制内容，并显示发送邮件入口。</p>
                     </div>
-                    <GitPullRequest size={18} className="flex-shrink-0 text-zinc-500 transition-colors group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100" />
-                  </a>
-                </div>
-
-                <div className="mt-5 flex justify-end border-t border-zinc-200 pt-5 dark:border-zinc-800">
-                  <a
-                    href={`${siteConfig.friendsPage.repoUrl}/tree/main/${siteConfig.friendsPage.repoFriendsDir}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="editorial-button-primary px-5"
-                  >
-                    去提交 PR
-                  </a>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {([
+                        ['name', '站点名称', '例如：我的博客'],
+                        ['description', '站点简介', '例如：记录技术与生活'],
+                        ['avatar', '头像地址', 'https://example.com/avatar.png'],
+                        ['url', '站点地址', 'https://example.com']
+                      ] as const).map(([field, label, placeholder]) => (
+                        <label key={field} className={field === 'description' ? 'sm:col-span-2' : ''}>
+                          <span className="mb-1.5 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">{label}</span>
+                          <input
+                            type={field === 'url' || field === 'avatar' ? 'url' : 'text'}
+                            value={applicationValues[field]}
+                            onChange={(event) => handleApplicationFieldChange(field, event.target.value)}
+                            placeholder={placeholder}
+                            className="w-full rounded-control border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-300"
+                            aria-invalid={Boolean(applicationErrors[field])}
+                            aria-describedby={applicationErrors[field] ? `${field}-error` : undefined}
+                          />
+                          {applicationErrors[field] && <span id={`${field}-error`} className="mt-1 block text-xs text-red-600 dark:text-red-400">{applicationErrors[field]}</span>}
+                        </label>
+                      ))}
+                      <label className="sm:col-span-2">
+                        <span className="mb-1.5 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">文件名（纯英文）</span>
+                        <input
+                          type="text"
+                          value={applicationFilename}
+                          onChange={(event) => {
+                            setApplicationFilename(event.target.value);
+                            setApplicationErrors((current) => ({ ...current, filename: undefined }));
+                          }}
+                          placeholder="例如：my-blog"
+                          className="w-full rounded-control border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-300"
+                          aria-invalid={Boolean(applicationErrors.filename)}
+                          aria-describedby={applicationErrors.filename ? 'friend-filename-error' : undefined}
+                        />
+                        {applicationErrors.filename && <span id="friend-filename-error" className="mt-1 block text-xs text-red-600 dark:text-red-400">{applicationErrors.filename}</span>}
+                      </label>
+                    </div>
+                    <div className="mt-5 flex justify-end">
+                      <button type="submit" className="editorial-button-primary inline-flex items-center gap-2 px-5">
+                        <Download size={16} />
+                        完成并生成 JSON
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             </motion.div>
@@ -238,7 +317,7 @@ export const Friends = () => {
             <motion.a
               key={`${friend.url}-${index}`}
               variants={itemVariants}
-              transition={{ duration: 0.16, ease: easeOut }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.14, ease: easeOut }}
               href={friend.url}
               target="_blank"
               rel="noopener noreferrer"
@@ -248,7 +327,7 @@ export const Friends = () => {
                 <ExternalLink size={16} />
               </div>
               <div className="flex items-start gap-4 pr-5">
-                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full border border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900">
+                <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-full border border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900">
                   <ProgressiveImage src={friend.avatar} alt={friend.name} wrapperClassName="h-full w-full" className="h-full w-full object-cover object-center" effect="fade" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -266,9 +345,9 @@ export const Friends = () => {
         {loading && <LoadingStatus label="正在加载友情链接" className="col-span-full" />}
         {loading &&
           Array.from({ length: 3 }).map((_, index) => (
-            <motion.div key={`skeleton-${index}`} aria-hidden="true" variants={itemVariants} className="animate-pulse rounded-surface border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+            <motion.div key={`skeleton-${index}`} aria-hidden="true" variants={itemVariants} className={`${shouldReduceMotion ? '' : 'animate-pulse '}rounded-surface border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900`}>
               <div className="flex items-start gap-4">
-                <div className="h-12 w-12 flex-shrink-0 rounded-full bg-zinc-100 dark:bg-zinc-800" />
+                <div className="h-14 w-14 flex-shrink-0 rounded-full bg-zinc-100 dark:bg-zinc-800" />
                 <div className="flex-1 space-y-3">
                   <div className="h-5 w-1/3 bg-zinc-100 dark:bg-zinc-800" />
                   <div className="h-4 w-full bg-zinc-100 dark:bg-zinc-800" />
@@ -284,6 +363,48 @@ export const Friends = () => {
           </div>
         )}
       </motion.div>
+
+      <SlideModal
+        isOpen={Boolean(applicationResult)}
+        onClose={() => setApplicationResult(null)}
+        ariaLabelledby="friend-link-result-title"
+        ariaDescribedby="friend-link-result-description"
+        className="max-w-2xl"
+      >
+        {applicationResult && (
+          <div>
+            <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+              <div>
+                <h2 id="friend-link-result-title" className="font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100">JSON 已生成</h2>
+                <p id="friend-link-result-description" className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">文件已下载到本地，发送邮件时请将该文件作为附件添加。</p>
+              </div>
+              <button type="button" onClick={() => setApplicationResult(null)} className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" aria-label="关闭 JSON 结果弹窗">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="space-y-4 overflow-y-auto px-5 py-5">
+              <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                <Download size={16} />
+                {applicationResult.filename}
+              </div>
+              <pre className="max-h-72 select-all overflow-auto whitespace-pre-wrap border border-zinc-200 bg-zinc-50 p-3 font-mono text-xs leading-relaxed text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">{applicationResult.json}</pre>
+              {resultCopyError && <p className="text-xs text-red-600 dark:text-red-400">{resultCopyError}</p>}
+              {!resultCopyError && isResultCopied && <p className="text-xs text-emerald-600 dark:text-emerald-400">JSON 已自动复制到剪贴板。</p>}
+              <p className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">收件地址：{siteConfig.friendsPage.applicationEmail}；邮件主题：{FRIEND_LINK_EMAIL_SUBJECT}。点击发送后，请在邮件客户端中确认正文，并手动添加刚刚下载的 JSON 附件。</p>
+              <div className="flex flex-wrap justify-end gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+                <button type="button" onClick={handleCopyResult} className="editorial-button inline-flex items-center gap-2 px-4">
+                  {isResultCopied ? <Check size={15} /> : <Copy size={15} />}
+                  {isResultCopied ? '已复制' : '复制 JSON'}
+                </button>
+                <a href={resultMailto} className="editorial-button-primary inline-flex items-center gap-2 px-4">
+                  <Mail size={15} />
+                  前往发送
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+      </SlideModal>
     </div>
   );
 };

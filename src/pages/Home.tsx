@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Calendar, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
@@ -9,11 +9,13 @@ import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { getDateTimestamp } from '@/utils/date';
 import { easeOut, easeSmooth, fadeInUp, staggerContainer } from '@/utils/motion';
 import { preloadPage } from '@/utils/preload';
+import { getHeroPost } from '@/utils/postSelection';
 
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
 
@@ -46,54 +48,57 @@ const gridExitVariants = {
 
 const getCategories = (posts: PostMetadata[]) => Array.from(new Set(posts.map((post) => post.category)));
 
-const SkeletonBlock: React.FC<{ className?: string }> = ({ className }) => (
-  <div className={`animate-pulse bg-zinc-200 dark:bg-zinc-800 ${className || ''}`} />
+const SkeletonBlock: React.FC<{ className?: string; shouldReduceMotion: boolean }> = ({ className, shouldReduceMotion }) => (
+  <div className={`${shouldReduceMotion ? '' : 'animate-pulse'} bg-zinc-200 dark:bg-zinc-800 ${className || ''}`} />
 );
 
-const FeaturedPostSkeleton = () => (
+const FeaturedPostSkeleton: React.FC<{ shouldReduceMotion: boolean }> = ({ shouldReduceMotion }) => (
   <div aria-hidden="true" className="col-span-full overflow-hidden rounded-surface border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
     <div className="md:grid md:min-h-80 md:grid-cols-5">
-      <SkeletonBlock className="aspect-[16/9] md:col-span-3 md:aspect-auto" />
+      <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="aspect-[16/9] md:col-span-3 md:aspect-auto" />
       <div className="flex flex-col p-5 md:col-span-2 md:p-7">
         <div className="mb-4 flex items-center gap-3">
-          <SkeletonBlock className="h-3 w-16" />
-          <SkeletonBlock className="h-3 w-12" />
+          <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-16" />
+          <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-12" />
         </div>
-        <SkeletonBlock className="mb-3 h-8 w-4/5" />
-        <SkeletonBlock className="mb-2 h-3 w-full" />
-        <SkeletonBlock className="mb-4 h-3 w-3/4" />
+        <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="mb-3 h-8 w-4/5" />
+        <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="mb-2 h-3 w-full" />
+        <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="mb-4 h-3 w-3/4" />
         <div className="mt-auto flex items-center gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-          <SkeletonBlock className="h-3 w-20" />
-          <SkeletonBlock className="h-3 w-16" />
+          <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-20" />
+          <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-16" />
         </div>
       </div>
     </div>
   </div>
 );
 
-const PostCardSkeleton = () => (
+const PostCardSkeleton: React.FC<{ shouldReduceMotion: boolean }> = ({ shouldReduceMotion }) => (
   <div aria-hidden="true" className="overflow-hidden rounded-surface border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-    <SkeletonBlock className="aspect-[16/10]" />
+    <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="aspect-[16/10]" />
     <div className="space-y-3 p-4 md:p-5">
-      <SkeletonBlock className="h-3 w-20" />
-      <SkeletonBlock className="h-4 w-4/5" />
-      <SkeletonBlock className="h-3 w-full" />
-      <SkeletonBlock className="h-3 w-2/3" />
+      <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-20" />
+      <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-4 w-4/5" />
+      <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-full" />
+      <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-2/3" />
       <div className="mt-4 border-t border-zinc-200 pt-3 dark:border-zinc-800">
-        <SkeletonBlock className="h-3 w-28" />
+        <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-28" />
       </div>
     </div>
   </div>
 );
 
-const LoadingGrid: React.FC<{ isMobile: boolean; label: string }> = ({ isMobile, label }) => {
-  const regularSkeletonCount = isMobile ? 4 : 6;
+const LoadingGrid: React.FC<{ isMobile: boolean; heroSlots: number; label: string; hasFeatured: boolean }> = ({ isMobile, heroSlots, label, hasFeatured }) => {
+  const shouldReduceMotion = useReducedMotion();
+  const postsPerPage = isMobile ? 5 : 9;
+  const featuredSlots = hasFeatured ? heroSlots : 0;
+  const regularSkeletonCount = Math.max(0, postsPerPage - featuredSlots);
 
   return (
-    <motion.div variants={fadeInUp} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+    <motion.div variants={shouldReduceMotion ? undefined : fadeInUp} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
       <LoadingStatus label={label} className="col-span-full" />
-      <FeaturedPostSkeleton />
-      {Array.from({ length: regularSkeletonCount }).map((_, index) => <PostCardSkeleton key={index} />)}
+      {hasFeatured && <FeaturedPostSkeleton shouldReduceMotion={shouldReduceMotion} />}
+      {Array.from({ length: regularSkeletonCount }).map((_, index) => <PostCardSkeleton key={index} shouldReduceMotion={shouldReduceMotion} />)}
     </motion.div>
   );
 };
@@ -204,16 +209,16 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
   if (featured) {
     return (
       <motion.article
-        layout
+        layout={!shouldReduceMotion}
         variants={cardVariants}
-        transition={{ duration: 0.25, ease: easeOut }}
+        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.25, ease: easeOut }}
         className="col-span-full w-full"
         onMouseEnter={() => preloadPage(`/post/${post.id}`)}
       >
         <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 md:grid md:grid-cols-5">
           <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:col-span-3 md:aspect-auto md:min-h-80" aria-label={`阅读文章：${post.title}`}>
             {post.coverImage ? (
-              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
+              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
             ) : (
               <div className="flex h-full min-h-56 items-center justify-center bg-zinc-100 dark:bg-zinc-800">
                 <Sparkles className="h-12 w-12 text-zinc-300 dark:text-zinc-600" />
@@ -257,7 +262,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
       <div className="flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600">
         <Link to={`/post/${post.id}`} className="block aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-800" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
-            <ProgressiveImage src={post.coverImage} alt={post.title} loading={index === 0 ? 'eager' : 'lazy'} fetchPriority={index === 0 ? 'high' : 'auto'} width={1600} height={1000} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
+              <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" fetchPriority="auto" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-300 dark:text-zinc-600">
               <Sparkles className="h-9 w-9" />
@@ -299,9 +304,16 @@ interface FilterBarProps {
   onToggleSort: () => void;
 }
 
-const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, sortOrder, onToggleSort }) => {
+const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({ categories, selected, onSelect, sortOrder, onToggleSort, shouldReduceMotion }) => {
   return (
-    <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="flex items-center justify-between gap-3 border-y border-zinc-200 py-3 dark:border-zinc-800">
+      <motion.div
+        variants={fadeInUp}
+        initial={shouldReduceMotion ? false : 'hidden'}
+        animate="visible"
+        transition={shouldReduceMotion ? { duration: 0 } : undefined}
+        className="flex items-center justify-between gap-3 border-y border-zinc-200 py-3 dark:border-zinc-800"
+      >
+
       <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-2" role="group" aria-label="文章分类筛选">
           {[ALL_CATEGORY, ...categories].map((category) => (
@@ -329,15 +341,18 @@ const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, s
 };
 
 const Hero = () => {
+  const shouldReduceMotion = useReducedMotion();
+  const introTransition = shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: easeOut };
+
   return (
     <div className="px-4 pb-8 pt-5 text-center md:pb-10 md:pt-8">
-      <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: easeOut }} className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
+      <motion.p initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={introTransition} className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
         {siteConfig.subtitle}
       </motion.p>
-      <motion.h1 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03, duration: 0.3, ease: easeOut }} className="mb-3 font-serif text-4xl font-bold tracking-tight text-ink dark:text-white sm:text-5xl md:text-6xl">
+      <motion.h1 initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.03, duration: 0.3, ease: easeOut }} className="mb-3 font-serif text-4xl font-bold tracking-tight text-ink dark:text-white sm:text-5xl md:text-6xl">
         {siteConfig.title}
       </motion.h1>
-      <motion.p initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06, duration: 0.25, ease: easeOut }} className="mx-auto max-w-xl text-sm leading-6 text-zinc-600 dark:text-zinc-300 md:text-base">
+      <motion.p initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.06, duration: 0.25, ease: easeOut }} className="mx-auto max-w-xl text-sm leading-6 text-zinc-600 dark:text-zinc-300 md:text-base">
         {siteConfig.description}
       </motion.p>
     </div>
@@ -363,6 +378,8 @@ export const Home = () => {
   });
 
   const isMobile = useMediaQuery('(max-width: 767px)', false);
+  const isLargeDesktop = useMediaQuery('(min-width: 1024px)', true);
+  const shouldReduceMotion = useReducedMotion();
   const postsPerPage = isMobile ? 5 : 9;
 
   useEffect(() => {
@@ -433,16 +450,18 @@ export const Home = () => {
   }, [searchQuery, selectedCategory, sortOrder]);
 
   const displayedPosts = useMemo(() => filterAndSortPosts(results, selectedCategory, sortOrder), [results, selectedCategory, sortOrder]);
+  const heroPost = useMemo(() => getHeroPost(displayedPosts), [displayedPosts]);
+  const heroSlots = heroPost ? (isMobile ? 1 : isLargeDesktop ? 3 : 2) : 0;
 
   const paginationData = useMemo(() => {
-    const pinnedPosts = displayedPosts.filter(post => post.top !== undefined);
-    const regularPosts = displayedPosts.filter(post => post.top === undefined);
-    const pinnedPostsSlots = pinnedPosts.length * (isMobile ? 1 : 3);
-    const totalSlots = pinnedPostsSlots + regularPosts.length;
+    const totalSlots = displayedPosts.reduce(
+      (total, post) => total + (post.id === heroPost?.id ? heroSlots : 1),
+      0
+    );
     const totalPages = Math.max(1, Math.ceil(totalSlots / postsPerPage));
 
-    return { pinnedPosts, regularPosts, totalSlots, totalPages };
-  }, [displayedPosts, isMobile, postsPerPage]);
+    return { totalSlots, totalPages };
+  }, [displayedPosts, heroPost, heroSlots, postsPerPage]);
 
   const { totalPages } = paginationData;
   const paginationItems = useMemo(() => getPaginationItems(currentPage, totalPages, isMobile), [currentPage, totalPages, isMobile]);
@@ -506,7 +525,7 @@ export const Home = () => {
     let consumedSlots = 0;
 
     for (const post of displayedPosts) {
-      const slots = post.top !== undefined ? 3 : 1;
+      const slots = post.id === heroPost?.id ? heroSlots : 1;
       const nextConsumedSlots = consumedSlots + slots;
 
       if (nextConsumedSlots <= pageStart) {
@@ -523,16 +542,22 @@ export const Home = () => {
     }
 
     return pagedPosts;
-  }, [currentPage, displayedPosts, isMobile, postsPerPage]);
+  }, [currentPage, displayedPosts, heroPost, heroSlots, isMobile, postsPerPage]);
 
   const paginate = (pageNumber: number) => {
     setCurrentPage(Math.min(Math.max(1, pageNumber), totalPages));
-    const shouldReduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({ top: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth' });
   };
 
-  const featuredPost = useMemo(() => currentPosts.find((post) => post.featured) ?? null, [currentPosts]);
-  const remainingPosts = useMemo(() => currentPosts.filter((post) => post !== featuredPost), [currentPosts, featuredPost]);
+  const featuredPost = useMemo(
+    () => (heroPost && currentPosts.some((post) => post.id === heroPost.id) ? heroPost : null),
+    [currentPosts, heroPost]
+  );
+  const hasFeaturedPost = Boolean(featuredPost);
+  const remainingPosts = useMemo(
+    () => currentPosts.filter((post) => post.id !== heroPost?.id),
+    [currentPosts, heroPost]
+  );
 
   return (
     <div className="pb-16 md:pb-24">
@@ -540,7 +565,8 @@ export const Home = () => {
       <Hero />
 
       <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-6 px-4 md:space-y-8 md:px-0">
-        <FilterBar categories={categories} selected={selectedCategory} onSelect={handleSelectCategory} sortOrder={sortOrder} onToggleSort={handleToggleSort} />
+          <FilterBar categories={categories} selected={selectedCategory} onSelect={handleSelectCategory} sortOrder={sortOrder} onToggleSort={handleToggleSort} shouldReduceMotion={shouldReduceMotion} />
+
 
         <div className="mx-auto max-w-2xl">
           <SearchField
@@ -553,7 +579,12 @@ export const Home = () => {
         </div>
 
         {loading || isSearching ? (
-          <LoadingGrid isMobile={isMobile} label={isSearching ? '正在搜索文章' : '正在加载文章列表'} />
+          <LoadingGrid
+            isMobile={isMobile}
+            heroSlots={heroSlots}
+            label={isSearching ? '正在搜索文章' : '正在加载文章列表'}
+            hasFeatured={hasFeaturedPost}
+          />
         ) : loadError || searchError ? (
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={listSwapTransition}>
             <ContentStatus
@@ -567,13 +598,13 @@ export const Home = () => {
         ) : (
           <div id="posts-panel" className="space-y-7" aria-live="polite">
             <motion.div
-              layout
+              layout={!shouldReduceMotion}
               id="posts-grid"
               className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
               variants={gridExitVariants}
               initial="hidden"
               animate="visible"
-              transition={gridLayoutTransition}
+              transition={shouldReduceMotion ? { duration: 0 } : gridLayoutTransition}
             >
               {featuredPost && <PostCard key={featuredPost.id} post={featuredPost} index={0} featured onShare={setSharePost} />}
               {remainingPosts.length > 0 ? (

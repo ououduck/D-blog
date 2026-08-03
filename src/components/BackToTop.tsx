@@ -1,12 +1,9 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { ArrowUp } from 'lucide-react';
-
-const MOBILE_OFFSET_STYLE = {
-  right: 'max(1rem, calc(env(safe-area-inset-right) + 1rem))',
-  bottom: 'max(1rem, calc(env(safe-area-inset-bottom) + 1rem))'
-} as const;
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export const BackToTop = () => {
+  const shouldReduceMotion = useReducedMotion();
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -36,9 +33,8 @@ export const BackToTop = () => {
   }, []);
 
   const scrollToTop = useCallback(() => {
-    const shouldReduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({ top: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth' });
-  }, []);
+  }, [shouldReduceMotion]);
 
   return (
     <>
@@ -48,13 +44,14 @@ export const BackToTop = () => {
         ref={buttonRef}
         onClick={scrollToTop}
         style={{
-          ...MOBILE_OFFSET_STYLE,
+          '--back-to-top-bottom': 'max(1rem, calc(var(--cookie-notice-height, 0px) + env(safe-area-inset-bottom, 0px) + 1rem))',
+          '--back-to-top-right': 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
           opacity: 0,
           pointerEvents: 'none',
           transform: 'translateY(8px)',
-          transition: 'opacity 0.2s ease, transform 0.2s ease',
-        }}
-        className="fixed z-40 rounded-icon border border-zinc-300 bg-paper p-2.5 text-ink shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:border-zinc-500 dark:hover:bg-zinc-800 md:bottom-8 md:right-8"
+          transition: shouldReduceMotion ? 'none' : 'opacity 0.2s ease, transform 0.2s ease',
+        } as React.CSSProperties}
+        className="fixed bottom-[var(--back-to-top-bottom)] right-[var(--back-to-top-right)] z-floating rounded-icon border border-zinc-300 bg-paper p-2.5 text-ink shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:border-zinc-500 dark:hover:bg-zinc-800 md:bottom-[calc(var(--cookie-notice-height,0px)+2rem)] md:right-8"
         aria-label="返回顶部"
       >
         <ArrowUp size={18} />

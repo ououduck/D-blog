@@ -41,6 +41,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(({
     ? showClear ? 'pr-24' : 'pr-14'
     : showClear ? 'pr-11' : 'pr-4';
   const sizeClass = size === 'large' ? 'h-14 text-base sm:text-lg' : 'h-11 text-sm';
+  const clearButtonSizeClass = size === 'large' ? 'h-14' : 'h-11';
 
   return (
     <div className={`group relative ${containerClassName}`}>
@@ -64,7 +65,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(({
             <button
               type="button"
               onClick={onClear}
-              className="inline-flex h-11 w-10 items-center justify-center text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-zinc-900 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100"
+              className={`inline-flex ${clearButtonSizeClass} w-10 items-center justify-center text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-zinc-900 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100`}
               aria-label={clearLabel}
             >
               <X size={16} />

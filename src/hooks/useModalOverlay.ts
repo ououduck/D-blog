@@ -23,6 +23,9 @@ const FOCUSABLE_SELECTOR = [
 
 const openOverlayStack: symbol[] = [];
 let scrollLockCount = 0;
+
+/** 页面级快捷键使用此查询，避免在弹层打开时误触发背景交互。 */
+export const hasOpenOverlay = () => openOverlayStack.length > 0;
 let originalBodyOverflow = '';
 
 const getFocusableElements = (container: HTMLElement) => (
@@ -97,6 +100,7 @@ export function useModalOverlay({
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
+        event.stopImmediatePropagation();
         onCloseRef.current();
         return;
       }

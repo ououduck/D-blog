@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export type ProgressiveImageRadius = 'none' | 'media' | 'icon' | 'surface' | 'overlay' | 'full';
 
@@ -81,42 +82,51 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
   }
 
   const resolvedLoading = loadingProp || (props.fetchPriority === 'high' ? 'eager' : 'lazy');
-  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const prefersReducedMotion = useReducedMotion();
+  const showBlurPlaceholder = effect === 'blur';
+  const showPlaceholder = effect !== 'none';
   const imageTransitionClass = prefersReducedMotion || effect === 'none'
     ? 'opacity-100'
-    : isLoaded ? 'opacity-100' : 'opacity-0';
+    : effect === 'fade'
+      ? (isLoaded ? 'opacity-100' : 'opacity-0')
+      : 'opacity-100';
+  const transitionDurationClass = prefersReducedMotion ? 'duration-0' : 'duration-300';
   const placeholderStyle: React.CSSProperties = { backgroundImage: PAPER_PLACEHOLDER };
 
   return (
     <div className={mergeClassName('relative overflow-hidden', radiusClasses[radius], wrapperClassName)} style={wrapperStyle}>
-      <div
-        aria-hidden="true"
-        className={mergeClassName(
-          'pointer-events-none absolute inset-0 bg-cover transition-opacity duration-300 dark:brightness-[0.42] dark:saturate-[0.55]',
-          isLoaded || hasError ? 'opacity-0' : 'opacity-100',
-          placeholderClassName
-        )}
-        style={placeholderStyle}
-      />
-      {src && !hasError && (
+      {showPlaceholder && (
         <div
           aria-hidden="true"
           className={mergeClassName(
-            'pointer-events-none absolute inset-0 scale-110 bg-cover bg-center opacity-40 blur-xl transition-opacity duration-500 dark:opacity-25',
+            `pointer-events-none absolute inset-0 bg-cover transition-opacity ${transitionDurationClass} dark:brightness-[0.42] dark:saturate-[0.55]`,
+            isLoaded || hasError ? 'opacity-0' : 'opacity-100',
+            placeholderClassName
+          )}
+          style={placeholderStyle}
+        />
+      )}
+      {showBlurPlaceholder && src && !hasError && (
+        <div
+          aria-hidden="true"
+          className={mergeClassName(
+            `pointer-events-none absolute inset-0 scale-110 bg-cover bg-center opacity-40 blur-xl transition-opacity ${prefersReducedMotion ? 'duration-0' : 'duration-500'} dark:opacity-25`,
             isLoaded ? 'opacity-0 dark:opacity-0' : undefined
           )}
           style={placeholderStyle}
         />
       )}
-      <div
-        aria-hidden="true"
-        className={mergeClassName(
-          'pointer-events-none absolute inset-0 flex items-center justify-center bg-zinc-100/55 transition-opacity duration-300 dark:bg-zinc-900/55',
-          isLoaded || hasError ? 'opacity-0' : 'opacity-100'
-        )}
-      >
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-300/80 border-t-ink dark:border-zinc-700/80 dark:border-t-white" />
-      </div>
+      {showPlaceholder && (
+        <div
+          aria-hidden="true"
+          className={mergeClassName(
+            `pointer-events-none absolute inset-0 flex items-center justify-center bg-zinc-100/55 transition-opacity ${transitionDurationClass} dark:bg-zinc-900/55`,
+            isLoaded || hasError ? 'opacity-0' : 'opacity-100'
+          )}
+        >
+          <div className={mergeClassName('h-5 w-5 rounded-full border-2 border-zinc-300/80 border-t-ink dark:border-zinc-700/80 dark:border-t-white', prefersReducedMotion ? undefined : 'animate-spin')} />
+        </div>
+      )}
       {hasError ? (
         <div className="relative flex min-h-[6rem] h-full w-full items-center justify-center rounded-[inherit] border border-dashed border-zinc-200 bg-zinc-100/90 px-4 py-6 text-center text-xs font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400">
           <span className="line-clamp-2">图片暂时无法加载{alt ? `：${alt}` : ''}</span>

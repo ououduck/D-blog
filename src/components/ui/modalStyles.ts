@@ -1,7 +1,7 @@
 export type ModalSurfaceVariant = 'dialog' | 'sheet';
 
 export const modalStyles = {
-  root: 'fixed inset-0 z-[110] flex justify-center',
+  root: 'fixed inset-0 z-nested flex justify-center',
   backdrop: 'fixed inset-0 bg-black/50 dark:bg-black/70',
   surface: {
     dialog: 'relative z-10 mx-4 w-full max-w-lg max-h-[80vh] overflow-hidden rounded-overlay border border-zinc-300 bg-paper shadow-none dark:border-zinc-700 dark:bg-zinc-900',

@@ -316,16 +316,41 @@ html.theme-switching .editorial-input {
 
   .code-block-collapsed {
     max-height: 18rem;
+    overflow-y: hidden;
   }
   .code-block-expanded {
     max-height: none;
   }
+  .code-expand-btn,
+  .code-collapse-btn {
+    @apply z-10 inline-flex min-h-11 items-center justify-center rounded-none border border-zinc-600 bg-zinc-800 px-3 py-2 text-center text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 focus-visible:ring-2 focus-visible:ring-zinc-400/70 active:scale-[.98];
+    max-width: calc(100% - 1rem);
+    overflow-wrap: anywhere;
+  }
   .code-expand-btn {
-    @apply absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center rounded-none border-t border-zinc-800 bg-[#0d0d0f]/95 py-4 text-sm text-zinc-400 transition-colors hover:text-zinc-200;
+    @apply absolute bottom-0 left-1/2 -translate-x-1/2 border-zinc-800 bg-[#0d0d0f]/95 text-sm text-zinc-400 hover:bg-[#18181b] hover:text-zinc-200;
+    width: calc(100% - 1rem);
+  }
+  .code-collapse-btn {
+    @apply absolute bottom-2 left-1/2 -translate-x-1/2;
+  }
+
+  .prose figcaption {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
 .back-to-top-btn {
-  @apply fixed bottom-24 right-4 z-50 flex h-9 w-9 items-center justify-center rounded-none border border-zinc-300 bg-paper text-zinc-500 shadow-none transition-colors hover:border-zinc-500 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100 md:bottom-6;
+  bottom: max(calc(var(--cookie-notice-height, 0px) + 1rem), calc(env(safe-area-inset-bottom, 0px) + 1rem));
+  right: max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem));
+  z-index: 40;
+}
+
+@media (min-width: 768px) {
+  .back-to-top-btn {
+    bottom: calc(var(--cookie-notice-height, 0px) + 2rem);
+    right: 2rem;
+  }
 }
 
   .post-nav-item {
@@ -397,12 +422,4 @@ html.theme-switching .editorial-input {
     backdrop-filter: none !important;
   }
 }
-
-@media (max-width: 767px) {
-  .back-to-top-btn {
-    bottom: 5rem;
-    right: 0.875rem;
-  }
-}
-
 

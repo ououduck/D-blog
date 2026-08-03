@@ -8,6 +8,7 @@ import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { usePostSearch } from '@/hooks/usePostSearch';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { getDateTimestamp } from '@/utils/date';
 import { easeOut } from '@/utils/motion';
 
@@ -48,6 +49,7 @@ export const Tags = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const shouldReduceMotion = useReducedMotion();
   const selectedTag = searchParams.get('tag');
   const queryFromUrl = searchParams.get('q') || '';
   const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
@@ -157,7 +159,7 @@ export const Tags = () => {
       {loading || isSearching ? (
         <div className="flex items-center justify-center py-20" aria-busy="true">
           <LoadingStatus label={isSearching ? '正在搜索标签和文章' : '正在加载标签'} />
-          <div aria-hidden="true" className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-900 border-t-transparent dark:border-zinc-100" />
+          <div aria-hidden="true" className={`${shouldReduceMotion ? '' : 'animate-spin '}h-8 w-8 rounded-full border-4 border-zinc-900 border-t-transparent dark:border-zinc-100`} />
         </div>
       ) : loadError || searchError ? (
         <ContentStatus
@@ -186,29 +188,33 @@ export const Tags = () => {
           </div>
 
           {!selectedTag ? (
-            allTags.length > 0 ? (
-              <div className="border-y border-zinc-200 py-8 dark:border-zinc-800 md:py-10">
-                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 md:gap-6">
+            tags.length > 0 ? (
+              <div className="mt-2 border-y border-zinc-200 py-8 dark:border-zinc-800 md:py-10">
+                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-6">
                   {tags.map((tag, index) => (
                     <motion.button
                       key={tag.name}
-                      initial={{ opacity: 0 }}
+                      initial={shouldReduceMotion ? false : { opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={{ duration: 0.2, delay: index * 0.015, ease: easeOut }}
+                      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, delay: Math.min(index * 0.012, 0.06), ease: easeOut }}
                       onClick={() => updateTagParam(tag.name)}
                       className={`${getTagSize(tag.count)} relative border-b border-zinc-300 px-2 py-1.5 font-bold leading-tight text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-900 sm:px-3 sm:py-2 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-100 dark:hover:text-zinc-100`}
-                  aria-label={`查看标签 ${tag.name}，共 ${tag.count} 篇文章`}
-                >
-                  {tag.name}
-                  <span className="ml-1.5 text-[10px] opacity-60 sm:ml-2 sm:text-xs">({tag.count})</span>
-                </motion.button>
+                      aria-label={`查看标签 ${tag.name}，共 ${tag.count} 篇文章`}
+                    >
+                      {tag.name}
+                      <span className="ml-1.5 text-[10px] opacity-60 sm:ml-2 sm:text-xs">({tag.count})</span>
+                    </motion.button>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="border-y border-dashed border-zinc-300 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
-                当前还没有可展示的标签内容。
-              </div>
+              <ContentStatus
+                title={hasSearchQuery ? '未找到匹配标签' : '当前还没有可展示的标签内容。'}
+                description={hasSearchQuery ? '尝试缩短关键词，或清除搜索条件后查看全部标签。' : undefined}
+                actionLabel={hasSearchQuery ? '清除搜索' : undefined}
+                onAction={hasSearchQuery ? handleClearSearch : undefined}
+                className="mt-2"
+              />
             )
           ) : (
             <div>
@@ -228,7 +234,12 @@ export const Tags = () => {
 
               <div className="grid gap-6 md:grid-cols-2">
                 {filteredSelectedTagPosts.map((post, index) => (
-                  <motion.div key={post.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, delay: index * 0.02, ease: easeOut }}>
+                  <motion.div
+                    key={post.id}
+                    initial={shouldReduceMotion ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, delay: Math.min(index * 0.015, 0.06), ease: easeOut }}
+                  >
                     <Link to={`/post/${post.id}`} className="group block border-t border-zinc-200 py-5 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600">
                       <div className="mb-3 flex items-center gap-2">
                         <span className="rounded-full border border-zinc-300 px-3 py-1 text-xs font-bold uppercase tracking-wider text-zinc-900 dark:border-zinc-700 dark:text-zinc-100">

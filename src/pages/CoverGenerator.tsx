@@ -88,6 +88,7 @@ export const CoverGenerator: React.FC = () => {
   // Iconify 搜索状态
   const [iconifySearch, setIconifySearch] = useState('');
   const [iconifyResults, setIconifyResults] = useState<string[]>([]);
+  const [failedIconifyResults, setFailedIconifyResults] = useState<Set<string>>(new Set());
   const [isSearching, setIsSearching] = useState(false);
   const [showIconifyModal, setShowIconifyModal] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -224,6 +225,7 @@ export const CoverGenerator: React.FC = () => {
     setIconifyIconName(null);
     setIconifySearch('');
     setIconifyResults([]);
+    setFailedIconifyResults(new Set());
     setSearchError(null);
     setCustomFont(null);
     resetStyleSettings();
@@ -293,6 +295,7 @@ export const CoverGenerator: React.FC = () => {
     iconifyAbortRef.current?.abort();
     if (!normalizedQuery) {
       setIconifyResults([]);
+      setFailedIconifyResults(new Set());
       setSearchError(null);
       setIsSearching(false);
       return;
@@ -325,7 +328,10 @@ export const CoverGenerator: React.FC = () => {
         throw new Error(`搜索失败 (${response.status})`);
       }
       const data = await response.json() as IconifySearchResponse;
-      if (requestId === iconifySearchIdRef.current) setIconifyResults(data.icons ?? []);
+      if (requestId === iconifySearchIdRef.current) {
+        setIconifyResults(data.icons ?? []);
+        setFailedIconifyResults(new Set());
+      }
     } catch (error) {
       if (requestId !== iconifySearchIdRef.current) return;
       const errorName = error instanceof Error ? error.name : '';
@@ -337,6 +343,7 @@ export const CoverGenerator: React.FC = () => {
           ? '网络连接失败，请检查网络后重试'
           : errorMessage || '搜索失败，请稍后重试');
       setIconifyResults([]);
+      setFailedIconifyResults(new Set());
     } finally {
       window.clearTimeout(timeoutId);
       if (requestId === iconifySearchIdRef.current) setIsSearching(false);
@@ -1357,7 +1364,7 @@ export const CoverGenerator: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            className="fixed inset-0 z-modal flex items-center justify-center bg-black/50 p-4"
             onClick={closeIconifyModal}
           >
             <motion.div
@@ -1368,7 +1375,7 @@ export const CoverGenerator: React.FC = () => {
               role="dialog"
               aria-modal="true"
               aria-labelledby="iconify-dialog-title"
-              className="editorial-overlay w-full max-w-2xl p-5"
+              className="editorial-overlay flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden p-5 supports-[height:100dvh]:max-h-[90dvh]"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-4 flex items-center justify-between">
@@ -1397,7 +1404,7 @@ export const CoverGenerator: React.FC = () => {
                   </motion.div>
                 )}
               </div>
-              <div className="max-h-96 overflow-y-auto">
+              <div className="min-h-0 flex-1 overflow-y-auto">
                 {isSearching ? (
                   <div className="flex items-center justify-center py-12"><RefreshCw className={shouldReduceMotion ? 'text-ink dark:text-white' : 'animate-spin text-ink dark:text-white'} size={32} /></div>
                 ) : iconifyResults.length > 0 ? (
@@ -1406,7 +1413,17 @@ export const CoverGenerator: React.FC = () => {
                       <button key={icon} onClick={() => selectIconifyIcon(icon)}
                         className="flex aspect-square items-center justify-center rounded-control border-2 border-zinc-200 bg-zinc-50 p-3 transition-colors hover:border-ink hover:bg-ink/5 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-white dark:hover:bg-white/5"
                         title={icon}>
-                        <img src={`https://api.iconify.design/${icon}.svg`} alt={icon} className="h-full w-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                        <img
+                          src={failedIconifyResults.has(icon) ? DEFAULT_ICON_SOURCE : `https://api.iconify.design/${icon}.svg`}
+                          alt={icon}
+                          className="h-full w-full object-contain"
+                          onError={(event) => {
+                            if (!failedIconifyResults.has(icon)) {
+                              setFailedIconifyResults((current) => new Set(current).add(icon));
+                              event.currentTarget.src = DEFAULT_ICON_SOURCE;
+                            }
+                          }}
+                        />
                       </button>
                     ))}
                   </div>

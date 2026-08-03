@@ -61,31 +61,32 @@ const RankingCard = ({
   title: string;
   items: Array<{ name: string; count: number }>;
   valueSuffix?: string;
-}) => (
-  <Surface className="p-5 sm:p-6">
-    <h3 className="mb-5 font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">{title}</h3>
-    {items.length === 0 ? (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无可展示的数据。</p>
-    ) : (
-      <div className="space-y-4">
-        {items.map((item, index) => {
-          const max = Math.max(...items.map((entry) => entry.count), 1);
-          return (
+}) => {
+  const max = Math.max(...items.map((item) => item.count), 1);
+
+  return (
+    <Surface className="p-5 sm:p-6">
+      <h3 className="mb-5 font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">{title}</h3>
+      {items.length === 0 ? (
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无可展示的数据。</p>
+      ) : (
+        <div className="space-y-4">
+          {items.map((item, index) => (
             <div key={item.name}>
               <div className="mb-1.5 flex items-center justify-between gap-4 text-sm">
                 <span className="min-w-0 truncate font-medium text-zinc-700 dark:text-zinc-300">{index + 1}. {item.name}</span>
                 <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">{formatValue(item.count)}{valueSuffix}</span>
               </div>
               <div className="h-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                <div className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100" style={{ width: `${Math.max(8, (item.count / max) * 100)}%` }} />
+                <div className="h-full rounded-full bg-zinc-900 transition-[width] duration-200 ease-out dark:bg-zinc-100" style={{ width: `${Math.max(8, (item.count / max) * 100)}%` }} />
               </div>
             </div>
-          );
-        })}
-      </div>
-    )}
-  </Surface>
-);
+          ))}
+        </div>
+      )}
+    </Surface>
+  );
+};
 
 const ExternalStatsCard = ({
   icon: Icon,

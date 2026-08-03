@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Maximize2, Minus, Plus, RotateCcw, X } from 'lucide-react';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 interface ImageViewerProps {
   src: string | null;
@@ -30,6 +31,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const dragStartRef = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
   const touchStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
   const pinchStartRef = useRef({ distance: 0, scale: 1 });
@@ -87,9 +89,13 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
   }, [isOpen]);
 
   useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleWheel);
-  }, [handleWheel]);
+  }, [handleWheel, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -189,9 +195,9 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
           onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
-          className="fixed inset-0 z-[120] flex cursor-default items-center justify-center overflow-hidden bg-zinc-950/95 p-3 text-white sm:p-6"
+          className="fixed inset-0 z-viewer flex cursor-default items-center justify-center overflow-hidden bg-zinc-950/95 p-3 text-white sm:p-6"
           role="dialog"
           aria-modal="true"
           aria-label={alt ? `图片预览：${alt}` : '图片预览'}
@@ -221,7 +227,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
             initial={{ opacity: 0 }}
             animate={{ scale, opacity: isLoaded ? 1 : 0.35, x: position.x, y: position.y }}
             exit={{ opacity: 0 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', damping: 28, stiffness: 260 }}
             className="relative max-h-[86vh] supports-[height:100dvh]:max-h-[86dvh] max-w-[94vw] touch-none select-none"
             style={{ cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in' }}
             onMouseDown={handleMouseDown}
@@ -230,7 +236,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
             onClick={(event) => event.stopPropagation()}
           >
             {!isLoaded && (
-              <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/20 border-t-white/80 animate-spin" />
+              <div className={`absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/20 border-t-white/80 ${prefersReducedMotion ? '' : 'animate-spin'}`} />
             )}
             <img
               src={src}
@@ -265,7 +271,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.12 }}
+              transition={{ delay: prefersReducedMotion ? 0 : 0.12, duration: prefersReducedMotion ? 0 : 0.16 }}
               className="absolute bottom-[4.75rem] left-1/2 z-40 max-w-[min(42rem,88vw)] -translate-x-1/2 rounded-control border border-white/20 bg-zinc-900 px-4 py-2 text-center text-xs text-white/70 sm:bottom-20 sm:text-sm"
             >
               {alt}

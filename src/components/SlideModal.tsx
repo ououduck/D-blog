@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 interface SlideModalProps {
   isOpen: boolean;
@@ -27,14 +29,11 @@ export const SlideModal: React.FC<SlideModalProps> = ({
   ariaDescribedby,
 }) => {
   const [shouldRender, setShouldRender] = useState(isOpen);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 767px)', false);
+  const reducedMotion = useReducedMotion();
   const modalRef = useRef<HTMLDivElement>(null);
   const hasCalledOpenRef = useRef(false);
   const hasCalledCloseRef = useRef(false);
-
-  const reducedMotion = typeof window !== 'undefined'
-    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    : false;
 
   useModalOverlay({
     isOpen,
@@ -42,21 +41,6 @@ export const SlideModal: React.FC<SlideModalProps> = ({
     initialFocusRef,
     containerRef: modalRef
   });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const handleOpen = useCallback(() => {
     if (!hasCalledOpenRef.current && onOpen) {
@@ -123,7 +107,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
           ref={modalRef}
           key="slide-modal"
           tabIndex={-1}
-          className={`fixed inset-0 z-[110] flex justify-center ${isMobile ? 'items-end' : 'items-center'}`}
+          className={`fixed inset-0 z-nested flex justify-center ${isMobile ? 'items-end' : 'items-center'}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby={ariaLabelledby || undefined}

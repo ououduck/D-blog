@@ -7,6 +7,8 @@ import { siteConfig } from '@config/site.config';
 
 import { ProgressiveImage } from './ProgressiveImage';
 import { IssueSubscriptionCard } from './IssueSubscriptionCard';
+import { useReducedMotion as useSiteReducedMotion } from '@/hooks/useReducedMotion';
+import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 import { easeSmooth, routeTransition } from '@/utils/motion';
 
 const SearchModal = lazy(() => import('./SearchModal').then((m) => ({ default: m.SearchModal })));
@@ -43,6 +45,7 @@ const isEditableTarget = (target: EventTarget | null) => {
 const ThemeToggle = () => {
   type Theme = 'light' | 'dark' | 'system';
   const hasInitializedThemeRef = useRef(false);
+  const prefersReducedMotion = useSiteReducedMotion();
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -68,12 +71,12 @@ const ThemeToggle = () => {
         }
       };
 
-      if (hasInitializedThemeRef.current && document.startViewTransition) {
+      if (hasInitializedThemeRef.current && !prefersReducedMotion && document.startViewTransition) {
         document.startViewTransition(() => {
           applyChanges();
         });
       } else {
-        if (hasInitializedThemeRef.current) {
+        if (hasInitializedThemeRef.current && !prefersReducedMotion) {
           root.classList.add('theme-switching');
           window.setTimeout(() => root.classList.remove('theme-switching'), 260);
         }
@@ -107,7 +110,7 @@ const ThemeToggle = () => {
 
     const detachSystemListener = attachSystemListener();
     return () => detachSystemListener();
-  }, [theme]);
+  }, [prefersReducedMotion, theme]);
 
   const toggleTheme = () => {
     if (theme === 'light') {
@@ -129,7 +132,13 @@ const ThemeToggle = () => {
   return (
     <button onClick={toggleTheme} className="group relative inline-flex h-11 w-11 items-center justify-center rounded-icon border border-zinc-300 bg-zinc-100 text-ink transition-colors hover:border-zinc-500 hover:bg-zinc-200 active:bg-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-500 dark:active:bg-zinc-700" aria-label={`切换外观主题，当前为${currentThemeLabel}，点击切换为${nextThemeLabel}`}>
       <AnimatePresence mode="wait" initial={false}>
-        <motion.div key={theme} initial={{ y: -10, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 10, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
+        <motion.div
+          key={theme}
+          initial={prefersReducedMotion ? false : { y: -10, opacity: 0, rotate: -45 }}
+          animate={{ y: 0, opacity: 1, rotate: 0 }}
+          exit={prefersReducedMotion ? undefined : { y: 10, opacity: 0, rotate: 45 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+        >
           {theme === 'light' && <Sun size={18} />}
           {theme === 'dark' && <Moon size={18} />}
           {theme === 'system' && <Monitor size={18} className="text-zinc-500 dark:text-zinc-400" />}
@@ -540,7 +549,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
   return (
     <>
-      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void">
+      <nav className={`fixed left-0 right-0 top-0 ${isMobileNavMounted ? 'z-nav-panel' : 'z-nav'} border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void`}>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, ease: easeSmooth }} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-16">
           <Link to="/" className="group z-50 flex items-center space-x-2.5 sm:space-x-3">
             <ProgressiveImage src={siteConfig.logoSmall} alt={`${siteConfig.title} 站点标志`} fetchPriority="high" width={96} height={96} wrapperClassName="h-8 w-8 bg-white sm:h-9 sm:w-9" className="h-8 w-8 object-cover sm:h-9 sm:w-9" />
@@ -567,7 +576,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                       <span className="relative z-10">{item.label}</span>
                       <span
                         aria-hidden="true"
-                        className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-none bg-zinc-900 dark:bg-zinc-100 transition-all duration-250 ${
+                        className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-none bg-zinc-900 dark:bg-zinc-100 transition-all duration-[250ms] ${
                           isActive
                             ? 'scale-x-100 opacity-100'
                             : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
@@ -618,7 +627,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             data-testid="mobile-nav-backdrop"
             data-open={isMobileNavOpen}
             data-locked={isMobileNavAnimating}
-            className="mobile-nav-backdrop fixed inset-0 z-[70] bg-zinc-950/40 dark:bg-black/55"
+            className="mobile-nav-backdrop fixed inset-0 z-popover bg-zinc-950/40 dark:bg-black/55"
             style={mobileNavStyle}
             onClick={() => requestCloseMobileNav()}
           />
@@ -636,7 +645,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             data-interaction-locked={isMobileNavAnimating}
             data-locked={isMobileNavAnimating}
             data-swiping="false"
-            className="mobile-nav-panel !fixed inset-x-0 bottom-0 z-[80] overflow-hidden editorial-sheet border border-b-0 border-zinc-300 bg-paper text-ink shadow-none outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+            className="mobile-nav-panel !fixed inset-x-0 bottom-0 z-nav-panel overflow-hidden editorial-sheet border border-b-0 border-zinc-300 bg-paper text-ink shadow-none outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
             style={mobileNavPanelStyle}
             tabIndex={-1}
             onTouchStart={handleTouchStart}
@@ -788,10 +797,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) =
     setIsSearchOpen(true);
   }, []);
   const closeSearch = useCallback(() => setIsSearchOpen(false), []);
-  const routeContentKey = location.pathname;
+  const prefersReducedMotion = useSiteReducedMotion();
+  const routeVariants = prefersReducedMotion
+    ? { initial: { opacity: 1 }, animate: { opacity: 1 }, exit: { opacity: 1 } }
+    : routeShellVariants;
+  const routeContentKey = `${location.pathname}${location.search}`;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // 页面快捷键只在没有任何弹层时生效，避免覆盖弹层自身的焦点与 Escape 行为。
+      if (hasOpenOverlay()) {
+        return;
+      }
+
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         if (isEditableTarget(event.target)) {
           return;
@@ -832,7 +850,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) =
             initial={false}
             onExitComplete={() => window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })}
           >
-            <motion.div key={routeContentKey} variants={routeShellVariants} initial="initial" animate="animate" exit="exit" className="mx-auto max-w-7xl">
+            <motion.div key={routeContentKey} variants={routeVariants} initial="initial" animate="animate" exit="exit" className="mx-auto max-w-7xl">
               {children}
             </motion.div>
           </AnimatePresence>

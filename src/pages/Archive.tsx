@@ -8,6 +8,7 @@ import { Seo } from '../components/Seo';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { SearchField } from '@/components/SearchField';
 import { usePostSearch } from '@/hooks/usePostSearch';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { formatDate } from '@/utils/date';
 import { easeOut } from '@/utils/motion';
 import {
@@ -34,6 +35,7 @@ export const ArchivePage = () => {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
+  const shouldReduceMotion = useReducedMotion();
   const initializedRef = useRef(false);
   const searchStartedRef = useRef<string | null>(null);
   const autoExpandedSearchRef = useRef<string | null>(null);
@@ -261,7 +263,7 @@ export const ArchivePage = () => {
           <div className="space-y-6" aria-busy="true">
             <LoadingStatus label={isSearching ? '正在搜索归档文章' : '正在加载归档文章'} />
             {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} aria-hidden="true" className="h-32 animate-pulse rounded-surface border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-900" />
+              <div key={index} aria-hidden="true" className={`${shouldReduceMotion ? '' : 'animate-pulse '}h-32 rounded-surface border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-900`} />
             ))}
           </div>
         ) : loadError || searchError ? (
@@ -288,9 +290,9 @@ export const ArchivePage = () => {
                 return (
                   <motion.section
                     key={group.year}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, delay: groupIndex * 0.03, ease: easeOut }}
+                    initial={shouldReduceMotion ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, delay: Math.min(groupIndex * 0.02, 0.08), ease: easeOut }}
                   >
                     <button
                       onClick={() => toggleYear(group.year)}
@@ -301,7 +303,7 @@ export const ArchivePage = () => {
                       <span className="flex items-center gap-3">
                         <motion.span
                           animate={{ rotate: isYearExpanded ? 0 : -90 }}
-                          transition={{ duration: 0.21, ease: easeOut }}
+                          transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: easeOut }}
                           className="text-zinc-400 transition-colors group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
                         >
                           <ChevronDown size={17} />
@@ -316,10 +318,10 @@ export const ArchivePage = () => {
                     <AnimatePresence>
                       {isYearExpanded && (
                         <motion.div
-                          initial={{ height: 0, opacity: 0 }}
+                          initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.21, ease: easeOut }}
+                          exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
+                          transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: easeOut }}
                           className="overflow-hidden"
                         >
                           <div className="pt-6 md:pt-7">
@@ -330,9 +332,9 @@ export const ArchivePage = () => {
                               return (
                                 <motion.div
                                   key={monthKey}
-                                  initial={{ opacity: 0, y: 6 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ duration: 0.2, delay: monthIndex * 0.02, ease: easeOut }}
+                                  initial={shouldReduceMotion ? false : { opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, delay: Math.min(monthIndex * 0.015, 0.06), ease: easeOut }}
                                   className={monthIndex < group.months.length - 1 ? 'mb-7 md:mb-8' : undefined}
                                 >
                                   <button
@@ -343,7 +345,7 @@ export const ArchivePage = () => {
                                   >
                                     <motion.span
                                       animate={{ rotate: isMonthExpanded ? 0 : -90 }}
-                                      transition={{ duration: 0.21, ease: easeOut }}
+                                      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: easeOut }}
                                       className="text-zinc-400 transition-colors group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
                                     >
                                       <ChevronDown size={14} />
@@ -355,19 +357,19 @@ export const ArchivePage = () => {
                                   <AnimatePresence>
                                     {isMonthExpanded && (
                                       <motion.div
-                                        initial={{ height: 0, opacity: 0 }}
+                                        initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
                                         animate={{ height: 'auto', opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        transition={{ duration: 0.21, ease: easeOut }}
+                                        exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
+                                        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: easeOut }}
                                         className="overflow-hidden"
                                       >
                                         <div className="border-t border-zinc-200 dark:border-zinc-800">
                                           {monthGroup.posts.map((post, postIndex) => (
                                             <motion.div
                                               key={post.id}
-                                              initial={{ opacity: 0, y: 4 }}
-                                              animate={{ opacity: 1, y: 0 }}
-                                              transition={{ duration: 0.18, delay: postIndex * 0.015, ease: easeOut }}
+                                              initial={shouldReduceMotion ? false : { opacity: 0 }}
+                                              animate={{ opacity: 1 }}
+                                              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.14, delay: Math.min(postIndex * 0.01, 0.05), ease: easeOut }}
                                             >
                                               <Link
                                                 to={`/post/${post.id}`}

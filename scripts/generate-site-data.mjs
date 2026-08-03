@@ -19,6 +19,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const POSTS_DIR = path.join(__dirname, '../posts');
+const POSTS_IMG_DIR = path.join(__dirname, '../posts-img');
 const FRIENDS_DIR = path.join(__dirname, '../friends');
 const OUTPUT_JSON_DIR = path.join(__dirname, '../generated');
 const PUBLIC_DIR = path.join(__dirname, '../public');
@@ -130,6 +131,115 @@ const countWords = (markdown) => {
 };
 
 const countImages = (markdown) => (markdown.match(/!\[[^\]]*\]\([^)]+\)/g) || []).length;
+
+const readImageDimensions = (filePath) => {
+  try {
+    const buffer = fs.readFileSync(filePath);
+    const extension = path.extname(filePath).toLowerCase();
+
+    if (extension === '.png' && buffer.length >= 24 && buffer.toString('ascii', 1, 4) === 'PNG') {
+      return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+    }
+
+    if (extension === '.gif' && buffer.length >= 10 && buffer.toString('ascii', 0, 3) === 'GIF') {
+      return { width: buffer.readUInt16LE(6), height: buffer.readUInt16LE(8) };
+    }
+
+    if (extension === '.webp' && buffer.length >= 20 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') {
+      let chunkOffset = 12;
+
+      while (chunkOffset + 8 <= buffer.length) {
+        const chunk = buffer.toString('ascii', chunkOffset, chunkOffset + 4);
+        const chunkSize = buffer.readUInt32LE(chunkOffset + 4);
+        const dataOffset = chunkOffset + 8;
+        const dataEnd = dataOffset + chunkSize;
+
+        if (dataEnd > buffer.length) {
+          break;
+        }
+
+        if (chunk === 'VP8X' && chunkSize >= 10) {
+          return {
+            width: 1 + buffer.readUIntLE(dataOffset + 4, 3),
+            height: 1 + buffer.readUIntLE(dataOffset + 7, 3)
+          };
+        }
+
+        if (
+          chunk === 'VP8 '
+          && chunkSize >= 10
+          && buffer[dataOffset + 3] === 0x9d
+          && buffer[dataOffset + 4] === 0x01
+          && buffer[dataOffset + 5] === 0x2a
+        ) {
+          return {
+            width: buffer.readUInt16LE(dataOffset + 6) & 0x3fff,
+            height: buffer.readUInt16LE(dataOffset + 8) & 0x3fff
+          };
+        }
+
+        if (chunk === 'VP8L' && chunkSize >= 5 && buffer[dataOffset] === 0x2f) {
+          const bits = buffer.readUInt32LE(dataOffset + 1);
+          return { width: (bits & 0x3fff) + 1, height: ((bits >> 14) & 0x3fff) + 1 };
+        }
+
+        chunkOffset = dataEnd + (chunkSize % 2);
+      }
+    }
+
+    if (extension === '.jpg' || extension === '.jpeg') {
+      if (buffer.length < 4 || buffer.readUInt16BE(0) !== 0xffd8) return undefined;
+      let offset = 2;
+      while (offset + 9 < buffer.length) {
+        if (buffer[offset] !== 0xff) {
+          offset += 1;
+          continue;
+        }
+        const marker = buffer[offset + 1];
+        offset += 2;
+        if (marker === 0xd8 || marker === 0xd9) continue;
+        if (offset + 2 > buffer.length) break;
+        const segmentLength = buffer.readUInt16BE(offset);
+        if (segmentLength < 2 || offset + segmentLength > buffer.length) break;
+        const isStartOfFrame = marker >= 0xc0 && marker <= 0xc3
+          || marker >= 0xc5 && marker <= 0xc7
+          || marker >= 0xc9 && marker <= 0xcb
+          || marker >= 0xcd && marker <= 0xcf;
+        if (isStartOfFrame && segmentLength >= 7) {
+          return { width: buffer.readUInt16BE(offset + 5), height: buffer.readUInt16BE(offset + 3) };
+        }
+        offset += segmentLength;
+      }
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+};
+
+const normalizeLocalImageUrl = (value, postId) => {
+  if (!value || /^[a-z][a-z0-9+.-]*:/i.test(value)) return undefined;
+  const raw = String(value).trim().replace(/\\/g, '/');
+  const clean = raw.replace(/^\/+/, '').replace(/^\.\/+/, '').replace(/^(?:\.\.\/)+/, '');
+  const url = clean.startsWith('posts-img/') ? `/${clean}` : `/posts-img/${postId}/${clean}`;
+  const filePath = path.join(POSTS_IMG_DIR, url.slice('/posts-img/'.length));
+  if (!filePath.startsWith(POSTS_IMG_DIR + path.sep) || !fs.existsSync(filePath)) return undefined;
+  return { url, dimensions: readImageDimensions(filePath) };
+};
+
+const extractImageDimensions = (markdown, postId) => {
+  const dimensions = {};
+  const imagePattern = /!\[[^\]]*\]\(([^)\s]+)(?:\s+[^)]*)?\)/g;
+  let match;
+  while ((match = imagePattern.exec(markdown))) {
+    const resolved = normalizeLocalImageUrl(match[1], postId);
+    if (resolved?.dimensions?.width && resolved.dimensions.height) {
+      dimensions[resolved.url] = resolved.dimensions;
+    }
+  }
+  return Object.keys(dimensions).length > 0 ? dimensions : undefined;
+};
 
 const normalizeTags = (value) => {
   if (!Array.isArray(value)) {
@@ -372,6 +482,11 @@ const postsWithSearch = files
     const tags = normalizeTags(data.tags);
     const wordCount = countWords(content);
     const imageCount = countImages(content);
+    const normalizedCoverImage = normalizeCoverImage(coverImage);
+    const coverDimensions = normalizedCoverImage && !/^[a-z][a-z0-9+.-]*:/i.test(normalizedCoverImage)
+      ? normalizeLocalImageUrl(normalizedCoverImage, id)?.dimensions
+      : undefined;
+    const imageDimensions = extractImageDimensions(content, id);
 
     if (!formattedDate) {
       throw new Error(`Post "${filename}" is missing a valid date field.`);
@@ -383,7 +498,10 @@ const postsWithSearch = files
 
     return {
       ...restData,
-      coverImage: normalizeCoverImage(coverImage),
+      coverImage: normalizedCoverImage,
+      coverWidth: coverDimensions?.width,
+      coverHeight: coverDimensions?.height,
+      imageDimensions,
       category,
       tags,
       date: formattedDate,

@@ -19,6 +19,8 @@ import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { extractMarkdownHeadings, extractTextFromReactNode, slugifyHeading } from '@/utils/headings';
 import type { MarkdownHeading } from '@/utils/headings';
 import { formatDate } from '@/utils/date';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 
 
 type BlockCodeProps = {
@@ -36,18 +38,51 @@ type MermaidRenderer = {
   render: (id: string, text: string) => Promise<{ svg: string }>;
 };
 
-const MERMAID_CONFIG = {
+const getIsDarkTheme = () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+
+const getMermaidConfig = (isDark: boolean) => ({
   startOnLoad: false,
-  theme: 'dark',
-  themeVariables: {
-    primaryColor: '#27272a',
-    primaryTextColor: '#fafafa',
-    primaryBorderColor: '#a1a1aa',
-    lineColor: '#71717a',
-    secondaryColor: '#3f3f46',
-    tertiaryColor: '#18181b'
-  }
-} as const;
+  theme: isDark ? 'dark' : 'base',
+  themeVariables: isDark
+    ? {
+        primaryColor: '#27272a',
+        primaryTextColor: '#fafafa',
+        primaryBorderColor: '#a1a1aa',
+        lineColor: '#71717a',
+        secondaryColor: '#3f3f46',
+        tertiaryColor: '#18181b',
+        background: '#18181b',
+        mainBkg: '#27272a',
+        nodeBorder: '#a1a1aa'
+      }
+    : {
+        primaryColor: '#f4f4f5',
+        primaryTextColor: '#18181b',
+        primaryBorderColor: '#52525b',
+        lineColor: '#71717a',
+        secondaryColor: '#e4e4e7',
+        tertiaryColor: '#fafafa',
+        background: '#fafafa',
+        mainBkg: '#f4f4f5',
+        nodeBorder: '#52525b'
+      }
+} as const);
+
+const HIGHLIGHT_STYLE_ID = 'post-highlight-theme';
+
+const loadHighlightThemeCss = async (isDark: boolean) => {
+  const themeModule = isDark
+    ? await import('highlight.js/styles/github-dark.css?raw')
+    : await import('highlight.js/styles/github.css?raw');
+  return themeModule.default;
+};
+
+const syncHighlightTheme = (css: string) => {
+  const style = document.getElementById(HIGHLIGHT_STYLE_ID) ?? document.createElement('style');
+  style.id = HIGHLIGHT_STYLE_ID;
+  style.textContent = css;
+  document.head.appendChild(style);
+};
 
 const hasCodeBlocks = (content: string) => /^```[\w-]*[\s\S]*?^```/m.test(content);
 const hasMathExpressions = (content: string) => /\$\$[\s\S]*?\$\$|\\\(|\\\[/m.test(content);
@@ -183,7 +218,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
       <button
         type="button"
         onClick={handleCopy}
-        className={`absolute right-3 top-3 z-10 rounded-none border border-zinc-600 p-2 transition-colors active:scale-[.98] ${
+        className={`absolute right-3 top-3 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-none border border-zinc-600 p-2 transition-colors focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 focus-visible:ring-2 focus-visible:ring-zinc-400/70 active:scale-[.98] ${
           copied
             ? 'bg-zinc-100 text-zinc-950'
             : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white md:opacity-0 md:group-hover:opacity-100'
@@ -205,6 +240,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
 
         {needsExpand && !isExpanded && (
           <button
+            type="button"
             onClick={() => setIsExpanded(true)}
             className="code-expand-btn"
             aria-label="展开完整代码"
@@ -216,7 +252,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
           <button
             type="button"
             onClick={() => setIsExpanded(false)}
-            className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2 border border-zinc-600 bg-zinc-800 px-3 py-1 text-xs active:scale-[.98] text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
+            className="code-collapse-btn"
             aria-label="折叠代码"
           >
             折叠
@@ -227,7 +263,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
   );
 };
 
-const MermaidBlock = ({ children, renderer }: { children: string; renderer: MermaidRenderer | null }) => {
+const MermaidBlock = ({ children, renderer, theme }: { children: string; renderer: MermaidRenderer | null; theme: 'light' | 'dark' }) => {
   const [svg, setSvg] = useState('');
   const mermaidIdRef = useRef(`mermaid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`);
 
@@ -258,11 +294,11 @@ const MermaidBlock = ({ children, renderer }: { children: string; renderer: Merm
     return () => {
       cancelled = true;
     };
-  }, [children, renderer]);
+  }, [children, renderer, theme]);
 
   if (!svg) {
     return (
-      <pre className="my-8 overflow-x-auto rounded-none border border-zinc-800 bg-[#0d0d0f] p-4 text-sm text-zinc-300">
+      <pre className={`my-8 overflow-x-auto rounded-none border p-4 text-sm ${theme === 'dark' ? 'border-zinc-800 bg-[#0d0d0f] text-zinc-300' : 'border-zinc-300 bg-zinc-50 text-zinc-700'}`}>
         <code>{children}</code>
       </pre>
     );
@@ -304,9 +340,32 @@ const resolvePostsImgPath = (value: string) => {
   return `/${clean}`;
 };
 
+const normalizeImageUrl = (value: string) => {
+  const withoutHash = value.split('#', 1)[0];
+  const withoutQuery = withoutHash.split('?', 1)[0];
+  return withoutQuery.replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/^\/+/, '').toLowerCase();
+};
+
+const findImageDimensions = (imageDimensions: PostMetadata['imageDimensions'], src: string) => {
+  if (!imageDimensions) {
+    return undefined;
+  }
+
+  const normalizedSrc = normalizeImageUrl(src);
+  const matchingKey = Object.keys(imageDimensions).find((key) => {
+    const normalizedKey = normalizeImageUrl(key);
+    return normalizedKey === normalizedSrc
+      || normalizedKey.endsWith(`/${normalizedSrc}`)
+      || normalizedSrc.endsWith(`/${normalizedKey}`);
+  });
+  return matchingKey ? imageDimensions[matchingKey] : undefined;
+};
+
 const createMarkdownComponents = (
   onPreviewImage: (image: { src: string; alt?: string }) => void,
   mermaidRenderer: MermaidRenderer | null,
+  mermaidTheme: 'light' | 'dark',
+  imageDimensions: PostMetadata['imageDimensions'],
   headings: MarkdownHeading[]
 ): Components => {
   let headingCursor = 0;
@@ -417,6 +476,7 @@ const createMarkdownComponents = (
     img: ({ src, alt, title, previewSrc, ...props }: MarkdownImageProps) => {
       const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? src : resolvePostsImgPath(src)) : src;
       const previewTarget = previewSrc || resolvedSrc || '';
+      const dimensions = resolvedSrc ? findImageDimensions(imageDimensions, resolvedSrc) : undefined;
       return (
         <figure className="group/myimage my-7 md:my-10">
           <button
@@ -431,6 +491,8 @@ const createMarkdownComponents = (
               alt={alt}
               loading="lazy"
               decoding="async"
+              width={dimensions?.width ?? props.width}
+              height={dimensions?.height ?? props.height}
               wrapperClassName="rounded-media"
               className="cursor-zoom-in rounded-media transition-opacity duration-200 group-hover/myimage:opacity-95"
             />
@@ -459,7 +521,7 @@ const createMarkdownComponents = (
       const isBlockCode = Boolean(isBlock) || /language-(\w+)/.test(className || '');
 
       if (className?.includes('language-mermaid')) {
-        return <MermaidBlock renderer={mermaidRenderer}>{String(children)}</MermaidBlock>;
+        return <MermaidBlock renderer={mermaidRenderer} theme={mermaidTheme}>{String(children)}</MermaidBlock>;
       }
 
       if (isBlockCode) {
@@ -494,9 +556,25 @@ export const Post = () => {
   const [remarkPlugins, setRemarkPlugins] = useState<MarkdownPlugin[]>([remarkGfm]);
   const [rehypePlugins, setRehypePlugins] = useState<MarkdownPlugin[]>([]);
   const [mermaidRenderer, setMermaidRenderer] = useState<MermaidRenderer | null>(null);
+  const [mermaidTheme, setMermaidTheme] = useState<'light' | 'dark'>(() => getIsDarkTheme() ? 'dark' : 'light');
   const [mobileFloatingVisible, setMobileFloatingVisible] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
   const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostMetadata | null; next: PostMetadata | null }>({ prev: null, next: null });
   const articleBodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const updateTheme = () => {
+      setMermaidTheme(getIsDarkTheme() ? 'dark' : 'light');
+    };
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    updateTheme();
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -558,16 +636,15 @@ export const Post = () => {
       const nextRehypePlugins: MarkdownPlugin[] = [];
       let nextMermaidRenderer: MermaidRenderer | null = null;
       const tasks: Promise<void>[] = [];
+      const containsMermaid = hasMermaidDiagrams(post.content);
+
+      if (containsMermaid) {
+        setMermaidRenderer(null);
+      }
 
       if (hasCodeBlocks(post.content)) {
         tasks.push((async () => {
-          const isDark = document.documentElement.classList.contains('dark');
-          const highlightCss = isDark ? import('highlight.js/styles/github-dark.css') : import('highlight.js/styles/github.css');
-
-          const [{ default: rehypeHighlight }] = await Promise.all([
-            import('rehype-highlight'),
-            highlightCss
-          ]);
+          const { default: rehypeHighlight } = await import('rehype-highlight');
 
           if (cancelled) return;
           nextRehypePlugins.push(rehypeHighlight);
@@ -590,7 +667,11 @@ export const Post = () => {
       if (hasMermaidDiagrams(post.content)) {
         tasks.push((async () => {
           const { default: mermaid } = await import('mermaid');
-          mermaid.initialize(MERMAID_CONFIG);
+          if (cancelled) {
+            return;
+          }
+
+          mermaid.initialize(getMermaidConfig(mermaidTheme === 'dark'));
           nextMermaidRenderer = mermaid as MermaidRenderer;
         })());
       }
@@ -621,7 +702,30 @@ export const Post = () => {
     return () => {
       cancelled = true;
     };
-  }, [post?.content]);
+  }, [mermaidTheme, post?.content]);
+
+  useEffect(() => {
+    if (!post?.content || !hasCodeBlocks(post.content)) {
+      return;
+    }
+
+    let cancelled = false;
+    void loadHighlightThemeCss(mermaidTheme === 'dark')
+      .then((css) => {
+        if (!cancelled) {
+          syncHighlightTheme(css);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Failed to sync highlight.js theme:', error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mermaidTheme, post?.content]);
 
   const headings = useMemo(() => extractMarkdownHeadings(post?.content ?? ''), [post?.content]);
 
@@ -677,14 +781,20 @@ export const Post = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (hasOpenOverlay()) {
+        return;
+      }
+
       if (e.key === 'Escape') {
         if (previewImage) { setPreviewImage(null); return; }
         if (shareModalOpen) { setShareModalOpen(false); return; }
       }
       if (e.key === 'ArrowLeft' && e.altKey && adjacentPosts.prev) {
+        e.preventDefault();
         navigate(`/post/${adjacentPosts.prev.id}`);
       }
       if (e.key === 'ArrowRight' && e.altKey && adjacentPosts.next) {
+        e.preventDefault();
         navigate(`/post/${adjacentPosts.next.id}`);
       }
     };
@@ -693,15 +803,15 @@ export const Post = () => {
   }, [previewImage, shareModalOpen, adjacentPosts, navigate]);
 
   const markdownComponents = useMemo(
-    () => createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, headings),
-    [mermaidRenderer, headings]
+    () => createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, mermaidTheme, post?.imageDimensions, headings),
+    [mermaidRenderer, mermaidTheme, post?.imageDimensions, headings]
   );
 
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl pt-10" aria-busy="true">
         <LoadingStatus label="正在加载文章内容" />
-        <div aria-hidden="true" className="mb-16 animate-pulse text-center">
+        <div aria-hidden="true" className={`mb-16 text-center ${shouldReduceMotion ? '' : 'animate-pulse'}`}>
           <div className="mx-auto mb-10 h-6 w-24 rounded-micro bg-zinc-200 dark:bg-zinc-800" />
           <div className="mx-auto mb-8 h-12 w-3/4 rounded-micro bg-zinc-200 dark:bg-zinc-800 md:h-16" />
           <div className="flex justify-center space-x-6">
@@ -837,7 +947,11 @@ export const Post = () => {
             </nav>
           </div>
 
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06, duration: 0.3, ease: easeOut }}>
+          <motion.div
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.06, duration: 0.3, ease: easeOut }}
+          >
             <h1 className="mb-5 text-balance font-serif text-3xl font-bold leading-[1.18] tracking-[-0.02em] text-ink dark:text-white md:mb-6 md:text-5xl lg:text-[3.5rem]">
               {post.title}
             </h1>
@@ -871,8 +985,13 @@ export const Post = () => {
 
         {post.coverImage && (
           <button type="button" className="mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 0.22, ease: easeOut }} className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-media border border-zinc-300 bg-zinc-100 shadow-none dark:border-zinc-700 dark:bg-zinc-900 sm:aspect-[16/8] md:mb-14 lg:aspect-[21/9]">
-              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" width={1600} height={686} aspectRatio="21/9" sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.1, duration: 0.22, ease: easeOut }}
+              className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-media border border-zinc-300 bg-zinc-100 shadow-none dark:border-zinc-700 dark:bg-zinc-900 sm:aspect-[16/8] md:mb-14 lg:aspect-[21/9]"
+            >
+              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
             </motion.div>
           </button>
         )}

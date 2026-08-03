@@ -70,6 +70,15 @@ export default {
         overlay: '12px',
         media: '8px',
       },
+      zIndex: {
+        floating: '40',
+        nav: '50',
+        'nav-panel': '85',
+        popover: '70',
+        modal: '100',
+        nested: '110',
+        viewer: '120',
+      },
       typography: (theme) => ({
         DEFAULT: {
           css: {
