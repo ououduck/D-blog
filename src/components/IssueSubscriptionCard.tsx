@@ -1,6 +1,6 @@
 import { Bell, ExternalLink, Github } from 'lucide-react';
 
-const ISSUE_SUBSCRIPTION_URL = 'https://github.com/ououduck/D-blog/issues/6';
+export const ISSUE_SUBSCRIPTION_URL = 'https://github.com/ououduck/D-blog/issues/6';
 
 export const IssueSubscriptionCard = ({ compact = false }: { compact?: boolean }) => {
   if (compact) {

@@ -1,13 +1,13 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Sun, Moon, Github, Menu, X, Search, Heart, Monitor, Rss, BookOpen, Archive, Tag, BarChart3, Users, Info, Bookmark } from 'lucide-react';
+import { Sun, Moon, Github, Menu, X, Search, Heart, Monitor, Rss, BookOpen, Archive, Tag, BarChart3, Users, Info, Bookmark, Bell, ChevronDown, Mail, ExternalLink } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { preloadPage } from '@/utils/preload';
 import { assetUrl } from '@/utils/siteUrl';
 import { siteConfig } from '@config/site.config';
 
 import { ProgressiveImage } from './ProgressiveImage';
-import { IssueSubscriptionCard } from './IssueSubscriptionCard';
+import { IssueSubscriptionCard, ISSUE_SUBSCRIPTION_URL } from './IssueSubscriptionCard';
 import { useReducedMotion as useSiteReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 import { useReadingMode, ReadingModeProvider } from './ReadingModeContext';
@@ -161,6 +161,7 @@ export const MOBILE_NAV_ANIMATION_DURATION_MS = 340;
 export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const [mobileNavPhase, setMobileNavPhase] = useState<MobileNavPhase>('closed');
   const [isMobileNavMounted, setIsMobileNavMounted] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const shouldReduceMotion = useReducedMotion();
@@ -183,8 +184,14 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     { path: '/stats', label: TEXT.navStats, hint: '站点数据', icon: BarChart3 },
     { path: '/friends', label: TEXT.navFriends, hint: '友情链接', icon: Users },
     { path: '/sponsor', label: TEXT.navSponsor, hint: '赞助支持', icon: Heart },
-    { path: '/about', label: TEXT.navAbout, hint: '\u7ad9\u70b9\u4ecb\u7ecd', icon: Info },
-    { path: '/favorites', label: TEXT.navFavorites, hint: '\u672c\u5730\u79bb\u7ebf\u9605\u8bfb', icon: Bookmark }
+    { path: '/about', label: TEXT.navAbout, hint: '\u7ad9\u70b9\u4ecb\u7ecd', icon: Info }
+  ];
+  const moreNavItems = [
+    { key: 'favorites', path: '/favorites', label: TEXT.navFavorites, hint: '\u672c\u5730\u79bb\u7ebf\u9605\u8bfb', icon: Bookmark },
+    { key: 'email', label: '邮件', hint: '联系作者', icon: Mail, href: siteConfig.social.email },
+    { key: 'github', label: 'GitHub', hint: '项目仓库', icon: Github, href: siteConfig.friendsPage.repoUrl },
+    { key: 'rss', label: TEXT.rssFeed, hint: '订阅更新', icon: Rss, href: assetUrl('/feed.xml') },
+    { key: 'issue-subscription', label: '订阅', hint: '接收文章提醒', icon: Bell, href: ISSUE_SUBSCRIPTION_URL }
   ];
   const isNavItemActive = (path: string) => location.pathname === path || (path === '/' && location.pathname.startsWith('/post/'));
   const mobileQuickActions = [
@@ -194,22 +201,6 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       hint: '快速找内容',
       icon: Search,
       onClick: () => requestCloseMobileNav(() => onSearchClick())
-    },
-    {
-      key: 'rss',
-      label: 'RSS',
-      hint: '订阅更新',
-      icon: Rss,
-      href: assetUrl('/feed.xml'),
-      external: true
-    },
-    {
-      key: 'github',
-      label: '源码',
-      hint: '项目仓库',
-      icon: Github,
-      href: siteConfig.friendsPage.repoUrl,
-      external: true
     }
   ];
   const navListVariants = {
@@ -257,6 +248,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     clearTransitionTimer();
     setIsMobileNavMounted(false);
     setMobileNavPhase('closed');
+    setIsMoreMenuOpen(false);
 
     const afterCloseAction = afterCloseActionRef.current;
     afterCloseActionRef.current = null;
@@ -534,7 +526,19 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     previousActiveElementRef.current = null;
     setIsMobileNavMounted(false);
     setMobileNavPhase('closed');
+    setIsMoreMenuOpen(false);
   }, [clearAnimationFrame, clearTransitionTimer, isMobileNavMounted, locationKey, resetMobileNavDragStyles]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMoreMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => () => {
     clearAnimationFrame();
@@ -590,6 +594,34 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                   </motion.div>
                 );
               })}
+              <motion.div
+                variants={navItemVariants}
+                className="nav-more-menu relative"
+                onMouseEnter={() => setIsMoreMenuOpen(true)}
+                onMouseLeave={() => setIsMoreMenuOpen(false)}
+              >
+                <button
+                  type="button"
+                  className="group inline-flex h-10 items-center gap-1 px-2 py-1 text-sm font-semibold tracking-wide text-zinc-700 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 dark:text-zinc-300 dark:hover:text-white"
+                  aria-label="展开收藏与订阅菜单"
+                  aria-expanded={isMoreMenuOpen}
+                  aria-controls="desktop-more-menu"
+                  onClick={() => setIsMoreMenuOpen((open) => !open)}
+                >
+                  <span>更多</span>
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                </button>
+                <div id="desktop-more-menu" role="menu" data-open={isMoreMenuOpen} className="nav-more-menu-panel absolute right-0 top-full z-popover mt-1 min-w-44 rounded-surface border border-zinc-200 bg-paper p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
+                  {moreNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const content = <><Icon size={15} aria-hidden="true" /><span className="flex-1">{item.label}</span><span className="text-[10px] font-normal text-zinc-400">{item.hint}</span></>;
+                    if ('path' in item) {
+                      return <Link key={item.key} role="menuitem" to={item.path} onMouseEnter={() => preloadPage(item.path)} onClick={() => setIsMoreMenuOpen(false)} className="flex items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white">{content}</Link>;
+                    }
+                    return <a key={item.key} role="menuitem" href={item.href} target="_blank" rel="noopener noreferrer" onClick={() => setIsMoreMenuOpen(false)} className="flex items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white">{content}<ExternalLink size={11} aria-hidden="true" /></a>;
+                  })}
+                </div>
+              </motion.div>
             </motion.div>
 
             <div className="flex items-center gap-2 border-l border-zinc-300 pl-5 dark:border-zinc-700">
@@ -597,10 +629,6 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                 <Search size={16} />
                 <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">Ctrl+K</span>
               </motion.button>
-              <motion.a variants={navItemVariants} href={assetUrl('/feed.xml')} target="_blank" rel="noopener noreferrer" className="group flex h-11 items-center gap-2 rounded-control border border-transparent px-3 text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950 active:bg-zinc-200 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-white dark:active:bg-zinc-800">
-                <Rss size={16} />
-                <span className="text-xs font-medium">{TEXT.rssFeed}</span>
-              </motion.a>
               <motion.div variants={navItemVariants}>
                 <ThemeToggle />
               </motion.div>
@@ -696,17 +724,37 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                 })}
               </nav>
 
-              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+              <div className="mt-3 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setIsMoreMenuOpen((open) => !open)}
+                  className="flex w-full items-center gap-3 rounded-control px-1 py-3 text-left text-zinc-600 transition-colors hover:text-ink dark:text-zinc-400 dark:hover:text-white"
+                  aria-expanded={isMoreMenuOpen}
+                  aria-controls="mobile-more-menu"
+                >
+                  <ChevronDown size={17} className={`transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                  <span className="flex-1 text-sm font-semibold">收藏与订阅</span>
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">我的收藏、邮件、GitHub、RSS</span>
+                </button>
+                <div id="mobile-more-menu" data-open={isMoreMenuOpen} className="mobile-more-menu-panel">
+                  {isMoreMenuOpen && moreNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const className = 'flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white';
+                    const content = <><Icon size={16} aria-hidden="true" /><span className="flex-1">{item.label}</span><span className="text-xs font-normal text-zinc-400 dark:text-zinc-500">{item.hint}</span></>;
+                    if ('path' in item) {
+                      return <button key={item.key} type="button" onClick={() => handleMobileNavItemSelect(item.path)} disabled={isMobileNavAnimating} className={className}>{content}</button>;
+                    }
+                    return <a key={item.key} href={item.href} target="_blank" rel="noopener noreferrer" className={className}>{content}<ExternalLink size={12} aria-hidden="true" /></a>;
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-1 gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
                 {mobileQuickActions.map((action) => {
                   const Icon = action.icon;
                   const className = 'flex min-h-11 items-center justify-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2.5 text-xs font-semibold text-zinc-600 shadow-none transition-colors hover:border-zinc-500 hover:text-zinc-950 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-white dark:active:bg-zinc-800';
                   const content = <><Icon size={15} /><span>{action.label}</span></>;
-
-                  if ('onClick' in action) {
-                    return <button key={action.key} type="button" onClick={action.onClick} className={className} disabled={isMobileNavAnimating}>{content}</button>;
-                  }
-
-                  return <a key={action.key} href={action.href} target={action.external ? '_blank' : undefined} rel={action.external ? 'noopener noreferrer' : undefined} className={className}>{content}</a>;
+                  return <button key={action.key} type="button" onClick={action.onClick} className={className} disabled={isMobileNavAnimating}>{content}</button>;
                 })}
               </div>
 

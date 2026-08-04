@@ -49,6 +49,8 @@ const getIsDarkTheme = () => typeof document !== 'undefined' && document.documen
 
 const getMermaidConfig = (isDark: boolean) => ({
   startOnLoad: false,
+  // Keep labels in SVG text nodes so DOMPurify's SVG profile preserves them.
+  htmlLabels: false,
   theme: isDark ? 'dark' : 'base',
   themeVariables: isDark
     ? {

@@ -171,6 +171,40 @@ html.theme-switching .editorial-input {
   }
 }
 
+.nav-more-menu-panel {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.35rem);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.nav-more-menu:hover .nav-more-menu-panel,
+.nav-more-menu:focus-within .nav-more-menu-panel,
+.nav-more-menu-panel[data-open='true'] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.mobile-more-menu-panel {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 200ms ease, opacity 200ms ease;
+}
+
+.mobile-more-menu-panel[data-open='true'] {
+  max-height: 24rem;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-more-menu-panel,
+  .mobile-more-menu-panel {
+    transition-duration: 1ms;
+  }
+}
+
 .mobile-nav-backdrop,
 .mobile-nav-panel {
   transition-property: opacity, transform;
