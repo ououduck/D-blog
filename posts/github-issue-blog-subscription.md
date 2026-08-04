@@ -78,14 +78,14 @@ on:
 一次 `push` 可能包含一个或多个 commit。只比较 `HEAD~1` 与 `HEAD` 会漏掉同一次推送中较早的提交，因此应使用 GitHub 事件给出的前后 SHA：
 
 ```bash
-git diff --name-only --diff-filter=AM "$BEFORE_SHA" "$AFTER_SHA" -- 'posts/**/*.md'
+git diff --name-only --diff-filter=AM "$BEFORE_SHA" "$AFTER_SHA" -- 'posts/*.md'
 ```
 
 其中：
 
 - `--name-only` 只输出文件路径。
 - `--diff-filter=AM` 只保留新增（`A`）与修改（`M`）的文件。
-- `-- 'posts/**/*.md'` 仅检查文章目录内的 Markdown 文件。
+- `-- 'posts/*.md'` 仅检查 `posts/` 根目录内的 Markdown 文件。这里使用的是 Git pathspec，与工作流触发器中的 Actions glob 不是同一种匹配规则。
 
 如果仓库是首次推送，前一个 SHA 会是全零值。此时改用 `git show` 获取当前提交中的文章文件即可。
 
@@ -213,7 +213,7 @@ const childProcess = require('child_process');
 const fs = require('fs');
 
 const files = childProcess
-  .execFileSync('git', ['diff', '--name-only', '--diff-filter=AM', beforeSha, afterSha, '--', 'posts/**/*.md'], { encoding: 'utf8' })
+  .execFileSync('git', ['diff', '--name-only', '--diff-filter=AM', beforeSha, afterSha, '--', 'posts/*.md'], { encoding: 'utf8' })
   .split(/\r?\n/)
   .filter(Boolean);
 
@@ -285,7 +285,7 @@ Notification posted: https://github.com/ououduck/D-blog/issues/6#issuecomment-..
 | `Skipping draft` | 文章包含 `draft: true`，将其设为 `false` 或移除该字段后重新推送。 |
 | `file does not exist in this workflow checkout` | 手动填写的路径不存在或分支选择错误，检查路径、大小写和运行分支。 |
 | `Missing id front matter` | 工作流会用文件名作为临时 slug；建议补充 `id`，确保文章链接与站点路由一致。 |
-| `No published posts to notify` | 本次没有识别到可发布文章。检查推送是否修改了 `posts/**/*.md`，或手动触发时是否填了文章路径。 |
+| `No published posts to notify` | 本次没有识别到可发布文章。检查推送是否修改了 `posts/*.md`，或手动触发时是否填了文章路径。 |
 | `Resource not accessible by integration` | `GITHUB_TOKEN` 没有 Issue 写权限，到仓库 Actions 设置中启用 **Read and write permissions**。 |
 
 ## 给读者的订阅入口

@@ -45,8 +45,8 @@ jobs:
               const beforeSha = process.env.BEFORE_SHA;
               const afterSha = process.env.AFTER_SHA;
               const args = beforeSha === '0000000000000000000000000000000000000000'
-                ? ['show', '--pretty=', '--name-only', afterSha, '--', 'posts/**/*.md']
-                : ['diff', '--name-only', '--diff-filter=AM', beforeSha, afterSha, '--', 'posts/**/*.md'];
+                ? ['show', '--pretty=', '--name-only', afterSha, '--', 'posts/*.md']
+                : ['diff', '--name-only', '--diff-filter=AM', beforeSha, afterSha, '--', 'posts/*.md'];
 
               return childProcess.execFileSync('git', args, { encoding: 'utf8' }).split(/\r?\n/).map((file) => file.trim()).filter(Boolean);
             }
