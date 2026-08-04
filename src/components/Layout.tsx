@@ -9,6 +9,7 @@ import { ProgressiveImage } from './ProgressiveImage';
 import { IssueSubscriptionCard } from './IssueSubscriptionCard';
 import { useReducedMotion as useSiteReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';
+import { useReadingMode, ReadingModeProvider } from './ReadingModeContext';
 import { easeSmooth, routeTransition } from '@/utils/motion';
 
 const SearchModal = lazy(() => import('./SearchModal').then((m) => ({ default: m.SearchModal })));
@@ -549,7 +550,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
   return (
     <>
-      <nav className={`fixed left-0 right-0 top-0 ${isMobileNavMounted ? 'z-nav-panel' : 'z-nav'} border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void`}>
+      <nav className={`site-navbar fixed left-0 right-0 top-0 ${isMobileNavMounted ? 'z-nav-panel' : 'z-nav'} border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void`}>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, ease: easeSmooth }} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-16">
           <Link to="/" className="group z-50 flex items-center space-x-2.5 sm:space-x-3">
             <ProgressiveImage src={siteConfig.logoSmall} alt={`${siteConfig.title} 站点标志`} fetchPriority="high" width={96} height={96} wrapperClassName="h-8 w-8 bg-white sm:h-9 sm:w-9" className="h-8 w-8 object-cover sm:h-9 sm:w-9" />
@@ -732,7 +733,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="mt-12 border-t border-zinc-200/90 dark:border-zinc-800/90 md:mt-20">
+    <footer className="site-footer mt-12 border-t border-zinc-200/90 dark:border-zinc-800/90 md:mt-20">
       <div className="mx-auto max-w-7xl px-3 py-8 sm:px-6 md:py-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="max-w-xl">
@@ -788,10 +789,11 @@ interface LayoutProps {
 
 const routeShellVariants = routeTransition;
 
-export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) => {
+const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [hasOpenedSearch, setHasOpenedSearch] = useState(false);
   const location = useLocation();
+  const { isReadingMode } = useReadingMode();
   const openSearch = useCallback(() => {
     setHasOpenedSearch(true);
     setIsSearchOpen(true);
@@ -831,15 +833,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) =
   }, [isSearchOpen, openSearch]);
 
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className={`relative flex min-h-screen flex-col ${isReadingMode ? 'reading-mode-shell' : ''}`} data-reading-mode={isReadingMode ? 'true' : undefined}>
       <Background />
-      <Navbar onSearchClick={openSearch} />
+      {!isReadingMode && <Navbar onSearchClick={openSearch} />}
       {hasOpenedSearch && (
         <Suspense fallback={null}>
           <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
         </Suspense>
       )}
-      <main className="relative flex-grow px-3 pt-20 sm:px-6 sm:pt-24 md:pt-24">
+      <main className={`relative flex-grow px-3 sm:px-6 ${isReadingMode ? 'pt-6 sm:pt-8 md:pt-10' : 'pt-20 sm:pt-24 md:pt-24'}`}>
         {hasViewTransition ? (
           <div key={routeContentKey} style={{ viewTransitionName: 'route-content' }} className="mx-auto max-w-7xl">
             {children}
@@ -856,11 +858,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, hasViewTransition }) =
           </AnimatePresence>
         )}
       </main>
-      <Suspense fallback={null}>
-        <BackToTop />
-      </Suspense>
-      <Footer />
+      {!isReadingMode && (
+        <Suspense fallback={null}>
+          <BackToTop />
+        </Suspense>
+      )}
+      {!isReadingMode && <Footer />}
     </div>
   );
 };
+
+export const Layout: React.FC<LayoutProps> = (props) => (
+  <ReadingModeProvider>
+    <LayoutShell {...props} />
+  </ReadingModeProvider>
+);
 

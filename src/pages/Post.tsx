@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { easeOut } from '@/utils/motion';
 import DOMPurify from 'dompurify';
 
-import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Users, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Users, ExternalLink, Eye, EyeOff } from 'lucide-react';
 import { getPostById, getPosts } from '@/services/posts';
 import { Post as PostType, PostAuthor, PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
@@ -21,6 +21,7 @@ import type { MarkdownHeading } from '@/utils/headings';
 import { formatDate } from '@/utils/date';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';
+import { useReadingMode } from '@/components/ReadingModeContext';
 
 
 type BlockCodeProps = {
@@ -559,6 +560,7 @@ export const Post = () => {
   const [mermaidTheme, setMermaidTheme] = useState<'light' | 'dark'>(() => getIsDarkTheme() ? 'dark' : 'light');
   const [mobileFloatingVisible, setMobileFloatingVisible] = useState(false);
   const shouldReduceMotion = useReducedMotion();
+  const { isReadingMode, toggleReadingMode, exitReadingMode } = useReadingMode();
   const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostMetadata | null; next: PostMetadata | null }>({ prev: null, next: null });
   const articleBodyRef = useRef<HTMLDivElement>(null);
 
@@ -780,6 +782,12 @@ export const Post = () => {
   }, [post]);
 
   useEffect(() => {
+    if (isReadingMode && shareModalOpen) {
+      setShareModalOpen(false);
+    }
+  }, [isReadingMode, shareModalOpen]);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (hasOpenOverlay()) {
         return;
@@ -902,8 +910,8 @@ export const Post = () => {
     <>
       <Suspense fallback={null}>
         {previewImage && <ImageViewer src={previewImage.src} alt={previewImage.alt} onClose={() => setPreviewImage(null)} />}
-        <ReadingProgressBadge targetRef={articleBodyRef} onVisibilityChange={setMobileFloatingVisible} />
-        {headings.length > 0 && (
+        {!isReadingMode && <ReadingProgressBadge targetRef={articleBodyRef} onVisibilityChange={setMobileFloatingVisible} />}
+        {!isReadingMode && headings.length > 0 && (
           <TableOfContents
             headings={headings}
             mobileShowTrigger={mobileFloatingVisible}
@@ -912,7 +920,18 @@ export const Post = () => {
         )}
       </Suspense>
 
-      <article>
+      <article className={isReadingMode ? 'post-article reading-mode-article' : 'post-article'}>
+        {isReadingMode && (
+          <button
+            type="button"
+            onClick={exitReadingMode}
+            className="reading-mode-exit print-hidden fixed right-4 top-4 z-floating inline-flex min-h-11 items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 sm:right-6 sm:top-6"
+            aria-label="退出专注阅读"
+          >
+            <EyeOff size={16} />
+            <span className="hidden sm:inline">退出专注</span>
+          </button>
+        )}
 
         <Seo
           title={post.title}
@@ -929,8 +948,8 @@ export const Post = () => {
           structuredData={[postStructuredData, breadcrumbData]}
         />
 
-        <header className="mx-auto mb-8 max-w-3xl px-3 pt-4 text-center md:mb-12 md:pt-8">
-          <div className="mb-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400 md:mb-7">
+        <header className="post-header mx-auto mb-8 max-w-3xl px-3 pt-4 text-center md:mb-12 md:pt-8">
+          <div className="print-hidden mb-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400 md:mb-7">
             <Link to="/" className="inline-flex items-center gap-1 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
               <ArrowLeft size={13} />
               返回文章
@@ -956,7 +975,7 @@ export const Post = () => {
               {post.title}
             </h1>
 
-            <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-500 md:gap-2.5 md:text-xs">
+            <div className="post-meta print-hidden mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-500 md:gap-2.5 md:text-xs">
               <span className="inline-flex max-w-full items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
                 <Users size={14} />
                 <span className="truncate">{authorsLabel}</span>
@@ -975,16 +994,28 @@ export const Post = () => {
                 <Clock size={14} />
                 <span>{post.readTime}</span>
               </span>
-              <button type="button" onClick={() => setShareModalOpen(true)} className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-400 bg-zinc-100 px-3 py-1.5 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400" aria-label={`分享文章：${post.title}`}>
-                <Share2 size={14} />
-                分享
+              {!isReadingMode && (
+                <button type="button" onClick={() => setShareModalOpen(true)} className="print-hidden inline-flex items-center gap-1.5 rounded-micro border border-zinc-400 bg-zinc-100 px-3 py-1.5 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400" aria-label={`分享文章：${post.title}`}>
+                  <Share2 size={14} />
+                  分享
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={toggleReadingMode}
+                className="reading-mode-toggle print-hidden inline-flex items-center gap-1.5 rounded-micro border border-zinc-400 bg-zinc-100 px-3 py-1.5 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400"
+                aria-pressed={isReadingMode}
+                aria-label={isReadingMode ? '退出专注阅读' : '进入专注阅读'}
+              >
+                {isReadingMode ? <EyeOff size={14} /> : <Eye size={14} />}
+                <span>{isReadingMode ? '退出专注' : '专注阅读'}</span>
               </button>
             </div>
           </motion.div>
         </header>
 
         {post.coverImage && (
-          <button type="button" className="mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
+          <button type="button" className="post-cover print-hidden mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
             <motion.div
               initial={shouldReduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -996,9 +1027,9 @@ export const Post = () => {
           </button>
         )}
 
-        <div ref={articleBodyRef} className="mx-auto w-full max-w-5xl px-3 pb-12 sm:px-4 md:pb-20 lg:px-0">
+        <div ref={articleBodyRef} className="post-body mx-auto w-full max-w-5xl px-3 pb-12 sm:px-4 md:pb-20 lg:px-0">
           <div className="mx-auto max-w-[46rem]">
-            <div className="prose prose-stone max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:tracking-tight prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-3 dark:prose-h2:border-zinc-800 prose-p:leading-8 prose-li:leading-8 prose-a:break-words prose-a:underline-offset-4 prose-img:rounded-media prose-img:shadow-none prose-blockquote:rounded-none prose-blockquote:border-l-zinc-600 prose-blockquote:bg-zinc-100/70 prose-blockquote:not-italic dark:prose-blockquote:border-l-zinc-400 dark:prose-blockquote:bg-zinc-900 prose-pre:rounded-none prose-pre:border prose-pre:border-zinc-700 prose-pre:bg-[#0d0d0f] prose-pre:p-0">
+            <div className="post-prose prose prose-stone max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:tracking-tight prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-3 dark:prose-h2:border-zinc-800 prose-p:leading-8 prose-li:leading-8 prose-a:break-words prose-a:underline-offset-4 prose-img:rounded-media prose-img:shadow-none prose-blockquote:rounded-none prose-blockquote:border-l-zinc-600 prose-blockquote:bg-zinc-100/70 prose-blockquote:not-italic dark:prose-blockquote:border-l-zinc-400 dark:prose-blockquote:bg-zinc-900 prose-pre:rounded-none prose-pre:border prose-pre:border-zinc-700 prose-pre:bg-[#0d0d0f] prose-pre:p-0">
               <ReactMarkdown
                 remarkPlugins={remarkPlugins}
                 rehypePlugins={rehypePlugins}
@@ -1008,7 +1039,7 @@ export const Post = () => {
               </ReactMarkdown>
             </div>
 
-            <aside className="mt-14 border-l-2 border-zinc-200 pl-4 text-sm leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-16 md:pl-5" aria-labelledby="license-heading">
+            <aside className="post-license mt-14 border-l-2 border-zinc-200 pl-4 text-sm leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-16 md:pl-5" aria-labelledby="license-heading">
               <h2 id="license-heading" className="mb-1 font-semibold text-zinc-700 dark:text-zinc-200">CC BY-SA 4.0 许可协议</h2>
               <p>
                 本文由 <strong className="font-semibold text-zinc-700 dark:text-zinc-200">{authorsLabel}</strong> 原创。除非另有声明，可在署名并以相同协议发布衍生作品的前提下自由复制、传播和修改。详见
@@ -1034,11 +1065,11 @@ export const Post = () => {
               </a>
             </div>
 
-            <div className="mt-8">
+            <div className="post-actions mt-8">
               <IssueSubscriptionCard />
             </div>
 
-            <nav aria-label="文章导航" className="mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8">
+            <nav aria-label="文章导航" className="post-navigation mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8">
               <div className="grid gap-6 sm:grid-cols-2 sm:gap-10">
                 {adjacentPosts.prev ? (
                   <Link

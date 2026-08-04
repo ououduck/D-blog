@@ -423,3 +423,233 @@ html.theme-switching .editorial-input {
   }
 }
 
+/* ===== 专注阅读 ===== */
+.reading-mode-shell {
+  background: transparent;
+}
+
+.reading-mode-article {
+  min-height: 100vh;
+}
+
+.reading-mode-article .post-header {
+  max-width: 56rem;
+  margin-bottom: 3rem;
+}
+
+.reading-mode-article .post-body {
+  max-width: 68rem;
+}
+
+.reading-mode-article .post-body > div {
+  max-width: 58rem;
+}
+
+.reading-mode-article .post-prose {
+  font-size: 1.125rem;
+  line-height: 2;
+}
+
+.reading-mode-article .post-prose p,
+.reading-mode-article .post-prose li {
+  line-height: 2;
+}
+
+.reading-mode-article .post-prose h2,
+.reading-mode-article .post-prose h3,
+.reading-mode-article .post-prose h4 {
+  scroll-margin-top: 2rem;
+}
+
+.reading-mode-article .post-prose pre,
+.reading-mode-article .post-prose figure,
+.reading-mode-article .post-prose .table-wrapper,
+.reading-mode-article .post-prose .mermaid-container {
+  margin-top: 2.25rem;
+  margin-bottom: 2.25rem;
+}
+
+.reading-mode-article .post-prose img {
+  max-height: 75vh;
+  object-fit: contain;
+}
+
+@media (max-width: 767px) {
+  .reading-mode-article .post-header {
+    margin-bottom: 2rem;
+  }
+
+  .reading-mode-article .post-prose {
+    font-size: 1.0625rem;
+    line-height: 1.9;
+  }
+
+  .reading-mode-article .post-prose p,
+  .reading-mode-article .post-prose li {
+    line-height: 1.9;
+  }
+}
+
+/* ===== 打印版式 ===== */
+@page {
+  margin: 16mm 15mm 18mm;
+}
+
+@media print {
+  html,
+  body,
+  #root {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  body {
+    min-width: 0 !important;
+  }
+
+  .print-hidden,
+  .site-navbar,
+  .site-footer,
+  nav[aria-label='目录'],
+  .back-to-top-btn,
+  [class*='z-floating'],
+  [class*='z-popover'],
+  .reading-mode-exit,
+  .reading-mode-toggle,
+  .post-cover,
+  .post-actions,
+  .post-navigation,
+  .post-license {
+    display: none !important;
+  }
+
+  [data-reading-mode='true'] main,
+  main {
+    padding: 0 !important;
+  }
+
+  [data-reading-mode='true'],
+  [data-reading-mode='true'] main,
+  [data-reading-mode='true'] main > div,
+  .post-article,
+  .post-body,
+  .post-body > div,
+  .post-prose {
+    max-width: none !important;
+  }
+
+  .post-header {
+    max-width: none !important;
+    margin: 0 0 10mm !important;
+    padding: 0 !important;
+    text-align: left !important;
+  }
+
+  .post-header h1 {
+    margin-bottom: 4mm !important;
+    color: #000 !important;
+    font-size: 24pt !important;
+  }
+
+  .post-body {
+    padding: 0 !important;
+  }
+
+  .post-prose {
+    color: #000 !important;
+    font-size: 11pt !important;
+    line-height: 1.65 !important;
+  }
+
+  .post-prose,
+  .post-prose p,
+  .post-prose li,
+  .post-prose strong,
+  .post-prose em,
+  .post-prose h2,
+  .post-prose h3,
+  .post-prose h4 {
+    color: #000 !important;
+  }
+
+  .post-prose a {
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+
+  .post-prose a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 9pt;
+    overflow-wrap: anywhere;
+  }
+
+  .post-prose pre,
+  .post-prose pre code {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+    color: #000 !important;
+    background: #f5f5f5 !important;
+    border-color: #999 !important;
+  }
+
+  .post-prose .code-lang-badge,
+  .post-prose .code-expand-btn,
+  .post-prose .code-collapse-btn,
+  .post-prose button[aria-label='复制代码'],
+  .post-prose button[aria-label='已复制'] {
+    display: none !important;
+  }
+
+  .post-prose img,
+  .post-prose figure,
+  .post-prose pre,
+  .post-prose table,
+  .post-prose .table-wrapper,
+  .post-prose .mermaid,
+  .post-prose .mermaid-container,
+  .post-prose blockquote {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .post-prose img {
+    max-width: 100% !important;
+    max-height: 220mm !important;
+    object-fit: contain;
+  }
+
+  .post-prose .table-wrapper {
+    overflow: visible !important;
+  }
+
+  .post-prose h2,
+  .post-prose h3,
+  .post-prose h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .post-prose p,
+  .post-prose li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .post-prose :where(*) {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .post-article button,
+  .post-article [role='button'] {
+    background: transparent !important;
+    border-color: transparent !important;
+  }
+}
