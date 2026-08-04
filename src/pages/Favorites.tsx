@@ -1,0 +1,107 @@
+import React from 'react';
+import { Calendar, Clock, Heart, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
+import { ProgressiveImage } from '@/components/ProgressiveImage';
+import { Seo } from '@/components/Seo';
+import { useOfflinePosts } from '@/hooks/useOfflinePosts';
+import { removeOfflinePost } from '@/services/offlinePosts';
+import { formatDate } from '@/utils/date';
+import { assetUrl } from '@/utils/siteUrl';
+
+export const Favorites = () => {
+  const navigate = useNavigate();
+  const { posts, loading, error, refresh } = useOfflinePosts();
+
+  const handleRemove = async (id: string) => {
+    try {
+      await removeOfflinePost(id);
+      await refresh();
+    } catch {
+      // The subscription refreshes the list on success; a failed removal is
+      // surfaced by the next explicit refresh without breaking the card UI.
+    }
+  };
+  const hasFavorites = posts.length > 0;
+
+  return (
+    <div className="pb-8 md:pb-14">
+      <Seo title="我的收藏" description="查看保存在本地的 D-blog 离线收藏文章。" noindex />
+
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-zinc-200 pb-5 dark:border-zinc-800 md:pb-6">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Favorites</p>
+          <h1 className="font-serif text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-4xl">我的收藏</h1>
+        </div>
+        {!loading && !error && <p className="text-sm text-zinc-500 dark:text-zinc-400">共 {posts.length} 篇</p>}
+      </header>
+
+      <section className="mt-7 md:mt-9">
+        {loading ? (
+          <div className="space-y-4" aria-busy="true">
+            <LoadingStatus label="正在加载本地收藏" />
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} aria-hidden="true" className="h-32 animate-pulse rounded-surface border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-900" />
+            ))}
+          </div>
+        ) : error ? (
+          <ContentStatus
+            variant="error"
+            title="收藏加载失败"
+            description={error}
+            actionLabel="重新加载"
+            onAction={() => void refresh()}
+          />
+        ) : !hasFavorites ? (
+          <ContentStatus
+            title="还没有收藏文章"
+            description="在文章页面点击收藏按钮后，文章会保存在此设备中供离线查看。"
+            actionLabel="浏览文章"
+            onAction={() => navigate('/')}
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-live="polite">
+            {posts.map((post) => (
+              <article key={post.id} className="flex h-full min-w-0 flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600">
+                <Link to={`/post/${encodeURIComponent(post.id)}`} className="block aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-800" aria-label={`阅读文章：${post.title}`}>
+                  {post.coverImage ? (
+                    <ProgressiveImage src={assetUrl(post.coverImage)} alt={post.title} loading="lazy" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/10" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-zinc-300 dark:text-zinc-600">
+                      <Heart className="h-9 w-9" />
+                    </div>
+                  )}
+                </Link>
+                <div className="flex flex-grow flex-col p-4 md:p-5">
+                  <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    <span>{post.category}</span>
+                    <span aria-hidden="true">/</span>
+                    <span className="normal-case tracking-normal">已收藏</span>
+                  </div>
+                  <Link to={`/post/${encodeURIComponent(post.id)}`} aria-label={`阅读文章：${post.title}`}>
+                    <h2 className="mb-2 line-clamp-2 font-serif text-base font-bold leading-snug text-ink hover:underline dark:text-zinc-100 md:text-lg">{post.title}</h2>
+                  </Link>
+                  <p className="mb-3 line-clamp-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{post.excerpt}</p>
+                  <div className="mt-auto flex items-center gap-3 border-t border-zinc-200 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                    <span className="flex items-center gap-1"><Calendar size={11} />{formatDate(post.date, 'zh-CN', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                    <span className="flex items-center gap-1"><Clock size={11} />{post.readTime}</span>
+                    <button
+                      type="button"
+                      onClick={() => void handleRemove(post.id)}
+                      className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-colors hover:text-ink dark:hover:text-white"
+                      aria-label={`取消收藏：${post.title}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+};
+
+export default Favorites;

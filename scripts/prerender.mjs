@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { loadSiteConfig, toAbsoluteUrl } from './site-config-loader.mjs';
+import { loadSiteConfig, getSiteBasePath, toAbsoluteUrl } from './site-config-loader.mjs';
+import { withBasePath } from './base-path.mjs';
 import { createBuildLogger } from './build-logger.mjs';
 
 const logger = createBuildLogger('prerender');
@@ -11,17 +12,25 @@ const __dirname = path.dirname(__filename);
 
 const DIST_DIR = path.join(__dirname, '../dist');
 const POSTS_FILE = path.join(__dirname, '../generated/posts.json');
+const IMAGE_MANIFEST_FILE = path.join(__dirname, '../generated/image-assets.json');
+const imageManifest = fs.existsSync(IMAGE_MANIFEST_FILE)
+  ? JSON.parse(fs.readFileSync(IMAGE_MANIFEST_FILE, 'utf-8'))
+  : { assets: {} };
 const siteConfig = loadSiteConfig({ logger });
 const siteTitle = siteConfig.title;
 const authorName = siteConfig.author.name;
 const SITE_URL = siteConfig.url;
+const BASE_PATH = getSiteBasePath();
 const SITE_SUFFIX = siteTitle;
+const sitePath = (value = '/') => withBasePath(value, BASE_PATH);
+const siteAbsoluteUrl = (value = '/') => new URL(sitePath(value), `${SITE_URL}/`).toString();
 const DEFAULT_ROBOTS = 'index,follow,max-image-preview:large';
 const NOINDEX_ROBOTS = 'noindex,nofollow';
 
 const stripNonCriticalPreloads = (html) => html
-  .replace(/\n?\s*<link rel="modulepreload"[^>]+href="\.\/assets\/(?:syntax|katex|markdown|dompurify|mermaid)[^"]+"[^>]*>/g, '')
-  .replace(/\n?\s*<link rel="stylesheet"[^>]+href="\.\/assets\/(?:syntax|katex)[^"]+"[^>]*>/g, '');
+  .replace(/\n?\s*<link rel="modulepreload"[^>]+href="(?:\.\/|[^\"]*\/)?assets\/(?:syntax|katex|markdown|dompurify|mermaid)[^"]+"[^>]*>/g, '')
+  .replace(/\n?\s*<link rel="stylesheet"[^>]+href="(?:\.\/|[^\"]*\/)?assets\/(?:syntax|katex)[^"]+"[^>]*>/g, '')
+  .replace(/\n?\s*<link rel="preload"[^>]+as="image"[^>]*>/g, '');
 
 const escapeHtmlText = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const escapeHtmlAttribute = (value) => escapeHtmlText(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -88,18 +97,43 @@ export const injectSeoMeta = (
   return markRuntimeManagedHeadTags(html);
 };
 
-const createImagePreload = (imageUrl, imagesizes) => {
-  if (!imageUrl) {
-    return '';
+const getImageAsset = (imageUrl) => {
+  if (!imageUrl) return undefined;
+
+  let pathname = imageUrl;
+  try {
+    pathname = new URL(imageUrl, `${SITE_URL}/`).pathname;
+  } catch {
+    return undefined;
   }
 
+  const normalized = pathname.split(/[?#]/, 1)[0].replace(/^\/+/, '').toLowerCase();
+  const key = Object.keys(imageManifest.assets || {}).find((candidate) => {
+    const normalizedCandidate = candidate.replace(/^\/+/, '').toLowerCase();
+    return normalizedCandidate === normalized || normalizedCandidate.endsWith(`/${normalized}`) || normalized.endsWith(`/${normalizedCandidate}`);
+  });
+  return key ? imageManifest.assets[key] : undefined;
+};
+
+const createImagePreload = (imageUrl, imagesizes) => {
+  if (!imageUrl) return '';
+  const asset = getImageAsset(imageUrl);
   const sizesAttr = imagesizes ? ` imagesizes="${escapeHtmlAttribute(imagesizes)}"` : '';
+  const webpVariants = asset?.variants?.webp || [];
+  const fallbackVariants = asset?.variants?.fallback || [];
+  const toSrcSet = (variants) => variants.map((variant) => `${sitePath(variant.url)} ${variant.width}w`).join(', ');
+  if (webpVariants.length > 0) {
+    return `\n    <link rel="preload" as="image" href="${escapeHtmlAttribute(sitePath(webpVariants[webpVariants.length - 1].url))}" type="image/webp" fetchpriority="high" imagesrcset="${escapeHtmlAttribute(toSrcSet(webpVariants))}"${sizesAttr}>`;
+  }
+  if (fallbackVariants.length > 0) {
+    return `\n    <link rel="preload" as="image" href="${escapeHtmlAttribute(sitePath(fallbackVariants[fallbackVariants.length - 1].url))}" fetchpriority="high" imagesrcset="${escapeHtmlAttribute(toSrcSet(fallbackVariants))}"${sizesAttr}>`;
+  }
   return `\n    <link rel="preload" as="image" href="${escapeHtmlAttribute(imageUrl)}" fetchpriority="high"${sizesAttr}>`;
 };
 
 const createStaticPageMeta = ({ path: pagePath, title, description, schemaType = 'CollectionPage' }) => {
-  const pageUrl = new URL(pagePath, `${SITE_URL}/`).toString();
-  const image = toAbsoluteUrl(siteConfig.seoImage || siteConfig.logo || '/logo.png', SITE_URL);
+  const pageUrl = siteAbsoluteUrl(`/${pagePath}`);
+  const image = toAbsoluteUrl(siteConfig.seoImage || siteConfig.logo || '/logo.png', SITE_URL, BASE_PATH);
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': schemaType,
@@ -109,7 +143,7 @@ const createStaticPageMeta = ({ path: pagePath, title, description, schemaType =
     isPartOf: {
       '@type': 'WebSite',
       name: siteTitle,
-      url: SITE_URL
+      url: siteAbsoluteUrl('/')
     },
     image
   };
@@ -128,18 +162,18 @@ const createStaticPageMeta = ({ path: pagePath, title, description, schemaType =
 };
 
 const createHomeMeta = () => {
-  const image = toAbsoluteUrl(siteConfig.seoImage || siteConfig.logo || '/logo.png', SITE_URL);
-  const homeUrl = `${SITE_URL}/`;
+  const image = toAbsoluteUrl(siteConfig.seoImage || siteConfig.logo || '/logo.png', SITE_URL, BASE_PATH);
+  const homeUrl = siteAbsoluteUrl('/');
   const websiteData = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: siteTitle,
     description: siteConfig.description,
-    url: SITE_URL,
+    url: homeUrl,
     image,
     potentialAction: {
       '@type': 'SearchAction',
-      target: `${SITE_URL}/?q={search_term_string}`,
+      target: `${homeUrl}?q={search_term_string}`,
       'query-input': 'required name=search_term_string'
     }
   };
@@ -209,10 +243,10 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
     // URL structure: /post/:id
     const title = `${post.title} - ${SITE_SUFFIX}`;
     const description = post.excerpt || post.title;
-    const postUrl = `${SITE_URL}/post/${post.id}`;
+    const postUrl = siteAbsoluteUrl(`/post/${post.id}`);
     const coverImage = post.coverImage
-      ? toAbsoluteUrl(post.coverImage, SITE_URL)
-      : toAbsoluteUrl(siteConfig.seoImage || siteConfig.logo || '/logo.png', SITE_URL);
+      ? toAbsoluteUrl(post.coverImage, SITE_URL, BASE_PATH)
+      : toAbsoluteUrl(siteConfig.seoImage || siteConfig.logo || '/logo.png', SITE_URL, BASE_PATH);
     const publishDate = post.date;
     const modifiedDate = post.updatedAt || post.date;
 
@@ -245,8 +279,8 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
       publisher: {
         '@type': 'Organization',
         name: siteTitle,
-        url: SITE_URL,
-        logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` }
+        url: siteAbsoluteUrl('/'),
+        logo: { '@type': 'ImageObject', url: toAbsoluteUrl('/logo.png', SITE_URL, BASE_PATH) }
       }
     };
 
@@ -254,8 +288,8 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: '首页', item: SITE_URL },
-        { '@type': 'ListItem', position: 2, name: post.category || '', item: `${SITE_URL}/?category=${encodeURIComponent(post.category || '')}` },
+        { '@type': 'ListItem', position: 1, name: '首页', item: siteAbsoluteUrl('/') },
+        { '@type': 'ListItem', position: 2, name: post.category || '', item: `${siteAbsoluteUrl('/')}?category=${encodeURIComponent(post.category || '')}` },
         { '@type': 'ListItem', position: 3, name: post.title, item: postUrl }
       ]
     };
@@ -280,13 +314,23 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
   ];
 
   staticPages.forEach((page) => {
-    const pageUrl = new URL(page.path, `${SITE_URL}/`).toString();
+    const pageUrl = siteAbsoluteUrl(`/${page.path}`);
     writeHtml(distDir, template, page.path, page.title, page.description, createStaticPageMeta(page), { canonicalUrl: pageUrl });
   });
 
   const homeHeroPost = getHomeHeroPost(posts);
-  const homeExtraMeta = `${homeHeroPost?.coverImage ? createImagePreload(toAbsoluteUrl(homeHeroPost.coverImage, SITE_URL), '(max-width: 767px) 100vw, 60vw') : ''}${createHomeMeta()}`;
-  writeStandaloneHtml(distDir, template, 'index.html', siteTitle, siteConfig.description, homeExtraMeta, { canonicalUrl: `${SITE_URL}/` });
+  const homeExtraMeta = `${homeHeroPost?.coverImage ? createImagePreload(toAbsoluteUrl(homeHeroPost.coverImage, SITE_URL, BASE_PATH), '(max-width: 767px) 100vw, 60vw') : ''}${createHomeMeta()}`;
+  writeStandaloneHtml(distDir, template, 'index.html', siteTitle, siteConfig.description, homeExtraMeta, { canonicalUrl: siteAbsoluteUrl('/') });
+
+  writeHtml(
+    distDir,
+    template,
+    'favorites',
+    `我的收藏 - ${SITE_SUFFIX}`,
+    '查看保存在本地的 D-blog 离线收藏文章。',
+    '',
+    { canonicalUrl: siteAbsoluteUrl('/favorites'), robots: NOINDEX_ROBOTS }
+  );
 
   writeStandaloneHtml(
     distDir,
@@ -295,7 +339,7 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
     `页面不存在 - ${SITE_SUFFIX}`,
     '你访问的页面不存在，可能已经移动或删除。',
     '',
-    { canonicalUrl: `${SITE_URL}/404.html`, robots: NOINDEX_ROBOTS }
+    { canonicalUrl: siteAbsoluteUrl('/404.html'), robots: NOINDEX_ROBOTS }
   );
 
   logger.step('Generated post pages', `count=${posts.length}`);

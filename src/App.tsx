@@ -7,6 +7,9 @@ import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { siteConfig } from '@config/site.config';
 import { pageLoaders } from './utils/preload';
+import { getRouterBasename } from './utils/siteUrl';
+import { OfflineStatus } from './components/OfflineStatus';
+import { ServiceWorkerUpdatePrompt } from './components/ServiceWorkerUpdatePrompt';
 
 const Post = lazy(() => import('./pages/Post').then((m) => ({ default: m.Post })));
 const About = lazy(pageLoaders['/about']);
@@ -16,6 +19,7 @@ const Friends = lazy(pageLoaders['/friends']);
 const Tags = lazy(pageLoaders['/tags']);
 const CoverGenerator = lazy(pageLoaders['/cover']);
 const Sponsor = lazy(pageLoaders['/sponsor']);
+const Favorites = lazy(pageLoaders['/favorites']);
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
 const CookieNotice = lazy(() => import('./components/CookieNotice').then((m) => ({ default: m.CookieNotice })));
 
@@ -137,6 +141,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/about" element={<About />} />
           <Route path="/cover" element={<CoverGenerator />} />
           <Route path="/sponsor" element={<Sponsor />} />
+          <Route path="/favorites" element={<Favorites />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
@@ -185,8 +190,10 @@ const App: React.FC = () => {
   return (
     <HelmetProvider>
       <ErrorBoundary>
-        <Router>
+        <Router basename={getRouterBasename()}>
           <AppRoutes />
+          <OfflineStatus />
+          <ServiceWorkerUpdatePrompt />
           <AnimatePresence>{showLoadingScreen && <LoadingScreen />}</AnimatePresence>
           {showCookieNotice && (
             <Suspense fallback={null}>

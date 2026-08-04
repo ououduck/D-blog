@@ -1,0 +1,90 @@
+export const READING_HISTORY_STORAGE_KEY = 'd-blog-reading-history-v1';
+export const READING_HISTORY_EVENT = 'd-blog:reading-history-change';
+
+export interface ReadingHistoryEntry {
+  postId: string;
+  progress: number;
+  scrollTop: number;
+  updatedAt: number;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+const clamp = (value: number) => Math.min(Math.max(value, 0), 1);
+
+const normalizeEntry = (value: unknown): ReadingHistoryEntry | undefined => {
+  if (!isRecord(value) || typeof value.postId !== 'string' || !value.postId.trim()) return undefined;
+  if (typeof value.progress !== 'number' || !Number.isFinite(value.progress)) return undefined;
+  if (typeof value.scrollTop !== 'number' || !Number.isFinite(value.scrollTop) || value.scrollTop < 0) return undefined;
+  if (typeof value.updatedAt !== 'number' || !Number.isFinite(value.updatedAt) || value.updatedAt < 0) return undefined;
+  return {
+    postId: value.postId,
+    progress: clamp(value.progress),
+    scrollTop: value.scrollTop,
+    updatedAt: value.updatedAt
+  };
+};
+
+const readEntries = (): ReadingHistoryEntry[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(READING_HISTORY_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map(normalizeEntry).filter((entry): entry is ReadingHistoryEntry => Boolean(entry));
+  } catch {
+    return [];
+  }
+};
+
+const notify = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(READING_HISTORY_EVENT));
+  }
+};
+
+const writeEntries = (entries: ReadingHistoryEntry[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(READING_HISTORY_STORAGE_KEY, JSON.stringify(entries));
+    notify();
+  } catch {
+    // Reading history is optional; private browsing or quota limits should not break reading.
+  }
+};
+
+export const getReadingHistory = () => readEntries().sort((a, b) => b.updatedAt - a.updatedAt);
+
+export const getReadingHistoryEntry = (postId: string) => getReadingHistory().find((entry) => entry.postId === postId);
+
+export const saveReadingHistory = (entry: Omit<ReadingHistoryEntry, 'updatedAt'> & { updatedAt?: number }) => {
+  if (!entry.postId.trim()) return;
+  const nextEntry: ReadingHistoryEntry = {
+    postId: entry.postId,
+    progress: clamp(entry.progress),
+    scrollTop: Math.max(0, entry.scrollTop),
+    updatedAt: entry.updatedAt ?? Date.now()
+  };
+  if (nextEntry.progress >= 0.95) {
+    removeReadingHistory(entry.postId);
+    return;
+  }
+  const entries = readEntries().filter((candidate) => candidate.postId !== entry.postId);
+  writeEntries([nextEntry, ...entries].slice(0, 20));
+};
+
+export const removeReadingHistory = (postId: string) => {
+  const entries = readEntries().filter((entry) => entry.postId !== postId);
+  writeEntries(entries);
+};
+
+export const subscribeReadingHistory = (listener: () => void) => {
+  if (typeof window === 'undefined') return () => undefined;
+  const handleChange = () => listener();
+  window.addEventListener(READING_HISTORY_EVENT, handleChange);
+  window.addEventListener('storage', handleChange);
+  return () => {
+    window.removeEventListener(READING_HISTORY_EVENT, handleChange);
+    window.removeEventListener('storage', handleChange);
+  };
+};

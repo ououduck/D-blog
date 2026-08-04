@@ -1,4 +1,5 @@
 import { Post, PostMetadata } from '../types';
+import { getOfflinePost } from './offlinePosts';
 
 const generatedPostModules = import.meta.glob<PostMetadata[]>('../../generated/posts.json', {
   eager: true,
@@ -120,30 +121,37 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
   const allPosts = await loadPostsData();
   const meta = allPosts.find((post) => post.id === id);
 
+  if (meta) {
+    const relativePath = `../..${meta.filePath}`;
+    const loader = postFiles[relativePath];
+
+    if (loader) {
+      try {
+        const rawContent = (await loader()) as string;
+        return {
+          ...meta,
+          content: stripFrontmatter(rawContent)
+        };
+      } catch (error) {
+        console.warn('Failed to load bundled Markdown, trying offline copy.', error);
+      }
+    }
+  }
+
+  const offlinePost = await getOfflinePost(id);
+  if (offlinePost?.content !== undefined) {
+    const { savedAt: _savedAt, schema: _schema, version: _version, ...post } = offlinePost;
+    return post as Post;
+  }
+
   if (!meta) {
     return undefined;
   }
 
   const relativePath = `../..${meta.filePath}`;
-  const loader = postFiles[relativePath];
-
-  if (!loader) {
-    const error = new Error(`Markdown file not found: ${relativePath}`);
-    console.error(error);
-    throw error;
-  }
-
-  try {
-    const rawContent = (await loader()) as string;
-
-    return {
-      ...meta,
-      content: stripFrontmatter(rawContent)
-    };
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
+  const error = new Error(`Markdown file not found: ${relativePath}`);
+  console.error(error);
+  throw error;
 };
 
 export type PostSearchScope = 'all' | 'category' | 'content' | 'title';

@@ -29,22 +29,29 @@ const POSTS_IMG_MIME_TYPES: Record<string, string> = {
 const postsImgPublicPlugin = (): Plugin => {
   let outDir = 'dist';
   let isBuild = false;
+  let basePath = '/';
 
   return {
     name: 'posts-img-public-mapping',
     configResolved(config) {
       outDir = config.build.outDir;
       isBuild = config.command === 'build';
+      basePath = config.base === './' ? '/' : config.base;
     },
     configureServer(server: ViteDevServer) {
       server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
         const url = req.url || '';
-        if (!url.startsWith(`${POSTS_IMG_URL_PREFIX}/`)) {
+        const requestPath = url.split('?')[0];
+        const publicPrefixes = basePath === '/'
+          ? [POSTS_IMG_URL_PREFIX]
+          : [POSTS_IMG_URL_PREFIX, `${basePath.replace(/\/$/, '')}${POSTS_IMG_URL_PREFIX}`];
+        const matchedPrefix = publicPrefixes.find((prefix) => requestPath.startsWith(`${prefix}/`));
+        if (!matchedPrefix) {
           next();
           return;
         }
 
-        const relativePath = decodeURIComponent(url.slice(POSTS_IMG_URL_PREFIX.length).split('?')[0]);
+        const relativePath = decodeURIComponent(requestPath.slice(matchedPrefix.length));
         const filePath = path.normalize(path.join(POSTS_IMG_SOURCE_DIR, relativePath));
 
         // 防止路径穿越到目录之外
@@ -80,16 +87,22 @@ const postsImgPublicPlugin = (): Plugin => {
 };
 
 const normalizeBasePath = (value?: string) => {
-  const trimmed = value?.trim();
+  let trimmed = value?.trim().replace(/\\/g, '/');
   if (!trimmed) {
     return '/';
+  }
+
+  // Git Bash may rewrite /repo/ into its own filesystem path before npm runs.
+  const msysGitPath = trimmed.match(/^[a-z]:\//i) ? trimmed.match(/\/git\/(.+)$/i) : null;
+  if (msysGitPath?.[1]) {
+    trimmed = `/${msysGitPath[1]}`;
   }
 
   if (trimmed === '.' || trimmed === './') {
     return './';
   }
 
-  const normalized = trimmed.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+  const normalized = trimmed.replace(/^\/+|\/+$/g, '');
   return normalized ? `/${normalized}/` : '/';
 };
 

@@ -20,11 +20,9 @@ import {
 
 const formatIndex = (value: number) => String(value).padStart(2, '0');
 const MOBILE_TOC_TRIGGER_STYLE = {
-  right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
-  bottom: 'max(calc(var(--cookie-notice-height, 0px) + 8.5rem), calc(env(safe-area-inset-bottom, 0px) + 8.5rem))'
+  bottom: 'max(calc(var(--cookie-notice-height, 0px) + env(safe-area-inset-bottom, 0px) + 8.5rem), calc(var(--cookie-notice-height, 0px) + 8.5rem))'
 } as const;
 const DESKTOP_TOC_TRIGGER_STYLE = {
-  right: '1.5rem',
   bottom: 'calc(var(--cookie-notice-height, 0px) + 9rem)'
 } as const;
 const DESKTOP_TOC_POPOVER_STYLE = {
@@ -602,7 +600,7 @@ export const TableOfContents: React.FC<{
             type="button"
             onClick={() => setIsOpen((value) => !value)}
             style={MOBILE_TOC_TRIGGER_STYLE}
-            className="fixed z-floating inline-flex items-center gap-2 rounded-control border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 lg:hidden"
+            className="fixed-control-position fixed z-floating inline-flex h-11 items-center justify-center gap-2 rounded-control border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 lg:hidden"
             aria-label={isOpen ? '关闭目录' : '打开目录'}
             aria-expanded={isOpen}
           >
@@ -644,7 +642,7 @@ export const TableOfContents: React.FC<{
             type="button"
             onClick={() => setIsOpen((value) => !value)}
             style={DESKTOP_TOC_TRIGGER_STYLE}
-            className="fixed z-floating hidden items-center gap-2 rounded-control border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 md:inline-flex"
+            className="fixed-control-position fixed z-floating hidden h-11 items-center justify-center gap-2 rounded-control border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 md:inline-flex"
             aria-label={isOpen ? '关闭目录' : '打开目录'}
             aria-expanded={isOpen}
           >

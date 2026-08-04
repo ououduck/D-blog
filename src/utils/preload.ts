@@ -28,6 +28,7 @@ const pageLoaders: Record<string, ModuleLoader> = {
   '/about': () => import('../pages/About').then((m) => ({ default: m.About })),
   '/sponsor': () => import('../pages/Sponsor').then((m) => ({ default: m.Sponsor })),
   '/cover': () => import('../pages/CoverGenerator').then((m) => ({ default: m.CoverGenerator })),
+  '/favorites': () => import('../pages/Favorites').then((m) => ({ default: m.Favorites })),
 };
 
 export { pageLoaders };

@@ -73,6 +73,14 @@ export interface DecorationConfig {
   separatorOpacity: number;
 }
 
+export interface RenderDiagnostics {
+  scaled: boolean;
+  truncated: boolean;
+  overflow: boolean;
+  lowContrast: boolean;
+  warnings: string[];
+}
+
 export interface CoverRenderOptions {
   size: CanvasSize;
   template: CoverTemplate;
@@ -98,6 +106,7 @@ export interface CoverRenderOptions {
   decorations: DecorationConfig;
   maxTextLines?: number;
   minFontSize?: number;
+  diagnostics?: RenderDiagnostics;
 }
 
 export interface FittedText {

@@ -107,6 +107,10 @@ html.theme-switching .editorial-input {
     @apply inline-flex items-center justify-center gap-2 rounded-control border border-zinc-950 bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-none transition-colors hover:bg-zinc-800 active:bg-black dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-300;
   }
 
+  .fixed-control-position {
+    right: max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem));
+  }
+
   .editorial-input {
     @apply w-full rounded-control border border-zinc-300 bg-paper px-4 py-3 text-sm text-ink shadow-none outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-zinc-400;
   }
@@ -310,27 +314,86 @@ html.theme-switching .editorial-input {
   @apply opacity-100;
 }
 
-  .code-lang-badge {
-    @apply absolute left-3 top-3 z-10 rounded-none border border-zinc-600 bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-300;
+  .code-block {
+    @apply overflow-hidden border border-zinc-700 bg-[#0d0d0f] dark:border-zinc-700;
+  }
+
+  .code-toolbar {
+    @apply flex min-h-12 items-center justify-between gap-3 border-b border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-300 dark:bg-zinc-900;
+  }
+
+  .code-language {
+    @apply min-w-0 truncate font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400;
+  }
+
+  .code-toolbar-actions {
+    @apply flex shrink-0 items-center gap-1;
+  }
+
+  .code-action-btn {
+    @apply inline-flex min-h-10 items-center justify-center gap-1.5 rounded-none border border-zinc-600 bg-zinc-800 px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-zinc-500 hover:bg-zinc-700 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 focus-visible:ring-2 focus-visible:ring-zinc-400/70 active:scale-[.98] dark:bg-zinc-800;
+  }
+
+  .code-action-btn-success {
+    @apply border-emerald-500/70 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20 hover:text-emerald-200;
+  }
+
+  .code-copy-feedback {
+    @apply hidden text-xs font-medium text-emerald-300 sm:inline;
+  }
+
+  .code-scroll {
+    @apply relative overflow-x-auto touch-pan-x;
+    scrollbar-width: thin;
+    scrollbar-color: #52525b transparent;
+  }
+
+  .code-content {
+    @apply flex min-w-max;
+  }
+
+  .code-content > pre {
+    @apply flex-1;
+    min-width: max-content;
+  }
+
+  .code-line-numbers {
+    @apply flex shrink-0 flex-col select-none border-r border-zinc-800 bg-[#101012] px-3 py-3.5 text-right font-mono text-[0.8125rem] leading-6 text-zinc-600 md:py-5;
+  }
+
+  .code-line-numbers span {
+    @apply block h-6;
+  }
+
+  .code-block .hljs {
+    background: transparent !important;
   }
 
   .code-block-collapsed {
     max-height: 18rem;
     overflow-y: hidden;
   }
+
+  .code-block-collapsed::after {
+    content: '';
+    @apply pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#0d0d0f] via-[#0d0d0f]/90 to-transparent;
+  }
+
   .code-block-expanded {
     max-height: none;
   }
+
   .code-expand-btn,
   .code-collapse-btn {
-    @apply z-10 inline-flex min-h-11 items-center justify-center rounded-none border border-zinc-600 bg-zinc-800 px-3 py-2 text-center text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 focus-visible:ring-2 focus-visible:ring-zinc-400/70 active:scale-[.98];
+    @apply z-10 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-none border border-zinc-600 bg-zinc-800 px-3 py-2 text-center text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 focus-visible:ring-2 focus-visible:ring-zinc-400/70 active:scale-[.98];
     max-width: calc(100% - 1rem);
     overflow-wrap: anywhere;
   }
+
   .code-expand-btn {
-    @apply absolute bottom-0 left-1/2 -translate-x-1/2 border-zinc-800 bg-[#0d0d0f]/95 text-sm text-zinc-400 hover:bg-[#18181b] hover:text-zinc-200;
-    width: calc(100% - 1rem);
+    @apply absolute bottom-2 left-1/2 -translate-x-1/2 border-zinc-600 bg-[#18181b]/95 text-sm text-zinc-300 hover:bg-[#27272a] hover:text-white;
   }
+
   .code-collapse-btn {
     @apply absolute bottom-2 left-1/2 -translate-x-1/2;
   }
@@ -383,6 +446,27 @@ html.theme-switching .editorial-input {
   border-radius: 0;
 }
 
+.mermaid-container {
+  max-width: 100%;
+}
+
+.mermaid-diagram {
+  width: max-content;
+  min-width: 100%;
+}
+
+.mermaid-diagram > svg {
+  display: block;
+  width: auto !important;
+  min-width: 48rem;
+  max-width: none !important;
+  height: auto !important;
+}
+
+html.dark .mermaid-diagram > svg {
+  color-scheme: dark;
+}
+
 .dark .prose img:not(.no-dark-border) {
   @apply ring-1 ring-white/10;
 }
@@ -424,6 +508,10 @@ html.theme-switching .editorial-input {
 }
 
 /* ===== 专注阅读 ===== */
+[data-reading-mode='true'] .cookie-notice {
+  display: none;
+}
+
 .reading-mode-shell {
   background: transparent;
 }
@@ -442,7 +530,7 @@ html.theme-switching .editorial-input {
 }
 
 .reading-mode-article .post-body > div {
-  max-width: 58rem;
+  max-width: 46rem;
 }
 
 .reading-mode-article .post-prose {
@@ -462,15 +550,22 @@ html.theme-switching .editorial-input {
 }
 
 .reading-mode-article .post-prose pre,
-.reading-mode-article .post-prose figure,
 .reading-mode-article .post-prose .table-wrapper,
 .reading-mode-article .post-prose .mermaid-container {
   margin-top: 2.25rem;
   margin-bottom: 2.25rem;
 }
 
+.reading-mode-article .post-prose figure {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
 .reading-mode-article .post-prose img {
-  max-height: 75vh;
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: none;
   object-fit: contain;
 }
 
@@ -523,6 +618,9 @@ html.theme-switching .editorial-input {
   .post-cover,
   .post-actions,
   .post-navigation,
+  .post-series,
+  .post-related,
+  .continue-reading,
   .post-license {
     display: none !important;
   }
@@ -588,7 +686,10 @@ html.theme-switching .editorial-input {
   }
 
   .post-prose pre,
-  .post-prose pre code {
+  .post-prose pre code,
+  .post-prose .code-block,
+  .post-prose .code-content,
+  .post-prose .code-line-numbers {
     max-height: none !important;
     height: auto !important;
     overflow: visible !important;
@@ -599,12 +700,23 @@ html.theme-switching .editorial-input {
     border-color: #999 !important;
   }
 
+  .post-prose .code-toolbar,
   .post-prose .code-lang-badge,
   .post-prose .code-expand-btn,
   .post-prose .code-collapse-btn,
   .post-prose button[aria-label='复制代码'],
-  .post-prose button[aria-label='已复制'] {
+  .post-prose button[aria-label='已复制'],
+  .post-prose .code-copy-feedback {
     display: none !important;
+  }
+
+  .post-prose .code-scroll {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .post-prose .code-block-collapsed {
+    max-height: none !important;
   }
 
   .post-prose img,

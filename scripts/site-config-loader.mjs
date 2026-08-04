@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { getBasePath, withBasePath } from './base-path.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,10 +68,29 @@ export const loadSiteConfig = ({ logger } = {}) => {
   };
 };
 
-export const toAbsoluteUrl = (value, baseUrl) => {
+export const getSiteBasePath = () => getBasePath(process.env.VITE_BASE_PATH);
+
+export const toAbsoluteUrl = (value, baseUrl, basePath = getSiteBasePath()) => {
   if (!value) {
-    return baseUrl;
+    return new URL(withBasePath('/', basePath), `${baseUrl.replace(/\/+$/, '')}/`).toString();
   }
 
-  return new URL(value, baseUrl).toString();
+  const rawValue = String(value);
+  if (/^[a-z][a-z\d+.-]*:/i.test(rawValue)) {
+    try {
+      const candidate = new URL(rawValue);
+      const site = new URL(baseUrl);
+      if (candidate.origin !== site.origin) {
+        return rawValue;
+      }
+      return new URL(
+        withBasePath(`${candidate.pathname}${candidate.search}${candidate.hash}`, basePath),
+        `${baseUrl.replace(/\/+$/, '')}/`
+      ).toString();
+    } catch {
+      return rawValue;
+    }
+  }
+
+  return new URL(withBasePath(rawValue, basePath), `${baseUrl.replace(/\/+$/, '')}/`).toString();
 };

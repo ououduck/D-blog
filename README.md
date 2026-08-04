@@ -138,18 +138,22 @@ npm run preview
 
 ## 构建流程
 
-项目采用"构建时数据生成 + 预渲染"模式，分三步完成：
+项目采用“构建时图片处理 + 数据生成 + Vite 构建 + 预渲染”模式：
 
 ```mermaid
 graph LR
-  A[gen:data] --> B[vite build]
-  B --> C[prerender]
-  C --> D[dist/]
+  A[gen:images] --> B[gen:data]
+  B --> C[vite build]
+  C --> D[prerender]
+  D --> E[dist/]
 ```
 
-1. **数据生成** (`npm run gen:data`) - 读取 `posts/` 目录的 Markdown 文件和 `friends/` 目录的 JSON 文件，生成 `generated/` 下的 JSON 数据索引，同时输出 `public/sitemap.xml` 和 `public/feed.xml`
-2. **Vite 构建** (`npm run build`) - 将 `src/` 编译为 `dist/` 静态资源
-3. **预渲染** (`npm run prerender`) - 为每篇文章（`/post/:id`）和静态页面（`/archive`、`/tags`、`/stats`、`/about`、`/friends`、`/cover`、`/sponsor`、404）生成独立的 `index.html`，注入对应的 SEO meta 标签和 JSON-LD 结构化数据
+1. **图片资产生成** (`npm run gen:images`) - 扫描 `posts-img/`，保留原图 URL，同时使用 `sharp` 生成 WebP 和多种宽度的 fallback 变体，写入 `public/generated-images/`，并生成 `generated/image-assets.json`。源图片不会被覆盖。
+2. **数据生成** (`npm run gen:data`) - 自动先执行图片资产生成，再读取 `posts/` 和 `friends/`，校验 Front Matter、文章 ID、图片尺寸、图片路径、标题锚点、站内链接和外链格式，生成 `generated/` 数据索引以及 `public/sitemap.xml`、`public/feed.xml`。本地图片缺失或尺寸无法读取时构建以非零状态退出。
+3. **Vite 构建** (`npm run build`) - 将 `src/` 编译为 `dist/` 静态资源，并复制原图与生成的响应式图片。
+4. **预渲染** (`npm run prerender`) - 为每篇文章和静态页面生成独立的 `index.html`，注入 SEO 元数据；首屏封面 preload 使用与页面 `<picture>` 相同的 `imagesrcset`，其他图片继续原生懒加载。
+
+文章中继续使用 `/posts-img/...`（或文章目录下的相对路径）引用原图即可，前端会自动选择 WebP 和合适宽度的图片。
 
 ## 项目结构
 
@@ -175,6 +179,7 @@ D-blog/
 ├── generated/                   # 构建时生成的 JSON 数据（自动生成，不提交）
 │   ├── posts.json              # 文章元数据
 │   ├── posts-search.json       # 全文搜索索引
+│   ├── image-assets.json       # 图片尺寸与响应式变体清单
 │   ├── friends.json            # 友链数据
 │   └── site-stats.json         # 站点统计
 ├── public/                      # 静态资源
@@ -191,7 +196,9 @@ D-blog/
 │   ├── pwa-512.png             # PWA 图标
 │   └── favicon.ico             # 站点图标
 ├── scripts/                     # 构建脚本
+│   ├── generate-image-assets.mjs # 生成 WebP 与响应式图片变体
 │   ├── generate-site-data.mjs  # 数据生成脚本（Markdown → JSON + RSS + Sitemap）
+│   ├── image-assets-utils.mjs  # 图片引用解析与路径校验
 │   ├── prerender.mjs           # 预渲染脚本（生成静态 HTML + SEO 标签）
 │   ├── site-config-loader.mjs  # 站点配置解析（支持 VITE_SITE_URL 环境变量覆盖）
 │   └── build-logger.mjs        # 构建日志输出工具
@@ -240,7 +247,8 @@ D-blog/
 │   │   ├── headings.ts         # 标题提取工具
 │   │   ├── toc.ts              # 目录树构建（自动折叠）
 │   │   ├── motion.ts           # Framer Motion 动画配置
-│   │   └── preload.ts          # 页面预加载
+│   │   ├── preload.ts          # 页面预加载
+│   │   └── imageAssets.ts      # 响应式图片资源选择
 │   ├── config/                 # 前端配置
 │   │   ├── sponsorConfig.ts    # 赞助选项配置
 │   │   └── coverTemplates.ts   # 封面模板配置
@@ -262,7 +270,7 @@ D-blog/
 ---
 id: my-first-post
 title: 我的第一篇文章
-excerpt: 文章摘要，用于列表展示和 SEO
+excerpt: 文章摘要，用于列表展示和 SEO（唯一必填的摘要/描述字段）
 date: 2026-03-14
 updatedAt: 2026-03-20            # 可选，最后修改日期
 category: 技术                    # 可选值：教程 / 技术 / 随笔 / 分享 / 其他
@@ -273,12 +281,15 @@ coverImage: /posts-img/example.png # 可选，封面图路径（如 /posts-img/�
 author: 跑路的duck                 # 可选，作者（字符串或对象）
 featured: false                   # 是否首页精选展示
 featured-top: 1                   # 精选文章置顶排序（仅 featured: true 时生效，数字越小优先级越高）
+series: false                     # 是否属于文章系列
+# series-name: 我的系列           # 仅 series: true 时填写
+# series-order: 1                 # 仅 series: true 时填写，数字越小越靠前
 draft: false                      # 是否为草稿
 ---
 
 # 正文标题
 
-这里开始写正文，支持标准 Markdown、GFM 表格、代码块等。
+这里开始写正文，支持标准 Markdown、GFM 表格、代码块等。图片 alt 必须填写非空描述；本地图片必须能解析到 `posts-img/` 内的实际文件。
 ```
 
 **字段说明**：
@@ -287,17 +298,22 @@ draft: false                      # 是否为草稿
 | --- | --- | --- |
 | `id` | 是 | 文章唯一标识，对应路由 `/post/:id`，重复会构建报错 |
 | `title` | 是 | 文章标题 |
-| `excerpt` | 是 | 文章摘要，用于列表展示和 SEO |
+| `excerpt` | 是 | 唯一的摘要/SEO 描述字段，必须是非空字符串；不使用 `description` 或 `summary` |
 | `date` | 是 | 发布日期（YYYY-MM-DD），格式错误会导致构建报错 |
 | `updatedAt` | 否 | 最后修改日期（YYYY-MM-DD） |
-| `category` | 否 | 文章分类，必须属于 `config/content.config.json` 白名单，非法值回退为 `其他` |
-| `tags` | 否 | 标签数组 |
-| `coverImage` | 否 | 封面图路径 |
+| `category` | 否 | 文章分类，必须属于 `config/content.config.json` 白名单；未填写或为空时回退为 `其他`，非空非法值会导致校验失败 |
+| `tags` | 是 | 非空字符串数组；每项去除首尾空白后不得为空或重复 |
+| `coverImage` | 否 | 本地路径必须指向 `posts-img/` 内的实际文件；外部封面仅允许格式正确的 HTTP(S) URL |
 | `author` | 否 | 作者，支持字符串（如 `跑路的duck`）或对象（含 `name`/`avatar`/`role`/`bio`/`url`） |
 | `authors` | 否 | 作者信息数组，支持多作者，每项同 `author` 对象结构 |
 | `featured` | 否 | 是否作为首页精选展示 |
 | `featured-top` | 否 | 精选文章置顶排序；仅 `featured: true` 时生效，数字越小优先级越高 |
+| `series` | 否 | 是否属于文章系列；仅为 `true` 时才读取系列名称和章节序号 |
+| `series-name` | 条件必填 | 系列名称；仅 `series: true` 时必填，`series: false` 时忽略 |
+| `series-order` | 条件必填 | 系列章节序号；仅 `series: true` 时必填，必须是正整数，数字越小越靠前 |
 | `draft` | 否 | 是否为草稿（`true` 时构建自动过滤） |
+
+`id` 会作为 `/post/:id` 和站内链接的一部分使用，不能包含空白、斜杠、查询/片段分隔符、百分号、引号、尖括号或 `.`/`..` 路径段。正文中的 Markdown 图片必须有非空 `alt`；本地 `coverImage` 和正文图片（支持 query、hash、Markdown title）必须能解析到 `posts-img/` 内的实际文件，不能路径穿越。`npm run gen:data` 会检查已注册静态路由、已发布文章 ID、标题锚点和本地资源；草稿不会作为公开链接目标。普通外链只做 `http:`、`https:`、`mailto:` 格式检查，不请求网络或检查可达性。
 
 ### 文章分类
 
@@ -310,8 +326,8 @@ draft: false                      # 是否为草稿
 }
 ```
 
-- `postCategories`：合法的分类列表，文章 Front Matter 中的 `category` 必须在此列表中，否则回退为 `fallbackCategory`
-- `fallbackCategory`：未填写或非法分类时的兜底值
+- `postCategories`：合法的分类列表，文章 Front Matter 中非空的 `category` 必须在此列表中；不符合时 `npm run gen:data` 会报告校验错误
+- `fallbackCategory`：未填写或空分类时的兜底值
 
 ### Markdown 增强
 
@@ -366,9 +382,12 @@ graph TD
 - **文字** - 主副标题自定义，支持字重、字号、字距、颜色、描边、阴影与自动配色
 - **字体** - 支持上传自定义字体（WOFF / WOFF2 / TTF / OTF）
 - **排版** - 多种布局模式（图标分割 / 堆叠 / 仅图标 / 仅文字）、文本对齐与四角、分隔线装饰
-- **导出** - 比例 16:9 / 1:1 / 4:3 / 21:9，缩放 0.5×–4×，PNG / JPEG 格式；PNG 可选择跟随模板底色或导出透明背景，JPEG 支持质量调节
+- **导出** - 提供 16:9 / 1:1 / 4:3 / 21:9 / 1.91:1（Open Graph）尺寸预设，缩放 0.5×–4×，PNG / JPEG 格式；PNG 可选择跟随模板底色或导出透明背景，JPEG 支持质量调节；下载与复制都会按目标尺寸重新渲染，而不是放大预览位图
+- **可靠性** - 根据最终合成背景区域自动选择黑/白文字颜色，长标题会在安全区内缩放或截断，并通过提示播报对比度、溢出和截断诊断
+- **编辑效率** - 支持 Ctrl/Cmd + Z 撤销、Shift + Z 重做、本地草稿恢复、最多 20 个持久化预设、中心线/安全框/网格辅助，以及预览聚焦后的方向键移动和 +/- 缩放
+- **批量生成** - 可在导出面板上传 Markdown frontmatter、CSV 或 JSON，按 title、subtitle/description、slug 批量生成并下载 ZIP；批量处理仅在当前浏览器会话中运行，不会修改 Markdown 文件
 
-封面模板配置位于 `src/config/coverTemplates.ts`，当前仅保留黑白两项；核心渲染逻辑位于 `src/pages/cover/`（含单元测试）。
+封面模板配置位于 `src/config/coverTemplates.ts`，当前仅保留黑白两项；核心渲染逻辑位于 `src/pages/cover/`。纯逻辑回归测试覆盖布局、颜色、文件校验、存储、导出文件名和批量数据解析；Canvas 绘制与浏览器交互仍需通过浏览器回归验证。
 
 ### 订阅更新
 

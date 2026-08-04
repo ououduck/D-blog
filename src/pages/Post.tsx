@@ -7,9 +7,13 @@ import { motion } from 'framer-motion';
 import { easeOut } from '@/utils/motion';
 import DOMPurify from 'dompurify';
 
-import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Users, ExternalLink, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Download, ChevronDown, ChevronUp, Users, ExternalLink, EyeOff, BookOpen, Bookmark } from 'lucide-react';
 import { getPostById, getPosts } from '@/services/posts';
+import { getReadingHistoryEntry, saveReadingHistory } from '@/services/readingHistory';
+import { getRelatedPosts, getSeriesNavigation, type SeriesNavigation } from '@/utils/postRelations';
 import { Post as PostType, PostAuthor, PostMetadata } from '../types';
+import { useOfflinePosts } from '@/hooks/useOfflinePosts';
+import { assetUrl, absoluteSiteUrl } from '@/utils/siteUrl';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
@@ -22,6 +26,8 @@ import { formatDate } from '@/utils/date';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 import { useReadingMode } from '@/components/ReadingModeContext';
+import { ReadingModeToggle } from '@/components/ReadingModeToggle';
+import { getResponsiveImageProps } from '@/utils/imageAssets';
 
 
 type BlockCodeProps = {
@@ -73,7 +79,7 @@ const HIGHLIGHT_STYLE_ID = 'post-highlight-theme';
 
 const loadHighlightThemeCss = async (isDark: boolean) => {
   const themeModule = isDark
-    ? await import('highlight.js/styles/github-dark.css?raw')
+    ? await import('highlight.js/styles/github-dark-dimmed.css?raw')
     : await import('highlight.js/styles/github.css?raw');
   return themeModule.default;
 };
@@ -133,7 +139,6 @@ const extractLangFromChildren = (children: React.ReactNode): string | undefined 
 };
 
 const getLangDisplayName = (lang: string): string => {
-
   const langMap: Record<string, string> = {
     js: 'JavaScript', jsx: 'JSX', ts: 'TypeScript', tsx: 'TSX',
     py: 'Python', rb: 'Ruby', go: 'Go', rs: 'Rust',
@@ -148,6 +153,23 @@ const getLangDisplayName = (lang: string): string => {
   return langMap[lang] || lang;
 };
 
+const CODE_FILE_EXTENSIONS: Record<string, string> = {
+  bash: 'sh', c: 'c', cpp: 'cpp', cs: 'cs', css: 'css', docker: 'dockerfile',
+  dockerfile: 'dockerfile', go: 'go', gql: 'graphql', graphql: 'graphql', html: 'html',
+  java: 'java', js: 'js', json: 'json', jsx: 'jsx', kt: 'kt', md: 'md', py: 'py',
+  rb: 'rb', rs: 'rs', scss: 'scss', sh: 'sh', sql: 'sql', swift: 'swift', ts: 'ts',
+  tsx: 'tsx', xml: 'xml', yaml: 'yaml', yml: 'yaml', zsh: 'sh'
+};
+
+const getCodeFileExtension = (lang?: string) => {
+  if (!lang) return 'txt';
+  return CODE_FILE_EXTENSIONS[lang.toLowerCase()] || 'txt';
+};
+
+const getCodeText = (children: React.ReactNode) => extractTextFromReactNode(children)
+  .replace(/\r\n?/g, '\n')
+  .replace(/\n$/, '');
+
 const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>) => {
   const preRef = useRef<HTMLPreElement>(null);
   const [copied, setCopied] = useState(false);
@@ -155,29 +177,30 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
   const [needsExpand, setNeedsExpand] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
   const lang = extractLangFromChildren(children);
+  const isMermaidBlock = React.Children.toArray(children).some(
+    (child) => React.isValidElement(child) && child.type === MermaidBlock
+  );
+  const code = getCodeText(children);
+  const lineCount = Math.max(1, code ? code.split('\n').length : 1);
+  const lineNumbers = Array.from({ length: lineCount }, (_, index) => index + 1);
 
   useEffect(() => {
-    if (preRef.current) {
-      const lineCount = (preRef.current.innerText.match(/\n/g) || []).length + 1;
-      setNeedsExpand(lineCount > MAX_CODE_LINES);
-    }
+    setNeedsExpand(lineCount > MAX_CODE_LINES);
     return () => {
       if (resetTimerRef.current !== null) {
         window.clearTimeout(resetTimerRef.current);
         resetTimerRef.current = null;
       }
     };
-  }, []);
+  }, [lineCount]);
 
   const markCopied = () => {
     if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
     setCopied(true);
-    resetTimerRef.current = window.setTimeout(() => setCopied(false), 2000);
+    resetTimerRef.current = window.setTimeout(() => setCopied(false), 2200);
   };
 
   const handleCopy = async () => {
-    if (!preRef.current) return;
-    const code = preRef.current.innerText.replace(/\n$/, '');
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(code);
@@ -188,19 +211,30 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
     } catch {
       const textArea = document.createElement('textarea');
       textArea.value = code;
+      textArea.setAttribute('readonly', '');
       textArea.style.position = 'fixed';
       textArea.style.left = '-9999px';
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
       try {
-        const ok = document.execCommand('copy');
-        if (ok) markCopied();
-      } catch {
-        // Clipboard fallback is best effort; the temporary textarea is still removed below.
+        if (document.execCommand('copy')) markCopied();
+      } finally {
+        textArea.remove();
       }
-      document.body.removeChild(textArea);
     }
+  };
+
+  const handleDownload = () => {
+    const objectUrl = URL.createObjectURL(new Blob([code], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = `code-snippet.${getCodeFileExtension(lang)}`;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
   };
 
   const childrenWithProps = React.Children.map(children, (child) => {
@@ -210,53 +244,48 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
     return child;
   });
 
+  if (isMermaidBlock || lang?.toLowerCase() === 'mermaid') {
+    return <>{children}</>;
+  }
+
   return (
-    <div className="group relative my-5 md:my-7">
-      {lang && (
-        <span className="code-lang-badge">{getLangDisplayName(lang)}</span>
-      )}
+    <div className="code-block group relative my-5 md:my-7">
+      <div className="code-toolbar">
+        <span className="code-language" aria-label={`代码语言：${lang ? getLangDisplayName(lang) : '纯文本'}`}>
+          {lang ? getLangDisplayName(lang) : '纯文本'}
+        </span>
+        <div className="code-toolbar-actions">
+          {copied && <span className="code-copy-feedback" role="status" aria-live="polite">代码已复制</span>}
+          <button type="button" onClick={handleCopy} className={`code-action-btn ${copied ? 'code-action-btn-success' : ''}`} title={copied ? '已复制' : '复制代码'} aria-label={copied ? '已复制' : '复制代码'}>
+            {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+            <span>{copied ? '已复制' : '复制'}</span>
+          </button>
+          <button type="button" onClick={handleDownload} className="code-action-btn" title="下载代码" aria-label="下载代码">
+            <Download size={15} aria-hidden="true" />
+            <span>下载</span>
+          </button>
+        </div>
+      </div>
 
-      <button
-        type="button"
-        onClick={handleCopy}
-        className={`absolute right-3 top-3 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-none border border-zinc-600 p-2 transition-colors focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-100 focus-visible:ring-2 focus-visible:ring-zinc-400/70 active:scale-[.98] ${
-          copied
-            ? 'bg-zinc-100 text-zinc-950'
-            : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white md:opacity-0 md:group-hover:opacity-100'
-        }`}
-        title={copied ? '已复制' : '复制代码'}
-        aria-label={copied ? '已复制' : '复制代码'}
-      >
-        {copied ? <Check size={16} /> : <Copy size={16} />}
-      </button>
-
-      <div className="relative">
-        <pre
-          ref={preRef}
-          {...props}
-          className={`${props.className || ''} !my-0 overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-600 touch-pan-x !p-3.5 !pt-10 md:!p-5 md:!pt-7 ${needsExpand && !isExpanded ? 'code-block-collapsed' : 'code-block-expanded'}`}
-        >
-          {childrenWithProps}
-        </pre>
-
+      <div className={`code-scroll ${needsExpand && !isExpanded ? 'code-block-collapsed' : 'code-block-expanded'}`}>
+        <div className="code-content">
+          <div className="code-line-numbers" aria-hidden="true">
+            {lineNumbers.map((number) => <span key={number}>{number}</span>)}
+          </div>
+          <pre ref={preRef} {...props} className={`${props.className || ''} !my-0 !min-w-max !bg-transparent !p-3.5 !leading-6 md:!p-5`}>
+            {childrenWithProps}
+          </pre>
+        </div>
         {needsExpand && !isExpanded && (
-          <button
-            type="button"
-            onClick={() => setIsExpanded(true)}
-            className="code-expand-btn"
-            aria-label="展开完整代码"
-          >
-            展开完整代码
+          <button type="button" onClick={() => setIsExpanded(true)} className="code-expand-btn" aria-label="展开完整代码" aria-expanded="false">
+            <ChevronDown size={15} aria-hidden="true" />
+            展开完整代码（共 {lineCount} 行）
           </button>
         )}
         {needsExpand && isExpanded && (
-          <button
-            type="button"
-            onClick={() => setIsExpanded(false)}
-            className="code-collapse-btn"
-            aria-label="折叠代码"
-          >
-            折叠
+          <button type="button" onClick={() => setIsExpanded(false)} className="code-collapse-btn" aria-label="折叠代码" aria-expanded="true">
+            <ChevronUp size={15} aria-hidden="true" />
+            折叠代码
           </button>
         )}
       </div>
@@ -264,7 +293,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
   );
 };
 
-const MermaidBlock = ({ children, renderer, theme }: { children: string; renderer: MermaidRenderer | null; theme: 'light' | 'dark' }) => {
+function MermaidBlock({ children, renderer, theme }: { children: string; renderer: MermaidRenderer | null; theme: 'light' | 'dark' }) {
   const [svg, setSvg] = useState('');
   const mermaidIdRef = useRef(`mermaid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`);
 
@@ -310,11 +339,11 @@ const MermaidBlock = ({ children, renderer, theme }: { children: string; rendere
     : svg;
 
   return (
-    <div className="my-8 flex justify-center overflow-x-auto rounded-none border border-zinc-300 bg-zinc-50 p-6 shadow-none dark:border-zinc-700 dark:bg-zinc-900/50">
-      <div dangerouslySetInnerHTML={{ __html: sanitizedSvg }} />
+    <div className="mermaid-container my-8 overflow-x-auto rounded-none border border-zinc-300 bg-zinc-50 p-4 shadow-none dark:border-zinc-700 dark:bg-zinc-900/50 sm:p-6">
+      <div className="mermaid-diagram" dangerouslySetInnerHTML={{ __html: sanitizedSvg }} />
     </div>
   );
-};
+}
 
 const isSafeMarkdownHref = (href?: string) => {
   if (!href) {
@@ -338,7 +367,14 @@ const isAbsoluteAssetPath = (value: string) => value.startsWith('/') || /^[a-z][
 
 const resolvePostsImgPath = (value: string) => {
   const clean = value.replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/^(\.\.\/)+/g, '');
-  return `/${clean}`;
+  return assetUrl(`/${clean}`);
+};
+
+const resolveBrowserAsset = (value?: string) => {
+  if (!value || /^[a-z][a-z\d+.-]*:/i.test(value) || value.startsWith('//')) {
+    return value;
+  }
+  return assetUrl(value);
 };
 
 const normalizeImageUrl = (value: string) => {
@@ -435,7 +471,7 @@ const createMarkdownComponents = (
   return {
     a: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
       const hrefIsImage = Boolean(href) && isImageUrl(href);
-      const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? href : resolvePostsImgPath(href)) : href;
+      const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? resolveBrowserAsset(href) : resolvePostsImgPath(href)) : href;
       const safeHref = isSafeMarkdownHref(resolvedHref) ? resolvedHref : undefined;
 
       if (safeHref && isImageUrl(safeHref)) {
@@ -475,7 +511,7 @@ const createMarkdownComponents = (
       return <a href={safeHref} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
     },
     img: ({ src, alt, title, previewSrc, ...props }: MarkdownImageProps) => {
-      const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? src : resolvePostsImgPath(src)) : src;
+      const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? resolveBrowserAsset(src) : resolvePostsImgPath(src)) : src;
       const previewTarget = previewSrc || resolvedSrc || '';
       const dimensions = resolvedSrc ? findImageDimensions(imageDimensions, resolvedSrc) : undefined;
       return (
@@ -487,6 +523,7 @@ const createMarkdownComponents = (
             aria-label={alt ? `预览图片：${alt}` : '预览图片'}
           >
             <ProgressiveImage
+              {...getResponsiveImageProps(resolvedSrc, "(max-width: 767px) 100vw, 46rem")}
               {...props}
               src={resolvedSrc}
               alt={alt}
@@ -494,8 +531,8 @@ const createMarkdownComponents = (
               decoding="async"
               width={dimensions?.width ?? props.width}
               height={dimensions?.height ?? props.height}
-              wrapperClassName="rounded-media"
-              className="cursor-zoom-in rounded-media transition-opacity duration-200 group-hover/myimage:opacity-95"
+              wrapperClassName="w-full rounded-media"
+              className="h-auto w-full cursor-zoom-in rounded-media object-contain transition-opacity duration-200 group-hover/myimage:opacity-95"
             />
             <span className="pointer-events-none absolute right-3 top-3 rounded-micro border border-white/20 bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 opacity-0 transition-opacity duration-200 group-hover/myimage:opacity-100 group-focus-visible/myimage:opacity-100">
               预览
@@ -560,9 +597,14 @@ export const Post = () => {
   const [mermaidTheme, setMermaidTheme] = useState<'light' | 'dark'>(() => getIsDarkTheme() ? 'dark' : 'light');
   const [mobileFloatingVisible, setMobileFloatingVisible] = useState(false);
   const shouldReduceMotion = useReducedMotion();
-  const { isReadingMode, toggleReadingMode, exitReadingMode } = useReadingMode();
+  const { isReadingMode, exitReadingMode } = useReadingMode();
+  const { isSaved, isSaving, error: offlineError, toggleSaved } = useOfflinePosts(post ?? undefined);
+  const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
   const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostMetadata | null; next: PostMetadata | null }>({ prev: null, next: null });
+  const [seriesNavigation, setSeriesNavigation] = useState<SeriesNavigation | null>(null);
+  const [relatedPosts, setRelatedPosts] = useState<PostMetadata[]>([]);
   const articleBodyRef = useRef<HTMLDivElement>(null);
+  const lastReadingSaveRef = useRef(0);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -767,10 +809,14 @@ export const Post = () => {
       .then((allPosts) => {
         if (cancelled) return;
         const currentIndex = allPosts.findIndex((p) => p.id === post.id);
-        setAdjacentPosts({
-          prev: currentIndex > 0 ? allPosts[currentIndex - 1] : null,
-          next: currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : null,
-        });
+        const previous = currentIndex > 0 ? allPosts[currentIndex - 1] : null;
+        const next = currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : null;
+        setAdjacentPosts({ prev: previous, next });
+        setSeriesNavigation(getSeriesNavigation(allPosts, post));
+        setRelatedPosts(getRelatedPosts(allPosts, post, {
+          limit: 3,
+          excludeIds: [previous?.id, next?.id].filter((value): value is string => Boolean(value))
+        }));
       })
       .catch((error) => {
         if (!cancelled) {
@@ -780,6 +826,55 @@ export const Post = () => {
 
     return () => { cancelled = true; };
   }, [post]);
+
+  useEffect(() => {
+    if (!post || typeof window === 'undefined' || window.location.hash) {
+      return;
+    }
+
+    const savedEntry = getReadingHistoryEntry(post.id);
+    if (!savedEntry || savedEntry.progress >= 0.95) {
+      return;
+    }
+
+    const restoreTimer = window.setTimeout(() => {
+      window.scrollTo({ top: savedEntry.scrollTop, behavior: 'auto' });
+    }, 80);
+
+    return () => window.clearTimeout(restoreTimer);
+  }, [post?.id, headings.length]);
+
+  useEffect(() => {
+    const target = articleBodyRef.current;
+    if (!post || !target || typeof window === 'undefined') {
+      return;
+    }
+
+    let animationFrame = 0;
+    const updateReadingHistory = () => {
+      animationFrame = 0;
+      const rect = target.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const totalScrollable = Math.max(rect.height - viewportHeight * 0.46, 1);
+      const progress = Math.min(Math.max((viewportHeight * 0.18 - rect.top) / totalScrollable, 0), 1);
+      const now = Date.now();
+      if (now - lastReadingSaveRef.current < 1000 && progress < 0.95) return;
+      lastReadingSaveRef.current = now;
+      saveReadingHistory({ postId: post.id, progress, scrollTop: window.scrollY });
+    };
+    const scheduleUpdate = () => {
+      if (!animationFrame) animationFrame = window.requestAnimationFrame(updateReadingHistory);
+    };
+
+    scheduleUpdate();
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+    return () => {
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+    };
+  }, [post?.id, post?.content]);
 
   useEffect(() => {
     if (isReadingMode && shareModalOpen) {
@@ -812,7 +907,7 @@ export const Post = () => {
 
   const markdownComponents = useMemo(
     () => createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, mermaidTheme, post?.imageDimensions, headings),
-    [mermaidRenderer, mermaidTheme, post?.imageDimensions, headings]
+    [isReadingMode, mermaidRenderer, mermaidTheme, post?.imageDimensions, headings]
   );
 
   if (loading) {
@@ -875,7 +970,7 @@ export const Post = () => {
     '@type': 'Article',
     headline: post.title,
     description: post.excerpt,
-    image: post.coverImage ? [new URL(post.coverImage, siteConfig.url).toString()] : [siteConfig.seoImage],
+    image: post.coverImage ? [absoluteSiteUrl(post.coverImage, siteConfig.url)] : [absoluteSiteUrl(siteConfig.seoImage, siteConfig.url)],
     datePublished: post.date,
     dateModified: post.updatedAt || post.date,
     author: authors.map((author) => ({
@@ -883,14 +978,14 @@ export const Post = () => {
       name: author.name,
       url: author.url
     })),
-    mainEntityOfPage: `${siteConfig.url}/post/${post.id}`,
+    mainEntityOfPage: absoluteSiteUrl(`/post/${post.id}`, siteConfig.url),
     publisher: {
       '@type': 'Organization',
       name: siteConfig.title,
       url: siteConfig.url,
       logo: {
         '@type': 'ImageObject',
-        url: siteConfig.logo
+        url: absoluteSiteUrl(siteConfig.logo, siteConfig.url)
       }
     },
     keywords: post.tags?.join(', ')
@@ -900,14 +995,16 @@ export const Post = () => {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
-      { '@type': 'ListItem', position: 2, name: post.category, item: `${siteConfig.url}/?category=${encodeURIComponent(post.category)}` },
-      { '@type': 'ListItem', position: 3, name: post.title, item: `${siteConfig.url}/post/${post.id}` }
+      { '@type': 'ListItem', position: 1, name: '首页', item: absoluteSiteUrl('/', siteConfig.url) },
+      { '@type': 'ListItem', position: 2, name: post.category, item: absoluteSiteUrl(`/?category=${encodeURIComponent(post.category)}`, siteConfig.url) },
+      { '@type': 'ListItem', position: 3, name: post.title, item: absoluteSiteUrl(`/post/${post.id}`, siteConfig.url) }
     ]
   };
 
   return (
     <>
+      <ReadingModeToggle />
+
       <Suspense fallback={null}>
         {previewImage && <ImageViewer src={previewImage.src} alt={previewImage.alt} onClose={() => setPreviewImage(null)} />}
         {!isReadingMode && <ReadingProgressBadge targetRef={articleBodyRef} onVisibilityChange={setMobileFloatingVisible} />}
@@ -929,7 +1026,7 @@ export const Post = () => {
             aria-label="退出专注阅读"
           >
             <EyeOff size={16} />
-            <span className="hidden sm:inline">退出专注</span>
+            <span className="hidden sm:inline">退出专注阅读</span>
           </button>
         )}
 
@@ -949,22 +1046,24 @@ export const Post = () => {
         />
 
         <header className="post-header mx-auto mb-8 max-w-3xl px-3 pt-4 text-center md:mb-12 md:pt-8">
-          <div className="print-hidden mb-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400 md:mb-7">
-            <Link to="/" className="inline-flex items-center gap-1 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
-              <ArrowLeft size={13} />
-              返回文章
-            </Link>
-            <span aria-hidden="true">/</span>
-            <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5">
-              <Link to="/" className="transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
-                首页
+          {!isReadingMode && (
+            <div className="print-hidden mb-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400 md:mb-7">
+              <Link to="/" className="inline-flex items-center gap-1 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
+                <ArrowLeft size={13} />
+                返回文章
               </Link>
-              <ChevronRight size={11} aria-hidden="true" />
-              <Link to={`/?category=${encodeURIComponent(post.category)}`} className="truncate transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
-                {post.category}
-              </Link>
-            </nav>
-          </div>
+              <span aria-hidden="true">/</span>
+              <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5">
+                <Link to="/" className="transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
+                  首页
+                </Link>
+                <ChevronRight size={11} aria-hidden="true" />
+                <Link to={`/?category=${encodeURIComponent(post.category)}`} className="truncate transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
+                  {post.category}
+                </Link>
+              </nav>
+            </div>
+          )}
 
           <motion.div
             initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
@@ -975,54 +1074,61 @@ export const Post = () => {
               {post.title}
             </h1>
 
-            <div className="post-meta print-hidden mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-500 md:gap-2.5 md:text-xs">
-              <span className="inline-flex max-w-full items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
-                <Users size={14} />
-                <span className="truncate">{authorsLabel}</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
-                <Calendar size={14} />
-                <span>发布于 {formatMetaDate(post.date)}</span>
-              </span>
-              {post.updatedAt && post.updatedAt !== post.date && (
+            {!isReadingMode && (
+              <div className="post-meta print-hidden mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-500 md:gap-2.5 md:text-xs">
+                <span className="inline-flex max-w-full items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
+                  <Users size={14} />
+                  <span className="truncate">{authorsLabel}</span>
+                </span>
                 <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
                   <Calendar size={14} />
-                  <span>更新 {formatMetaDate(post.updatedAt)}</span>
+                  <span>发布于 {formatMetaDate(post.date)}</span>
                 </span>
-              )}
-              <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
-                <Clock size={14} />
-                <span>{post.readTime}</span>
-              </span>
-              {!isReadingMode && (
+                {post.updatedAt && post.updatedAt !== post.date && (
+                  <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
+                    <Calendar size={14} />
+                    <span>更新 {formatMetaDate(post.updatedAt)}</span>
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
+                  <Clock size={14} />
+                  <span>{post.readTime}</span>
+                </span>
                 <button type="button" onClick={() => setShareModalOpen(true)} className="print-hidden inline-flex items-center gap-1.5 rounded-micro border border-zinc-400 bg-zinc-100 px-3 py-1.5 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400" aria-label={`分享文章：${post.title}`}>
                   <Share2 size={14} />
                   分享
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={toggleReadingMode}
-                className="reading-mode-toggle print-hidden inline-flex items-center gap-1.5 rounded-micro border border-zinc-400 bg-zinc-100 px-3 py-1.5 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400"
-                aria-pressed={isReadingMode}
-                aria-label={isReadingMode ? '退出专注阅读' : '进入专注阅读'}
-              >
-                {isReadingMode ? <EyeOff size={14} /> : <Eye size={14} />}
-                <span>{isReadingMode ? '退出专注' : '专注阅读'}</span>
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const wasSaved = isSaved;
+                    void toggleSaved()
+                      .then(() => setSavedFeedback(wasSaved ? '已取消收藏' : '已保存，可离线阅读'))
+                      .catch(() => undefined);
+                  }}
+                  disabled={isSaving}
+                  aria-pressed={isSaved}
+                  aria-label={isSaved ? `取消收藏：${post.title}` : `收藏文章：${post.title}`}
+                  className="print-hidden inline-flex items-center gap-1.5 rounded-micro border border-zinc-400 bg-zinc-100 px-3 py-1.5 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400"
+                >
+                  <Bookmark size={14} fill={isSaved ? 'currentColor' : 'none'} />
+                  {isSaving ? '保存中' : isSaved ? '已收藏' : '收藏'}
+                </button>
+                <span className="sr-only" role="status" aria-live="polite">{savedFeedback || offlineError || ''}</span>
+              </div>
+            )}
           </motion.div>
         </header>
 
         {post.coverImage && (
-          <button type="button" className="post-cover print-hidden mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0" onClick={() => setPreviewImage({ src: post.coverImage, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
+          <button type="button" className="post-cover print-hidden mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0" onClick={() => setPreviewImage({ src: resolveBrowserAsset(post.coverImage), alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
             <motion.div
               initial={shouldReduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.1, duration: 0.22, ease: easeOut }}
               className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-media border border-zinc-300 bg-zinc-100 shadow-none dark:border-zinc-700 dark:bg-zinc-900 sm:aspect-[16/8] md:mb-14 lg:aspect-[21/9]"
             >
-              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
+              <ProgressiveImage {...getResponsiveImageProps(post.coverImage, "(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px")} src={resolveBrowserAsset(post.coverImage)} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
             </motion.div>
           </button>
         )}
@@ -1030,7 +1136,7 @@ export const Post = () => {
         <div ref={articleBodyRef} className="post-body mx-auto w-full max-w-5xl px-3 pb-12 sm:px-4 md:pb-20 lg:px-0">
           <div className="mx-auto max-w-[46rem]">
             <div className="post-prose prose prose-stone max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:tracking-tight prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-3 dark:prose-h2:border-zinc-800 prose-p:leading-8 prose-li:leading-8 prose-a:break-words prose-a:underline-offset-4 prose-img:rounded-media prose-img:shadow-none prose-blockquote:rounded-none prose-blockquote:border-l-zinc-600 prose-blockquote:bg-zinc-100/70 prose-blockquote:not-italic dark:prose-blockquote:border-l-zinc-400 dark:prose-blockquote:bg-zinc-900 prose-pre:rounded-none prose-pre:border prose-pre:border-zinc-700 prose-pre:bg-[#0d0d0f] prose-pre:p-0">
-              <ReactMarkdown
+              <ReactMarkdown key={`markdown-${isReadingMode ? 'reading' : 'default'}`}
                 remarkPlugins={remarkPlugins}
                 rehypePlugins={rehypePlugins}
                 components={markdownComponents}
@@ -1039,7 +1145,8 @@ export const Post = () => {
               </ReactMarkdown>
             </div>
 
-            <aside className="post-license mt-14 border-l-2 border-zinc-200 pl-4 text-sm leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-16 md:pl-5" aria-labelledby="license-heading">
+            {!isReadingMode && (
+              <aside className="post-license mt-14 border-l-2 border-zinc-200 pl-4 text-sm leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-16 md:pl-5" aria-labelledby="license-heading">
               <h2 id="license-heading" className="mb-1 font-semibold text-zinc-700 dark:text-zinc-200">CC BY-SA 4.0 许可协议</h2>
               <p>
                 本文由 <strong className="font-semibold text-zinc-700 dark:text-zinc-200">{authorsLabel}</strong> 原创。除非另有声明，可在署名并以相同协议发布衍生作品的前提下自由复制、传播和修改。详见
@@ -1048,65 +1155,123 @@ export const Post = () => {
                 </a>
                 。
               </p>
-            </aside>
+              </aside>
+            )}
 
-            <div className="mt-8 flex flex-col gap-3 border-t border-zinc-200 pt-6 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
-              <p className="text-zinc-500 dark:text-zinc-400">
-                作者 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{authorsLabel}</span>
-              </p>
-              <a
-                href={`${siteConfig.friendsPage.repoUrl}/blob/main/posts/${post.id}.md`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-zinc-500 underline decoration-zinc-300 underline-offset-4 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:decoration-zinc-700 dark:hover:text-zinc-100"
-              >
-                <ExternalLink size={14} />
-                <span>帮助改进本文</span>
-              </a>
-            </div>
-
-            <div className="post-actions mt-8">
-              <IssueSubscriptionCard />
-            </div>
-
-            <nav aria-label="文章导航" className="post-navigation mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8">
-              <div className="grid gap-6 sm:grid-cols-2 sm:gap-10">
-                {adjacentPosts.prev ? (
-                  <Link
-                    to={`/post/${adjacentPosts.prev.id}`}
-                    className="group flex min-w-0 items-start gap-3 text-left"
+            {!isReadingMode && (
+              <>
+                <div className="mt-8 flex flex-col gap-3 border-t border-zinc-200 pt-6 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
+                  <p className="text-zinc-500 dark:text-zinc-400">
+                    作者 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{authorsLabel}</span>
+                  </p>
+                  <a
+                    href={`${siteConfig.friendsPage.repoUrl}/blob/main/posts/${post.id}.md`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-zinc-500 underline decoration-zinc-300 underline-offset-4 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:decoration-zinc-700 dark:hover:text-zinc-100"
                   >
-                    <ArrowLeft size={17} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100" />
-                    <span className="min-w-0">
-                      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">上一篇</span>
-                      <span className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 transition-colors group-hover:text-zinc-950 dark:text-zinc-300 dark:group-hover:text-white">{adjacentPosts.prev.title}</span>
-                    </span>
-                  </Link>
-                ) : (
-                  <span aria-hidden="true" />
-                )}
-                {adjacentPosts.next ? (
-                  <Link
-                    to={`/post/${adjacentPosts.next.id}`}
-                    className="group flex min-w-0 items-start justify-end gap-3 text-right"
-                  >
-                    <span className="min-w-0">
-                      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">下一篇</span>
-                      <span className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 transition-colors group-hover:text-zinc-950 dark:text-zinc-300 dark:group-hover:text-white">{adjacentPosts.next.title}</span>
-                    </span>
-                    <ArrowRight size={17} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100" />
-                  </Link>
-                ) : (
-                  <span aria-hidden="true" />
-                )}
-              </div>
+                    <ExternalLink size={14} />
+                    <span>帮助改进本文</span>
+                  </a>
+                </div>
 
-              <div className="mt-5 hidden text-center md:block">
-                <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
-                  快捷键：<kbd className="kbd">Alt</kbd> + <kbd className="kbd">←</kbd> 上一篇 · <kbd className="kbd">Alt</kbd> + <kbd className="kbd">→</kbd> 下一篇 · <kbd className="kbd">Esc</kbd> 关闭弹窗
-                </span>
-              </div>
-            </nav>
+                <div className="post-actions mt-8">
+                  <IssueSubscriptionCard />
+                </div>
+
+                {seriesNavigation && (
+                  <section className="post-series mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8" aria-labelledby="series-heading">
+                    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+                      <div>
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">系列文章</p>
+                        <h2 id="series-heading" className="font-serif text-xl font-bold text-ink dark:text-white">{seriesNavigation.name}</h2>
+                      </div>
+                      <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">第 {seriesNavigation.currentIndex + 1} / {seriesNavigation.posts.length} 篇</span>
+                    </div>
+                    <ol className="space-y-2">
+                      {seriesNavigation.posts.map((seriesPost, index) => (
+                        <li key={seriesPost.id}>
+                          <Link
+                            to={`/post/${seriesPost.id}`}
+                            aria-current={seriesPost.id === post.id ? 'page' : undefined}
+                            className={`flex min-h-11 items-center gap-3 rounded-control border px-3 py-2 text-sm transition-colors ${seriesPost.id === post.id ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900' : 'border-zinc-200 text-zinc-700 hover:border-zinc-500 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-600'}`}
+                          >
+                            <span className="w-7 shrink-0 text-center text-xs tabular-nums opacity-60">{index + 1}</span>
+                            <span className="min-w-0 flex-1 truncate">{seriesPost.title}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ol>
+                    {(seriesNavigation.previous || seriesNavigation.next) && (
+                      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                        {seriesNavigation.previous ? <Link to={`/post/${seriesNavigation.previous.id}`} className="editorial-button inline-flex min-h-11 items-center justify-center gap-2 text-sm"><ArrowLeft size={15} />上一章</Link> : <span />}
+                        {seriesNavigation.next ? <Link to={`/post/${seriesNavigation.next.id}`} className="editorial-button inline-flex min-h-11 items-center justify-center gap-2 text-sm">下一章<ArrowRight size={15} /></Link> : <span />}
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                <nav aria-label="文章导航" className="post-navigation mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8">
+                  <div className="grid gap-6 sm:grid-cols-2 sm:gap-10">
+                    {adjacentPosts.prev ? (
+                      <Link
+                        to={`/post/${adjacentPosts.prev.id}`}
+                        className="group flex min-w-0 items-start gap-3 text-left"
+                      >
+                        <ArrowLeft size={17} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100" />
+                        <span className="min-w-0">
+                          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">上一篇</span>
+                          <span className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 transition-colors group-hover:text-zinc-950 dark:text-zinc-300 dark:group-hover:text-white">{adjacentPosts.prev.title}</span>
+                        </span>
+                      </Link>
+                    ) : (
+                      <span aria-hidden="true" />
+                    )}
+                    {adjacentPosts.next ? (
+                      <Link
+                        to={`/post/${adjacentPosts.next.id}`}
+                        className="group flex min-w-0 items-start justify-end gap-3 text-right"
+                      >
+                        <span className="min-w-0">
+                          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">下一篇</span>
+                          <span className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 transition-colors group-hover:text-zinc-950 dark:text-zinc-300 dark:group-hover:text-white">{adjacentPosts.next.title}</span>
+                        </span>
+                        <ArrowRight size={17} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100" />
+                      </Link>
+                    ) : (
+                      <span aria-hidden="true" />
+                    )}
+                  </div>
+
+                  <div className="mt-5 hidden text-center md:block">
+                    <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                      快捷键：<kbd className="kbd">Alt</kbd> + <kbd className="kbd">←</kbd> 上一篇 · <kbd className="kbd">Alt</kbd> + <kbd className="kbd">→</kbd> 下一篇 · <kbd className="kbd">Esc</kbd> 关闭弹窗
+                    </span>
+                  </div>
+                </nav>
+
+                {relatedPosts.length > 0 && (
+                  <section className="post-related mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8" aria-labelledby="related-heading">
+                    <div className="mb-5 flex items-center gap-2">
+                      <BookOpen size={16} className="text-zinc-400" />
+                      <h2 id="related-heading" className="font-serif text-xl font-bold text-ink dark:text-white">你可能还喜欢</h2>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      {relatedPosts.map((relatedPost) => (
+                        <Link key={relatedPost.id} to={`/post/${relatedPost.id}`} className="group overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600">
+                          {relatedPost.coverImage ? <ProgressiveImage src={resolveBrowserAsset(relatedPost.coverImage)} alt="" width={relatedPost.coverWidth} height={relatedPost.coverHeight} aspectRatio="16/10" wrapperClassName="block aspect-[16/10] w-full bg-zinc-100 dark:bg-zinc-800" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <div className="flex aspect-[16/10] items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500">无封面</div>}
+                          <div className="p-3.5">
+                            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">{relatedPost.category}</p>
+                            <h3 className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-800 group-hover:text-black dark:text-zinc-200 dark:group-hover:text-white">{relatedPost.title}</h3>
+                            <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">{relatedPost.excerpt}</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </>
+            )}
           </div>
         </div>
       </article>
@@ -1118,7 +1283,7 @@ export const Post = () => {
             onClose={() => setShareModalOpen(false)}
             title={post.title}
             excerpt={post.excerpt}
-            url={`${typeof window !== 'undefined' ? window.location.origin : siteConfig.url}/post/${post.id}`}
+            url={absoluteSiteUrl(`/post/${post.id}`, typeof window !== 'undefined' ? window.location.origin : siteConfig.url)}
           />
         )}
       </Suspense>

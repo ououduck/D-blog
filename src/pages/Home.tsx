@@ -16,6 +16,10 @@ import { sortPosts } from '@/utils/postSorting';
 import { easeOut, easeSmooth, fadeInUp, staggerContainer } from '@/utils/motion';
 import { preloadPage } from '@/utils/preload';
 import { getHeroPost, isPinnedFeaturedPost } from '@/utils/postSelection';
+import { getResponsiveImageProps } from '@/utils/imageAssets';
+import { useReadingHistory } from '@/hooks/useReadingHistory';
+import { removeReadingHistory } from '@/services/readingHistory';
+import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';
 
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
 
@@ -200,7 +204,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
         <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 md:grid md:grid-cols-5">
           <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:col-span-3 md:aspect-auto md:min-h-80" aria-label={`阅读文章：${post.title}`}>
             {post.coverImage ? (
-              <ProgressiveImage src={post.coverImage} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
+              <ProgressiveImage {...getResponsiveImageProps(post.coverImage, "(max-width: 767px) 100vw, 60vw")} src={assetUrl(post.coverImage)} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
             ) : (
               <div className="flex h-full min-h-56 items-center justify-center bg-zinc-100 dark:bg-zinc-800">
                 <Sparkles className="h-12 w-12 text-zinc-300 dark:text-zinc-600" />
@@ -244,7 +248,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
       <div className="flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600">
         <Link to={`/post/${post.id}`} className="block aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-800" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
-              <ProgressiveImage src={post.coverImage} alt={post.title} loading="lazy" fetchPriority="auto" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
+              <ProgressiveImage {...getResponsiveImageProps(post.coverImage, "(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw")} src={assetUrl(post.coverImage)} alt={post.title} loading="lazy" fetchPriority="auto" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-300 dark:text-zinc-600">
               <Sparkles className="h-9 w-9" />
@@ -354,6 +358,7 @@ export const Home = () => {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
+  const { latest: latestReading, refresh: refreshReadingHistory } = useReadingHistory();
   const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
     emptyResults: allPosts,
     initialQuery: queryFromUrl
@@ -432,6 +437,19 @@ export const Home = () => {
   }, [searchQuery, selectedCategory, sortOrder]);
 
   const displayedPosts = useMemo(() => filterAndSortPosts(results, selectedCategory, sortOrder), [results, selectedCategory, sortOrder]);
+  const continueReading = useMemo(() => {
+    if (!latestReading || latestReading.progress >= 0.95) return null;
+    const matchingPost = allPosts.find((post) => post.id === latestReading.postId);
+    return matchingPost ? { post: matchingPost, entry: latestReading } : null;
+  }, [allPosts, latestReading]);
+
+  useEffect(() => {
+    if (latestReading && allPosts.length > 0 && !allPosts.some((post) => post.id === latestReading.postId)) {
+      removeReadingHistory(latestReading.postId);
+      refreshReadingHistory();
+    }
+  }, [allPosts, latestReading, refreshReadingHistory]);
+
   const heroPost = useMemo(() => getHeroPost(displayedPosts), [displayedPosts]);
   const heroSlots = heroPost ? (isMobile ? 1 : isLargeDesktop ? 3 : 2) : 0;
 
@@ -546,6 +564,24 @@ export const Home = () => {
       <Seo title={siteConfig.title} description={siteConfig.description} url="/" />
       <Hero />
 
+      {continueReading && (
+        <section className="continue-reading mx-4 mb-8 rounded-surface border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 md:mx-0 md:mb-10 md:p-5" aria-labelledby="continue-reading-heading">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">继续阅读</p>
+              <h2 id="continue-reading-heading" className="truncate font-serif text-xl font-bold text-ink dark:text-white">{continueReading.post.title}</h2>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{continueReading.post.category} · 已阅读 {Math.round(continueReading.entry.progress * 100)}%</p>
+            </div>
+            <Link to={`/post/${continueReading.post.id}`} className="editorial-button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold" aria-label={`继续阅读：${continueReading.post.title}`}>
+              继续阅读 <ChevronRight size={15} />
+            </Link>
+          </div>
+          <div className="mt-4 h-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800" aria-hidden="true">
+            <div className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100" style={{ width: `${Math.round(continueReading.entry.progress * 100)}%` }} />
+          </div>
+        </section>
+      )}
+
       <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-6 px-4 md:space-y-8 md:px-0">
           <FilterBar categories={categories} selected={selectedCategory} onSelect={handleSelectCategory} sortOrder={sortOrder} onToggleSort={handleToggleSort} shouldReduceMotion={shouldReduceMotion} />
 
@@ -640,7 +676,7 @@ export const Home = () => {
 
       {sharePost && (
         <Suspense fallback={null}>
-          <ShareModal isOpen={!!sharePost} onClose={() => setSharePost(null)} title={sharePost.title} excerpt={sharePost.excerpt} url={`${window.location.origin}/post/${sharePost.id}`} />
+          <ShareModal isOpen={!!sharePost} onClose={() => setSharePost(null)} title={sharePost.title} excerpt={sharePost.excerpt} url={absoluteSiteUrl(`/post/${sharePost.id}`, window.location.origin)} />
         </Suspense>
       )}
     </div>

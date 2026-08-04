@@ -25,12 +25,12 @@ Duck在拼夕夕上逛着，突然看到一个商品封面写着“曾经1000圆
 要知道，这耳机在14年出来的时候，可是要卖上千元    
 
 # 商品图  
-![](/posts-img/jbl-reflect-aware-c/file-20260804094339508.jpg)  
-![](/posts-img/jbl-reflect-aware-c/file-20260804094345635.jpg)   
-![](/posts-img/jbl-reflect-aware-c/file-20260804094351032.jpg)  
-![](/posts-img/jbl-reflect-aware-c/file-20260804094354231.jpg)  
-![](/posts-img/jbl-reflect-aware-c/file-20260804094357027.jpg)  
-![](/posts-img/jbl-reflect-aware-c/file-20260804094359693.jpg)  
+![JBL REFLECT AWARE C 耳机包装正面，展示主动降噪和运动耳机特性](/posts-img/jbl-reflect-aware-c/file-20260804094339508.jpg)  
+![JBL REFLECT AWARE C 包装内盒与耳机配件](/posts-img/jbl-reflect-aware-c/file-20260804094345635.jpg)   
+![JBL REFLECT AWARE C 包装内的耳机和控制器](/posts-img/jbl-reflect-aware-c/file-20260804094351032.jpg)  
+![JBL REFLECT AWARE C 包装背面和产品功能说明](/posts-img/jbl-reflect-aware-c/file-20260804094354231.jpg)  
+![JBL REFLECT AWARE C 耳机本体与 USB Type-C 接头](/posts-img/jbl-reflect-aware-c/file-20260804094357027.jpg)  
+![JBL REFLECT AWARE C 包装内的耳机线缆和收纳槽](/posts-img/jbl-reflect-aware-c/file-20260804094359693.jpg)  
 
 # 自用评价  
 1. 音质确实比T110要好一点(这里又得表扬Apple Music了)  

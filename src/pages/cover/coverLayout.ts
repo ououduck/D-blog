@@ -10,6 +10,36 @@ export interface FitTextOptions {
   lineHeight?: number;
 }
 
+export interface LayoutMetricsOptions {
+  size: CanvasSize;
+  layout: LayoutMode;
+  leftText: string;
+  rightText: string;
+  subText: string;
+  fontSize: number;
+  subFontSize: number;
+  iconSize: number;
+  spacing: number;
+  subSpacing: number;
+  showIcon: boolean;
+  hasIcon: boolean;
+  maxTextLines?: number;
+  minFontSize?: number;
+}
+
+export interface LayoutMetrics {
+  scale: number;
+  scaled: boolean;
+  overflow: boolean;
+  maxTextLines: number;
+  mainFontSize: number;
+  subFontSize: number;
+  iconSize: number;
+  spacing: number;
+  subSpacing: number;
+  warnings: string[];
+}
+
 export function clamp(value: number, min: number, max: number): number {
   if (min > max) [min, max] = [max, min];
   return Math.min(max, Math.max(min, value));
@@ -86,31 +116,86 @@ function appendToken(lines: string[], token: string, maxWidth: number, fontSize:
 }
 
 export function wrapText(text: string, maxWidth: number, fontSize: number, measure: TextMeasure): string[] {
-  if (!text.trim()) return [];
-  const lines = [''];
-  for (const token of tokenizeText(text)) appendToken(lines, token, maxWidth, fontSize, measure);
-  return lines.map(line => line.trim()).filter(Boolean);
+  if (!text.trim() || maxWidth <= 0 || fontSize <= 0) return [];
+  const paragraphs = text.replace(/\r\n?/g, '\n').split('\n');
+  const lines: string[] = [];
+  for (const paragraph of paragraphs) {
+    if (!paragraph.trim()) {
+      if (lines.length) lines.push('');
+      continue;
+    }
+    const paragraphLines = [''];
+    for (const token of tokenizeText(paragraph)) appendToken(paragraphLines, token, maxWidth, fontSize, measure);
+    lines.push(...paragraphLines.map(line => line.trim()).filter(Boolean));
+  }
+  return lines.filter(Boolean);
 }
 
 export function fitText(text: string, options: FitTextOptions, measure: TextMeasure): FittedText {
+  const maxWidth = Math.max(1, options.maxWidth);
   const maxLines = Math.max(1, Math.floor(options.maxLines));
   const minFontSize = Math.max(1, Math.min(options.fontSize, options.minFontSize ?? 12));
   let fontSize = Math.max(minFontSize, options.fontSize);
-  let lines = wrapText(text, options.maxWidth, fontSize, measure);
+  let lines = wrapText(text, maxWidth, fontSize, measure);
   while (fontSize > minFontSize && lines.length > maxLines) {
     fontSize--;
-    lines = wrapText(text, options.maxWidth, fontSize, measure);
+    lines = wrapText(text, maxWidth, fontSize, measure);
   }
   const truncated = lines.length > maxLines;
   if (truncated) {
     lines = lines.slice(0, maxLines);
-    let last = lines[maxLines - 1];
-    while (last && measure(`${last}…`, fontSize) > options.maxWidth) last = last.slice(0, -1);
-    lines[maxLines - 1] = `${last}…`;
+    let last = lines[maxLines - 1] ?? '';
+    if (measure('…', fontSize) <= maxWidth) {
+      while (last && measure(`${last}…`, fontSize) > maxWidth) last = Array.from(last).slice(0, -1).join('');
+      lines[maxLines - 1] = `${last}…`;
+    } else {
+      while (last && measure(last, fontSize) > maxWidth) last = Array.from(last).slice(0, -1).join('');
+      lines[maxLines - 1] = last;
+    }
   }
   return { lines, fontSize, lineHeight: fontSize * (options.lineHeight ?? 1.2), truncated };
 }
 
+export function calculateLayoutMetrics(options: LayoutMetricsOptions): LayoutMetrics {
+  const canvasScale = options.size.width / BASE_CANVAS_WIDTH;
+  const safeMargin = CANVAS_SAFE_MARGIN * Math.max(0.1, canvasScale);
+  const availableWidth = Math.max(1, options.size.width - safeMargin * 2);
+  const availableHeight = Math.max(1, options.size.height - safeMargin * 2);
+  const hasText = Boolean(options.leftText.trim() || options.rightText.trim() || options.subText.trim());
+  const effectiveLayout = getEffectiveLayout(options.layout, options.showIcon, options.hasIcon);
+  const mainLines = options.maxTextLines ?? (effectiveLayout === 'text-only' ? 3 : 2);
+  const mainLineHeight = options.fontSize * 1.2;
+  const subLineHeight = options.subFontSize * 1.2;
+  const contentHeight = (hasText ? mainLineHeight * mainLines : 0)
+    + (options.subText.trim() ? subLineHeight * 2 : 0)
+    + (options.showIcon && options.hasIcon && effectiveLayout !== 'text-only' ? options.iconSize : 0)
+    + options.subSpacing * 2;
+  const contentWidth = effectiveLayout === 'icon-split'
+    ? options.iconSize + options.spacing * 2 + availableWidth * 0.6
+    : availableWidth;
+  const scale = Math.min(1, availableWidth / Math.max(1, contentWidth), availableHeight / Math.max(1, contentHeight));
+  const safeScale = Math.max(0.35, scale);
+  const scaled = safeScale < 0.999;
+  const warnings: string[] = [];
+  if (scaled) warnings.push('内容已自动缩小以适应安全区');
+  const overflow = scale < 0.35;
+  if (overflow) warnings.push('内容仍可能超出安全区，部分文字将截断');
+  return {
+    scale: safeScale,
+    scaled,
+    overflow,
+    maxTextLines: mainLines,
+    mainFontSize: Math.max(options.minFontSize ?? 14, options.fontSize * safeScale),
+    subFontSize: Math.max(10, options.subFontSize * safeScale),
+    iconSize: options.iconSize * safeScale,
+    spacing: options.spacing * safeScale,
+    subSpacing: options.subSpacing * safeScale,
+    warnings,
+  };
+}
+
 export function getTextAreaWidth(size: CanvasSize): number {
-  return Math.max(1, size.width - CANVAS_SAFE_MARGIN * 2);
+  const canvasScale = size.width / BASE_CANVAS_WIDTH;
+  const safeMargin = CANVAS_SAFE_MARGIN * Math.max(0.1, canvasScale);
+  return Math.max(1, size.width - safeMargin * 2);
 }

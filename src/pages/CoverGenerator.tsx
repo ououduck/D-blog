@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { SearchField } from '../components/SearchField';
-import { useModalOverlay } from '../hooks/useModalOverlay';
+import { hasOpenOverlay, useModalOverlay } from '../hooks/useModalOverlay';
 import { coverTemplates as templates, defaultTemplate, type CoverTemplate } from '../config/coverTemplates';
 import {
   COVER_RATIOS, DEFAULT_TEXT_SHADOW, MAX_BACKGROUND_SCALE, MAX_EXPORT_SCALE,
@@ -15,8 +15,13 @@ import {
 } from './cover/coverConstants';
 import { clamp, getCanvasSize, getExportFilename } from './cover/coverLayout';
 import { loadFontFile, loadImageFile } from './cover/coverFiles';
+import { canvasToBlob, copyCanvas, downloadBlob, downloadCanvas } from './cover/coverExport';
+import { BatchCoverDialog } from './cover/BatchCoverDialog';
+import { createBatchZip, type BatchCoverItem } from './cover/coverBatch';
+import { preloadImage } from './cover/coverImageCache';
 import { renderCover } from './cover/coverRenderer';
-import type { BackgroundFit, LayoutMode, ShadowConfig, TextAlign } from './cover/coverTypes';
+import type { BackgroundFit, CoverRenderOptions, LayoutMode, ShadowConfig, TextAlign } from './cover/coverTypes';
+import { deletePreset, readDraft, readPresets, type CoverDraft, type StoredPreset, writeDraft, writePreset } from './cover/coverStorage';
 
 const DEFAULT_ICON_SOURCE = '/logo.png';
 
@@ -40,11 +45,13 @@ type SectionHeaderProps = {
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({ icon, title, sectionKey, collapsed, onToggle, action }) => (
   <div className="mb-4 flex items-center justify-between">
-    <button type="button" onClick={() => onToggle(sectionKey)} aria-expanded={!collapsed} className="flex items-center gap-2 text-left transition-opacity hover:opacity-80">
+    <div className="flex min-w-0 items-center gap-2">
       {icon}
       <h2 className="font-bold text-ink dark:text-white">{title}</h2>
-      {collapsed ? <ChevronDown size={14} className="text-zinc-400" /> : <ChevronUp size={14} className="text-zinc-400" />}
-    </button>
+      <button type="button" onClick={() => onToggle(sectionKey)} aria-expanded={!collapsed} aria-label={`${collapsed ? '展开' : '收起'}${title}`} className="inline-flex rounded-icon p-1 text-zinc-400 transition-opacity hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white">
+        {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+      </button>
+    </div>
     {action}
   </div>
 );
@@ -64,6 +71,9 @@ export const CoverGenerator: React.FC = () => {
   const [subText, setSubText] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<CoverTemplate>(defaultTemplate);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [renderWarnings, setRenderWarnings] = useState<string[]>([]);
+  const customFontFaceRef = useRef<FontFace | null>(null);
 
   // 排版布局
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('icon-split');
@@ -84,6 +94,8 @@ export const CoverGenerator: React.FC = () => {
   const [transparentBackground, setTransparentBackground] = useState(false);
   const [jpegQuality, setJpegQuality] = useState(92);
   const [isDragging, setIsDragging] = useState(false);
+  const [showGuides, setShowGuides] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
   const dragStateRef = useRef({ pointerId: -1, startX: 0, startY: 0, imageX: 0, imageY: 0 });
 
   // 图标状态
@@ -147,6 +159,9 @@ export const CoverGenerator: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'content' | 'style' | 'layout' | 'export'>('content');
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const [showBatchDialog, setShowBatchDialog] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ completed: number; total: number } | null>(null);
+  const batchAbortRef = useRef<AbortController | null>(null);
 
   const closeIconifyModal = useCallback(() => setShowIconifyModal(false), []);
   useModalOverlay({
@@ -239,10 +254,14 @@ export const CoverGenerator: React.FC = () => {
     setShowIcon(true);
     setCustomIcon(DEFAULT_ICON_SOURCE);
     setIconifyIconName(null);
+    if (iconifyDebounceRef.current) window.clearTimeout(iconifyDebounceRef.current);
+    iconifyAbortRef.current?.abort();
+    iconifySearchIdRef.current += 1;
     setIconifySearch('');
     setIconifyResults([]);
     setFailedIconifyResults(new Set());
     setSearchError(null);
+    setIsSearching(false);
     setCustomFont(null);
     resetStyleSettings();
     setActiveRatioLabel(COVER_RATIOS[0].label);
@@ -269,7 +288,109 @@ export const CoverGenerator: React.FC = () => {
     ];
   }, [activeRatio.label, customIcon, exportFormat, layoutMode, leftText, rightText, selectedTemplate.name, showIcon, subText]);
 
+  const serializableDraft = useMemo<CoverDraft>(() => ({
+    version: 1, leftText, rightText, subText, templateId: selectedTemplate.id, layoutMode, textAlign,
+    bgImageX, bgImageY, bgImageScale, bgBlur, bgOpacity, bgFit, bgFlipX, bgFlipY, transparentBackground, jpegQuality,
+    showIcon, customIcon: customIcon?.startsWith('data:') ? null : customIcon, iconifyIconName, iconSize, iconColor,
+    iconBorderRadius, iconBgEnabled, customFont, fontWeight, fontSize, subFontSize, textColor, spacing, subSpacing, autoTextColor,
+    textStroke, overlayEnabled, overlayBlur, overlayOpacity, overlayColor, textShadow, showCorners, cornerColor, cornerOpacity,
+    showSeparator, separatorColor, separatorOpacity, activeRatioLabel, exportScale, exportFormat, exportFilename,
+  }), [activeRatioLabel, autoTextColor, bgBlur, bgFit, bgFlipX, bgFlipY, bgImageScale, bgImageX, bgImageY, bgOpacity,
+    customFont, customIcon, exportFilename, exportFormat, exportScale, fontSize, fontWeight, iconBgEnabled, iconBorderRadius,
+    iconColor, iconifyIconName, iconSize, jpegQuality, layoutMode, leftText, overlayBlur, overlayColor, overlayEnabled,
+    rightText, selectedTemplate.id, separatorColor, separatorOpacity, showCorners, showIcon, showSeparator, spacing,
+    subFontSize, subSpacing, subText, textAlign, textColor, textShadow, textStroke, transparentBackground]);
 
+  const historyRef = useRef<{ past: CoverDraft[]; future: CoverDraft[] }>({ past: [], future: [] });
+  const lastDraftRef = useRef<string | null>(null);
+  const restoringDraftRef = useRef(false);
+  const historyReadyRef = useRef(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [presets, setPresets] = useState<StoredPreset[]>([]);
+  const [historyVersion, setHistoryVersion] = useState(0);
+  const canUndo = historyVersion >= 0 && historyRef.current.past.length > 0;
+  const canRedo = historyVersion >= 0 && historyRef.current.future.length > 0;
+  const [presetName, setPresetName] = useState('');
+
+  const applyDraft = useCallback((draft: CoverDraft) => {
+    restoringDraftRef.current = true;
+    setLeftText(draft.leftText); setRightText(draft.rightText); setSubText(draft.subText);
+    setSelectedTemplate(templates.find((template) => template.id === draft.templateId) || defaultTemplate);
+    setLayoutMode(draft.layoutMode as LayoutMode); setTextAlign(draft.textAlign as TextAlign);
+    setBgImageX(draft.bgImageX); setBgImageY(draft.bgImageY); setBgImageScale(draft.bgImageScale); setBgBlur(draft.bgBlur); setBgOpacity(draft.bgOpacity);
+    setBgFit(draft.bgFit as BackgroundFit); setBgFlipX(draft.bgFlipX); setBgFlipY(draft.bgFlipY); setTransparentBackground(draft.transparentBackground); setJpegQuality(draft.jpegQuality);
+    setShowIcon(draft.showIcon); setCustomIcon(draft.customIcon || DEFAULT_ICON_SOURCE); setIconifyIconName(draft.iconifyIconName); setIconSize(draft.iconSize); setIconColor(draft.iconColor); setIconBorderRadius(draft.iconBorderRadius); setIconBgEnabled(draft.iconBgEnabled);
+    setCustomFont(draft.customFont); setFontWeight(draft.fontWeight); setFontSize(draft.fontSize); setSubFontSize(draft.subFontSize); setTextColor(draft.textColor); setSpacing(draft.spacing); setSubSpacing(draft.subSpacing); setAutoTextColor(draft.autoTextColor);
+    setTextStroke(draft.textStroke); setOverlayEnabled(draft.overlayEnabled); setOverlayBlur(draft.overlayBlur); setOverlayOpacity(draft.overlayOpacity); setOverlayColor(draft.overlayColor); setTextShadow(draft.textShadow);
+    setShowCorners(draft.showCorners); setCornerColor(draft.cornerColor); setCornerOpacity(draft.cornerOpacity); setShowSeparator(draft.showSeparator); setSeparatorColor(draft.separatorColor); setSeparatorOpacity(draft.separatorOpacity);
+    setActiveRatioLabel(draft.activeRatioLabel); setExportScale(draft.exportScale); setExportFormat(draft.exportFormat); setExportFilename(draft.exportFilename);
+  }, []);
+
+  useEffect(() => {
+    const draft = readDraft();
+    setPresets(readPresets());
+    if (draft) { applyDraft(draft); setDraftRestored(true); }
+    lastDraftRef.current = JSON.stringify(draft || serializableDraft);
+    historyReadyRef.current = true;
+  }, [applyDraft]);
+
+  useEffect(() => {
+    const serialized = JSON.stringify(serializableDraft);
+    if (!historyReadyRef.current) return;
+    if (restoringDraftRef.current) { restoringDraftRef.current = false; lastDraftRef.current = serialized; writeDraft(serializableDraft); return; }
+    if (lastDraftRef.current && lastDraftRef.current !== serialized) {
+      historyRef.current.past = [...historyRef.current.past, JSON.parse(lastDraftRef.current) as CoverDraft].slice(-50);
+      historyRef.current.future = [];
+      setHistoryVersion((value) => value + 1);
+    }
+    lastDraftRef.current = serialized;
+    writeDraft(serializableDraft);
+  }, [serializableDraft]);
+
+  const undo = useCallback(() => {
+    const previous = historyRef.current.past.pop();
+    if (!previous) return;
+    historyRef.current.future.unshift(serializableDraft);
+    setHistoryVersion((value) => value + 1);
+    applyDraft(previous);
+  }, [applyDraft, serializableDraft]);
+
+  const redo = useCallback(() => {
+    const next = historyRef.current.future.shift();
+    if (!next) return;
+    historyRef.current.past.push(serializableDraft);
+    setHistoryVersion((value) => value + 1);
+    applyDraft(next);
+  }, [applyDraft, serializableDraft]);
+
+  const savePreset = useCallback(() => {
+    const name = presetName.trim() || `预设 ${presets.length + 1}`;
+    setPresets(writePreset(name, serializableDraft));
+    setPresetName('');
+    setFeedback({ kind: 'success', message: `已保存预设“${name}”（图片和字体需重新上传）` });
+  }, [presetName, presets.length, serializableDraft]);
+
+  const loadPreset = useCallback((preset: StoredPreset) => {
+    applyDraft(preset.state);
+    setFeedback({ kind: 'success', message: `已加载预设“${preset.name}”；图片和字体需重新上传` });
+  }, [applyDraft]);
+
+  const removePreset = useCallback((name: string) => {
+    setPresets(deletePreset(name));
+    setFeedback({ kind: 'success', message: `已删除预设“${name}”` });
+  }, []);
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if (hasOpenOverlay() || (!(event.ctrlKey || event.metaKey)) || event.key.toLowerCase() !== 'z') return;
+      const target = event.target as HTMLElement | null;
+      if (target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName || '')) return;
+      event.preventDefault();
+      if (event.shiftKey) redo(); else undo();
+    };
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, [redo, undo]);
 
   const handleBgImageFile = useCallback(async (file: File) => {
     try {
@@ -331,14 +452,26 @@ export const CoverGenerator: React.FC = () => {
   }, []);
 
   const iconifyDebounceRef = useRef<number | null>(null);
+  const resetIconifySearch = useCallback((clearQuery = true) => {
+    if (iconifyDebounceRef.current) {
+      window.clearTimeout(iconifyDebounceRef.current);
+      iconifyDebounceRef.current = null;
+    }
+    iconifyAbortRef.current?.abort();
+    iconifyAbortRef.current = null;
+    iconifySearchIdRef.current += 1;
+    setIconifyResults([]);
+    setFailedIconifyResults(new Set());
+    setSearchError(null);
+    setIsSearching(false);
+    if (clearQuery) setIconifySearch('');
+  }, []);
+
   const searchIconify = useCallback(async (query: string) => {
     const normalizedQuery = query.trim();
     iconifyAbortRef.current?.abort();
     if (!normalizedQuery) {
-      setIconifyResults([]);
-      setFailedIconifyResults(new Set());
-      setSearchError(null);
-      setIsSearching(false);
+      resetIconifySearch(false);
       return;
     }
     if (!navigator.onLine) {
@@ -389,16 +522,20 @@ export const CoverGenerator: React.FC = () => {
       window.clearTimeout(timeoutId);
       if (requestId === iconifySearchIdRef.current) setIsSearching(false);
     }
-  }, []);
+  }, [resetIconifySearch]);
 
   const debouncedSearchIconify = useCallback((query: string) => {
     if (iconifyDebounceRef.current) window.clearTimeout(iconifyDebounceRef.current);
     iconifyDebounceRef.current = window.setTimeout(() => searchIconify(query), 400);
   }, [searchIconify]);
 
-  useEffect(() => () => {
-    if (iconifyDebounceRef.current) window.clearTimeout(iconifyDebounceRef.current);
-    iconifyAbortRef.current?.abort();
+  useEffect(() => {
+    void preloadImage(DEFAULT_ICON_SOURCE).catch(() => undefined);
+    return () => {
+      if (iconifyDebounceRef.current) window.clearTimeout(iconifyDebounceRef.current);
+      iconifyAbortRef.current?.abort();
+      if (customFontFaceRef.current) document.fonts.delete(customFontFaceRef.current);
+    };
   }, []);
 
   const selectIconifyIcon = useCallback((icon: string) => {
@@ -419,7 +556,9 @@ export const CoverGenerator: React.FC = () => {
       const file = input.files?.[0];
       if (!file) return;
       const fontFace = await loadFontFile(file);
+      if (customFontFaceRef.current) document.fonts.delete(customFontFaceRef.current);
       document.fonts.add(fontFace);
+      customFontFaceRef.current = fontFace;
       setCustomFont(fontFace.family);
       setFeedback({ kind: 'success', message: '自定义字体已加载' });
     } catch (error) {
@@ -472,156 +611,158 @@ export const CoverGenerator: React.FC = () => {
     setBgImageScale(prev => Math.max(MIN_BACKGROUND_SCALE, Math.min(prev * delta, MAX_BACKGROUND_SCALE)));
   }, [bgImage]);
 
+  const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLCanvasElement>) => {
+    if (!bgImage) return;
+    const step = e.shiftKey ? 20 : 8;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const xDelta = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+      const yDelta = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+      setBgImageX((value) => clamp(value + xDelta, -canvasSize.width, canvasSize.width));
+      setBgImageY((value) => clamp(value + yDelta, -canvasSize.height, canvasSize.height));
+    } else if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      setBgImageScale((value) => Math.min(MAX_BACKGROUND_SCALE, value * 1.1));
+    } else if (e.key === '-' || e.key === '_') {
+      e.preventDefault();
+      setBgImageScale((value) => Math.max(MIN_BACKGROUND_SCALE, value * 0.9));
+    } else if (e.key === '0') {
+      e.preventDefault();
+      resetBackgroundImageControls();
+    }
+  }, [bgImage, canvasSize.height, canvasSize.width, resetBackgroundImageControls]);
+
+  const buildRenderOptions = useCallback((
+    size: { width: number; height: number },
+    diagnostics?: { scaled: boolean; truncated: boolean; overflow: boolean; lowContrast: boolean; warnings: string[] },
+    overrides?: Partial<Pick<CoverRenderOptions, 'leftText' | 'rightText' | 'subText'>>
+  ) => ({
+    size,
+    template: selectedTemplate,
+    layout: layoutMode,
+    textAlign,
+    leftText: overrides?.leftText ?? leftText,
+    rightText: overrides?.rightText ?? rightText,
+    subText: overrides?.subText ?? subText,
+    fontFamily: customFont || '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+    fontWeight,
+    fontSize,
+    subFontSize,
+    textColor,
+    autoTextColor,
+    spacing,
+    subSpacing,
+    textShadow,
+    textStroke,
+    backgroundImage: bgImage ? { image: bgImage, x: bgImageX, y: bgImageY, scale: bgImageScale, blur: bgBlur, opacity: bgOpacity, fit: bgFit, flipX: bgFlipX, flipY: bgFlipY } : null,
+    transparentBackground: exportFormat === 'png' && transparentBackground,
+    overlay: { enabled: overlayEnabled, blur: overlayBlur, opacity: overlayOpacity, color: overlayColor },
+    icon: { show: showIcon, source: customIcon, size: iconSize, borderRadius: iconBorderRadius, backgroundEnabled: iconBgEnabled },
+    decorations: { showCorners, cornerColor, cornerOpacity, showSeparator, separatorColor, separatorOpacity },
+    maxTextLines: layoutMode === 'text-only' ? 3 : 2,
+    minFontSize: 18,
+    diagnostics,
+  }), [
+    autoTextColor, bgBlur, bgFit, bgFlipX, bgImage, bgImageScale, bgImageX, bgImageY, bgOpacity, cornerColor, cornerOpacity,
+    customFont, customIcon, exportFormat, fontSize, fontWeight, iconBgEnabled, iconBorderRadius, iconSize, layoutMode, leftText,
+    overlayBlur, overlayColor, overlayEnabled, rightText, selectedTemplate, separatorColor, separatorOpacity, showCorners, showIcon,
+    showSeparator, spacing, subFontSize, subSpacing, subText, textAlign, textColor, textShadow, textStroke, transparentBackground
+  ]);
+
+  const renderCanvas = useCallback(async (size: { width: number; height: number }) => {
+    const outputCanvas = document.createElement('canvas'); outputCanvas.width = Math.round(size.width); outputCanvas.height = Math.round(size.height);
+    const outputCtx = outputCanvas.getContext('2d');
+    if (!outputCtx) throw new Error('浏览器无法创建封面画布');
+    const diagnostics = { scaled: false, truncated: false, overflow: false, lowContrast: false, warnings: [] as string[] };
+    await renderCover(outputCtx, buildRenderOptions({ width: outputCanvas.width, height: outputCanvas.height }, diagnostics));
+    setRenderWarnings(Array.from(new Set(diagnostics.warnings)));
+    return outputCanvas;
+  }, [buildRenderOptions]);
+
+  const generateBatch = useCallback(async (items: BatchCoverItem[]) => {
+    if (isGenerating || isExporting || !items.length) return;
+    const controller = new AbortController();
+    batchAbortRef.current = controller;
+    setShowBatchDialog(false);
+    setBatchProgress({ completed: 0, total: items.length });
+    setIsExporting(true);
+    setFeedback({ kind: 'info', message: `正在生成批量封面（0/${items.length}）…` });
+    try {
+      const outputSize = { width: Math.round(canvasSize.width * exportScale), height: Math.round(canvasSize.height * exportScale) };
+      const zip = await createBatchZip((async function* () {
+        for (const item of items) {
+          if (controller.signal.aborted) throw new Error('批量生成已取消');
+          const canvas = document.createElement('canvas');
+          canvas.width = outputSize.width; canvas.height = outputSize.height;
+          const context = canvas.getContext('2d');
+          if (!context) throw new Error('浏览器无法创建批量封面画布');
+          const diagnostics = { scaled: false, truncated: false, overflow: false, lowContrast: false, warnings: [] as string[] };
+          await renderCover(context, buildRenderOptions(outputSize, diagnostics, { leftText: item.title, rightText: item.subtitle, subText: item.description }));
+          const mime = exportFormat === 'jpeg' ? 'image/jpeg' : 'image/png';
+          const blob = await canvasToBlob(canvas, mime, exportFormat === 'jpeg' ? jpegQuality / 100 : undefined);
+          yield { filename: getExportFilename(item.slug, exportFormat, exportScale), blob };
+        }
+      })(), (completed) => {
+        setBatchProgress({ completed, total: items.length });
+        setFeedback({ kind: 'info', message: `正在生成批量封面（${completed}/${items.length}）…` });
+      }, controller.signal);
+      downloadBlob(zip, `${exportFilename.trim() || 'covers'}-batch.zip`);
+      setFeedback({ kind: 'success', message: `批量封面已打包下载，共 ${items.length} 个文件` });
+    } catch (error) {
+      setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '批量生成失败' });
+    } finally {
+      batchAbortRef.current = null;
+      setBatchProgress(null);
+      setIsExporting(false);
+    }
+  }, [buildRenderOptions, canvasSize, exportFormat, exportFilename, exportScale, isExporting, isGenerating, jpegQuality]);
+
   const generateCover = useCallback(async () => {
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
-
-    const renderId = ++renderIdRef.current;
-    setIsGenerating(true);
+    if (!canvas) return;
+    const renderId = ++renderIdRef.current; setIsGenerating(true);
     try {
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvasSize.width;
-      tempCanvas.height = canvasSize.height;
-      const tempCtx = tempCanvas.getContext('2d');
-      if (!tempCtx) throw new Error('浏览器无法创建封面画布');
-
-      await renderCover(tempCtx, {
-        size: canvasSize,
-        template: selectedTemplate,
-        layout: layoutMode,
-        textAlign,
-        leftText,
-        rightText,
-        subText,
-        fontFamily: customFont || '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
-        fontWeight,
-        fontSize,
-        subFontSize,
-        textColor,
-        autoTextColor,
-        spacing,
-        subSpacing,
-        textShadow,
-        textStroke,
-        backgroundImage: bgImage ? {
-          image: bgImage,
-          x: bgImageX,
-          y: bgImageY,
-          scale: bgImageScale,
-          blur: bgBlur,
-          opacity: bgOpacity,
-          fit: bgFit,
-          flipX: bgFlipX,
-          flipY: bgFlipY
-        } : null,
-        transparentBackground: exportFormat === 'png' && transparentBackground,
-        overlay: {
-          enabled: overlayEnabled,
-          blur: overlayBlur,
-          opacity: overlayOpacity,
-          color: overlayColor
-        },
-        icon: {
-          show: showIcon,
-          source: customIcon,
-          size: iconSize,
-          borderRadius: iconBorderRadius,
-          backgroundEnabled: iconBgEnabled
-        },
-        decorations: {
-          showCorners,
-          cornerColor,
-          cornerOpacity,
-          showSeparator,
-          separatorColor,
-          separatorOpacity
-        },
-        maxTextLines: 2,
-        minFontSize: 18
-      });
-
+      const rendered = await renderCanvas(canvasSize);
       if (renderId !== renderIdRef.current) return;
-      canvas.width = canvasSize.width;
-      canvas.height = canvasSize.height;
-      ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
-      ctx.drawImage(tempCanvas, 0, 0);
+      canvas.width = rendered.width; canvas.height = rendered.height;
+      canvas.getContext('2d')?.drawImage(rendered, 0, 0);
       setFeedback(current => current?.kind === 'error' ? null : current);
     } catch (error) {
-      if (renderId === renderIdRef.current) {
-        setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '封面生成失败' });
-      }
+      if (renderId === renderIdRef.current) setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '封面生成失败' });
     } finally {
       if (renderId === renderIdRef.current) setIsGenerating(false);
     }
-  }, [
-    autoTextColor, bgBlur, bgFit, bgFlipX, bgFlipY, bgImage, bgImageScale, bgImageX, bgImageY, bgOpacity,
-    canvasSize, cornerColor, cornerOpacity, customFont, customIcon, exportFormat, fontSize, fontWeight,
-    iconBgEnabled, iconBorderRadius, iconSize, layoutMode, leftText, overlayBlur,
-    overlayColor, overlayEnabled, overlayOpacity, rightText, selectedTemplate,
-    separatorColor, separatorOpacity, showCorners, showIcon, showSeparator, spacing,
-    subFontSize, subSpacing, subText, textAlign, textColor, textShadow, textStroke, transparentBackground
-  ]);
-
-  const canvasToBlob = useCallback((canvas: HTMLCanvasElement, type: string, quality?: number) => (
-    new Promise<Blob>((resolve, reject) => {
-      try {
-        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('图片编码失败，请重试')), type, quality);
-      } catch {
-        reject(new Error('素材跨域限制导致无法导出，请更换图标或图片'));
-      }
-    })
-  ), []);
+  }, [canvasSize, renderCanvas]);
 
   const downloadCover = useCallback(async () => {
-    const canvas = canvasRef.current;
-    if (!canvas || isGenerating) return;
+    if (isGenerating || isExporting) return;
+    setIsExporting(true); setFeedback({ kind: 'info', message: '正在生成高清图片，请稍候…' });
     try {
-      const outputCanvas = document.createElement('canvas');
-      outputCanvas.width = Math.round(canvasSize.width * exportScale);
-      outputCanvas.height = Math.round(canvasSize.height * exportScale);
-      const outputCtx = outputCanvas.getContext('2d');
-      if (!outputCtx) throw new Error('浏览器无法创建导出画布');
-      outputCtx.imageSmoothingEnabled = true;
-      outputCtx.imageSmoothingQuality = 'high';
+      const size = { width: canvasSize.width * exportScale, height: canvasSize.height * exportScale };
+      const outputCanvas = await renderCanvas(size);
+      const filename = getExportFilename(exportFilename, exportFormat, exportScale);
       if (exportFormat === 'jpeg' && transparentBackground) {
-        outputCtx.fillStyle = selectedTemplate.id === 'white' ? '#ffffff' : '#000000';
-        outputCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+        const context = outputCanvas.getContext('2d');
+        if (context) { context.globalCompositeOperation = 'destination-over'; context.fillStyle = selectedTemplate.id === 'white' ? '#ffffff' : '#000000'; context.fillRect(0, 0, outputCanvas.width, outputCanvas.height); }
       }
-      outputCtx.drawImage(canvas, 0, 0, outputCanvas.width, outputCanvas.height);
-
-      const mimeType = exportFormat === 'jpeg' ? 'image/jpeg' : 'image/png';
-      const blob = await canvasToBlob(outputCanvas, mimeType, exportFormat === 'jpeg' ? jpegQuality / 100 : undefined);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.download = getExportFilename(exportFilename, exportFormat, exportScale);
-      link.href = url;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 100);
-      setFeedback({ kind: 'success', message: `封面已导出为 ${link.download}` });
+      await downloadCanvas(outputCanvas, filename, exportFormat, jpegQuality / 100);
+      setFeedback({ kind: 'success', message: `高清封面已导出：${filename}（${outputCanvas.width} × ${outputCanvas.height}px）` });
     } catch (error) {
       setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '下载封面失败' });
-    }
-  }, [canvasSize.height, canvasSize.width, canvasToBlob, exportFilename, exportFormat, exportScale, isGenerating, jpegQuality, selectedTemplate, transparentBackground]);
+    } finally { setIsExporting(false); }
+  }, [canvasSize, downloadCanvas, exportFilename, exportFormat, exportScale, isExporting, isGenerating, jpegQuality, renderCanvas, selectedTemplate.id, transparentBackground]);
 
   const copyToClipboard = useCallback(async () => {
-    const canvas = canvasRef.current;
-    if (!canvas || isGenerating) return;
+    if (isGenerating || isExporting) return;
+    setIsExporting(true); setFeedback({ kind: 'info', message: '正在生成高清图片，请稍候…' });
     try {
-      if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
-        throw new Error('当前浏览器不支持复制图片，请直接下载');
-      }
-      const blob = await canvasToBlob(canvas, 'image/png');
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      setCopied(true);
-      setFeedback({ kind: 'success', message: '封面已复制到剪贴板' });
+      const outputCanvas = await renderCanvas({ width: canvasSize.width * exportScale, height: canvasSize.height * exportScale });
+      const result = await copyCanvas(outputCanvas, exportFormat, jpegQuality / 100);
+      setCopied(true); setFeedback({ kind: 'success', message: result === 'png-fallback' ? '已复制高清 PNG 到剪贴板（JPEG 已转换为 PNG）' : `已复制高清 ${exportFormat.toUpperCase()} 到剪贴板` });
       window.setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '复制失败，请直接下载' });
-    }
-  }, [canvasToBlob, isGenerating]);
+    } catch (error) { setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '复制失败，请直接下载' }); }
+    finally { setIsExporting(false); }
+  }, [canvasSize, exportFormat, exportScale, isExporting, isGenerating, jpegQuality, renderCanvas]);
 
   const randomizeStyle = useCallback(() => {
     const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
@@ -683,6 +824,7 @@ export const CoverGenerator: React.FC = () => {
       <div role="tablist" aria-label="封面编辑设置" className="mb-5 flex flex-wrap justify-center gap-1 border-b border-zinc-200 pb-3 dark:border-zinc-800">
         {(['content', 'style', 'layout', 'export'] as const).map((tab) => (
           <button
+            type="button"
             key={tab}
             id={`cover-tab-${tab}`}
             role="tab"
@@ -701,6 +843,22 @@ export const CoverGenerator: React.FC = () => {
           </button>
         ))}
       </div>
+
+      {draftRestored && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-surface border border-dashed border-zinc-300 bg-paper px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300" role="status">
+          <span>已恢复上次编辑设置；本地图片和字体需要重新上传。</span>
+          <button type="button" onClick={() => setDraftRestored(false)} className="shrink-0 rounded-control px-2 py-1 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800">知道了</button>
+        </div>
+      )}
+
+      {renderWarnings.length > 0 && (
+        <div className="mb-4 rounded-surface border border-dashed border-amber-500/60 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/40 dark:bg-amber-950/30 dark:text-amber-100" role="status" aria-live="polite">
+          <p className="font-semibold">生成提示</p>
+          <ul className="mt-1 list-disc space-y-1 pl-5 text-xs">
+            {renderWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+          </ul>
+        </div>
+      )}
 
       {feedback && (
         <div
@@ -732,7 +890,7 @@ export const CoverGenerator: React.FC = () => {
                     title="文字内容"
                     sectionKey="text-content" collapsed={isCollapsed("text-content")} onToggle={toggleSection}
                     action={
-                      <button onClick={swapMainTexts} className="rounded-icon p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" title="交换左右文字">
+                      <button type="button" aria-label="交换左右文字" onClick={swapMainTexts} className="rounded-icon p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" title="交换左右文字">
                         <ArrowLeftRight size={16} />
                       </button>
                     }
@@ -779,11 +937,11 @@ export const CoverGenerator: React.FC = () => {
                   {!isCollapsed('icon') && showIcon && (
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-2">
-                        <button onClick={() => setShowIconifyModal(true)} className={dashedBtnClass}>
+                        <button type="button" onClick={() => setShowIconifyModal(true)} className={dashedBtnClass}>
                           <Search size={14} />搜索图标
                         </button>
                         <input ref={iconInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleIconUpload} className="hidden" />
-                        <button onClick={() => iconInputRef.current?.click()} className={dashedBtnClass}>
+                        <button type="button" onClick={() => iconInputRef.current?.click()} className={dashedBtnClass}>
                           <Upload size={14} />上传图标
                         </button>
                       </div>
@@ -801,6 +959,8 @@ export const CoverGenerator: React.FC = () => {
                     sectionKey="templates" collapsed={isCollapsed("templates")} onToggle={toggleSection}
                     action={
                       <button
+                        type="button"
+                        aria-label="随机风格"
                         onClick={randomizeStyle}
                         className="rounded-icon p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white"
                         title="随机风格"
@@ -815,7 +975,9 @@ export const CoverGenerator: React.FC = () => {
                         {templates.map((template) => (
                           <button
                             key={template.id}
+                            type="button"
                             onClick={() => setSelectedTemplate(template)}
+                            aria-pressed={selectedTemplate.id === template.id}
                             className={`group relative h-28 overflow-hidden rounded-surface border transition-colors ${
                               selectedTemplate.id === template.id
                                 ? 'border-ink ring-2 ring-ink/10 dark:border-white dark:ring-white/10'
@@ -875,6 +1037,7 @@ export const CoverGenerator: React.FC = () => {
                     ].map((preset) => (
                       <button
                         key={preset.name}
+                        type="button"
                         onClick={preset.action}
                         className="rounded-control border border-zinc-200 bg-zinc-50 px-3 py-3 text-xs font-semibold text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-700"
                       >
@@ -882,7 +1045,7 @@ export const CoverGenerator: React.FC = () => {
                       </button>
                     ))}
                   </div>
-                  <button onClick={resetStyleSettings} className="mt-3 flex w-full items-center justify-center gap-2 rounded-control border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:text-ink dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
+                  <button type="button" onClick={resetStyleSettings} className="mt-3 flex w-full items-center justify-center gap-2 rounded-control border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:text-ink dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
                     <RotateCcw size={14} />重置样式参数
                   </button>
                 </div>
@@ -899,28 +1062,28 @@ export const CoverGenerator: React.FC = () => {
                           <span>字体大小</span>
                           <span className="text-ink dark:text-white tabular-nums">{fontSize}px</span>
                         </label>
-                        <input type="range" min="24" max="120" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className={rangeClass} />
+                        <input type="range" min="24" max="120" value={fontSize} aria-label="字体大小" aria-valuetext={`${fontSize}px`} onChange={(e) => setFontSize(Number(e.target.value))} className={rangeClass} />
                       </div>
                       <div>
                         <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                           <span>副标题大小</span>
                           <span className="text-ink dark:text-white tabular-nums">{subFontSize}px</span>
                         </label>
-                        <input type="range" min="16" max="48" value={subFontSize} onChange={(e) => setSubFontSize(Number(e.target.value))} className={rangeClass} />
+                            <input type="range" min="16" max="48" value={subFontSize} aria-label="副标题大小" aria-valuetext={`${subFontSize}px`} onChange={(e) => setSubFontSize(Number(e.target.value))} className={rangeClass} />
                       </div>
                       <div>
                         <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                           <span>文字间距</span>
                           <span className="text-ink dark:text-white tabular-nums">{spacing}px</span>
                         </label>
-                        <input type="range" min="0" max="120" value={spacing} onChange={(e) => setSpacing(Number(e.target.value))} className={rangeClass} />
+                            <input type="range" min="0" max="120" value={spacing} aria-label="文字间距" aria-valuetext={`${spacing}px`} onChange={(e) => setSpacing(Number(e.target.value))} className={rangeClass} />
                       </div>
                       <div>
                         <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                           <span>字体粗细</span>
                           <span className="text-ink dark:text-white tabular-nums">{fontWeight}</span>
                         </label>
-                        <input type="range" min="100" max="900" step="100" value={fontWeight} onChange={(e) => setFontWeight(Number(e.target.value))} className={rangeClass} />
+                            <input type="range" min="100" max="900" step="100" value={fontWeight} aria-label="字体粗细" aria-valuetext={`${fontWeight}`} onChange={(e) => setFontWeight(Number(e.target.value))} className={rangeClass} />
                       </div>
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={autoTextColor} onChange={(e) => setAutoTextColor(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
@@ -933,7 +1096,7 @@ export const CoverGenerator: React.FC = () => {
                         </div>
                       )}
                       <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" onChange={handleFontUpload} className="hidden" />
-                      <button onClick={() => fontInputRef.current?.click()} className={dashedBtnClass + ' w-full'}>
+                      <button type="button" onClick={() => fontInputRef.current?.click()} className={dashedBtnClass + ' w-full'}>
                         <Upload size={14} />上传自定义字体
                       </button>
                     </div>
@@ -960,7 +1123,7 @@ export const CoverGenerator: React.FC = () => {
                         <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                           <span>描边宽度</span><span className="tabular-nums">{textStroke.width}px</span>
                         </label>
-                        <input type="range" min="1" max="10" value={textStroke.width} onChange={(e) => setTextStroke({ ...textStroke, width: Number(e.target.value) })} className={rangeClass} />
+                            <input type="range" min="1" max="10" value={textStroke.width} aria-label="描边宽度" aria-valuetext={`${textStroke.width}px`} onChange={(e) => setTextStroke({ ...textStroke, width: Number(e.target.value) })} className={rangeClass} />
                       </div>
                       <div>
                         <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">描边颜色</label>
@@ -980,7 +1143,7 @@ export const CoverGenerator: React.FC = () => {
                         <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                           <span>透明度</span><span className="tabular-nums">{Math.round(textShadow.opacity * 100)}%</span>
                         </label>
-                        <input type="range" min="0" max="1" step="0.1" value={textShadow.opacity} onChange={(e) => setTextShadow({ ...textShadow, opacity: Number(e.target.value) })} className={rangeClass} />
+                        <input type="range" min="0" max="1" step="0.1" value={textShadow.opacity} aria-label="阴影透明度" aria-valuetext={`${Math.round(textShadow.opacity * 100)}%`} onChange={(e) => setTextShadow({ ...textShadow, opacity: Number(e.target.value) })} className={rangeClass} />
                       </div>
                       {textShadow.opacity > 0 && (
                         <>
@@ -1170,7 +1333,9 @@ export const CoverGenerator: React.FC = () => {
                     ]).map(({ mode, icon: Icon, label, desc }) => (
                       <button
                         key={mode}
+                        type="button"
                         onClick={() => setLayoutMode(mode)}
+                        aria-pressed={layoutMode === mode}
                         className={`flex flex-col items-center gap-1 rounded-control border-2 p-3 transition-colors ${
                           layoutMode === mode
                             ? 'border-ink bg-ink/5 dark:border-white dark:bg-white/10'
@@ -1200,7 +1365,9 @@ export const CoverGenerator: React.FC = () => {
                     ]).map(({ align, icon: Icon, label }) => (
                       <button
                         key={align}
+                        type="button"
                         onClick={() => setTextAlign(align)}
+                        aria-pressed={textAlign === align}
                         className={`flex flex-col items-center gap-1 rounded-control border-2 p-3 transition-colors ${
                           textAlign === align
                             ? 'border-ink bg-ink/5 dark:border-white dark:bg-white/10'
@@ -1289,6 +1456,8 @@ export const CoverGenerator: React.FC = () => {
                         {COVER_RATIOS.map((ratio) => (
                           <button
                             key={ratio.label}
+                            title={`输出比例 ${ratio.label}`}
+                            type="button"
                             onClick={() => setActiveRatioLabel(ratio.label)}
                             aria-pressed={activeRatioLabel === ratio.label}
                             className={`rounded-control border-2 px-3 py-2 text-sm font-semibold transition-colors ${
@@ -1308,6 +1477,7 @@ export const CoverGenerator: React.FC = () => {
                         {(['png', 'jpeg'] as const).map(f => (
                           <button
                             key={f}
+                            type="button"
                             onClick={() => setExportFormat(f)}
                             aria-pressed={exportFormat === f}
                             className={`rounded-control border-2 px-3 py-2 text-sm font-semibold uppercase transition-colors ${
@@ -1351,9 +1521,45 @@ export const CoverGenerator: React.FC = () => {
                 </div>
               </div>
 
+              <div className={cardClass}>
+                <div className="p-5 md:p-6">
+                  <div className="mb-3 flex items-center gap-2">
+                    <Sparkles size={18} className="text-ink dark:text-white" />
+                    <h2 className="font-bold text-ink dark:text-white">我的预设</h2>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={presetName}
+                      onChange={(event) => setPresetName(event.target.value)}
+                      onKeyDown={(event) => { if (event.key === 'Enter') savePreset(); }}
+                      className={`${inputClass} min-w-0 flex-1`}
+                      placeholder="预设名称（可选）"
+                      aria-label="预设名称"
+                    />
+                    <button type="button" onClick={savePreset} className="shrink-0 rounded-control bg-ink px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-ink dark:hover:bg-zinc-200">保存</button>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">预设只保存文字和样式设置；本地图片、上传字体不会写入浏览器存储。</p>
+                  {presets.length > 0 ? (
+                    <ul className="mt-3 space-y-2" aria-label="已保存预设">
+                      {presets.map((preset) => (
+                        <li key={`${preset.name}-${preset.createdAt}`} className="flex items-center gap-2 rounded-control border border-zinc-200 px-3 py-2 dark:border-zinc-700">
+                          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink dark:text-white">{preset.name}</span>
+                          <button type="button" onClick={() => loadPreset(preset)} className="rounded-control px-2 py-1 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white">加载</button>
+                          <button type="button" onClick={() => removePreset(preset.name)} className="rounded-control px-2 py-1 text-xs font-semibold text-zinc-500 hover:bg-zinc-100 hover:text-ink dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`删除预设：${preset.name}`}>删除</button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-xs text-zinc-400">还没有保存的预设。</p>
+                  )}
+                </div>
+              </div>
+
               <div className="flex flex-col gap-2">
-                <button
-                  onClick={generateCover}
+                  <button
+                    type="button"
+                    onClick={generateCover}
                   disabled={isGenerating}
                   className="flex flex-1 items-center justify-center gap-2 rounded-control border border-zinc-200 bg-zinc-100 px-4 py-2.5 font-semibold text-ink transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
                 >
@@ -1362,8 +1568,19 @@ export const CoverGenerator: React.FC = () => {
                 </button>
 
                 <button
+                  type="button"
+                  onClick={() => setShowBatchDialog(true)}
+                  disabled={isGenerating || isExporting}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-control border border-zinc-400 px-4 py-2.5 font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900"
+                >
+                  <Upload size={18} />
+                  批量生成 ZIP
+                </button>
+
+                <button
+                  type="button"
                   onClick={downloadCover}
-                  disabled={isGenerating}
+                  disabled={isGenerating || isExporting}
                   className="flex flex-1 items-center justify-center gap-2 rounded-control border border-ink bg-ink px-4 py-2.5 font-semibold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white dark:bg-white dark:text-ink dark:hover:bg-zinc-200"
                 >
                   <Download size={18} />
@@ -1371,6 +1588,7 @@ export const CoverGenerator: React.FC = () => {
                 </button>
 
                 <button
+                  type="button"
                   onClick={copyToClipboard}
                   disabled={isGenerating}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-control border px-4 py-2.5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
@@ -1383,7 +1601,7 @@ export const CoverGenerator: React.FC = () => {
                   {copied ? '已复制' : '复制到剪贴板'}
                 </button>
 
-                <button onClick={resetAllSettings} className="flex items-center justify-center gap-2 rounded-control border border-dashed border-zinc-500 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white">
+                <button type="button" onClick={resetAllSettings} className="flex items-center justify-center gap-2 rounded-control border border-dashed border-zinc-500 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white">
                   <RotateCcw size={16} />重置全部设置
                 </button>
               </div>
@@ -1398,7 +1616,7 @@ export const CoverGenerator: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <ImageIcon className="text-ink dark:text-white" size={20} />
                   <h2 className="font-bold text-ink dark:text-white">实时预览</h2>
-                  {isGenerating && <span className="bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">生成中</span>}
+                  {isGenerating && <span className="bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300" role="status" aria-live="polite">生成中</span>}
                 </div>
                 <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">当前画布：{canvasSize.width} × {canvasSize.height} px，可直接预览黑白模板与图片叠加效果。</p>
               </div>
@@ -1412,36 +1630,60 @@ export const CoverGenerator: React.FC = () => {
             </div>
 
             <div className="mb-4 flex flex-wrap gap-2">
-              <button onClick={randomizeStyle} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800">
+              <button type="button" onClick={() => setShowGuides((value) => !value)} aria-pressed={showGuides} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800">安全框/中心线</button>
+              <button type="button" onClick={() => setShowGrid((value) => !value)} aria-pressed={showGrid} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800">网格</button>
+              <button type="button" onClick={undo} disabled={!canUndo} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800" title="撤销（Ctrl/Cmd + Z）">
+                撤销
+              </button>
+              <button type="button" onClick={redo} disabled={!canRedo} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800" title="重做（Ctrl/Cmd + Shift + Z）">
+                重做
+              </button>
+              <button type="button" onClick={randomizeStyle} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800">
                 <Shuffle size={16} />随机样式
               </button>
-              <button onClick={generateCover} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800">
+                <button type="button" onClick={generateCover} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800">
                 <RefreshCw size={16} className={isGenerating && !shouldReduceMotion ? 'animate-spin' : ''} />刷新预览
               </button>
               {bgImage && (
-                <button onClick={resetBackgroundImageControls} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800">
+                <button type="button" onClick={resetBackgroundImageControls} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800">
                   <RotateCcw size={16} />重置背景位置
                 </button>
               )}
             </div>
 
+            <p id="cover-preview-help" className="sr-only">预览获得焦点后，可使用方向键移动背景，Shift 加速；加号和减号调整缩放，数字 0 重置背景位置。</p>
             <div className="overflow-hidden rounded-surface border border-zinc-200 bg-zinc-100 p-2 dark:border-zinc-700 dark:bg-zinc-800 md:p-3">
               <div
                 className={`overflow-hidden rounded-media border border-zinc-200 dark:border-zinc-700 ${transparentBackground && exportFormat === 'png' ? 'bg-[length:16px_16px] bg-[linear-gradient(45deg,#e4e4e7_25%,transparent_25%),linear-gradient(-45deg,#e4e4e7_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e4e4e7_75%),linear-gradient(-45deg,transparent_75%,#e4e4e7_75%)] bg-[position:0_0,0_8px,8px_-8px,-8px_0] bg-zinc-50 dark:bg-zinc-900 dark:bg-[linear-gradient(45deg,#3f3f46_25%,transparent_25%),linear-gradient(-45deg,#3f3f46_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#3f3f46_75%),linear-gradient(-45deg,transparent_75%,#3f3f46_75%)]' : 'bg-zinc-50 dark:bg-zinc-900'}`}
               >
-                <canvas
-                  ref={canvasRef}
-                  width={canvasSize.width}
-                  height={canvasSize.height}
-                  aria-label={bgImage ? '封面预览，可拖动调整背景图片位置' : '封面预览'}
-                  className={`block h-auto max-w-full select-none ${bgImage ? isDragging ? 'cursor-grabbing' : 'cursor-grab' : 'cursor-default'}`}
-                  style={{ aspectRatio: `${activeRatio.w}/${activeRatio.h}`, touchAction: bgImage ? 'none' : 'auto' }}
-                  onPointerDown={handleCanvasPointerDown}
-                  onPointerMove={handleCanvasPointerMove}
-                  onPointerUp={handleCanvasPointerEnd}
-                  onPointerCancel={handleCanvasPointerEnd}
-                  onWheel={handleCanvasWheel}
-                />
+                <div className="relative">
+                  <canvas
+                    ref={canvasRef}
+                    width={canvasSize.width}
+                    height={canvasSize.height}
+                    tabIndex={0}
+                    aria-label={bgImage ? '封面预览，可拖动调整背景图片位置' : '封面预览'}
+                    aria-describedby="cover-preview-help"
+                    className={`block h-auto max-w-full select-none outline-none focus-visible:ring-2 focus-visible:ring-ink dark:focus-visible:ring-white ${bgImage ? isDragging ? 'cursor-grabbing' : 'cursor-grab' : 'cursor-default'}`}
+                    style={{ aspectRatio: `${activeRatio.w}/${activeRatio.h}`, touchAction: bgImage ? 'none' : 'auto' }}
+                    onPointerDown={handleCanvasPointerDown}
+                    onPointerMove={handleCanvasPointerMove}
+                    onPointerUp={handleCanvasPointerEnd}
+                    onPointerCancel={handleCanvasPointerEnd}
+                    onWheel={handleCanvasWheel}
+                    onKeyDown={handleCanvasKeyDown}
+                  />
+                  {showGuides && (
+                    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                      <div className="absolute inset-[6.67%] border border-amber-400/80" />
+                      <div className="absolute inset-y-0 left-1/2 border-l border-amber-400/60" />
+                      <div className="absolute inset-x-0 top-1/2 border-t border-amber-400/60" />
+                    </div>
+                  )}
+                  {showGrid && (
+                    <div className="pointer-events-none absolute inset-0 opacity-40" aria-hidden="true" style={{ backgroundImage: 'linear-gradient(to right, rgba(245,158,11,.5) 1px, transparent 1px), linear-gradient(to bottom, rgba(245,158,11,.5) 1px, transparent 1px)', backgroundSize: '10% 10%' }} />
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1480,6 +1722,16 @@ export const CoverGenerator: React.FC = () => {
         </div>
       </div>
 
+      {batchProgress && (
+        <div className="fixed inset-x-4 bottom-4 z-modal mx-auto max-w-md rounded-control border border-zinc-300 bg-paper p-4 text-sm text-ink shadow-xl dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" role="status" aria-live="polite">
+          <div className="flex items-center justify-between gap-3"><span>批量生成中</span><strong>{batchProgress.completed}/{batchProgress.total}</strong></div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700"><div className="h-full bg-ink transition-[width] dark:bg-white" style={{ width: `${batchProgress.total ? batchProgress.completed / batchProgress.total * 100 : 0}%` }} /></div>
+          <button type="button" onClick={() => batchAbortRef.current?.abort()} className="mt-3 rounded-control border border-zinc-300 px-3 py-1.5 text-xs font-semibold hover:border-ink dark:border-zinc-700 dark:hover:border-white">取消</button>
+        </div>
+      )}
+
+      <BatchCoverDialog isOpen={showBatchDialog} onClose={() => setShowBatchDialog(false)} onGenerate={generateBatch} />
+
       <AnimatePresence>
         {showIconifyModal && (
           <motion.div
@@ -1510,8 +1762,12 @@ export const CoverGenerator: React.FC = () => {
                 <SearchField
                   ref={iconSearchInputRef}
                   value={iconifySearch}
-                  onValueChange={(value) => { setIconifySearch(value); debouncedSearchIconify(value); }}
-                  onClear={() => { setIconifySearch(''); debouncedSearchIconify(''); }}
+                  onValueChange={(value) => {
+                    setIconifySearch(value);
+                    if (!value.trim()) resetIconifySearch(false);
+                    else debouncedSearchIconify(value);
+                  }}
+                  onClear={() => resetIconifySearch(true)}
                   placeholder="搜索图标，例如：home, user, settings..."
                   aria-label="搜索 Iconify 图标"
                 />
@@ -1532,7 +1788,7 @@ export const CoverGenerator: React.FC = () => {
                 ) : iconifyResults.length > 0 ? (
                   <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
                     {iconifyResults.map((icon) => (
-                      <button key={icon} onClick={() => selectIconifyIcon(icon)}
+                      <button type="button" key={icon} onClick={() => selectIconifyIcon(icon)}
                         className="flex aspect-square items-center justify-center rounded-control border-2 border-zinc-200 bg-zinc-50 p-3 transition-colors hover:border-ink hover:bg-ink/5 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-white dark:hover:bg-white/5"
                         title={icon}>
                         <img

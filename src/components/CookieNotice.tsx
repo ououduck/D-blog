@@ -66,7 +66,7 @@ export const CookieNotice: React.FC = () => {
           animate={{ opacity: 1 }}
           exit={shouldReduceMotion ? undefined : { opacity: 0 }}
           transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, ease: 'easeOut' }}
-          className="fixed bottom-0 left-0 right-0 z-nav editorial-sheet border border-b-0 border-zinc-300 bg-paper pb-[env(safe-area-inset-bottom,0px)] shadow-none dark:border-zinc-700 dark:bg-zinc-900"
+          className="cookie-notice fixed bottom-0 left-0 right-0 z-nav editorial-sheet border border-b-0 border-zinc-300 bg-paper pb-[env(safe-area-inset-bottom,0px)] shadow-none dark:border-zinc-700 dark:bg-zinc-900"
           role="region"
           aria-label="Cookie 使用说明"
         >

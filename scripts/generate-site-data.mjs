@@ -5,12 +5,23 @@ import matter from 'gray-matter';
 import { fileURLToPath } from 'url';
 import { loadSiteConfig } from './site-config-loader.mjs';
 import { createBuildLogger } from './build-logger.mjs';
+import { normalizeLocalImageUrl as resolveImageAsset } from './image-assets-utils.mjs';
+import { getBasePath, withBasePath } from './base-path.mjs';
+import {
+  DEFAULT_STATIC_ROUTES,
+  findDuplicatePostIds,
+  parseMarkdownImages,
+  validatePostContent
+} from './post-content-validator.mjs';
+import { extractMarkdownHeadings } from '../src/utils/headings-core.mjs';
+import { buildRssFeed } from './feed-generator.mjs';
 
 const logger = createBuildLogger('gen:data');
 logger.start('Generate site data');
 
 const siteConfig = loadSiteConfig({ logger });
 const SITE_URL = siteConfig.url;
+const BASE_PATH = getBasePath();
 const SITE_TITLE = siteConfig.title;
 const SITE_DESCRIPTION = siteConfig.description;
 const AUTHOR_NAME = siteConfig.author.name;
@@ -23,6 +34,10 @@ const POSTS_IMG_DIR = path.join(__dirname, '../posts-img');
 const FRIENDS_DIR = path.join(__dirname, '../friends');
 const OUTPUT_JSON_DIR = path.join(__dirname, '../generated');
 const PUBLIC_DIR = path.join(__dirname, '../public');
+const IMAGE_MANIFEST_FILE = path.join(OUTPUT_JSON_DIR, 'image-assets.json');
+const imageManifest = fs.existsSync(IMAGE_MANIFEST_FILE)
+  ? JSON.parse(fs.readFileSync(IMAGE_MANIFEST_FILE, 'utf-8'))
+  : { assets: {} };
 
 if (!fs.existsSync(OUTPUT_JSON_DIR)) {
   fs.mkdirSync(OUTPUT_JSON_DIR, { recursive: true });
@@ -48,15 +63,6 @@ const xmlEscape = (value) => String(value ?? '')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&apos;');
 
-const escapeHtmlAttribute = (value) => String(value ?? '')
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&#39;');
-
-const wrapCdata = (value) => `<![CDATA[${String(value ?? '').replace(/]]>/g, ']]]]><![CDATA[>')}]]>`;
-
 const HTTP_URL_PROTOCOLS = new Set(['http:', 'https:']);
 
 const assertValidUrl = (value, label, allowedProtocols = HTTP_URL_PROTOCOLS) => {
@@ -72,30 +78,13 @@ const assertValidUrl = (value, label, allowedProtocols = HTTP_URL_PROTOCOLS) => 
   }
 };
 
-const isSafeRssUrl = (value) => {
-  if (!value || /[\s"'<>]/.test(value)) {
-    return false;
-  }
-
-  if (value.startsWith('/') || value.startsWith('./') || value.startsWith('../') || value.startsWith('#')) {
-    return true;
-  }
-
-  try {
-    return HTTP_URL_PROTOCOLS.has(new URL(value).protocol);
-  } catch {
-    return false;
-  }
-};
-
-// 文章正文与封面均使用 /posts-img/... 绝对路径（以站点根为基准），
-// 生成 RSS 时仅对极少数未以 / 开头的相对路径做兜底归一化。
-const isAbsoluteAssetPath = (value) => value.startsWith('/') || /^[a-z][a-z0-9+.-]*:/i.test(value);
-
+// 文章正文与封面均使用 /posts-img/... 绝对路径（以站点根为基准）。
 const toPostsImgPath = (value) => {
   const clean = String(value).replace(/\\/g, '/').replace(/^\/+/, '').replace(/^(\.\.\/)+/g, '').replace(/^\.\/+/, '');
-  return `/${clean}`;
+  return `/posts-img/${clean.startsWith('posts-img/') ? clean.slice('posts-img/'.length) : clean}`;
 };
+
+const toPublicPath = (value) => withBasePath(value, BASE_PATH);
 
 // coverImage 统一解析为站点可访问的 /posts-img/... 绝对路径
 const normalizeCoverImage = (value) => {
@@ -130,7 +119,7 @@ const countWords = (markdown) => {
   return hanCharacters + latinWords;
 };
 
-const countImages = (markdown) => (markdown.match(/!\[[^\]]*\]\([^)]+\)/g) || []).length;
+const countImages = (markdown) => parseMarkdownImages(markdown).length;
 
 const readImageDimensions = (filePath) => {
   try {
@@ -219,25 +208,22 @@ const readImageDimensions = (filePath) => {
 };
 
 const normalizeLocalImageUrl = (value, postId) => {
-  if (!value || /^[a-z][a-z0-9+.-]*:/i.test(value)) return undefined;
-  const raw = String(value).trim().replace(/\\/g, '/');
-  const clean = raw.replace(/^\/+/, '').replace(/^\.\/+/, '').replace(/^(?:\.\.\/)+/, '');
-  const url = clean.startsWith('posts-img/') ? `/${clean}` : `/posts-img/${postId}/${clean}`;
-  const filePath = path.join(POSTS_IMG_DIR, url.slice('/posts-img/'.length));
-  if (!filePath.startsWith(POSTS_IMG_DIR + path.sep) || !fs.existsSync(filePath)) return undefined;
-  return { url, dimensions: readImageDimensions(filePath) };
+  const resolved = resolveImageAsset(value, postId, POSTS_IMG_DIR);
+  if (!resolved || resolved.external || resolved.error || !resolved.filePath) return undefined;
+  const dimensions = imageManifest.assets?.[resolved.url]?.width
+    ? { width: imageManifest.assets[resolved.url].width, height: imageManifest.assets[resolved.url].height }
+    : readImageDimensions(resolved.filePath);
+  return { url: resolved.url, dimensions };
 };
 
 const extractImageDimensions = (markdown, postId) => {
   const dimensions = {};
-  const imagePattern = /!\[[^\]]*\]\(([^)\s]+)(?:\s+[^)]*)?\)/g;
-  let match;
-  while ((match = imagePattern.exec(markdown))) {
-    const resolved = normalizeLocalImageUrl(match[1], postId);
+  parseMarkdownImages(markdown).forEach(({ target }) => {
+    const resolved = normalizeLocalImageUrl(target, postId);
     if (resolved?.dimensions?.width && resolved.dimensions.height) {
       dimensions[resolved.url] = resolved.dimensions;
     }
-  }
+  });
   return Object.keys(dimensions).length > 0 ? dimensions : undefined;
 };
 
@@ -415,125 +401,230 @@ const validatePostFrontmatter = (filename, data, formattedDate, formattedUpdated
   if (typeof id !== 'string' || id.trim() === '') {
     errors.push('id must be a non-empty string');
   }
-
   if (typeof data.title !== 'string' || data.title.trim() === '') {
     errors.push('title must be a non-empty string');
   }
-
   if (typeof data.excerpt !== 'string' || data.excerpt.trim() === '') {
     errors.push('excerpt must be a non-empty string');
   }
-
   if (!formattedDate || !validateDateString(formattedDate)) {
     errors.push('date must use YYYY-MM-DD format');
   }
-
   if (formattedUpdatedAt && !validateDateString(formattedUpdatedAt)) {
     errors.push('updatedAt must use YYYY-MM-DD format');
   }
-
-  if (data.tags !== undefined && !Array.isArray(data.tags)) {
-    errors.push('tags must be an array when provided');
+  if (!Array.isArray(data.tags)) {
+    errors.push('tags must be an array');
+  } else {
+    const seenTags = new Set();
+    data.tags.forEach((tag, index) => {
+      if (typeof tag !== 'string' || !tag.trim()) {
+        errors.push(`tags[${index}] must be a non-empty string`);
+        return;
+      }
+      const normalizedTag = tag.trim();
+      if (seenTags.has(normalizedTag)) {
+        errors.push(`tags contains duplicate label "${normalizedTag}"`);
+      }
+      seenTags.add(normalizedTag);
+    });
   }
-
+  if (
+    typeof id === 'string'
+    && (
+      id !== id.trim()
+      || /\s|[\\/?#%"'<>]/.test(id)
+      || id === '.'
+      || id === '..'
+      || id.includes('/./')
+      || id.includes('/../')
+    )
+  ) {
+    errors.push(`id "${id}" contains characters that are unsafe in a post URL`);
+  }
   if (typeof data.category === 'string' && data.category.trim() && !POST_CATEGORIES.includes(data.category.trim())) {
     errors.push(`category must be one of: ${POST_CATEGORIES.join(', ')}`);
   }
-
   if (data.featured !== undefined && typeof data.featured !== 'boolean') {
     errors.push('featured must be a boolean when provided');
   }
-
   if (data['featured-top'] !== undefined && (
     typeof data['featured-top'] !== 'number' || !Number.isFinite(data['featured-top'])
   )) {
     errors.push('featured-top must be a finite number when provided');
   }
-
-  if (errors.length > 0) {
-    throw new Error(`Invalid front matter in ${filename}: ${errors.join('; ')}`);
+  if (data.series !== undefined && typeof data.series !== 'boolean') {
+    errors.push('series must be a boolean when provided');
   }
+  if (data.series === true) {
+    if (typeof data['series-name'] !== 'string' || data['series-name'].trim() === '') {
+      errors.push('series-name must be a non-empty string when series is true');
+    }
+    if (typeof data['series-order'] !== 'number' || !Number.isInteger(data['series-order']) || data['series-order'] < 1) {
+      errors.push('series-order must be a positive integer when series is true');
+    }
+  }
+
+  return errors.length > 0 ? `Invalid front matter in ${filename}: ${errors.join('; ')}` : undefined;
 };
 
-const usedPostIds = new Set();
-
 const files = fs.readdirSync(POSTS_DIR).filter((file) => {
-  if (!file.endsWith('.md')) {
-    return false;
-  }
-
-  // 只保留常规文件，跳过 posts/posts-img 等子目录，避免图片被误当作文章处理
+  if (!file.endsWith('.md')) return false;
   try {
     return fs.statSync(path.join(POSTS_DIR, file)).isFile();
   } catch {
     return false;
   }
 });
-const postsWithSearch = files
-  .map((filename) => {
-    const filePath = path.join(POSTS_DIR, filename);
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
-    const { data, content } = matter(fileContent);
-    // Drop the deprecated top field; featured-top is the only supported pin order.
-    const { draft, readTime, author, authors, updatedAt, coverImage, top: _legacyTop, ...restData } = data;
 
-    const id = String(data.id || filename.replace(/\.md$/, '')).trim();
+const postRecords = files.map((filename) => {
+  const filePath = path.join(POSTS_DIR, filename);
+  const fileContent = fs.readFileSync(filePath, 'utf-8');
+  let data = {};
+  let content = fileContent;
+  let parseError;
 
-    const formattedDate = formatFrontmatterDate(data.date);
-    const formattedUpdatedAt = formatFrontmatterDate(updatedAt);
-    validatePostFrontmatter(filename, data, formattedDate, formattedUpdatedAt, id);
+  try {
+    ({ data, content } = matter(fileContent));
+  } catch (error) {
+    parseError = `Invalid front matter in ${filename}: ${error instanceof Error ? error.message : String(error)}`;
+    content = '';
+  }
 
-    if (usedPostIds.has(id)) {
-      throw new Error(`Duplicate post id "${id}" found in ${filename}.`);
+  const { draft, readTime, author, authors, updatedAt, coverImage, top: _legacyTop, series: rawSeries, 'series-name': rawSeriesName, 'series-order': rawSeriesOrder, ...restData } = data;
+  const id = typeof data.id === 'string' ? data.id : '';
+  const formattedDate = formatFrontmatterDate(data.date);
+  const formattedUpdatedAt = formatFrontmatterDate(updatedAt);
+  const frontMatterError = parseError || validatePostFrontmatter(filename, data, formattedDate, formattedUpdatedAt, id);
+  const contentStartLine = (() => {
+    const lines = fileContent.split(/\r?\n/);
+    if (!/^\uFEFF?---\s*$/.test(lines[0] || '')) return 0;
+    const closingIndex = lines.findIndex((line, index) => index > 0 && /^---\s*$/.test(line));
+    return closingIndex >= 0 ? closingIndex + 1 : 0;
+  })();
+  const headingIds = extractMarkdownHeadings(content).map((heading) => heading.id);
+
+  return {
+    filename,
+    filePath,
+    data,
+    content,
+    restData,
+    draft: draft === true,
+    id,
+    formattedDate,
+    formattedUpdatedAt,
+    headingIds,
+    contentStartLine,
+    errors: frontMatterError ? [frontMatterError] : []
+  };
+});
+
+const allPostIndex = new Map();
+const publishedPostIndex = new Map();
+const validationErrors = postRecords.flatMap((record) => record.errors);
+findDuplicatePostIds(postRecords).forEach(({ id, filename }) => {
+  validationErrors.push(`Duplicate post id "${id}" found in ${filename}.`);
+});
+postRecords.forEach((record) => {
+  if (!record.id) return;
+  if (!allPostIndex.has(record.id)) {
+    allPostIndex.set(record.id, record);
+  }
+  if (!record.draft && !publishedPostIndex.has(record.id)) {
+    publishedPostIndex.set(record.id, record);
+  }
+});
+
+const normalizeTagsStrict = (value) => (Array.isArray(value) ? value.map((tag) => tag.trim()) : []);
+
+const buildPost = (record) => {
+  const {
+    filename, content, data, restData, id, formattedDate, formattedUpdatedAt, draft
+  } = record;
+  const normalizedAuthors = normalizeAuthors(data.author, data.authors);
+  const category = normalizeCategory(data.category);
+  const tags = normalizeTagsStrict(data.tags);
+  const normalizedCoverImage = normalizeCoverImage(data.coverImage);
+  const coverDimensions = normalizedCoverImage && !/^[a-z][a-z0-9+.-]*:/i.test(normalizedCoverImage)
+    ? normalizeLocalImageUrl(normalizedCoverImage, id)?.dimensions
+    : undefined;
+  const imageDimensions = extractImageDimensions(content, id);
+  const isSeries = data.series === true;
+  const seriesName = isSeries && typeof data['series-name'] === 'string' ? data['series-name'].trim() : undefined;
+  const seriesOrder = isSeries && Number.isInteger(data['series-order']) ? data['series-order'] : undefined;
+
+  if (!formattedDate) {
+    validationErrors.push(`Invalid front matter in ${filename}: date must use YYYY-MM-DD format`);
+  }
+  return draft ? null : {
+    ...restData,
+    ...(isSeries ? { series: true, seriesName, seriesOrder } : {}),
+    coverImage: normalizedCoverImage,
+    coverWidth: coverDimensions?.width,
+    coverHeight: coverDimensions?.height,
+    imageDimensions,
+    category,
+    tags,
+    date: formattedDate,
+    updatedAt: formattedUpdatedAt,
+    authors: normalizedAuthors,
+    id,
+    filePath: `/posts/${filename}`,
+    readTime: calculateReadTime(content),
+    wordCount: countWords(content),
+    imageCount: countImages(content),
+    content,
+    searchText: markdownToSearchText(content)
+  };
+};
+
+postRecords.forEach((record) => {
+  validationErrors.push(...validatePostContent(record, {
+    filename: record.filename,
+    imageRoot: POSTS_IMG_DIR,
+    allPosts: allPostIndex,
+    publishedPosts: publishedPostIndex,
+    staticRoutes: DEFAULT_STATIC_ROUTES,
+    skipFrontMatter: true,
+    lineOffset: record.contentStartLine,
+    getImageDimensions: (url, filePath) => {
+      const asset = imageManifest.assets?.[url];
+      if (asset?.width && asset?.height) {
+        return { width: asset.width, height: asset.height };
+      }
+      return readImageDimensions(filePath);
     }
-    usedPostIds.add(id);
+  }));
+});
 
-    const normalizedAuthors = normalizeAuthors(author, authors);
-    const category = normalizeCategory(data.category);
-    const tags = normalizeTags(data.tags);
-    const wordCount = countWords(content);
-    const imageCount = countImages(content);
-    const normalizedCoverImage = normalizeCoverImage(coverImage);
-    const coverDimensions = normalizedCoverImage && !/^[a-z][a-z0-9+.-]*:/i.test(normalizedCoverImage)
-      ? normalizeLocalImageUrl(normalizedCoverImage, id)?.dimensions
-      : undefined;
-    const imageDimensions = extractImageDimensions(content, id);
+const seriesOrders = new Map();
+postRecords.forEach((record) => {
+  if (record.draft || record.data.series !== true || !record.id || !record.data['series-name'] || !Number.isInteger(record.data['series-order'])) {
+    return;
+  }
 
-    if (!formattedDate) {
-      throw new Error(`Post "${filename}" is missing a valid date field.`);
-    }
+  const key = record.data['series-name'].trim();
+  const order = record.data['series-order'];
+  const seenOrders = seriesOrders.get(key) ?? new Map();
+  const previous = seenOrders.get(order);
+  if (previous) {
+    validationErrors.push(`Duplicate series-order ${order} for series "${key}" in ${record.filename}; already used by ${previous}.`);
+  } else {
+    seenOrders.set(order, record.filename);
+    seriesOrders.set(key, seenOrders);
+  }
+});
 
-    if (draft === true) {
-      return null;
-    }
+if (validationErrors.length > 0) {
+  throw new Error(validationErrors.join('\n'));
+}
 
-    return {
-      ...restData,
-      coverImage: normalizedCoverImage,
-      coverWidth: coverDimensions?.width,
-      coverHeight: coverDimensions?.height,
-      imageDimensions,
-      category,
-      tags,
-      date: formattedDate,
-      updatedAt: formattedUpdatedAt,
-      authors: normalizedAuthors,
-      id,
-      filePath: `/posts/${filename}`,
-      readTime: calculateReadTime(content),
-      wordCount,
-      imageCount,
-      content,
-      searchText: markdownToSearchText(content)
-    };
-  })
-  .filter(Boolean)
-  .sort((a, b) => new Date(b.date) - new Date(a.date));
-
+const postsWithSearch = postRecords.map(buildPost).filter(Boolean)
+  .sort((a, b) => new Date(b.date) - new Date(a.date) || a.id.localeCompare(b.id));
 const posts = postsWithSearch.map(({ searchText, content, ...post }) => post);
 
 generateSiteStats(postsWithSearch);
-
 fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'posts.json'), JSON.stringify(posts, null, 2));
 fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'posts-search.json'), JSON.stringify(postsWithSearch.map(({ content, ...rest }) => rest), null, 2));
 logger.step('Generated posts data', `posts=${posts.length} sourceFiles=${files.length}`);
@@ -587,6 +678,8 @@ const friends = friendFiles.flatMap((filename) => {
 fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'friends.json'), JSON.stringify(friends, null, 2));
 logger.step('Generated friends.json', `friends=${friends.length} sourceFiles=${friendFiles.length}`);
 
+const siteAbsoluteUrl = (route = '/') => new URL(toPublicPath(route), `${SITE_URL}/`).toString();
+
 const generateSitemap = () => {
   const today = new Date().toISOString().split('T')[0];
 
@@ -607,7 +700,7 @@ const generateSitemap = () => {
     .map(
       (page) => `
   <url>
-    <loc>${xmlEscape(new URL(page.path, `${SITE_URL}/`).toString())}</loc>
+    <loc>${xmlEscape(siteAbsoluteUrl(page.path))}</loc>
     <lastmod>${page.lastmod}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
@@ -618,7 +711,7 @@ const generateSitemap = () => {
     .map(
       (post) => `
   <url>
-    <loc>${xmlEscape(`${SITE_URL}/post/${post.id}`)}</loc>
+    <loc>${xmlEscape(siteAbsoluteUrl(`/post/${post.id}`))}</loc>
     <lastmod>${new Date(post.updatedAt || post.date).toISOString().split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -628,84 +721,26 @@ const generateSitemap = () => {
 </urlset>`;
 
   fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap.xml'), sitemapContent);
+  fs.writeFileSync(
+    path.join(PUBLIC_DIR, 'robots.txt'),
+    `User-agent: *\r\nAllow: /\r\nDisallow: /api/\r\nDisallow: /generated/\r\nDisallow: /*.json$\r\nDisallow: /sw.js\r\nDisallow: /workbox-*.js\r\n\r\nCrawl-delay: 1\r\n\r\nSitemap: ${siteAbsoluteUrl('/sitemap.xml')}\r\n`
+  );
   logger.step('Generated sitemap.xml', `urls=${staticPages.length + posts.length}`);
 };
 
 const generateRss = () => {
-  const latestUpdate = postsWithSearch[0] ? new Date(postsWithSearch.reduce((latest, post) => {
-    const current = new Date(post.updatedAt || post.date);
-    return current > latest ? current : latest;
-  }, new Date(postsWithSearch[0].updatedAt || postsWithSearch[0].date))) : new Date();
-
-  // 简单的 Markdown 转 HTML（用于 RSS 全文内容）
-  const simpleMarkdownToHtml = (md) => {
-    return md
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/`(.+?)`/g, '<code>$1</code>')
-      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
-        const rawUrl = String(url).trim();
-        const safeUrl = isAbsoluteAssetPath(rawUrl) ? rawUrl : toPostsImgPath(rawUrl);
-        if (!isSafeRssUrl(safeUrl)) {
-          return escapeHtmlAttribute(alt);
-        }
-        return `<img alt="${escapeHtmlAttribute(alt)}" src="${escapeHtmlAttribute(safeUrl)}" />`;
-      })
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
-        const rawUrl = String(url).trim().replace(/\s+["'][^"']*["']$/, '');
-        // 相对路径（如 posts-img/foo.png）兜底解析为 /posts-img/ 绝对路径
-        const safeUrl = isAbsoluteAssetPath(rawUrl) ? rawUrl : toPostsImgPath(rawUrl);
-        if (!isSafeRssUrl(safeUrl)) {
-          return text;
-        }
-        return `<a href="${escapeHtmlAttribute(safeUrl)}">${text}</a>`;
-      })
-      .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
-      .replace(/\n{2,}/g, '</p><p>')
-      .replace(/^(?!<[hluoi])/gm, '<p>')
-      .replace(/(?<![>])$/gm, '</p>')
-      .replace(/<p><\/p>/g, '');
-  };
-
-  const rssContent = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
-  <channel>
-    <title>${xmlEscape(SITE_TITLE)}</title>
-    <link>${xmlEscape(SITE_URL)}</link>
-    <description>${xmlEscape(SITE_DESCRIPTION)}</description>
-    <language>zh-CN</language>
-    <lastBuildDate>${latestUpdate.toUTCString()}</lastBuildDate>
-    <atom:link href="${xmlEscape(`${SITE_URL}/feed.xml`)}" rel="self" type="application/rss+xml" />
-    ${postsWithSearch
-      .map(
-        (post) => `
-    <item>
-      <title>${wrapCdata(post.title)}</title>
-      <link>${xmlEscape(`${SITE_URL}/post/${post.id}`)}</link>
-      <guid isPermaLink="true">${xmlEscape(`${SITE_URL}/post/${post.id}`)}</guid>
-      <description>${wrapCdata(post.excerpt)}</description>
-      <content:encoded>${wrapCdata(`<article>${simpleMarkdownToHtml(post.content || '')}</article>`)}</content:encoded>
-      <pubDate>${new Date(post.date).toUTCString()}</pubDate>
-      ${post.updatedAt ? `<atom:updated>${new Date(post.updatedAt).toISOString()}</atom:updated>` : ''}
-      <category>${xmlEscape(post.category)}</category>
-      ${(post.tags || []).map((tag) => `<category>${xmlEscape(tag)}</category>`).join('\n      ')}
-      <author>${xmlEscape(post.authors?.[0]?.name || AUTHOR_NAME)}</author>
-    </item>`
-      )
-      .join('')}
-  </channel>
-</rss>`;
+  const rssContent = buildRssFeed(postsWithSearch, {
+    siteUrl: SITE_URL,
+    basePath: BASE_PATH,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    author: AUTHOR_NAME
+  });
 
   fs.writeFileSync(path.join(PUBLIC_DIR, 'feed.xml'), rssContent);
   logger.step('Generated feed.xml', `items=${postsWithSearch.length}`);
 };
+
 
 generateSitemap();
 generateRss();

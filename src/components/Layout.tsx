@@ -1,8 +1,9 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Sun, Moon, Github, Menu, X, Search, Heart, Monitor, Rss, BookOpen, Archive, Tag, BarChart3, Users, Info } from 'lucide-react';
+import { Sun, Moon, Github, Menu, X, Search, Heart, Monitor, Rss, BookOpen, Archive, Tag, BarChart3, Users, Info, Bookmark } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { preloadPage } from '@/utils/preload';
+import { assetUrl } from '@/utils/siteUrl';
 import { siteConfig } from '@config/site.config';
 
 import { ProgressiveImage } from './ProgressiveImage';
@@ -28,6 +29,7 @@ const TEXT = {
   navFriends: '\u53cb\u94fe',
   navSponsor: '\u8d5e\u52a9',
   navAbout: '\u5173\u4e8e',
+  navFavorites: '\u6211\u7684\u6536\u85cf',
   rssFeed: 'RSS \u8ba2\u9605'
 };
 
@@ -181,7 +183,8 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     { path: '/stats', label: TEXT.navStats, hint: '站点数据', icon: BarChart3 },
     { path: '/friends', label: TEXT.navFriends, hint: '友情链接', icon: Users },
     { path: '/sponsor', label: TEXT.navSponsor, hint: '赞助支持', icon: Heart },
-    { path: '/about', label: TEXT.navAbout, hint: '站点介绍', icon: Info }
+    { path: '/about', label: TEXT.navAbout, hint: '\u7ad9\u70b9\u4ecb\u7ecd', icon: Info },
+    { path: '/favorites', label: TEXT.navFavorites, hint: '\u672c\u5730\u79bb\u7ebf\u9605\u8bfb', icon: Bookmark }
   ];
   const isNavItemActive = (path: string) => location.pathname === path || (path === '/' && location.pathname.startsWith('/post/'));
   const mobileQuickActions = [
@@ -197,7 +200,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       label: 'RSS',
       hint: '订阅更新',
       icon: Rss,
-      href: '/feed.xml',
+      href: assetUrl('/feed.xml'),
       external: true
     },
     {
@@ -553,7 +556,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       <nav className={`site-navbar fixed left-0 right-0 top-0 ${isMobileNavMounted ? 'z-nav-panel' : 'z-nav'} border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void`}>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, ease: easeSmooth }} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-16">
           <Link to="/" className="group z-50 flex items-center space-x-2.5 sm:space-x-3">
-            <ProgressiveImage src={siteConfig.logoSmall} alt={`${siteConfig.title} 站点标志`} fetchPriority="high" width={96} height={96} wrapperClassName="h-8 w-8 bg-white sm:h-9 sm:w-9" className="h-8 w-8 object-cover sm:h-9 sm:w-9" />
+            <ProgressiveImage src={assetUrl(siteConfig.logoSmall)} alt={`${siteConfig.title} 站点标志`} fetchPriority="high" width={96} height={96} wrapperClassName="h-8 w-8 bg-white sm:h-9 sm:w-9" className="h-8 w-8 object-cover sm:h-9 sm:w-9" />
             <span className="font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
           </Link>
 
@@ -594,7 +597,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                 <Search size={16} />
                 <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">Ctrl+K</span>
               </motion.button>
-              <motion.a variants={navItemVariants} href="/feed.xml" target="_blank" rel="noopener noreferrer" className="group flex h-11 items-center gap-2 rounded-control border border-transparent px-3 text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950 active:bg-zinc-200 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-white dark:active:bg-zinc-800">
+              <motion.a variants={navItemVariants} href={assetUrl('/feed.xml')} target="_blank" rel="noopener noreferrer" className="group flex h-11 items-center gap-2 rounded-control border border-transparent px-3 text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950 active:bg-zinc-200 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-white dark:active:bg-zinc-800">
                 <Rss size={16} />
                 <span className="text-xs font-medium">{TEXT.rssFeed}</span>
               </motion.a>
@@ -724,12 +727,13 @@ const Footer = () => {
     { label: TEXT.navStats, to: '/stats' },
     { label: TEXT.navFriends, to: '/friends' },
     { label: TEXT.navSponsor, to: '/sponsor' },
-    { label: TEXT.navAbout, to: '/about' }
+    { label: TEXT.navAbout, to: '/about' },
+    { label: TEXT.navFavorites, to: '/favorites' }
   ];
   const footerExternalLinks = [
     { label: '\u90ae\u4ef6', href: siteConfig.social.email, external: false },
     { label: 'GitHub', href: siteConfig.social.github, external: true },
-    { label: TEXT.rssFeed, href: '/feed.xml', external: true }
+    { label: TEXT.rssFeed, href: assetUrl('/feed.xml'), external: true }
   ];
 
   return (

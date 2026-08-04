@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { siteConfig } from '@config/site.config';
+import { absoluteSiteUrl, getSiteBasePath } from '@/utils/siteUrl';
 
 type StructuredData = Record<string, unknown> | Array<Record<string, unknown>>;
 
@@ -20,16 +21,23 @@ interface SeoProps {
   noindex?: boolean;
 }
 
-const toAbsoluteUrl = (value?: string) => {
-  if (!value) {
-    return siteConfig.url;
+const toAbsoluteUrl = (value?: string) => absoluteSiteUrl(value, siteConfig.url, getSiteBasePath());
+
+const withBaseUrls = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(withBaseUrls);
   }
 
-  if (/^https?:\/\//i.test(value)) {
+  if (!value || typeof value !== 'object') {
     return value;
   }
 
-  return new URL(value.startsWith('/') ? value : `/${value}`, siteConfig.url).toString();
+  return Object.fromEntries(Object.entries(value).map(([key, entry]) => [
+    key,
+    ['url', 'image', 'logo', 'mainEntityOfPage', 'item'].includes(key) && typeof entry === 'string'
+      ? toAbsoluteUrl(entry)
+      : withBaseUrls(entry)
+  ]));
 };
 
 const stringifyJsonLd = (value: StructuredData | Record<string, unknown>) => JSON.stringify(value)
@@ -58,9 +66,7 @@ export const Seo: React.FC<SeoProps> = ({
   const canonicalUrl = toAbsoluteUrl(url);
   const imageUrl = toAbsoluteUrl(image);
   const schema = structuredData
-    ? Array.isArray(structuredData)
-      ? structuredData
-      : [structuredData]
+    ? (Array.isArray(structuredData) ? structuredData : [structuredData]).map(withBaseUrls) as Array<Record<string, unknown>>
     : type === 'website'
       ? [{
           '@context': 'https://schema.org',
@@ -68,7 +74,7 @@ export const Seo: React.FC<SeoProps> = ({
           name: siteConfig.title,
           alternateName: siteConfig.subtitle,
           description,
-          url: siteConfig.url,
+          url: toAbsoluteUrl('/'),
           inLanguage: 'zh-CN'
         }]
       : [];
@@ -80,7 +86,7 @@ export const Seo: React.FC<SeoProps> = ({
       <meta name="robots" content={noindex ? 'noindex,nofollow' : 'index,follow,max-image-preview:large'} />
       {keywords && <meta name="keywords" content={keywords} />}
       <link rel="canonical" href={canonicalUrl} />
-      <link rel="alternate" type="application/rss+xml" title={`${siteConfig.title} RSS`} href={`${siteConfig.url}/feed.xml`} />
+      <link rel="alternate" type="application/rss+xml" title={`${siteConfig.title} RSS`} href={toAbsoluteUrl('/feed.xml')} />
 
       <meta property="og:locale" content="zh_CN" />
       <meta property="og:site_name" content={siteConfig.title} />
