@@ -157,7 +157,13 @@ const createHomeMeta = () => {
     <script type="application/ld+json">${escapeJsonForHtml(websiteData)}</script>`;
 };
 
-const getHomeHeroPost = (posts) => posts.find((post) => post.top !== undefined) || posts.find((post) => post.featured) || null;
+const getHomeHeroPost = (posts) => {
+  const pinnedPosts = posts
+    .filter((post) => post.featured === true && post['featured-top'] !== undefined)
+    .sort((a, b) => a['featured-top'] - b['featured-top']);
+
+  return pinnedPosts[0] || posts.find((post) => post.featured === true) || null;
+};
 
 const writeHtml = (distDir, htmlTemplate, relativePath, title, description, extraMeta = '', options = {}) => {
   const filePath = path.join(distDir, relativePath, 'index.html');

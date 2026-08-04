@@ -1,12 +1,26 @@
 import type { PostMetadata } from '@/types';
 
+type FeaturedPostFields = Pick<PostMetadata, 'featured' | 'featured-top'>;
+
+export const isFeaturedPost = (post: Pick<PostMetadata, 'featured'>) => post.featured === true;
+
+export const isPinnedFeaturedPost = (post: FeaturedPostFields) => (
+  isFeaturedPost(post) && post['featured-top'] !== undefined
+);
+
 /**
  * Select the post used for the home page's featured slot.
- * Explicit pinning wins over the featured flag; array order remains the
- * stable tie-breaker for posts with the same priority.
+ * Explicit featured pinning wins over the featured flag, with the smallest
+ * featured-top value taking precedence.
  */
-export const getHeroPost = <T extends Pick<PostMetadata, 'top' | 'featured'>>(posts: T[]): T | null => (
-  posts.find((post) => post.top !== undefined)
-    ?? posts.find((post) => post.featured)
-    ?? null
-);
+export const getHeroPost = <T extends FeaturedPostFields>(posts: T[]): T | null => {
+  const pinnedPost = posts
+    .filter(isPinnedFeaturedPost)
+    .reduce<T | null>((current, post) => (
+      current === null || post['featured-top']! < current['featured-top']!
+        ? post
+        : current
+    ), null);
+
+  return pinnedPost ?? posts.find(isFeaturedPost) ?? null;
+};

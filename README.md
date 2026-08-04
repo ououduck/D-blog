@@ -272,7 +272,7 @@ tags:
 coverImage: /posts-img/example.png # 可选，封面图路径（如 /posts-img/文章id/xxx.png）
 author: 跑路的duck                 # 可选，作者（字符串或对象）
 featured: false                   # 是否首页精选展示
-top: 1                            # 置顶排序（数字越小优先级越高）
+featured-top: 1                   # 精选文章置顶排序（仅 featured: true 时生效，数字越小优先级越高）
 draft: false                      # 是否为草稿
 ---
 
@@ -296,7 +296,7 @@ draft: false                      # 是否为草稿
 | `author` | 否 | 作者，支持字符串（如 `跑路的duck`）或对象（含 `name`/`avatar`/`role`/`bio`/`url`） |
 | `authors` | 否 | 作者信息数组，支持多作者，每项同 `author` 对象结构 |
 | `featured` | 否 | 是否作为首页精选展示 |
-| `top` | 否 | 置顶排序（数字越小优先级越高） |
+| `featured-top` | 否 | 精选文章置顶排序；仅 `featured: true` 时生效，数字越小优先级越高 |
 | `draft` | 否 | 是否为草稿（`true` 时构建自动过滤） |
 
 ### 文章分类

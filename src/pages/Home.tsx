@@ -12,10 +12,10 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
-import { getDateTimestamp } from '@/utils/date';
+import { sortPosts } from '@/utils/postSorting';
 import { easeOut, easeSmooth, fadeInUp, staggerContainer } from '@/utils/motion';
 import { preloadPage } from '@/utils/preload';
-import { getHeroPost } from '@/utils/postSelection';
+import { getHeroPost, isPinnedFeaturedPost } from '@/utils/postSelection';
 
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
 
@@ -102,24 +102,6 @@ const LoadingGrid: React.FC<{ isMobile: boolean; heroSlots: number; label: strin
     </motion.div>
   );
 };
-
-const sortPosts = (posts: PostMetadata[], sortOrder: 'newest' | 'oldest') =>
-  posts.slice().sort((a, b) => {
-    const priorityA = a.top !== undefined ? 0 : a.featured ? 1 : 2;
-    const priorityB = b.top !== undefined ? 0 : b.featured ? 1 : 2;
-
-    if (priorityA !== priorityB) {
-      return priorityA - priorityB;
-    }
-
-    if (priorityA === 0) {
-      return (a.top ?? 0) - (b.top ?? 0);
-    }
-
-    const dateA = getDateTimestamp(a.date);
-    const dateB = getDateTimestamp(b.date);
-    return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
-  });
 
 const filterAndSortPosts = (
   posts: PostMetadata[],
@@ -230,7 +212,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
               <span>{post.category}</span>
               <span aria-hidden="true">/</span>
               <span>精选</span>
-              {post.top !== undefined && (
+              {isPinnedFeaturedPost(post) && (
                 <span className="ml-auto flex items-center gap-1 normal-case tracking-normal text-zinc-600 dark:text-zinc-300">
                   <Pin size={11} />
                   置顶
@@ -272,7 +254,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
         <div className="flex flex-grow flex-col p-4 md:p-5">
           <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             <span>{post.category}</span>
-            {post.top !== undefined && (
+            {isPinnedFeaturedPost(post) && (
               <span className="ml-auto flex items-center gap-1 normal-case tracking-normal"><Pin size={10} />置顶</span>
             )}
           </div>

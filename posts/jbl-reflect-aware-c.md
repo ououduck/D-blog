@@ -12,6 +12,8 @@ tags:
   - 捡漏
 coverImage: /posts-img/jbl-reflect-aware-c/jbl-reflect-aware-c.png
 author: 跑路的duck
+featured: false
+featured-top: 0
 draft: false
 ---
 

@@ -12,7 +12,7 @@ tags:
 coverImage: /posts-img/about-dblog/about-dblog-cover.png
 author: 跑路的duck
 featured: true
-top: 1
+featured-top: 1
 ---
 
 # 关于 D-blog

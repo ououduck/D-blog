@@ -440,6 +440,16 @@ const validatePostFrontmatter = (filename, data, formattedDate, formattedUpdated
     errors.push(`category must be one of: ${POST_CATEGORIES.join(', ')}`);
   }
 
+  if (data.featured !== undefined && typeof data.featured !== 'boolean') {
+    errors.push('featured must be a boolean when provided');
+  }
+
+  if (data['featured-top'] !== undefined && (
+    typeof data['featured-top'] !== 'number' || !Number.isFinite(data['featured-top'])
+  )) {
+    errors.push('featured-top must be a finite number when provided');
+  }
+
   if (errors.length > 0) {
     throw new Error(`Invalid front matter in ${filename}: ${errors.join('; ')}`);
   }
@@ -464,7 +474,8 @@ const postsWithSearch = files
     const filePath = path.join(POSTS_DIR, filename);
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     const { data, content } = matter(fileContent);
-    const { draft, readTime, author, authors, updatedAt, coverImage, ...restData } = data;
+    // Drop the deprecated top field; featured-top is the only supported pin order.
+    const { draft, readTime, author, authors, updatedAt, coverImage, top: _legacyTop, ...restData } = data;
 
     const id = String(data.id || filename.replace(/\.md$/, '')).trim();
 

@@ -28,7 +28,7 @@ export interface PostMetadata {
   imageDimensions?: Record<string, ImageDimensions>;
   readTime: string;
   featured?: boolean;
-  top?: number;
+  'featured-top'?: number;
 }
 
 export interface Post extends PostMetadata {
