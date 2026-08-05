@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { easeOut } from '@/utils/motion';
 import DOMPurify from 'dompurify';
 
-import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Download, ChevronDown, ChevronUp, Users, ExternalLink, EyeOff, BookOpen, Bookmark } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Download, ChevronDown, ChevronUp, Users, ExternalLink, EyeOff, BookOpen, Bookmark, Minus, Plus, RotateCcw } from 'lucide-react';
 import { getPostById, getPosts } from '@/services/posts';
 import { getReadingHistoryEntry, saveReadingHistory } from '@/services/readingHistory';
 import { getRelatedPosts, getSeriesNavigation, type SeriesNavigation } from '@/utils/postRelations';
@@ -63,7 +63,9 @@ const getMermaidConfig = (isDark: boolean) => ({
         tertiaryColor: '#18181b',
         background: '#18181b',
         mainBkg: '#27272a',
-        nodeBorder: '#a1a1aa'
+        nodeBorder: '#a1a1aa',
+        fontSize: '18px',
+        fontFamily: 'ui-sans-serif, system-ui, sans-serif'
       }
     : {
         primaryColor: '#f4f4f5',
@@ -74,7 +76,9 @@ const getMermaidConfig = (isDark: boolean) => ({
         tertiaryColor: '#fafafa',
         background: '#fafafa',
         mainBkg: '#f4f4f5',
-        nodeBorder: '#52525b'
+        nodeBorder: '#52525b',
+        fontSize: '18px',
+        fontFamily: 'ui-sans-serif, system-ui, sans-serif'
       }
 } as const);
 
@@ -296,12 +300,38 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
   );
 };
 
+const MERMAID_MIN_SCALE = 1;
+const MERMAID_MAX_SCALE = 4;
+const MERMAID_ZOOM_STEP = 0.25;
+
+const clampMermaidScale = (scale: number) => Math.min(MERMAID_MAX_SCALE, Math.max(MERMAID_MIN_SCALE, scale));
+
 function MermaidBlock({ children, renderer, theme }: { children: string; renderer: MermaidRenderer | null; theme: 'light' | 'dark' }) {
   const [svg, setSvg] = useState('');
+  const [scale, setScale] = useState(MERMAID_MIN_SCALE);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
   const mermaidIdRef = useRef(`mermaid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`);
+  const dragRef = useRef({ pointerId: -1, startX: 0, startY: 0, startPositionX: 0, startPositionY: 0 });
+
+  const resetView = () => {
+    setScale(MERMAID_MIN_SCALE);
+    setPosition({ x: 0, y: 0 });
+  };
+
+  const zoomTo = (nextScale: number) => {
+    const clampedScale = clampMermaidScale(nextScale);
+    setScale(clampedScale);
+    if (clampedScale <= MERMAID_MIN_SCALE) {
+      setPosition({ x: 0, y: 0 });
+    }
+  };
+
+  const toggleZoom = () => zoomTo(scale > MERMAID_MIN_SCALE ? MERMAID_MIN_SCALE : 2);
 
   useEffect(() => {
     setSvg('');
+    resetView();
     if (!renderer) {
       return;
     }
@@ -329,6 +359,73 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
     };
   }, [children, renderer, theme]);
 
+  useEffect(() => {
+    if (scale <= MERMAID_MIN_SCALE) {
+      setPosition({ x: 0, y: 0 });
+    }
+  }, [scale]);
+
+  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    if (!svg || (scale <= MERMAID_MIN_SCALE && !event.ctrlKey && !event.metaKey)) return;
+    event.preventDefault();
+    zoomTo(scale + (event.deltaY > 0 ? -MERMAID_ZOOM_STEP : MERMAID_ZOOM_STEP));
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (scale <= MERMAID_MIN_SCALE || event.button !== 0) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startPositionX: position.x,
+      startPositionY: position.y
+    };
+    setIsDragging(true);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current.pointerId !== event.pointerId) return;
+    setPosition({
+      x: dragRef.current.startPositionX + event.clientX - dragRef.current.startX,
+      y: dragRef.current.startPositionY + event.clientY - dragRef.current.startY
+    });
+  };
+
+  const handlePointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    dragRef.current.pointerId = -1;
+    setIsDragging(false);
+  };
+
+  const handleDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    toggleZoom();
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === '+' || event.key === '=') {
+      event.preventDefault();
+      zoomTo(scale + MERMAID_ZOOM_STEP);
+    } else if (event.key === '-' || event.key === '_') {
+      event.preventDefault();
+      zoomTo(scale - MERMAID_ZOOM_STEP);
+    } else if (event.key === '0') {
+      event.preventDefault();
+      resetView();
+    } else if (scale > MERMAID_MIN_SCALE && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+      event.preventDefault();
+      const distance = event.shiftKey ? 48 : 24;
+      const xDelta = event.key === 'ArrowLeft' ? distance * -1 : event.key === 'ArrowRight' ? distance : 0;
+      const yDelta = event.key === 'ArrowUp' ? distance * -1 : event.key === 'ArrowDown' ? distance : 0;
+      setPosition((current) => ({ x: current.x + xDelta, y: current.y + yDelta }));
+    }
+  };
+
   if (!svg) {
     return (
       <pre className={`my-8 overflow-x-auto rounded-none border p-4 text-sm ${theme === 'dark' ? 'border-zinc-800 bg-[#0d0d0f] text-zinc-300' : 'border-zinc-300 bg-zinc-50 text-zinc-700'}`}>
@@ -340,10 +437,43 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
   const sanitizedSvg = typeof DOMPurify !== 'undefined'
     ? DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } })
     : svg;
+  const scaleLabel = `${Math.round(scale * 100)}%`;
 
   return (
-    <div className="mermaid-container my-8 overflow-x-auto rounded-none border border-zinc-300 bg-zinc-50 p-4 shadow-none dark:border-zinc-700 dark:bg-zinc-900/50 sm:p-6">
-      <div className="mermaid-diagram" dangerouslySetInnerHTML={{ __html: sanitizedSvg }} />
+    <div className="mermaid-container my-8 rounded-none border border-zinc-300 bg-zinc-50 p-3 shadow-none dark:border-zinc-700 dark:bg-zinc-900/50 sm:p-4">
+      <div className="mermaid-toolbar" role="toolbar" aria-label="Mermaid 图表工具">
+        <span className="mermaid-toolbar-label">图表缩放</span>
+        <div className="mermaid-toolbar-actions">
+          <button type="button" className="mermaid-action-btn" onClick={() => zoomTo(scale - MERMAID_ZOOM_STEP)} disabled={scale <= MERMAID_MIN_SCALE} aria-label="缩小 Mermaid 图表" title="缩小">
+            <Minus size={15} aria-hidden="true" />
+          </button>
+          <span className="mermaid-scale" aria-live="polite">{scaleLabel}</span>
+          <button type="button" className="mermaid-action-btn" onClick={() => zoomTo(scale + MERMAID_ZOOM_STEP)} disabled={scale >= MERMAID_MAX_SCALE} aria-label="放大 Mermaid 图表" title="放大">
+            <Plus size={15} aria-hidden="true" />
+          </button>
+          <button type="button" className="mermaid-action-btn" onClick={resetView} aria-label="重置 Mermaid 图表视图" title="重置">
+            <RotateCcw size={15} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+      <div
+        className={`mermaid-viewport ${scale > MERMAID_MIN_SCALE ? 'is-zoomed' : ''} ${isDragging ? 'is-dragging' : ''}`}
+        tabIndex={0}
+        role="application"
+        aria-label="Mermaid 图表，可缩放和拖动"
+        onWheel={handleWheel}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onDoubleClick={handleDoubleClick}
+        onKeyDown={handleKeyDown}
+      >
+        <div className="mermaid-scene" style={{ transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${scale})` }}>
+          <div className="mermaid-diagram" dangerouslySetInnerHTML={{ __html: sanitizedSvg }} />
+        </div>
+      </div>
+      <p className="mermaid-hint">滚轮或按钮缩放 · 放大后拖动平移 · 双击切换 · 按 0 重置</p>
     </div>
   );
 }

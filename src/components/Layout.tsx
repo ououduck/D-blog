@@ -611,7 +611,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                   <span>更多</span>
                   <ChevronDown size={14} className={`transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                 </button>
-                <div id="desktop-more-menu" role="menu" data-open={isMoreMenuOpen} className="nav-more-menu-panel absolute right-0 top-full z-popover mt-1 min-w-44 rounded-surface border border-zinc-200 bg-paper p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
+                <div id="desktop-more-menu" role="menu" data-open={isMoreMenuOpen} className="nav-more-menu-panel absolute right-0 top-full z-popover min-w-44 rounded-surface border border-zinc-200 bg-paper p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
                   {moreNavItems.map((item) => {
                     const Icon = item.icon;
                     const content = <><Icon size={15} aria-hidden="true" /><span className="flex-1">{item.label}</span><span className="text-[10px] font-normal text-zinc-400">{item.hint}</span></>;

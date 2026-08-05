@@ -482,6 +482,115 @@ html.theme-switching .editorial-input {
 
 .mermaid-container {
   max-width: 100%;
+  overflow: hidden;
+}
+
+.mermaid-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.25rem;
+  margin-bottom: 0.75rem;
+  color: #71717a;
+  font-size: 0.75rem;
+}
+
+.dark .mermaid-toolbar {
+  color: #a1a1aa;
+}
+
+.mermaid-toolbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.mermaid-action-btn {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d4d4d8;
+  border-radius: 0.25rem;
+  color: #52525b;
+  background: transparent;
+  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.mermaid-action-btn:hover:not(:disabled),
+.mermaid-action-btn:focus-visible {
+  border-color: #a1a1aa;
+  background: #e4e4e7;
+  color: #18181b;
+  outline: none;
+}
+
+.mermaid-action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.dark .mermaid-action-btn {
+  border-color: #52525b;
+  color: #d4d4d8;
+}
+
+.dark .mermaid-action-btn:hover:not(:disabled),
+.dark .mermaid-action-btn:focus-visible {
+  border-color: #71717a;
+  background: #3f3f46;
+  color: #fafafa;
+}
+
+.mermaid-scale {
+  min-width: 3.25rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.mermaid-viewport {
+  position: relative;
+  max-width: 100%;
+  min-height: 8rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #e4e4e7;
+  background: rgba(255, 255, 255, 0.45);
+  outline: none;
+  scrollbar-width: thin;
+}
+
+.mermaid-viewport:focus-visible {
+  box-shadow: 0 0 0 2px rgba(113, 113, 122, 0.35);
+}
+
+.mermaid-viewport.is-zoomed {
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.mermaid-viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.dark .mermaid-viewport {
+  border-color: #3f3f46;
+  background: rgba(24, 24, 27, 0.42);
+}
+
+.mermaid-scene {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  min-height: 100%;
+  align-items: flex-start;
+  justify-content: center;
+  transform-origin: center top;
+  will-change: transform;
 }
 
 .mermaid-diagram {
@@ -499,6 +608,38 @@ html.theme-switching .editorial-input {
 
 html.dark .mermaid-diagram > svg {
   color-scheme: dark;
+}
+
+@media (max-width: 640px) {
+  .mermaid-toolbar-label,
+  .mermaid-hint {
+    display: none;
+  }
+
+  .mermaid-toolbar {
+    justify-content: flex-end;
+  }
+
+  .mermaid-viewport {
+    min-height: 6rem;
+  }
+}
+
+.mermaid-hint {
+  margin: 0.65rem 0 0;
+  color: #a1a1aa;
+  font-size: 0.6875rem;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mermaid-action-btn {
+    transition: none;
+  }
+
+  .mermaid-scene {
+    will-change: auto;
+  }
 }
 
 .dark .prose img:not(.no-dark-border) {
@@ -763,6 +904,21 @@ html.dark .mermaid-diagram > svg {
   .post-prose blockquote {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  .post-prose .mermaid-toolbar,
+  .post-prose .mermaid-hint {
+    display: none !important;
+  }
+
+  .post-prose .mermaid-container,
+  .post-prose .mermaid-viewport {
+    overflow: visible !important;
+  }
+
+  .post-prose .mermaid-scene {
+    min-width: 0 !important;
+    transform: none !important;
   }
 
   .post-prose img {
