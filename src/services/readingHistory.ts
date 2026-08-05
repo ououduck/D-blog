@@ -1,3 +1,5 @@
+import { isReadingComplete } from '@/utils/readingProgress';
+
 export const READING_HISTORY_STORAGE_KEY = 'd-blog-reading-history-v1';
 export const READING_HISTORY_EVENT = 'd-blog:reading-history-change';
 
@@ -65,7 +67,7 @@ export const saveReadingHistory = (entry: Omit<ReadingHistoryEntry, 'updatedAt'>
     scrollTop: Math.max(0, entry.scrollTop),
     updatedAt: entry.updatedAt ?? Date.now()
   };
-  if (nextEntry.progress >= 0.95) {
+  if (isReadingComplete(nextEntry.progress)) {
     removeReadingHistory(entry.postId);
     return;
   }

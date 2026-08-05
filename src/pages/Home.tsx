@@ -19,6 +19,7 @@ import { getHeroPost, isPinnedFeaturedPost } from '@/utils/postSelection';
 import { getResponsiveImageProps } from '@/utils/imageAssets';
 import { useReadingHistory } from '@/hooks/useReadingHistory';
 import { removeReadingHistory } from '@/services/readingHistory';
+import { isReadingComplete } from '@/utils/readingProgress';
 import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';
 
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
@@ -438,7 +439,7 @@ export const Home = () => {
 
   const displayedPosts = useMemo(() => filterAndSortPosts(results, selectedCategory, sortOrder), [results, selectedCategory, sortOrder]);
   const continueReading = useMemo(() => {
-    if (!latestReading || latestReading.progress >= 0.95) return null;
+    if (!latestReading || isReadingComplete(latestReading.progress)) return null;
     const matchingPost = allPosts.find((post) => post.id === latestReading.postId);
     return matchingPost ? { post: matchingPost, entry: latestReading } : null;
   }, [allPosts, latestReading]);

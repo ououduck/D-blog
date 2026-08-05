@@ -2,20 +2,18 @@ import React, { RefObject, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { getReadingProgress, READING_PROGRESS_END_RATIO } from '@/utils/readingProgress';
 
 interface ReadingProgressBadgeProps {
   targetRef: RefObject<HTMLElement | null>;
   onVisibilityChange?: (visible: boolean) => void;
 }
 
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 const MOBILE_BADGE_STYLE = {
-  right: 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
   bottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 5rem), calc(var(--cookie-notice-height, 0px) + 5rem))',
   width: 'min(10rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)))'
 } as const;
 const DESKTOP_BADGE_STYLE = {
-  right: '1.5rem',
   bottom: 'calc(var(--cookie-notice-height, 0px) + 5rem)'
 } as const;
 
@@ -47,15 +45,15 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       }
 
       const rect = target.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const startOffset = viewportHeight * 0.18;
-      const endOffset = viewportHeight * 0.28;
-      const totalScrollable = Math.max(rect.height - startOffset - endOffset, 1);
-      const travelled = startOffset - rect.top;
-      const nextProgress = clamp(travelled / totalScrollable, 0, 1);
+      const nextProgress = getReadingProgress({
+        rect,
+        viewportHeight: window.innerHeight,
+        scrollY: window.scrollY,
+        documentHeight: document.documentElement.scrollHeight
+      });
       const nextPercentage = Math.round(nextProgress * 100);
       const currentPercentage = Math.round(progressRef.current * 100);
-      const nextVisible = rect.bottom > endOffset;
+      const nextVisible = rect.bottom > window.innerHeight * READING_PROGRESS_END_RATIO || nextProgress >= 1;
 
       if (nextPercentage !== currentPercentage) {
         progressRef.current = nextProgress;
@@ -97,7 +95,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       ? createPortal(
           <div
             style={MOBILE_BADGE_STYLE}
-            className="pointer-events-none fixed z-floating rounded-control border border-zinc-300 bg-paper px-2.5 py-2 shadow-none dark:border-zinc-700 dark:bg-zinc-900 lg:hidden"
+            className="fixed-control-position pointer-events-none fixed z-floating flex h-11 flex-col justify-center rounded-control border border-zinc-300 bg-paper px-2.5 shadow-none dark:border-zinc-700 dark:bg-zinc-900 lg:hidden"
           >
             <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
               <span>进度</span>
@@ -120,10 +118,10 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       ? createPortal(
           <div
             style={DESKTOP_BADGE_STYLE}
-            className="pointer-events-none fixed z-floating hidden lg:block"
+            className="fixed-control-position pointer-events-none fixed z-floating hidden h-11 lg:block"
             aria-hidden={!isVisible}
           >
-            <div className="min-w-[7rem] rounded-control border border-zinc-300 bg-paper px-3 py-2 shadow-none dark:border-zinc-700 dark:bg-zinc-900">
+            <div className="flex h-full min-w-[7rem] flex-col justify-center rounded-control border border-zinc-300 bg-paper px-3 shadow-none dark:border-zinc-700 dark:bg-zinc-900">
               <div className="mb-1 flex items-center justify-between gap-3 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
                 <span>阅读进度</span>
                 <span className="tabular-nums text-zinc-800 dark:text-zinc-200">{percentage}%</span>

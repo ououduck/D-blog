@@ -11,6 +11,7 @@ import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Che
 import { getPostById, getPosts } from '@/services/posts';
 import { getReadingHistoryEntry, saveReadingHistory } from '@/services/readingHistory';
 import { getRelatedPosts, getSeriesNavigation, type SeriesNavigation } from '@/utils/postRelations';
+import { getReadingProgress, isReadingComplete } from '@/utils/readingProgress';
 import { Post as PostType, PostAuthor, PostMetadata } from '../types';
 import { useOfflinePosts } from '@/hooks/useOfflinePosts';
 import { assetUrl, absoluteSiteUrl } from '@/utils/siteUrl';
@@ -835,7 +836,7 @@ export const Post = () => {
     }
 
     const savedEntry = getReadingHistoryEntry(post.id);
-    if (!savedEntry || savedEntry.progress >= 0.95) {
+    if (!savedEntry || isReadingComplete(savedEntry.progress)) {
       return;
     }
 
@@ -853,14 +854,36 @@ export const Post = () => {
     }
 
     let animationFrame = 0;
+    let latestProgress = 0;
+    let hasProgressSnapshot = false;
+    let completionSaved = false;
+    lastReadingSaveRef.current = 0;
+    const saveLatestProgress = () => {
+      if (!hasProgressSnapshot || completionSaved || isReadingComplete(latestProgress)) return;
+      lastReadingSaveRef.current = Date.now();
+      saveReadingHistory({ postId: post.id, progress: latestProgress, scrollTop: window.scrollY });
+    };
     const updateReadingHistory = () => {
       animationFrame = 0;
       const rect = target.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const totalScrollable = Math.max(rect.height - viewportHeight * 0.46, 1);
-      const progress = Math.min(Math.max((viewportHeight * 0.18 - rect.top) / totalScrollable, 0), 1);
+      const progress = getReadingProgress({
+        rect,
+        viewportHeight: window.innerHeight,
+        scrollY: window.scrollY,
+        documentHeight: document.documentElement.scrollHeight
+      });
+      latestProgress = progress;
+      hasProgressSnapshot = true;
       const now = Date.now();
-      if (now - lastReadingSaveRef.current < 1000 && progress < 0.95) return;
+      if (isReadingComplete(progress)) {
+        if (!completionSaved) {
+          completionSaved = true;
+          lastReadingSaveRef.current = now;
+          saveReadingHistory({ postId: post.id, progress, scrollTop: window.scrollY });
+        }
+        return;
+      }
+      if (now - lastReadingSaveRef.current < 1000) return;
       lastReadingSaveRef.current = now;
       saveReadingHistory({ postId: post.id, progress, scrollTop: window.scrollY });
     };
@@ -875,6 +898,7 @@ export const Post = () => {
       window.removeEventListener('scroll', scheduleUpdate);
       window.removeEventListener('resize', scheduleUpdate);
       if (animationFrame) window.cancelAnimationFrame(animationFrame);
+      saveLatestProgress();
     };
   }, [post?.id, post?.content]);
 
