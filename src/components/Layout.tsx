@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Sun, Moon, Github, Menu, X, Search, Heart, Monitor, Rss, BookOpen, Archive, Tag, BarChart3, Users, Info, Bookmark, Bell, ChevronDown, Mail, ExternalLink } from 'lucide-react';
+import { Sun, Moon, Github, Menu, X, Search, Heart, Monitor, Rss, BookOpen, Archive, Tag, BarChart3, Users, Info, Bookmark, Bell, ChevronDown, Mail, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { preloadPage } from '@/utils/preload';
 import { assetUrl } from '@/utils/siteUrl';
@@ -188,6 +188,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   ];
   const moreNavItems = [
     { key: 'favorites', path: '/favorites', label: TEXT.navFavorites, hint: '\u672c\u5730\u79bb\u7ebf\u9605\u8bfb', icon: Bookmark },
+    { key: 'cover', path: '/cover', label: '\u5c01\u9762\u751f\u6210\u5668', hint: '\u5236\u4f5c\u6587\u7ae0\u5c01\u9762', icon: ImageIcon },
     { key: 'email', label: '邮件', hint: '联系作者', icon: Mail, href: siteConfig.social.email },
     { key: 'github', label: 'GitHub', hint: '项目仓库', icon: Github, href: siteConfig.friendsPage.repoUrl },
     { key: 'rss', label: TEXT.rssFeed, hint: '订阅更新', icon: Rss, href: assetUrl('/feed.xml') },
@@ -786,7 +787,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="site-footer mt-12 border-t border-zinc-200/90 dark:border-zinc-800/90 md:mt-20">
+    <footer className="site-footer mt-8 border-t border-zinc-200/90 dark:border-zinc-800/90 md:mt-12">
       <div className="mx-auto max-w-7xl px-3 py-8 sm:px-6 md:py-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="max-w-xl">

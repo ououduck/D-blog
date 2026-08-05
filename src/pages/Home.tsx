@@ -121,42 +121,6 @@ const filterAndSortPosts = (
   return sortPosts(filteredPosts, sortOrder);
 };
 
-type PaginationItem = number | 'ellipsis-start' | 'ellipsis-end';
-
-const getPaginationItems = (currentPage: number, totalPages: number, isMobile: boolean): PaginationItem[] => {
-  const maxVisible = isMobile ? 5 : 7;
-
-  if (totalPages <= maxVisible) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }
-
-  const siblingCount = isMobile ? 0 : 1;
-  const pages = new Set([1, totalPages, currentPage]);
-
-  for (let offset = 1; offset <= siblingCount; offset += 1) {
-    if (currentPage - offset > 1) pages.add(currentPage - offset);
-    if (currentPage + offset < totalPages) pages.add(currentPage + offset);
-  }
-
-  const sortedPages = Array.from(pages).sort((a, b) => a - b);
-  const items: PaginationItem[] = [];
-
-  sortedPages.forEach((page, index) => {
-    if (index > 0) {
-      const previousPage = sortedPages[index - 1];
-      if (page - previousPage === 2) {
-        items.push(previousPage + 1);
-      } else if (page - previousPage > 2) {
-        items.push(index === 1 ? 'ellipsis-start' : 'ellipsis-end');
-      }
-    }
-
-    items.push(page);
-  });
-
-  return items;
-};
-
 const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean; onShare: (post: PostMetadata) => void }> = ({ post, index, featured, onShare }) => {
   const shouldReduceMotion = useReducedMotion();
   const cardVariants = {
@@ -358,6 +322,7 @@ export const Home = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageInput, setPageInput] = useState('1');
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
   const { latest: latestReading, refresh: refreshReadingHistory } = useReadingHistory();
   const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
@@ -465,11 +430,14 @@ export const Home = () => {
   }, [displayedPosts, heroPost, heroSlots, postsPerPage]);
 
   const { totalPages } = paginationData;
-  const paginationItems = useMemo(() => getPaginationItems(currentPage, totalPages, isMobile), [currentPage, totalPages, isMobile]);
 
   useEffect(() => {
     setCurrentPage((previous) => Math.min(previous, totalPages));
   }, [totalPages]);
+
+  useEffect(() => {
+    setPageInput(String(currentPage));
+  }, [currentPage]);
 
   const handleSelectCategory = (category: string) => {
     setSelectedCategory(category);
@@ -550,6 +518,16 @@ export const Home = () => {
     window.scrollTo({ top: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth' });
   };
 
+  const submitPageInput = () => {
+    const pageNumber = Number(pageInput);
+    if (!Number.isInteger(pageNumber) || pageInput.trim() === '') {
+      setPageInput(String(currentPage));
+      return;
+    }
+
+    paginate(pageNumber);
+  };
+
   const featuredPost = useMemo(
     () => (heroPost && currentPosts.some((post) => post.id === heroPost.id) ? heroPost : null),
     [currentPosts, heroPost]
@@ -561,7 +539,7 @@ export const Home = () => {
   );
 
   return (
-    <div className="pb-16 md:pb-24">
+      <div className="pb-8 md:pb-12">
       <Seo title={siteConfig.title} description={siteConfig.description} url="/" />
       <Hero />
 
@@ -647,23 +625,47 @@ export const Home = () => {
                   <span className="hidden sm:inline">上一页</span>
                 </button>
                 <div className="flex items-center gap-1" aria-live="polite">
-                  {paginationItems.map((item) => item === 'ellipsis-start' || item === 'ellipsis-end' ? (
-                    <span key={item} className="flex h-9 min-w-9 items-center justify-center px-1 text-sm text-zinc-400 dark:text-zinc-600" aria-hidden="true">...</span>
-                  ) : (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => paginate(item)}
-                      aria-current={currentPage === item ? 'page' : undefined}
-                      className={`h-9 min-w-9 rounded-full border px-3 text-sm font-semibold transition-colors active:scale-[.98] ${
-                        currentPage === item
-                          ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
-                          : 'border-zinc-300 bg-paper text-zinc-700 hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white'
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  ))}
+                  <button
+                    type="button"
+                    onClick={() => paginate(1)}
+                    aria-current={currentPage === 1 ? 'page' : undefined}
+                    className={`h-9 min-w-9 rounded-full border px-3 text-sm font-semibold transition-colors active:scale-[.98] ${
+                      currentPage === 1
+                        ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
+                        : 'border-zinc-300 bg-paper text-zinc-700 hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white'
+                    }`}
+                  >
+                    1
+                  </button>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={totalPages}
+                    value={pageInput}
+                    onChange={(event) => setPageInput(event.target.value)}
+                    onBlur={submitPageInput}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        submitPageInput();
+                        event.currentTarget.blur();
+                      }
+                    }}
+                    aria-label={`跳转到第几页，共 ${totalPages} 页`}
+                    className="h-9 w-14 rounded-full border border-zinc-300 bg-paper px-2 text-center text-sm font-semibold text-ink outline-none transition-colors focus:border-ink dark:border-zinc-700 dark:bg-void dark:text-white dark:focus:border-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => paginate(totalPages)}
+                    aria-current={currentPage === totalPages ? 'page' : undefined}
+                    className={`h-9 min-w-9 rounded-full border px-3 text-sm font-semibold transition-colors active:scale-[.98] ${
+                      currentPage === totalPages
+                        ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
+                        : 'border-zinc-300 bg-paper text-zinc-700 hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white'
+                    }`}
+                  >
+                    {totalPages}
+                  </button>
                 </div>
                 <button onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages} className="inline-flex h-9 items-center gap-1 rounded-full border border-zinc-300 active:scale-[.98] bg-paper px-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white" aria-label="下一页">
                   <span className="hidden sm:inline">下一页</span>
