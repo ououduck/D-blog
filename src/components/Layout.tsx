@@ -7,7 +7,7 @@ import { assetUrl } from '@/utils/siteUrl';
 import { siteConfig } from '@config/site.config';
 
 import { ProgressiveImage } from './ProgressiveImage';
-import { IssueSubscriptionCard, ISSUE_SUBSCRIPTION_URL } from './IssueSubscriptionCard';
+import { ISSUE_SUBSCRIPTION_URL } from './IssueSubscriptionCard';
 import { useReducedMotion as useSiteReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 import { useReadingMode, ReadingModeProvider } from './ReadingModeContext';
@@ -33,6 +33,27 @@ const TEXT = {
   rssFeed: 'RSS \u8ba2\u9605'
 };
 
+const navItems = [
+  { path: '/', label: TEXT.navPosts, hint: '\u6700\u65b0\u5185\u5bb9', icon: BookOpen },
+  { path: '/archive', label: TEXT.navArchive, hint: '\u65f6\u95f4\u5f52\u6863', icon: Archive },
+  { path: '/tags', label: TEXT.navTags, hint: '\u4e3b\u9898\u7b5b\u9009', icon: Tag },
+  { path: '/stats', label: TEXT.navStats, hint: '\u7ad9\u70b9\u6570\u636e', icon: BarChart3 },
+  { path: '/friends', label: TEXT.navFriends, hint: '\u53cb\u60c5\u94fe\u63a5', icon: Users },
+  { path: '/sponsor', label: TEXT.navSponsor, hint: '\u8d5e\u52a9\u652f\u6301', icon: Heart },
+  { path: '/about', label: TEXT.navAbout, hint: '\u7ad9\u70b9\u4ecb\u7ecd', icon: Info }
+];
+
+const moreNavItems = [
+  { key: 'favorites', path: '/favorites', label: TEXT.navFavorites, hint: '\u672c\u5730\u79bb\u7ebf\u9605\u8bfb', icon: Bookmark },
+  { key: 'cover', path: '/cover', label: '\u5c01\u9762\u751f\u6210\u5668', hint: '\u5236\u4f5c\u6587\u7ae0\u5c01\u9762', icon: ImageIcon },
+  { key: 'watermark', path: '/watermark', label: '\u6c34\u5370\u5de5\u5177', hint: '\u7ed9\u56fe\u7247\u6dfb\u52a0\u6587\u5b57\u6c34\u5370', icon: ImageIcon },
+  { key: 'email', label: '\u90ae\u4ef6', hint: '\u8054\u7cfb\u4f5c\u8005', icon: Mail, href: siteConfig.social.email },
+  { key: 'github', label: 'GitHub', hint: '\u9879\u76ee\u4ed3\u5e93', icon: Github, href: siteConfig.friendsPage.repoUrl },
+  { key: 'rss', label: TEXT.rssFeed, hint: '\u8ba2\u9605\u66f4\u65b0', icon: Rss, href: assetUrl('/feed.xml') },
+  { key: 'issue-subscription', label: '\u8ba2\u9605', hint: '\u63a5\u6536\u6587\u7ae0\u63d0\u9192', icon: Bell, href: ISSUE_SUBSCRIPTION_URL }
+];
+
+const allNavItems = [...navItems, ...moreNavItems];
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) {
@@ -177,24 +198,6 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const mobileNavDuration = shouldReduceMotion ? 1 : MOBILE_NAV_ANIMATION_DURATION_MS;
   const isMobileNavOpen = mobileNavPhase === 'open' || mobileNavPhase === 'opening';
   const isMobileNavAnimating = mobileNavPhase === 'opening' || mobileNavPhase === 'closing';
-  const navItems = [
-    { path: '/', label: TEXT.navPosts, hint: '最新内容', icon: BookOpen },
-    { path: '/archive', label: TEXT.navArchive, hint: '时间归档', icon: Archive },
-    { path: '/tags', label: TEXT.navTags, hint: '主题筛选', icon: Tag },
-    { path: '/stats', label: TEXT.navStats, hint: '站点数据', icon: BarChart3 },
-    { path: '/friends', label: TEXT.navFriends, hint: '友情链接', icon: Users },
-    { path: '/sponsor', label: TEXT.navSponsor, hint: '赞助支持', icon: Heart },
-    { path: '/about', label: TEXT.navAbout, hint: '\u7ad9\u70b9\u4ecb\u7ecd', icon: Info }
-  ];
-  const moreNavItems = [
-    { key: 'favorites', path: '/favorites', label: TEXT.navFavorites, hint: '\u672c\u5730\u79bb\u7ebf\u9605\u8bfb', icon: Bookmark },
-    { key: 'cover', path: '/cover', label: '\u5c01\u9762\u751f\u6210\u5668', hint: '\u5236\u4f5c\u6587\u7ae0\u5c01\u9762', icon: ImageIcon },
-    { key: 'watermark', path: '/watermark', label: '\u6c34\u5370\u5de5\u5177', hint: '\u7ed9\u56fe\u7247\u6dfb\u52a0\u6587\u5b57\u6c34\u5370', icon: ImageIcon },
-    { key: 'email', label: '邮件', hint: '联系作者', icon: Mail, href: siteConfig.social.email },
-    { key: 'github', label: 'GitHub', hint: '项目仓库', icon: Github, href: siteConfig.friendsPage.repoUrl },
-    { key: 'rss', label: TEXT.rssFeed, hint: '订阅更新', icon: Rss, href: assetUrl('/feed.xml') },
-    { key: 'issue-subscription', label: '订阅', hint: '接收文章提醒', icon: Bell, href: ISSUE_SUBSCRIPTION_URL }
-  ];
   const isNavItemActive = (path: string) => location.pathname === path || (path === '/' && location.pathname.startsWith('/post/'));
   const mobileQuickActions = [
     {
@@ -531,17 +534,6 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     setIsMoreMenuOpen(false);
   }, [clearAnimationFrame, clearTransitionTimer, isMobileNavMounted, locationKey, resetMobileNavDragStyles]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsMoreMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   useEffect(() => () => {
     clearAnimationFrame();
     clearTransitionTimer();
@@ -561,13 +553,13 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     <>
       <nav className={`site-navbar fixed left-0 right-0 top-0 ${isMobileNavMounted ? 'z-nav-panel' : 'z-nav'} border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void`}>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, ease: easeSmooth }} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-16">
-          <Link to="/" className="group z-50 flex items-center space-x-2.5 sm:space-x-3">
+          <Link to="/" className="group z-50 flex min-w-0 shrink-0 items-center space-x-2.5 sm:space-x-3">
             <ProgressiveImage src={assetUrl(siteConfig.logoSmall)} alt={`${siteConfig.title} 站点标志`} fetchPriority="high" width={96} height={96} wrapperClassName="h-8 w-8 bg-white sm:h-9 sm:w-9" className="h-8 w-8 object-cover sm:h-9 sm:w-9" />
-            <span className="font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
+            <span className="truncate font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
           </Link>
 
-          <div className="hidden items-center gap-6 lg:flex">
-            <motion.div className="flex gap-4" variants={navListVariants} initial="hidden" animate="visible">
+          <div className="hidden min-w-0 shrink items-center gap-4 lg:flex">
+            <motion.div className="flex min-w-0 shrink gap-2" variants={navListVariants} initial="hidden" animate="visible">
               {navItems.map((item) => {
                 const isActive = isNavItemActive(item.path);
 
@@ -613,20 +605,20 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                   <span>更多</span>
                   <ChevronDown size={14} className={`transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                 </button>
-                <div id="desktop-more-menu" role="menu" data-open={isMoreMenuOpen} className="nav-more-menu-panel absolute right-0 top-full z-popover min-w-44 rounded-surface border border-zinc-200 bg-paper p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
+                <div id="desktop-more-menu" role="menu" data-open={isMoreMenuOpen} className="nav-more-menu-panel absolute right-0 top-full z-popover w-64 max-w-[calc(100vw-2rem)] rounded-surface border border-zinc-200 bg-paper p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
                   {moreNavItems.map((item) => {
                     const Icon = item.icon;
-                    const content = <><Icon size={15} aria-hidden="true" /><span className="flex-1">{item.label}</span><span className="text-[10px] font-normal text-zinc-400">{item.hint}</span></>;
+                    const content = <><Icon size={15} aria-hidden="true" className="shrink-0" /><span className="shrink-0 whitespace-nowrap">{item.label}</span><span className="min-w-0 flex-1 truncate text-right text-[10px] font-normal text-zinc-400">{item.hint}</span></>;
                     if ('path' in item) {
-                      return <Link key={item.key} role="menuitem" to={item.path} onMouseEnter={() => preloadPage(item.path)} onClick={() => setIsMoreMenuOpen(false)} className="flex items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white">{content}</Link>;
+                      return <Link key={item.key} role="menuitem" to={item.path} onMouseEnter={() => preloadPage(item.path)} onClick={() => setIsMoreMenuOpen(false)} className="flex min-w-0 items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white">{content}</Link>;
                     }
-                    return <a key={item.key} role="menuitem" href={item.href} target="_blank" rel="noopener noreferrer" onClick={() => setIsMoreMenuOpen(false)} className="flex items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white">{content}<ExternalLink size={11} aria-hidden="true" /></a>;
+                    return <a key={item.key} role="menuitem" href={item.href} target="_blank" rel="noopener noreferrer" onClick={() => setIsMoreMenuOpen(false)} className="flex min-w-0 items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white">{content}<ExternalLink size={11} className="shrink-0" aria-hidden="true" /></a>;
                   })}
                 </div>
               </motion.div>
             </motion.div>
 
-            <div className="flex items-center gap-2 border-l border-zinc-300 pl-5 dark:border-zinc-700">
+            <div className="flex shrink-0 items-center gap-2 border-l border-zinc-300 pl-4 dark:border-zinc-700">
               <motion.button variants={navItemVariants} onClick={onSearchClick} className="group flex h-11 items-center gap-2 rounded-control border border-zinc-300 bg-zinc-100 px-3 text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-200 active:bg-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:active:bg-zinc-700" aria-label="打开站内搜索">
                 <Search size={16} />
                 <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">Ctrl+K</span>
@@ -711,16 +703,16 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                       onClick={() => handleMobileNavItemSelect(item.path)}
                       onMouseEnter={() => preloadPage(item.path)}
                       disabled={isMobileNavAnimating}
-                      className={`flex w-full items-center gap-3 rounded-control px-1 py-3.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                      className={`flex w-full min-w-0 items-center gap-3 rounded-control px-1 py-3.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                         isActive
                           ? 'text-ink dark:text-white'
                           : 'text-zinc-600 hover:text-ink dark:text-zinc-400 dark:hover:text-white'
                       }`}
                       aria-current={isActive ? 'page' : undefined}
                     >
-                      <Icon size={17} strokeWidth={1.8} className={isActive ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-400 dark:text-zinc-500'} />
-                      <span className="flex-1 text-sm font-semibold">{item.label}</span>
-                      <span className="text-xs text-zinc-400 dark:text-zinc-500">{item.hint}</span>
+                      <Icon size={17} strokeWidth={1.8} className={isActive ? 'shrink-0 text-zinc-900 dark:text-zinc-100' : 'shrink-0 text-zinc-400 dark:text-zinc-500'} />
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{item.label}</span>
+                      <span className="min-w-0 max-w-[50%] truncate text-right text-xs text-zinc-400 dark:text-zinc-500">{item.hint}</span>
                     </button>
                   );
                 })}
@@ -730,25 +722,29 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                 <button
                   type="button"
                   onClick={() => setIsMoreMenuOpen((open) => !open)}
-                  className="flex w-full items-center gap-3 rounded-control px-1 py-3.5 text-left text-zinc-600 transition-colors hover:text-ink dark:text-zinc-400 dark:hover:text-white"
+                  className="flex w-full min-w-0 items-center gap-3 rounded-control px-1 py-3.5 text-left text-zinc-600 transition-colors hover:text-ink dark:text-zinc-400 dark:hover:text-white"
                   aria-label="展开更多菜单"
                   aria-expanded={isMoreMenuOpen}
                   aria-controls="mobile-more-menu"
                 >
-                  <ChevronDown size={17} className={`transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-                  <span className="flex-1 text-sm font-semibold">更多</span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">我的收藏、邮件、GitHub、RSS</span>
+                  <ChevronDown size={17} className={`shrink-0 transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">更多</span>
+                  <span className="min-w-0 max-w-[50%] truncate text-right text-xs text-zinc-400 dark:text-zinc-500">收藏、工具与订阅</span>
                 </button>
                 <div id="mobile-more-menu" data-open={isMoreMenuOpen} className="mobile-more-menu-panel">
-                  {isMoreMenuOpen && moreNavItems.map((item) => {
-                    const Icon = item.icon;
-                    const className = 'flex w-full items-center gap-3 rounded-control px-3 py-3 text-left text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white';
-                    const content = <><Icon size={16} aria-hidden="true" /><span className="flex-1">{item.label}</span><span className="text-xs font-normal text-zinc-400 dark:text-zinc-500">{item.hint}</span></>;
-                    if ('path' in item) {
-                      return <button key={item.key} type="button" onClick={() => handleMobileNavItemSelect(item.path)} disabled={isMobileNavAnimating} className={className}>{content}</button>;
-                    }
-                    return <a key={item.key} href={item.href} target="_blank" rel="noopener noreferrer" onClick={() => requestCloseMobileNav()} className={className}>{content}<ExternalLink size={12} aria-hidden="true" /></a>;
-                  })}
+                  <div className="min-h-0 overflow-hidden">
+                    <nav className="divide-y divide-zinc-200 dark:divide-zinc-800" aria-label="移动端工具与订阅">
+                      {isMoreMenuOpen && moreNavItems.map((item) => {
+                        const Icon = item.icon;
+                        const className = 'flex w-full min-w-0 items-center gap-3 rounded-control px-1 py-3 text-left text-sm font-semibold text-zinc-600 transition-colors hover:text-ink dark:text-zinc-300 dark:hover:text-white';
+                        const content = <><Icon size={16} aria-hidden="true" className="shrink-0" /><span className="min-w-0 flex-1 truncate">{item.label}</span><span className="min-w-0 max-w-[50%] truncate text-right text-xs font-normal text-zinc-400 dark:text-zinc-500">{item.hint}</span></>;
+                        if ('path' in item) {
+                          return <button key={item.key} type="button" onClick={() => handleMobileNavItemSelect(item.path)} disabled={isMobileNavAnimating} className={className}>{content}</button>;
+                        }
+                        return <a key={item.key} href={item.href} target="_blank" rel="noopener noreferrer" onClick={() => requestCloseMobileNav()} className={className}>{content}<ExternalLink size={12} aria-hidden="true" className="shrink-0" /></a>;
+                      })}
+                    </nav>
+                  </div>
                 </div>
               </div>
 
@@ -771,22 +767,6 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 };
 
 const Footer = () => {
-  const footerLinks = [
-    { label: TEXT.navPosts, to: '/' },
-    { label: TEXT.navArchive, to: '/archive' },
-    { label: TEXT.navTags, to: '/tags' },
-    { label: TEXT.navStats, to: '/stats' },
-    { label: TEXT.navFriends, to: '/friends' },
-    { label: TEXT.navSponsor, to: '/sponsor' },
-    { label: TEXT.navAbout, to: '/about' },
-    { label: TEXT.navFavorites, to: '/favorites' }
-  ];
-  const footerExternalLinks = [
-    { label: '\u90ae\u4ef6', href: siteConfig.social.email, external: false },
-    { label: 'GitHub', href: siteConfig.social.github, external: true },
-    { label: TEXT.rssFeed, href: assetUrl('/feed.xml'), external: true }
-  ];
-
   return (
     <footer className="site-footer mt-8 border-t border-zinc-200/90 dark:border-zinc-800/90 md:mt-12">
       <div className="mx-auto max-w-7xl px-3 py-8 sm:px-6 md:py-10">
@@ -799,23 +779,27 @@ const Footer = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-            {footerLinks.map((item) => (
-              <Link key={item.to} to={item.to} className="transition-colors hover:text-ink dark:hover:text-white">
-                {item.label}
-              </Link>
-            ))}
-            {footerExternalLinks.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                target={item.external ? '_blank' : undefined}
-                rel={item.external ? 'noopener noreferrer' : undefined}
-                className="transition-colors hover:text-ink dark:hover:text-white"
-              >
-                {item.label}
-              </a>
-            ))}
-            <IssueSubscriptionCard compact />
+            {allNavItems.map((item) => {
+              if ('path' in item) {
+                return (
+                  <Link key={item.path} to={item.path} className="transition-colors hover:text-ink dark:hover:text-white">
+                    {item.label}
+                  </Link>
+                );
+              }
+
+              return (
+                <a
+                  key={item.key}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-colors hover:text-ink dark:hover:text-white"
+                >
+                  {item.label}
+                </a>
+              );
+            })}
           </div>
         </div>
 

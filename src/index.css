@@ -187,14 +187,14 @@ html.theme-switching .editorial-input {
 }
 
 .mobile-more-menu-panel {
-  max-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
   opacity: 0;
-  overflow: hidden;
-  transition: max-height 200ms ease, opacity 200ms ease;
+  transition: grid-template-rows 200ms ease, opacity 200ms ease;
 }
 
 .mobile-more-menu-panel[data-open='true'] {
-  max-height: 24rem;
+  grid-template-rows: 1fr;
   opacity: 1;
 }
 
@@ -229,6 +229,7 @@ html.theme-switching .editorial-input {
 }
 
 .mobile-nav-panel {
+  max-height: 100dvh;
   opacity: 0;
   transform: translate3d(0, 100%, 0);
   pointer-events: none;
@@ -245,8 +246,9 @@ html.theme-switching .editorial-input {
 }
 
 .mobile-nav-scroll {
-  max-height: 82vh;
-  max-height: 82dvh;
+  min-height: 0;
+  max-height: calc(100dvh - 2.5rem);
+  overflow-y: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
