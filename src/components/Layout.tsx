@@ -189,6 +189,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const moreNavItems = [
     { key: 'favorites', path: '/favorites', label: TEXT.navFavorites, hint: '\u672c\u5730\u79bb\u7ebf\u9605\u8bfb', icon: Bookmark },
     { key: 'cover', path: '/cover', label: '\u5c01\u9762\u751f\u6210\u5668', hint: '\u5236\u4f5c\u6587\u7ae0\u5c01\u9762', icon: ImageIcon },
+    { key: 'watermark', path: '/watermark', label: '\u6c34\u5370\u5de5\u5177', hint: '\u7ed9\u56fe\u7247\u6dfb\u52a0\u6587\u5b57\u6c34\u5370', icon: ImageIcon },
     { key: 'email', label: '邮件', hint: '联系作者', icon: Mail, href: siteConfig.social.email },
     { key: 'github', label: 'GitHub', hint: '项目仓库', icon: Github, href: siteConfig.friendsPage.repoUrl },
     { key: 'rss', label: TEXT.rssFeed, hint: '订阅更新', icon: Rss, href: assetUrl('/feed.xml') },

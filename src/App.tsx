@@ -18,6 +18,7 @@ const Stats = lazy(pageLoaders['/stats']);
 const Friends = lazy(pageLoaders['/friends']);
 const Tags = lazy(pageLoaders['/tags']);
 const CoverGenerator = lazy(pageLoaders['/cover']);
+const Watermark = lazy(pageLoaders['/watermark']);
 const Sponsor = lazy(pageLoaders['/sponsor']);
 const Favorites = lazy(pageLoaders['/favorites']);
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
@@ -140,6 +141,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/friends" element={<Friends />} />
           <Route path="/about" element={<About />} />
           <Route path="/cover" element={<CoverGenerator />} />
+          <Route path="/watermark" element={<Watermark />} />
           <Route path="/sponsor" element={<Sponsor />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="*" element={<NotFound />} />
