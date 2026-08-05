@@ -36,7 +36,6 @@ export interface LoadResourceOptions {
 }
 
 function readBlob<T extends string | ArrayBuffer>(
-  file: Blob,
   read: (reader: FileReader) => void,
   errorMessage: string,
   options: LoadResourceOptions = {}
@@ -81,11 +80,11 @@ function readBlob<T extends string | ArrayBuffer>(
 }
 
 export function readFileAsDataURL(file: Blob, options?: LoadResourceOptions): Promise<string> {
-  return readBlob<string>(file, (reader) => reader.readAsDataURL(file), '读取文件', options);
+  return readBlob<string>((reader) => reader.readAsDataURL(file), '读取文件', options);
 }
 
 export function readFileAsArrayBuffer(file: Blob, options?: LoadResourceOptions): Promise<ArrayBuffer> {
-  return readBlob<ArrayBuffer>(file, (reader) => reader.readAsArrayBuffer(file), '读取字体文件', options)
+  return readBlob<ArrayBuffer>((reader) => reader.readAsArrayBuffer(file), '读取字体文件', options)
     .then((result) => result instanceof ArrayBuffer ? result : Promise.reject(new Error('读取字体文件失败，请重试')));
 }
 

@@ -8,6 +8,7 @@ const RELATIVE_BASE_ROUTE_MARKERS = [
   '/friends',
   '/about',
   '/cover',
+  '/watermark',
   '/sponsor',
   '/favorites'
 ] as const;

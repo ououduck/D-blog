@@ -4,6 +4,7 @@ import { Code2, ExternalLink, FileText, Megaphone } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { adsConfig } from '../../config/ads.config';
 import { siteConfig } from '@config/site.config';
+import { assetUrl } from '@/utils/siteUrl';
 
 interface SponsorOption {
   id: string;
@@ -41,7 +42,7 @@ const sponsorOptions: SponsorOption[] = [
     title: '广告赞助',
     description: '通过访问赞助商链接间接支持本站。',
     detail: '广告内容集中展示在下方，页面不插入弹窗或侵入式广告。',
-    buttonText: adsConfig.length > 0 ? '查看下方广告' : '暂无广告',
+    buttonText: adsConfig.length > 0 ? '广告位见下方' : '暂无广告',
     disabled: true
   }
 ];
@@ -127,7 +128,7 @@ export const Sponsor: React.FC = () => {
                 aria-label={`打开赞助商链接：${ad.title}`}
               >
                 <img
-                  src={ad.image}
+                  src={assetUrl(ad.image)}
                   alt={ad.alt}
                   width={ad.width}
                   height={ad.height}

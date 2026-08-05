@@ -178,8 +178,6 @@ html.theme-switching .editorial-input {
   transition: opacity 160ms ease, transform 160ms ease;
 }
 
-.nav-more-menu:hover .nav-more-menu-panel,
-.nav-more-menu:focus-within .nav-more-menu-panel,
 .nav-more-menu-panel[data-open='true'] {
   opacity: 1;
   pointer-events: auto;

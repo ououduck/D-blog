@@ -1,4 +1,3 @@
-import React from 'react';
 import { Github, Mail, Code, Terminal } from 'lucide-react';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';

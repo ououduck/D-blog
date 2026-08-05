@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock } from 'lucide-react';
@@ -11,12 +11,6 @@ import { usePostSearch } from '@/hooks/usePostSearch';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { getDateTimestamp } from '@/utils/date';
 import { easeOut } from '@/utils/motion';
-
-interface TagInfo {
-  name: string;
-  count: number;
-  posts: PostMetadata[];
-}
 
 const buildTagList = (posts: PostMetadata[]) => {
   const tagMap = new Map<string, PostMetadata[]>();

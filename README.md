@@ -26,6 +26,7 @@
   - [Markdown 增强](#markdown-增强)
   - [新建友链](#新建友链)
   - [封面生成器](#封面生成器)
+  - [水印工具](#水印工具)
   - [订阅更新](#订阅更新)
 - [配置指南](#配置指南)
   - [站点配置](#站点配置)
@@ -62,7 +63,7 @@
 ### 性能与构建
 
 - **预渲染** - 为每篇文章和静态页面生成独立 HTML，注入精准的 SEO meta 标签和 JSON-LD 结构化数据，并预加载文章封面图
-- **代码分割** - 基于路由懒加载，第三方库按功能分包（React 核心、路由、动画、Markdown、代码高亮、Mermaid 图表等），并剥离非关键预加载资源
+- **代码分割** - 页面路由和部分正文能力通过动态 import 懒加载，其余模块由 Vite 默认拆分；构建时同时生成带哈希的静态资源
 - **资源优化** - 构建时 esbuild 压缩与去 console/debugger、文件名哈希缓存、CSS 代码分割
 - **PWA 支持** - Service Worker 缓存策略，manifest 配置，支持离线访问
 
@@ -75,9 +76,9 @@
 
 ### 质量保障
 
-- **类型检查** - 使用 TypeScript 对源码进行全量类型检查（`npm run typecheck`）
-- **纯函数测试** - Vitest 覆盖阅读进度和站点路径处理等关键工具函数（`npm run test`）
-- **一键校验** - `npm run check` 依次执行类型检查、测试与数据生成；数据非法（如日期格式错误、分类不在白名单、友链 URL 无效）会直接构建报错
+- **类型检查** - 使用 TypeScript 对源码进行全量类型检查，并启用未使用声明检查（`npm run typecheck`）
+- **纯函数测试** - Vitest 覆盖站点 URL、阅读进度、标题解析和文章内容校验等关键工具函数（`npm run test`）
+- **一键校验** - `npm run check` 依次执行类型检查、测试与数据生成；数据生成会写入自动生成目录，数据非法（如日期格式错误、分类不在白名单、友链 URL 无效）会直接构建报错
 
 ## 技术栈
 
@@ -99,7 +100,7 @@
 | 图标库 | Lucide React |
 | 测试框架 | Vitest |
 | 代码压缩 | esbuild |
-| 包管理 | npm（提交 `package-lock.json`，建议使用 `npm ci`） |
+| 包管理 | npm（当前仓库未提交 lockfile，使用 `npm install` 安装依赖） |
 
 ## 快速开始
 
@@ -115,7 +116,7 @@
 git clone https://github.com/ououduck/D-blog.git
 cd D-blog
 
-# 安装依赖（CI 或希望严格复现时可使用 npm ci）
+# 安装依赖（当前仓库未提交 lockfile）
 npm install
 
 # 配置环境变量（可选，用于覆盖站点 URL 和子路径）
@@ -148,12 +149,12 @@ graph LR
   D --> E[dist/]
 ```
 
-1. **图片资产生成** (`npm run gen:images`) - 扫描 `posts-img/`，保留原图 URL，同时使用 `sharp` 生成 WebP 和多种宽度的 fallback 变体，写入 `public/generated-images/`，并生成 `generated/image-assets.json`。源图片不会被覆盖。
-2. **数据生成** (`npm run gen:data`) - 自动先执行图片资产生成，再读取 `posts/` 和 `friends/`，校验 Front Matter、文章 ID、图片尺寸、图片路径、标题锚点、站内链接和外链格式，生成 `generated/` 数据索引以及 `public/sitemap.xml`、`public/feed.xml`。本地图片缺失或尺寸无法读取时构建以非零状态退出。
+1. **图片资产生成** (`npm run gen:images`) - 扫描 `posts-img/`，先清空并重建 `public/generated-images/`，再使用 `sharp` 生成 WebP 和多种宽度的 fallback 变体，并生成 `generated/image-assets.json`。源图片不会被覆盖；该命令会改写自动生成目录。
+2. **数据生成** (`npm run gen:data`) - 自动先执行图片资产生成，再读取 `posts/` 和 `friends/`，校验 Front Matter、文章 ID、图片尺寸、图片路径、标题锚点、站内链接和外链格式，生成 `generated/` 数据索引以及 `public/sitemap.xml`、`public/feed.xml`。本地图片缺失或尺寸无法读取时构建以非零状态退出；该命令同样会改写自动生成文件。
 3. **Vite 构建** (`npm run build`) - 将 `src/` 编译为 `dist/` 静态资源，并复制原图与生成的响应式图片。
 4. **预渲染** (`npm run prerender`) - 为每篇文章和静态页面生成独立的 `index.html`，注入 SEO 元数据；首屏封面 preload 使用与页面 `<picture>` 相同的 `imagesrcset`，其他图片继续原生懒加载。
 
-文章中继续使用 `/posts-img/...`（或文章目录下的相对路径）引用原图即可，前端会自动选择 WebP 和合适宽度的图片。
+文章中继续使用 `/posts-img/...`（或文章目录下的相对路径）引用原图即可，前端会自动选择 WebP 和合适宽度的图片。`generated/`、`public/generated-images/`、RSS 和 Sitemap 都是构建生成内容，不应手工编辑；如果本地工作树出现这些文件的变化，应在确认后再决定是否保留。
 
 ## 项目结构
 
@@ -232,11 +233,14 @@ D-blog/
 │   │   ├── Friends.tsx         # 友情链接
 │   │   ├── About.tsx           # 关于页面
 │   │   ├── CoverGenerator.tsx  # 封面生成器
+│   │   ├── Watermark.tsx       # 浏览器本地水印工具
 │   │   ├── Sponsor.tsx         # 赞助支持
 │   │   ├── Favorites.tsx       # 离线收藏
 │   │   ├── NotFound.tsx        # 404 页面
 │   │   ├── archive/            # 归档相关逻辑
-│   │   └── cover/              # 封面生成核心逻辑
+│   │   ├── cover/              # 封面生成核心逻辑
+│   │   ├── friends/            # 友链申请生成与下载降级
+│   │   └── watermark/          # 水印渲染与导出逻辑
 │   ├── services/               # 数据服务层
 │   │   ├── posts.ts            # 文章数据获取与全文搜索
 │   │   ├── friends.ts          # 友链数据获取（随机排序）
@@ -266,7 +270,7 @@ D-blog/
 │   ├── index.tsx               # 渲染入口
 │   ├── index.css               # 全局样式（Tailwind + 自定义）
 │   └── registerServiceWorker.ts # Service Worker 注册
-└── vite.config.ts               # Vite 配置（别名、分包策略、压缩配置）
+└── vite.config.ts               # Vite 配置（别名、base path、资源映射与压缩）
 ```
 
 ## 内容管理
@@ -398,6 +402,15 @@ graph TD
 
 封面模板配置位于 `src/config/coverTemplates.ts`，当前仅保留黑白两项；核心渲染逻辑位于 `src/pages/cover/`。Canvas 绘制与浏览器交互需要通过浏览器回归验证。
 
+### 水印工具
+
+水印工具位于 `/watermark`，所有图片处理都在浏览器 Canvas 中完成，不会把原图上传到服务器：
+
+- 支持 PNG、JPEG、WebP、GIF 等浏览器可解码的图片格式，可批量加入图片队列并预览处理结果。
+- 支持文字内容、字号、透明度、颜色、旋转、间距和九宫格位置等设置。
+- 可导出 PNG 或 JPEG；透明背景等能力受浏览器 Canvas 和原图格式限制，导出前请检查预览结果。
+- 资源路径通过站点 base path 处理，部署在 `/repo/` 等子路径时仍可正常加载工具资源。
+
 ### 订阅更新
 
 站点支持通过 GitHub Issue 订阅新文章提醒：
@@ -467,12 +480,13 @@ export const adsConfig: AdItem[] = [
 | `npm run dev` | 启动开发服务器（端口 3000），同时执行 `gen:data` |
 | `npm run build` | 生产构建：生成数据 → Vite 构建 → 预渲染 HTML |
 | `npm run preview` | 预览生产构建结果 |
-| `npm run gen:data` | 仅运行数据生成脚本，从 Markdown 生成 JSON 索引、RSS 和 Sitemap |
+| `npm run gen:images` | 清空并重建响应式图片输出目录 `public/generated-images/`，同时更新图片资产清单 |
+| `npm run gen:data` | 先运行 `gen:images`，再从 Markdown 生成 JSON 索引、RSS 和 Sitemap；会改写自动生成文件 |
 | `npm run prerender` | 仅运行预渲染脚本，生成静态 HTML（需先 `npm run build`） |
 | `npm run typecheck` | TypeScript 类型检查 |
 | `npm run test` | 运行 Vitest 纯函数测试 |
 | `npm run test:watch` | 监听模式运行 Vitest 测试 |
-| `npm run check` | 一键校验：类型检查 + 测试 + 数据生成 |
+| `npm run check` | 一键校验：类型检查 + 测试 + 数据生成（包含生成目录副作用） |
 
 ## 部署指南
 

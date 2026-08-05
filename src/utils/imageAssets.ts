@@ -45,4 +45,3 @@ export const getResponsiveImageProps = (src?: string, sizes?: string): Responsiv
   };
 };
 
-export const getImageAsset = (src?: string) => findAsset(src);

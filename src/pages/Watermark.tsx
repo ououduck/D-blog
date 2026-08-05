@@ -15,7 +15,6 @@ type Feedback = { kind: 'success' | 'error'; message: string } | null;
 type ImageState = {
   image: HTMLImageElement;
   name: string;
-  type: string;
 };
 
 const positions: Array<{ value: WatermarkPosition; label: string }> = [
@@ -86,7 +85,7 @@ export const Watermark: React.FC = () => {
     }
     try {
       const image = await loadImage(file);
-      setImageState({ image, name: file.name, type: file.type });
+      setImageState({ image, name: file.name });
       setFeedback(null);
     } catch (error) {
       setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '图片加载失败。' });

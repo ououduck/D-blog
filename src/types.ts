@@ -76,22 +76,3 @@ export interface Friend {
   url: string;
 }
 
-export interface CloudflareAnalyticsData {
-  requests: number;
-  pageViews: number;
-  uniques: number;
-  bandwidth: number;
-}
-
-export interface CloudflareTimeWindow {
-  days: number;
-  data: CloudflareAnalyticsData;
-  error: string | null;
-}
-
-export interface CloudflareSnapshot {
-  enabled: boolean;
-  fetchedAt: string | null;
-  domain: string;
-  timeWindows: CloudflareTimeWindow[];
-}

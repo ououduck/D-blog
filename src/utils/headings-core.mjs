@@ -17,23 +17,26 @@ const HTML_ENTITY_REPLACEMENTS = {
   quot: '"'
 };
 
+const isValidCodePoint = (value) => Number.isInteger(value) && value >= 0 && value <= 0x10FFFF;
+
 const decodeHtmlEntities = (text) => text.replace(/&(#x[\da-f]+|#\d+|[a-z][a-z\d]+);/gi, (entity, value) => {
   const normalized = value.toLowerCase();
   if (normalized.startsWith('#x')) {
     const codePoint = Number.parseInt(normalized.slice(2), 16);
-    return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : entity;
+    return isValidCodePoint(codePoint) ? String.fromCodePoint(codePoint) : entity;
   }
   if (normalized.startsWith('#')) {
     const codePoint = Number.parseInt(normalized.slice(1), 10);
-    return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : entity;
+    return isValidCodePoint(codePoint) ? String.fromCodePoint(codePoint) : entity;
   }
   return HTML_ENTITY_REPLACEMENTS[normalized] ?? entity;
 });
 
-/** Mask fenced code while preserving line breaks for diagnostics and heading parsing. */
+/** Mask fenced and indented code while preserving line breaks for diagnostics and heading parsing. */
 export const maskFencedCodeBlocks = (markdown) => {
   const lines = markdown.split(/(?<=\n)/);
   let fence = null;
+  let indentedCode = false;
   return lines.map((line) => {
     const opening = line.match(/^ {0,3}(`{3,}|~{3,})(?:[^`~\r\n]*)?(?:\r?\n|$)/);
     if (fence) {
@@ -47,6 +50,16 @@ export const maskFencedCodeBlocks = (markdown) => {
       fence = { character: opening[1][0], length: opening[1].length };
       return line.replace(/[^\r\n]/g, ' ');
     }
+
+    const isIndented = /^(?: {4}|\t)/.test(line);
+    if (isIndented) {
+      indentedCode = true;
+      return line.replace(/[^\r\n]/g, ' ');
+    }
+    if (indentedCode && (/^\s*$/.test(line) || /^(?: {4}|\t)/.test(line))) {
+      return line.replace(/[^\r\n]/g, ' ');
+    }
+    indentedCode = false;
     return line;
   }).join('');
 };

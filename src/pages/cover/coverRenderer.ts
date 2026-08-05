@@ -116,12 +116,12 @@ function drawFittedText(ctx: CanvasRenderingContext2D, text: string, x: number, 
 
 async function resolveIcon(source: string | CanvasImageSource): Promise<CanvasImageSource> { return typeof source === 'string' ? loadCachedImage(source) : source; }
 
-async function drawIcon(ctx: CanvasRenderingContext2D, source: string | CanvasImageSource, x: number, y: number, size: number,
+async function drawIcon(ctx: CanvasRenderingContext2D, source: string | CanvasImageSource, fallbackSource: string, x: number, y: number, size: number,
   radiusPercent: number, backgroundEnabled: boolean, diagnostics?: string[]): Promise<void> {
   let image: CanvasImageSource;
   try { image = await resolveIcon(source); } catch {
-    if (source === '/logo.png') throw new Error('默认 Logo 加载失败');
-    try { image = await loadCachedImage('/logo.png'); diagnostics?.push('图标加载失败，已回退到站点 Logo'); } catch { throw new Error('图标加载失败，请重新选择图标'); }
+    if (source === fallbackSource) throw new Error('默认 Logo 加载失败');
+    try { image = await loadCachedImage(fallbackSource); diagnostics?.push('图标加载失败，已回退到站点 Logo'); } catch { throw new Error('图标加载失败，请重新选择图标'); }
   }
   const radius = Math.min(size / 2, size * radiusPercent / 100);
   if (backgroundEnabled) { ctx.save(); ctx.fillStyle = 'rgba(255, 255, 255, 0.1)'; ctx.beginPath(); radius > 0 ? ctx.roundRect(x, y, size, size, radius) : ctx.rect(x, y, size, size); ctx.fill(); ctx.restore(); }
@@ -147,6 +147,7 @@ export async function renderCover(ctx: CanvasRenderingContext2D, options: CoverR
   if (options.overlay.enabled) { ctx.save(); ctx.globalAlpha = options.overlay.opacity / 100; ctx.fillStyle = options.overlay.color; ctx.fillRect(0, 0, width, height); ctx.restore(); }
   drawPattern(ctx, options.template.pattern, width, height, baseScale); if (options.decorations.showCorners) drawCorners(ctx, options, baseScale);
   const hasIcon = options.icon.source !== null; const layout = getEffectiveLayout(options.layout, options.icon.show, hasIcon); const centerX = width / 2; const centerY = height / 2;
+  const fallbackIconSource = options.fallbackIconSource;
   // `calculateLayoutMetrics` already returns physical canvas units. Reusing those values
   // avoids applying the export scale twice and preserves the minimum-size protection.
   const iconSize = metrics.iconSize; const mainSize = metrics.mainFontSize; const subSize = metrics.subFontSize;
@@ -158,7 +159,7 @@ export async function renderCover(ctx: CanvasRenderingContext2D, options: CoverR
   const textWidth = width - margin * 2;
 
   if (layout === 'icon-only' && options.icon.source) {
-    await drawIcon(ctx, options.icon.source, centerX - iconSize / 2, centerY - iconSize / 2, iconSize, options.icon.borderRadius, options.icon.backgroundEnabled, diagnostics.warnings);
+    await drawIcon(ctx, options.icon.source, fallbackIconSource, centerX - iconSize / 2, centerY - iconSize / 2, iconSize, options.icon.borderRadius, options.icon.backgroundEnabled, diagnostics.warnings);
   } else if (layout === 'icon-split' && options.icon.source) {
     const sideWidth = Math.max(1, centerX - iconSize / 2 - spacing - margin);
     const leftFitted = options.leftText ? fitTextBlock(ctx, options.leftText, sideWidth, mainSize, options.fontWeight, renderOptions, mainMaxLines) : null;
@@ -167,7 +168,7 @@ export async function renderCover(ctx: CanvasRenderingContext2D, options: CoverR
     const subtitleFitted = options.subText ? fitTextBlock(ctx, options.subText, textWidth, subSize, getSubtitleFontWeight(options.fontWeight), renderOptions, 2) : null;
     const groupHeight = Math.max(iconSize, mainHeight) + (subtitleFitted ? subSpacing + subtitleFitted.lineHeight * subtitleFitted.lines.length : 0);
     const mainCenterY = centerY - (groupHeight - Math.max(iconSize, mainHeight)) / 2;
-    await drawIcon(ctx, options.icon.source, centerX - iconSize / 2, mainCenterY - iconSize / 2, iconSize, options.icon.borderRadius, options.icon.backgroundEnabled, diagnostics.warnings);
+    await drawIcon(ctx, options.icon.source, fallbackIconSource, centerX - iconSize / 2, mainCenterY - iconSize / 2, iconSize, options.icon.borderRadius, options.icon.backgroundEnabled, diagnostics.warnings);
     if (leftFitted) drawFittedText(ctx, options.leftText, centerX - iconSize / 2 - spacing, mainCenterY, sideWidth, mainSize, options.fontWeight, 'right', renderOptions, mainMaxLines, scale, leftFitted);
     if (rightFitted) drawFittedText(ctx, options.rightText, centerX + iconSize / 2 + spacing, mainCenterY, sideWidth, mainSize, options.fontWeight, 'left', renderOptions, mainMaxLines, scale, rightFitted);
     if (subtitleFitted) drawFittedText(ctx, options.subText, centerX, mainCenterY + Math.max(iconSize, mainHeight) / 2 + subSpacing + subtitleFitted.lineHeight * subtitleFitted.lines.length / 2, textWidth, subSize, getSubtitleFontWeight(options.fontWeight), 'center', renderOptions, 2, scale, subtitleFitted);
@@ -179,7 +180,7 @@ export async function renderCover(ctx: CanvasRenderingContext2D, options: CoverR
     const groupHeight = iconSize + (mainFitted ? subSpacing + mainHeight : 0) + (subtitleFitted ? subSpacing + subtitleHeight : 0);
     const groupTop = centerY - groupHeight / 2;
     const iconTop = groupTop;
-    await drawIcon(ctx, options.icon.source, centerX - iconSize / 2, iconTop, iconSize, options.icon.borderRadius, options.icon.backgroundEnabled, diagnostics.warnings);
+    await drawIcon(ctx, options.icon.source, fallbackIconSource, centerX - iconSize / 2, iconTop, iconSize, options.icon.borderRadius, options.icon.backgroundEnabled, diagnostics.warnings);
     if (options.decorations.showSeparator) drawSeparator(ctx, options, iconTop + iconSize + subSpacing / 2, scale);
     const x = textX(options.textAlign, width, margin); const align = canvasAlign(options.textAlign);
     const mainCenterY = iconTop + iconSize + subSpacing + mainHeight / 2;

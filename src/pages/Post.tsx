@@ -516,6 +516,12 @@ const normalizeImageUrl = (value: string) => {
   return withoutQuery.replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/^\/+/, '').toLowerCase();
 };
 
+const getPostSourceUrl = (repoUrl: string, filePath: string) => {
+  const sourcePath = filePath.replace(/\\/g, '/').replace(/^\/+/, '').split('/').filter(Boolean)
+    .map((segment) => encodeURIComponent(segment)).join('/');
+  return `${repoUrl.replace(/\/+$/, '')}/blob/main/${sourcePath}`;
+};
+
 const findImageDimensions = (imageDimensions: PostMetadata['imageDimensions'], src: string) => {
   if (!imageDimensions) {
     return undefined;
@@ -1336,7 +1342,7 @@ export const Post = () => {
                     作者 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{authorsLabel}</span>
                   </p>
                   <a
-                    href={`${siteConfig.friendsPage.repoUrl}/blob/main/posts/${post.id}.md`}
+                    href={getPostSourceUrl(siteConfig.friendsPage.repoUrl, post.filePath)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-zinc-500 underline decoration-zinc-300 underline-offset-4 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:decoration-zinc-700 dark:hover:text-zinc-100"

@@ -51,7 +51,14 @@ const postsImgPublicPlugin = (): Plugin => {
           return;
         }
 
-        const relativePath = decodeURIComponent(requestPath.slice(matchedPrefix.length));
+        let relativePath;
+        try {
+          relativePath = decodeURIComponent(requestPath.slice(matchedPrefix.length));
+        } catch {
+          res.statusCode = 400;
+          res.end('Bad Request');
+          return;
+        }
         const filePath = path.normalize(path.join(POSTS_IMG_SOURCE_DIR, relativePath));
 
         // 防止路径穿越到目录之外

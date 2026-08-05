@@ -133,17 +133,25 @@ export const downloadTextFile = (content: string, filename: string, mimeType = '
     return false;
   }
 
-  const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
-  const objectUrl = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = objectUrl;
-  link.download = filename;
-  link.rel = 'noopener';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
-  return true;
+  let objectUrl: string | null = null;
+  try {
+    const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
+    objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    return true;
+  } catch {
+    return false;
+  } finally {
+    if (objectUrl) {
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl as string), 0);
+    }
+  }
 };
 
 export const copyText = async (value: string) => {

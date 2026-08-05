@@ -12,6 +12,7 @@ const DEFAULT_STATIC_ROUTES = new Set([
   '/friends',
   '/about',
   '/cover',
+  '/watermark',
   '/sponsor'
 ]);
 

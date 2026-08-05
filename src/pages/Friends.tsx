@@ -42,6 +42,7 @@ export const Friends = () => {
   const [applicationResult, setApplicationResult] = useState<ReturnType<typeof createFriendLinkApplication> | null>(null);
   const [isResultCopied, setIsResultCopied] = useState(false);
   const [resultCopyError, setResultCopyError] = useState<string | null>(null);
+  const [applicationDownloadError, setApplicationDownloadError] = useState<string | null>(null);
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -89,8 +90,9 @@ export const Friends = () => {
     }
 
     const result = createFriendLinkApplication(applicationValues, applicationFilename);
-    downloadTextFile(result.json, result.filename);
+    const downloaded = downloadTextFile(result.json, result.filename);
     setApplicationResult(result);
+    setApplicationDownloadError(downloaded ? null : '浏览器未能自动下载文件。请在下方复制 JSON，并使用“重新下载”或手动保存为 .json 文件。');
     setIsResultCopied(false);
     setResultCopyError(null);
 
@@ -101,6 +103,12 @@ export const Friends = () => {
       console.error('Failed to copy friend link application:', error);
       setResultCopyError('自动复制失败，请在弹窗中点击“复制 JSON”。');
     }
+  };
+
+  const handleDownloadResult = () => {
+    if (!applicationResult) return;
+    const downloaded = downloadTextFile(applicationResult.json, applicationResult.filename);
+    setApplicationDownloadError(downloaded ? null : '浏览器未能自动下载文件，请手动保存下方 JSON。');
   };
 
   const handleCopyResult = async () => {
@@ -364,7 +372,10 @@ export const Friends = () => {
 
       <SlideModal
         isOpen={Boolean(applicationResult)}
-        onClose={() => setApplicationResult(null)}
+        onClose={() => {
+          setApplicationResult(null);
+          setApplicationDownloadError(null);
+        }}
         ariaLabelledby="friend-link-result-title"
         ariaDescribedby="friend-link-result-description"
         className="max-w-2xl"
@@ -374,9 +385,9 @@ export const Friends = () => {
             <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
               <div>
                 <h2 id="friend-link-result-title" className="font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100">JSON 已生成</h2>
-                <p id="friend-link-result-description" className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">文件已下载到本地，发送邮件时请将该文件作为附件添加。</p>
+                <p id="friend-link-result-description" className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{applicationDownloadError ? 'JSON 已生成，但自动下载未完成。请复制下方内容或重试下载。' : '文件已下载到本地，发送邮件时请将该文件作为附件添加。'}</p>
               </div>
-              <button type="button" onClick={() => setApplicationResult(null)} className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" aria-label="关闭 JSON 结果弹窗">
+              <button type="button" onClick={() => { setApplicationResult(null); setApplicationDownloadError(null); }} className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" aria-label="关闭 JSON 结果弹窗">
                 <X size={18} />
               </button>
             </div>
@@ -386,6 +397,7 @@ export const Friends = () => {
                 {applicationResult.filename}
               </div>
               <pre className="max-h-72 select-all overflow-auto whitespace-pre-wrap border border-zinc-200 bg-zinc-50 p-3 font-mono text-xs leading-relaxed text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">{applicationResult.json}</pre>
+              {applicationDownloadError && <p className="text-xs text-red-600 dark:text-red-400">{applicationDownloadError}</p>}
               {resultCopyError && <p className="text-xs text-red-600 dark:text-red-400">{resultCopyError}</p>}
               {!resultCopyError && isResultCopied && <p className="text-xs text-emerald-600 dark:text-emerald-400">JSON 已自动复制到剪贴板。</p>}
               <p className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">收件地址：{siteConfig.friendsPage.applicationEmail}；邮件主题：{FRIEND_LINK_EMAIL_SUBJECT}。点击发送后，请在邮件客户端中确认正文，并手动添加刚刚下载的 JSON 附件。</p>
@@ -394,6 +406,12 @@ export const Friends = () => {
                   {isResultCopied ? <Check size={15} /> : <Copy size={15} />}
                   {isResultCopied ? '已复制' : '复制 JSON'}
                 </button>
+                {applicationDownloadError && (
+                  <button type="button" onClick={handleDownloadResult} className="editorial-button inline-flex items-center gap-2 px-4">
+                    <Download size={15} />
+                    重新下载
+                  </button>
+                )}
                 <a href={resultMailto} className="editorial-button-primary inline-flex items-center gap-2 px-4">
                   <Mail size={15} />
                   前往发送

@@ -183,6 +183,9 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const [mobileNavPhase, setMobileNavPhase] = useState<MobileNavPhase>('closed');
   const [isMobileNavMounted, setIsMobileNavMounted] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [desktopMoreMenuActiveIndex, setDesktopMoreMenuActiveIndex] = useState(0);
+  const desktopMoreMenuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const desktopMoreMenuItemRefs = useRef<Array<HTMLElement | null>>([]);
   const location = useLocation();
   const navigate = useNavigate();
   const shouldReduceMotion = useReducedMotion();
@@ -197,6 +200,53 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const isSwipingRef = useRef(false);
   const mobileNavDuration = shouldReduceMotion ? 1 : MOBILE_NAV_ANIMATION_DURATION_MS;
   const isMobileNavOpen = mobileNavPhase === 'open' || mobileNavPhase === 'opening';
+  const closeDesktopMoreMenu = useCallback((restoreFocus = false) => {
+    setIsMoreMenuOpen(false);
+    if (restoreFocus) {
+      window.setTimeout(() => desktopMoreMenuButtonRef.current?.focus(), 0);
+    }
+  }, []);
+  const focusDesktopMoreMenuItem = useCallback((index: number) => {
+    setDesktopMoreMenuActiveIndex(index);
+    window.setTimeout(() => desktopMoreMenuItemRefs.current[index]?.focus(), 0);
+  }, []);
+  const handleDesktopMoreMenuButtonKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'Escape' && isMoreMenuOpen) {
+      event.preventDefault();
+      closeDesktopMoreMenu(true);
+      return;
+    }
+
+    if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setIsMoreMenuOpen(true);
+      focusDesktopMoreMenuItem(0);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setIsMoreMenuOpen(true);
+      focusDesktopMoreMenuItem(moreNavItems.length - 1);
+    }
+  }, [closeDesktopMoreMenu, focusDesktopMoreMenuItem, isMoreMenuOpen]);
+  const handleDesktopMoreMenuItemKeyDown = useCallback((event: React.KeyboardEvent<HTMLElement>, index: number) => {
+    const lastIndex = moreNavItems.length - 1;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Home' || event.key === 'End') {
+      event.preventDefault();
+      const nextIndex = event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? lastIndex
+          : (index + (event.key === 'ArrowDown' ? 1 : -1) + moreNavItems.length) % moreNavItems.length;
+      focusDesktopMoreMenuItem(nextIndex);
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeDesktopMoreMenu(true);
+    } else if (event.key === 'Tab') {
+      setIsMoreMenuOpen(false);
+    }
+  }, [closeDesktopMoreMenu, focusDesktopMoreMenuItem]);
   const isMobileNavAnimating = mobileNavPhase === 'opening' || mobileNavPhase === 'closing';
   const isNavItemActive = (path: string) => location.pathname === path || (path === '/' && location.pathname.startsWith('/post/'));
   const mobileQuickActions = [
@@ -595,24 +645,34 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                 onMouseLeave={() => setIsMoreMenuOpen(false)}
               >
                 <button
+                  ref={desktopMoreMenuButtonRef}
                   type="button"
                   className="group inline-flex h-10 items-center gap-1 px-2 py-1 text-sm font-semibold tracking-wide text-zinc-700 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 dark:text-zinc-300 dark:hover:text-white"
                   aria-label="展开收藏与订阅菜单"
                   aria-expanded={isMoreMenuOpen}
                   aria-controls="desktop-more-menu"
-                  onClick={() => setIsMoreMenuOpen((open) => !open)}
+                  onClick={() => setIsMoreMenuOpen(true)}
+                  onKeyDown={handleDesktopMoreMenuButtonKeyDown}
                 >
                   <span>更多</span>
                   <ChevronDown size={14} className={`transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                 </button>
                 <div id="desktop-more-menu" role="menu" data-open={isMoreMenuOpen} className="nav-more-menu-panel absolute right-0 top-full z-popover w-64 max-w-[calc(100vw-2rem)] rounded-surface border border-zinc-200 bg-paper p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
-                  {moreNavItems.map((item) => {
+                  {moreNavItems.map((item, index) => {
                     const Icon = item.icon;
                     const content = <><Icon size={15} aria-hidden="true" className="shrink-0" /><span className="shrink-0 whitespace-nowrap">{item.label}</span><span className="min-w-0 flex-1 truncate text-right text-[10px] font-normal text-zinc-400">{item.hint}</span></>;
+                    const itemProps = {
+                      ref: (element: HTMLElement | null) => { desktopMoreMenuItemRefs.current[index] = element; },
+                      role: 'menuitem' as const,
+                      tabIndex: isMoreMenuOpen && index === desktopMoreMenuActiveIndex ? 0 : -1,
+                      onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => handleDesktopMoreMenuItemKeyDown(event, index),
+                      onClick: () => closeDesktopMoreMenu(),
+                      className: 'flex min-w-0 items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white'
+                    };
                     if ('path' in item) {
-                      return <Link key={item.key} role="menuitem" to={item.path} onMouseEnter={() => preloadPage(item.path)} onClick={() => setIsMoreMenuOpen(false)} className="flex min-w-0 items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white">{content}</Link>;
+                      return <Link key={item.key} {...itemProps} to={item.path} onMouseEnter={() => preloadPage(item.path)}>{content}</Link>;
                     }
-                    return <a key={item.key} role="menuitem" href={item.href} target="_blank" rel="noopener noreferrer" onClick={() => setIsMoreMenuOpen(false)} className="flex min-w-0 items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white">{content}<ExternalLink size={11} className="shrink-0" aria-hidden="true" /></a>;
+                    return <a key={item.key} {...itemProps} href={item.href} target="_blank" rel="noopener noreferrer">{content}<ExternalLink size={11} className="shrink-0" aria-hidden="true" /></a>;
                   })}
                 </div>
               </motion.div>

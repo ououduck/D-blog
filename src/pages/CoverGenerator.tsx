@@ -20,10 +20,11 @@ import { BatchCoverDialog } from './cover/BatchCoverDialog';
 import { createBatchZip, type BatchCoverItem } from './cover/coverBatch';
 import { preloadImage } from './cover/coverImageCache';
 import { renderCover } from './cover/coverRenderer';
+import { assetUrl } from '@/utils/siteUrl';
 import type { BackgroundFit, CoverRenderOptions, LayoutMode, ShadowConfig, TextAlign } from './cover/coverTypes';
 import { deletePreset, readDraft, readPresets, type CoverDraft, type StoredPreset, writeDraft, writePreset } from './cover/coverStorage';
 
-const DEFAULT_ICON_SOURCE = '/logo.png';
+const DEFAULT_ICON_SOURCE = assetUrl('/logo.png');
 
 type Feedback = {
   kind: 'success' | 'error' | 'info';
@@ -658,6 +659,7 @@ export const CoverGenerator: React.FC = () => {
     transparentBackground: exportFormat === 'png' && transparentBackground,
     overlay: { enabled: overlayEnabled, blur: overlayBlur, opacity: overlayOpacity, color: overlayColor },
     icon: { show: showIcon, source: customIcon, size: iconSize, borderRadius: iconBorderRadius, backgroundEnabled: iconBgEnabled },
+    fallbackIconSource: DEFAULT_ICON_SOURCE,
     decorations: { showCorners, cornerColor, cornerOpacity, showSeparator, separatorColor, separatorOpacity },
     maxTextLines: layoutMode === 'text-only' ? 3 : 2,
     minFontSize: 18,

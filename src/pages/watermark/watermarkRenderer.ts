@@ -39,7 +39,6 @@ const getAnchor = (position: WatermarkPosition) => {
 export const getWatermarkPoint = (
   width: number,
   height: number,
-  textWidth: number,
   fontSize: number,
   position: WatermarkPosition,
   padding = 32
@@ -89,7 +88,7 @@ export const renderWatermark = (canvas: HTMLCanvasElement, image: CanvasImageSou
   context.save();
   context.font = `600 ${fontSize}px ${fontFamily}`;
   context.textBaseline = 'alphabetic';
-  const point = getWatermarkPoint(width, height, context.measureText(text).width, fontSize, options.position, padding);
+  const point = getWatermarkPoint(width, height, fontSize, options.position, padding);
   context.textAlign = point.textAlign;
   context.globalAlpha = opacity;
   context.shadowColor = 'rgba(0, 0, 0, 0.45)';

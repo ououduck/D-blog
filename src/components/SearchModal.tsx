@@ -63,6 +63,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   const location = useLocation();
   const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const previousPathnameRef = useRef(location.pathname);
   const [searchScope, setSearchScope] = useState<PostSearchScope>('all');
   const [activeResultIndex, setActiveResultIndex] = useState(0);
@@ -118,6 +119,11 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   useEffect(() => {
     setActiveResultIndex(0);
   }, [searchQuery, searchScope, visibleResults.length]);
+
+  useEffect(() => {
+    if (!isOpen || !visibleResults.length) return;
+    resultRefs.current[activeResultIndex]?.scrollIntoView({ block: 'nearest' });
+  }, [activeResultIndex, isOpen, visibleResults.length]);
 
   const handleSelect = (id: string) => {
     saveHistory(searchQuery);
@@ -224,6 +230,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                     const isActive = index === activeResultIndex;
                     return (
                       <button
+                        ref={(element) => { resultRefs.current[index] = element; }}
                         key={post.id}
                         id={`site-search-result-${post.id}`}
                         role="option"

@@ -103,6 +103,7 @@ export interface CoverRenderOptions {
   transparentBackground?: boolean;
   overlay: OverlayConfig;
   icon: IconConfig;
+  fallbackIconSource: string;
   decorations: DecorationConfig;
   maxTextLines?: number;
   minFontSize?: number;
