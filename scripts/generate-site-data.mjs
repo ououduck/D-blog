@@ -92,7 +92,7 @@ const normalizeCoverImage = (value) => {
     return undefined;
   }
   const raw = String(value);
-  // 外部 URL（http/https/data: 等）原样保留
+  // 保留外部协议字符串；封面校验阶段仅允许 HTTP(S) URL。
   if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) {
     return raw;
   }
@@ -225,16 +225,6 @@ const extractImageDimensions = (markdown, postId) => {
     }
   });
   return Object.keys(dimensions).length > 0 ? dimensions : undefined;
-};
-
-const normalizeTags = (value) => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value
-    .map((tag) => String(tag).trim())
-    .filter(Boolean);
 };
 
 const generateSiteStats = (postsWithSearch) => {

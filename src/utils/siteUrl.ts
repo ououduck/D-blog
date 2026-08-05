@@ -116,13 +116,3 @@ export const absoluteSiteUrl = (value: string | undefined, siteUrl: string, base
   const path = value.startsWith('/') ? value : `/${value}`;
   return new URL(withBasePath(path, basePath), `${siteUrl.replace(/\/+$/, '')}/`).toString();
 };
-
-export const siteUrl = {
-  normalizeBasePath,
-  getSiteBasePath,
-  getRouterBasename,
-  withBasePath,
-  routeUrl,
-  assetUrl,
-  absoluteSiteUrl
-};

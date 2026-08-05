@@ -13,8 +13,6 @@ export interface UseOfflinePostsResult {
   posts: OfflinePost[];
   /** True while the current post/list is being read from local storage. */
   loading: boolean;
-  /** Alias for consumers that prefer the explicit loading name. */
-  isLoading: boolean;
   /** True while a save/remove operation is in flight. */
   isSaving: boolean;
   error: string | null;
@@ -101,5 +99,5 @@ export const useOfflinePosts = (post?: OfflinePostInput | null): UseOfflinePosts
     }
   }, [isSaved, refresh]);
 
-  return { posts, loading, isLoading: loading, isSaving, error, isSaved, toggleSaved, refresh };
+  return { posts, loading, isSaving, error, isSaved, toggleSaved, refresh };
 };

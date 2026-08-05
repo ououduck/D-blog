@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin, type ViteDevServer } from 'vite';
+import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
@@ -86,6 +86,7 @@ const postsImgPublicPlugin = (): Plugin => {
   };
 };
 
+// Use loadEnv inside defineConfig so .env values are available during Vite config evaluation.
 const normalizeBasePath = (value?: string) => {
   let trimmed = value?.trim().replace(/\\/g, '/');
   if (!trimmed) {
@@ -106,46 +107,49 @@ const normalizeBasePath = (value?: string) => {
   return normalized ? `/${normalized}/` : '/';
 };
 
-const appBase = normalizeBasePath(process.env.VITE_BASE_PATH);
+export default defineConfig(({ command, mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  const appBase = normalizeBasePath(env.VITE_BASE_PATH);
 
-export default defineConfig(({ command }) => ({
-  plugins: [react(), postsImgPublicPlugin()],
-  base: appBase,
-  esbuild: command === 'build' ? {
-    drop: ['console', 'debugger'],
-  } : undefined,
-  css: {
-    postcss: path.resolve(__dirname, './config/postcss.config.js'),
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@config': path.resolve(__dirname, './config'),
+  return {
+    plugins: [react(), postsImgPublicPlugin()],
+    base: appBase,
+    esbuild: command === 'build' ? {
+      drop: ['console', 'debugger'],
+    } : undefined,
+    css: {
+      postcss: path.resolve(__dirname, './config/postcss.config.js'),
     },
-  },
-  server: {
-    port: 3000,
-    host: '0.0.0.0',
-  },
-  build: {
-    outDir: 'dist',
-    sourcemap: false,
-    target: 'es2020',
-    reportCompressedSize: false,
-    cssMinify: true,
-    modulePreload: {
-      polyfill: false,
-    },
-    rollupOptions: {
-      output: {
-        assetFileNames: 'assets/[name]-[hash][extname]',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js',
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+        '@config': path.resolve(__dirname, './config'),
       },
     },
-    cssCodeSplit: true,
-    chunkSizeWarningLimit: 600,
-    minify: 'esbuild',
-  },
-  publicDir: 'public',
-}));
+    server: {
+      port: 3000,
+      host: '0.0.0.0',
+    },
+    build: {
+      outDir: 'dist',
+      sourcemap: false,
+      target: 'es2020',
+      reportCompressedSize: false,
+      cssMinify: true,
+      modulePreload: {
+        polyfill: false,
+      },
+      rollupOptions: {
+        output: {
+          assetFileNames: 'assets/[name]-[hash][extname]',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js',
+        },
+      },
+      cssCodeSplit: true,
+      chunkSizeWarningLimit: 600,
+      minify: 'esbuild',
+    },
+    publicDir: 'public',
+  };
+});

@@ -43,7 +43,7 @@ const SummaryCard = ({
   value: string | number;
   detail: string;
 }) => (
-  <Surface className="flex min-h-52 flex-col p-5 sm:min-h-56 sm:p-6">
+  <Surface className="flex min-w-0 min-h-52 flex-col p-5 sm:min-h-56 sm:p-6">
     <div className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-icon bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 sm:h-12 sm:w-12">
       <Icon size={20} className="sm:size-[22px]" />
     </div>
@@ -65,7 +65,7 @@ const RankingCard = ({
   const max = Math.max(...items.map((item) => item.count), 1);
 
   return (
-    <Surface className="p-5 sm:p-6">
+    <Surface className="min-w-0 p-5 sm:p-6">
       <h3 className="mb-5 font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">{title}</h3>
       {items.length === 0 ? (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无可展示的数据。</p>
@@ -101,7 +101,7 @@ const ExternalStatsCard = ({
   href: string;
   buttonLabel: string;
 }) => (
-  <Surface className="flex h-full flex-col p-5 sm:p-6">
+  <Surface className="flex h-full min-w-0 flex-col p-5 sm:p-6">
     <div className="mb-5 flex items-center gap-2.5">
       <div className="flex h-10 w-10 items-center justify-center rounded-icon bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
         <Icon size={18} />
@@ -113,23 +113,24 @@ const ExternalStatsCard = ({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="mt-auto inline-flex min-h-12 items-center justify-center gap-2 rounded-surface border border-zinc-900 bg-zinc-900 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:ring-offset-zinc-950"
+      className="mt-auto inline-flex min-h-12 w-full min-w-0 items-center justify-center gap-2 rounded-surface border border-zinc-900 bg-zinc-900 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:ring-offset-zinc-950"
       title={buttonLabel}
     >
       <Icon size={18} />
-      <span>{buttonLabel}</span>
+      <span className="min-w-0 break-words">{buttonLabel}</span>
     </a>
   </Surface>
 );
 
 export const Stats = () => {
   const siteStatsLoadedRef = useRef(false);
+  const isMountedRef = useRef(true);
   const [siteStats, setSiteStats] = useState<SiteStats>(EMPTY_SITE_STATS);
   const [siteStatsLoading, setSiteStatsLoading] = useState(true);
   const [siteStatsError, setSiteStatsError] = useState(false);
 
   const loadSiteStats = async () => {
-    if (siteStatsLoadedRef.current) {
+    if (siteStatsLoadedRef.current || !isMountedRef.current) {
       return;
     }
 
@@ -138,19 +139,25 @@ export const Stats = () => {
 
     try {
       const statsData = await getSiteStats();
+      if (!isMountedRef.current) return;
       setSiteStats(statsData);
       setSiteStatsError(false);
       siteStatsLoadedRef.current = true;
     } catch (error) {
+      if (!isMountedRef.current) return;
       console.error('Failed to load site stats:', error);
       setSiteStatsError(true);
     } finally {
-      setSiteStatsLoading(false);
+      if (isMountedRef.current) setSiteStatsLoading(false);
     }
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
     void loadSiteStats();
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   return (
@@ -164,10 +171,10 @@ export const Stats = () => {
       </header>
 
       {siteStatsLoading ? (
-        <div className="grid gap-4 py-8 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 md:py-10" aria-busy="true">
+        <div className="grid min-w-0 gap-4 py-8 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 md:py-10" aria-busy="true">
           <LoadingStatus label="正在加载站点统计" className="col-span-full" />
           {Array.from({ length: 5 }).map((_, index) => (
-            <Surface key={index} aria-hidden="true" className="min-h-52 animate-pulse p-5 sm:min-h-56 sm:p-6">
+            <Surface key={index} aria-hidden="true" className="min-w-0 min-h-52 animate-pulse p-5 sm:min-h-56 sm:p-6">
               <div className="mb-5 h-10 w-10 rounded-icon bg-zinc-200 dark:bg-zinc-800" />
               <div className="mb-3 h-3 w-20 bg-zinc-200 dark:bg-zinc-800" />
               <div className="mb-3 h-8 w-24 bg-zinc-200 dark:bg-zinc-800" />
@@ -191,7 +198,7 @@ export const Stats = () => {
         <>
           <section className="mt-8 md:mt-10" aria-labelledby="site-overview-title">
             <h2 id="site-overview-title" className="mb-4 font-serif text-2xl font-bold text-zinc-900 dark:text-zinc-100">站点概览</h2>
-            <div className="grid gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <div className="grid min-w-0 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               <SummaryCard icon={FileText} title="当前文章数" value={formatValue(siteStats.totalPosts)} detail="已公开发布的文章总数" />
               <SummaryCard icon={Type} title="总字数" value={formatValue(siteStats.totalWords)} detail="按正文内容累计的总阅读字数" />
               <SummaryCard icon={FolderTree} title="总分类数" value={formatValue(siteStats.totalCategories)} detail="当前启用的文章分类数量" />
@@ -200,13 +207,13 @@ export const Stats = () => {
             </div>
           </section>
 
-          <section className="mt-6 grid gap-4 md:mt-8 lg:grid-cols-2">
+          <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-2">
             <RankingCard title="分类文章数" items={siteStats.categoryStats || []} />
             <RankingCard title="热门标签 Top" items={(siteStats.tagStats || []).slice(0, 8)} />
           </section>
 
-          <section className="mt-6 grid gap-4 md:mt-8 lg:grid-cols-3">
-            <Surface className="p-5 sm:p-6">
+          <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-3">
+            <Surface className="min-w-0 p-5 sm:p-6">
               <h3 className="mb-4 font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">最近更新</h3>
               {(siteStats.recentPosts || []).length === 0 ? (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无可展示的数据。</p>
@@ -225,7 +232,7 @@ export const Stats = () => {
             <RankingCard title="图片最多" valueSuffix="张" items={(siteStats.topImageCountPosts || []).map((post) => ({ name: post.title, count: post.imageCount || 0 }))} />
           </section>
 
-          <section className="mt-6 grid gap-4 md:mt-8 lg:grid-cols-2">
+          <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-2">
             <ExternalStatsCard
               icon={BarChart3}
               title="访问统计"

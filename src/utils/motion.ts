@@ -4,7 +4,7 @@ import type { Variants } from 'framer-motion';
 export const easeOut = [0.16, 1, 0.3, 1] as const;
 export const easeSmooth = [0.22, 1, 0.36, 1] as const;
 
-/** 淡入（无位移与缩放，减少重排感） */
+/** 轻量淡入（无位移与缩放，减少重排感）。 */
 export const fadeInUp: Variants = {
   hidden: { opacity: 0 },
   visible: {

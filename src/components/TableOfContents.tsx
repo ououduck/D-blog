@@ -71,6 +71,8 @@ export const TableOfContents: React.FC<{
   const headingTree = useMemo(() => buildHeadingTree(headings), [headings]);
   const parentMap = useMemo(() => buildParentMap(headingTree), [headingTree]);
   const navRef = useRef<HTMLElement | null>(null);
+  const desktopPopoverRef = useRef<HTMLElement | null>(null);
+  const desktopTriggerRef = useRef<HTMLButtonElement | null>(null);
   const activeItemRef = useRef<HTMLLIElement | null>(null);
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
   const collapseInactiveRootBranches = siteConfig.toc?.collapseInactiveRootBranches ?? false;
@@ -118,6 +120,32 @@ export const TableOfContents: React.FC<{
       touchStartYRef.current = null;
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || isMobileViewport) {
+      return;
+    }
+
+    const handleDesktopPopoverInteraction = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (!desktopPopoverRef.current?.contains(target) && !desktopTriggerRef.current?.contains(target)) {
+        setIsOpen(false);
+      }
+    };
+    const handleDesktopPopoverKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleDesktopPopoverInteraction);
+    window.addEventListener('keydown', handleDesktopPopoverKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleDesktopPopoverInteraction);
+      window.removeEventListener('keydown', handleDesktopPopoverKeyDown);
+    };
+  }, [isMobileViewport, isOpen]);
 
   useEffect(() => {
     setExpandedMap(collectInitialExpandedState(headingTree));
@@ -620,6 +648,7 @@ export const TableOfContents: React.FC<{
           <AnimatePresence>
             {isOpen ? (
               <motion.aside
+                ref={desktopPopoverRef}
                 initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={shouldReduceMotion ? undefined : { opacity: 0, y: 8 }}
@@ -639,6 +668,7 @@ export const TableOfContents: React.FC<{
     isClient && !isMobileViewport && desktopShowTrigger
       ? createPortal(
           <button
+            ref={desktopTriggerRef}
             type="button"
             onClick={() => setIsOpen((value) => !value)}
             style={DESKTOP_TOC_TRIGGER_STYLE}

@@ -114,11 +114,3 @@ export const buildRssFeed = (postsInput, {
   </channel>
 </rss>`;
 };
-
-export const feedGenerator = {
-  buildRssFeed,
-  getLatestUpdate,
-  toAbsoluteUrl,
-  wrapCdata,
-  xmlEscape
-};

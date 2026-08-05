@@ -728,12 +728,13 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                 <button
                   type="button"
                   onClick={() => setIsMoreMenuOpen((open) => !open)}
-                  className="flex w-full items-center gap-3 rounded-control px-1 py-3 text-left text-zinc-600 transition-colors hover:text-ink dark:text-zinc-400 dark:hover:text-white"
+                  className="flex w-full items-center gap-3 rounded-control px-1 py-3.5 text-left text-zinc-600 transition-colors hover:text-ink dark:text-zinc-400 dark:hover:text-white"
+                  aria-label="展开更多菜单"
                   aria-expanded={isMoreMenuOpen}
                   aria-controls="mobile-more-menu"
                 >
                   <ChevronDown size={17} className={`transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-                  <span className="flex-1 text-sm font-semibold">收藏与订阅</span>
+                  <span className="flex-1 text-sm font-semibold">更多</span>
                   <span className="text-xs text-zinc-400 dark:text-zinc-500">我的收藏、邮件、GitHub、RSS</span>
                 </button>
                 <div id="mobile-more-menu" data-open={isMoreMenuOpen} className="mobile-more-menu-panel">
@@ -744,7 +745,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                     if ('path' in item) {
                       return <button key={item.key} type="button" onClick={() => handleMobileNavItemSelect(item.path)} disabled={isMobileNavAnimating} className={className}>{content}</button>;
                     }
-                    return <a key={item.key} href={item.href} target="_blank" rel="noopener noreferrer" className={className}>{content}<ExternalLink size={12} aria-hidden="true" /></a>;
+                    return <a key={item.key} href={item.href} target="_blank" rel="noopener noreferrer" onClick={() => requestCloseMobileNav()} className={className}>{content}<ExternalLink size={12} aria-hidden="true" /></a>;
                   })}
                 </div>
               </div>
@@ -893,9 +894,9 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
           <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
         </Suspense>
       )}
-      <main className={`relative flex-grow px-3 sm:px-6 ${isReadingMode ? 'pt-6 sm:pt-8 md:pt-10' : 'pt-20 sm:pt-24 md:pt-24'}`}>
+      <main className={`relative min-w-0 w-full flex-grow px-3 sm:px-6 ${isReadingMode ? 'pt-6 sm:pt-8 md:pt-10' : 'pt-20 sm:pt-24 md:pt-24'}`}>
         {hasViewTransition ? (
-          <div key={routeContentKey} style={{ viewTransitionName: 'route-content' }} className="mx-auto max-w-7xl">
+          <div key={routeContentKey} style={{ viewTransitionName: 'route-content' }} className="mx-auto min-w-0 w-full max-w-7xl">
             {children}
           </div>
         ) : (
@@ -904,7 +905,7 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
             initial={false}
             onExitComplete={() => window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })}
           >
-            <motion.div key={routeContentKey} variants={routeVariants} initial="initial" animate="animate" exit="exit" className="mx-auto max-w-7xl">
+            <motion.div key={routeContentKey} variants={routeVariants} initial="initial" animate="animate" exit="exit" className="mx-auto min-w-0 w-full max-w-7xl">
               {children}
             </motion.div>
           </AnimatePresence>

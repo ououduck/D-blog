@@ -51,7 +51,7 @@ export const BackToTop = () => {
           transform: 'translateY(8px)',
           transition: shouldReduceMotion ? 'none' : 'opacity 0.2s ease, transform 0.2s ease',
         } as React.CSSProperties}
-        className="fixed bottom-[var(--back-to-top-bottom)] right-[var(--back-to-top-right)] z-floating rounded-icon border border-zinc-300 bg-paper p-2.5 text-ink shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:border-zinc-500 dark:hover:bg-zinc-800 md:bottom-[calc(var(--cookie-notice-height,0px)+2rem)] md:right-8"
+        className="back-to-top-btn fixed bottom-[var(--back-to-top-bottom)] right-[var(--back-to-top-right)] z-floating rounded-icon border border-zinc-300 bg-paper p-2.5 text-ink shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:border-zinc-500 dark:hover:bg-zinc-800 md:bottom-[calc(var(--cookie-notice-height,0px)+2rem)] md:right-8"
         aria-label="返回顶部"
       >
         <ArrowUp size={18} />

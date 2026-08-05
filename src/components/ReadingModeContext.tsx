@@ -4,7 +4,6 @@ import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 
 interface ReadingModeContextValue {
   isReadingMode: boolean;
-  setReadingMode: (enabled: boolean) => void;
   toggleReadingMode: () => void;
   exitReadingMode: () => void;
 }
@@ -65,7 +64,6 @@ export const ReadingModeProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const value = useMemo(() => ({
     isReadingMode,
-    setReadingMode,
     toggleReadingMode,
     exitReadingMode
   }), [exitReadingMode, isReadingMode, toggleReadingMode]);

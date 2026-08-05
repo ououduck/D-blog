@@ -31,6 +31,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   const dragStartRef = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
   const touchStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
@@ -53,6 +54,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
   useEffect(() => {
     resetView();
     setIsLoaded(false);
+    setHasError(false);
   }, [src, resetView]);
 
   useEffect(() => {
@@ -235,15 +237,21 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
             onTouchStart={handleTouchStart}
             onClick={(event) => event.stopPropagation()}
           >
-            {!isLoaded && (
+            {!isLoaded && !hasError && (
               <div className={`absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/20 border-t-white/80 ${prefersReducedMotion ? '' : 'animate-spin'}`} />
+            )}
+            {hasError && (
+              <div role="alert" className="flex min-h-32 min-w-[min(18rem,80vw)] items-center justify-center border border-white/20 px-5 text-center text-sm text-white/75">
+                图片加载失败，请关闭后重试。
+              </div>
             )}
             <img
               src={src}
               alt={alt || ''}
               draggable={false}
-              onLoad={() => setIsLoaded(true)}
-              className="max-h-[86vh] supports-[height:100dvh]:max-h-[86dvh] max-w-[94vw] object-contain shadow-none ring-1 ring-white/15"
+              onLoad={() => { setIsLoaded(true); setHasError(false); }}
+              onError={() => { setIsLoaded(false); setHasError(true); }}
+              className={`${hasError ? 'hidden' : ''} max-h-[86vh] supports-[height:100dvh]:max-h-[86dvh] max-w-[94vw] object-contain shadow-none ring-1 ring-white/15`}
             />
           </motion.div>
 

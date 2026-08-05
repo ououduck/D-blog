@@ -876,7 +876,7 @@ html.dark .mermaid-diagram > svg {
   }
 
   .post-prose .code-toolbar,
-  .post-prose .code-lang-badge,
+  .post-prose .code-language,
   .post-prose .code-expand-btn,
   .post-prose .code-collapse-btn,
   .post-prose button[aria-label='复制代码'],

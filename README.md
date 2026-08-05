@@ -75,9 +75,9 @@
 
 ### 质量保障
 
-- **类型检查** - TypeScript 严格模式全量校验（`npm run typecheck`）
-- **单元测试** - Vitest 覆盖归档折叠逻辑与封面生成器等纯函数（`npm run test`）
-- **一键校验** - `npm run check` 依次执行类型检查、单元测试与数据生成，数据非法（如日期格式错误、分类不在白名单、友链 URL 无效）会直接构建报错
+- **类型检查** - 使用 TypeScript 对源码进行全量类型检查（`npm run typecheck`）
+- **纯函数测试** - Vitest 覆盖阅读进度和站点路径处理等关键工具函数（`npm run test`）
+- **一键校验** - `npm run check` 依次执行类型检查、测试与数据生成；数据非法（如日期格式错误、分类不在白名单、友链 URL 无效）会直接构建报错
 
 ## 技术栈
 
@@ -99,7 +99,7 @@
 | 图标库 | Lucide React |
 | 测试框架 | Vitest |
 | 代码压缩 | esbuild |
-| 包管理 | npm |
+| 包管理 | npm（提交 `package-lock.json`，建议使用 `npm ci`） |
 
 ## 快速开始
 
@@ -115,13 +115,13 @@
 git clone https://github.com/ououduck/D-blog.git
 cd D-blog
 
-# 安装依赖
+# 安装依赖（CI 或希望严格复现时可使用 npm ci）
 npm install
 
-# 配置环境变量（可选，用于覆盖 sitemap/RSS/SEO 的站点 URL）
+# 配置环境变量（可选，用于覆盖站点 URL 和子路径）
 cp .env.example .env
 
-# 类型检查 + 单元测试 + 数据生成
+# 类型检查 + 测试 + 数据生成
 npm run check
 
 # 本地开发
@@ -160,18 +160,17 @@ graph LR
 ```text
 D-blog/
 ├── index.html                   # HTML 入口（字体、Clarity / Cloudflare / Umami 分析注入）
-├── .env.example                 # 环境变量示例（VITE_SITE_URL）
+├── .env.example                 # 环境变量示例（站点 URL、子路径）
 ├── config/                      # 配置文件
 │   ├── site.config.ts          # 站点全局配置（标题、作者、社交链接、备案等）
 │   ├── content.config.json     # 文章分类白名单配置
-│   ├── content.config.ts       # 分类配置的类型定义与导出
 │   ├── ads.config.ts           # 广告数据配置
 │   ├── tailwind.config.js      # Tailwind CSS 配置
 │   ├── postcss.config.js       # PostCSS 配置
 │   └── tsconfig.json           # TypeScript 配置
 ├── posts/                       # Markdown 文章内容
 ├── posts-img/                    # 文章配图（位于仓库根目录，正文以 /posts-img/... 绝对链接引用）
-├── .obsidian/                   # Obsidian Vault 配置（配合 posts-img 实现正文图片本地预览）
+├── .obsidian/                   # 本地可选 Obsidian 配置（被 Git 忽略，不随仓库提交）
 ├── .github/                      # GitHub 工作流
 │   └── workflows/
 │       └── notify-post-update.yml # 文章更新自动发布 GitHub Issue 通知
@@ -208,7 +207,6 @@ D-blog/
 │   │   ├── BackToTop.tsx       # 回到顶部
 │   │   ├── ContentStatus.tsx   # 内容空状态 / 错误状态
 │   │   ├── CookieNotice.tsx    # Cookie 通知弹窗
-│   │   ├── DBlogLoader.tsx     # 品牌加载动画
 │   │   ├── ImageViewer.tsx     # 图片预览
 │   │   ├── IssueSubscriptionCard.tsx # GitHub Issue 订阅卡片
 │   │   ├── NotFoundState.tsx   # 404 状态组件
@@ -220,7 +218,11 @@ D-blog/
 │   │   ├── ShareModal.tsx      # 分享弹窗
 │   │   ├── SlideModal.tsx      # 滑动弹窗
 │   │   ├── TableOfContents.tsx # 文章目录导航
-│   │   └── ui/                 # 基础 UI 组件（Surface、modalStyles）
+│   │   ├── OfflineStatus.tsx   # 离线状态提示
+│   │   ├── ReadingModeContext.tsx # 专注阅读模式状态
+│   │   ├── ReadingModeToggle.tsx # 专注阅读模式切换
+│   │   ├── ServiceWorkerUpdatePrompt.tsx # Service Worker 更新提示
+│   │   └── ui/                 # 基础 UI 组件（Surface）
 │   ├── pages/                  # 页面组件（懒加载）
 │   │   ├── Home.tsx            # 首页
 │   │   ├── Post.tsx            # 文章详情页
@@ -231,16 +233,21 @@ D-blog/
 │   │   ├── About.tsx           # 关于页面
 │   │   ├── CoverGenerator.tsx  # 封面生成器
 │   │   ├── Sponsor.tsx         # 赞助支持
+│   │   ├── Favorites.tsx       # 离线收藏
 │   │   ├── NotFound.tsx        # 404 页面
-│   │   ├── archive/            # 归档折叠逻辑（含单元测试）
-│   │   └── cover/              # 封面生成核心逻辑（含单元测试）
+│   │   ├── archive/            # 归档相关逻辑
+│   │   └── cover/              # 封面生成核心逻辑
 │   ├── services/               # 数据服务层
 │   │   ├── posts.ts            # 文章数据获取与全文搜索
 │   │   ├── friends.ts          # 友链数据获取（随机排序）
+│   │   ├── offlinePosts.ts     # 离线收藏存储
+│   │   ├── readingHistory.ts   # 阅读历史存储
 │   │   └── siteStats.ts        # 站点统计数据
 │   ├── hooks/                  # 自定义 Hooks
 │   │   ├── useMediaQuery.ts    # 响应式媒体查询
 │   │   ├── useModalOverlay.ts  # 弹窗遮罩管理
+│   │   ├── useOfflinePosts.ts  # 离线收藏状态
+│   │   ├── useReadingHistory.ts # 阅读历史状态
 │   │   └── usePostSearch.ts    # 文章搜索逻辑
 │   ├── utils/                  # 工具函数
 │   │   ├── date.ts             # 日期格式化
@@ -248,9 +255,11 @@ D-blog/
 │   │   ├── toc.ts              # 目录树构建（自动折叠）
 │   │   ├── motion.ts           # Framer Motion 动画配置
 │   │   ├── preload.ts          # 页面预加载
+│   │   ├── readingProgress.ts  # 阅读进度计算
+│   │   ├── postRelations.ts    # 文章关联与系列导航
+│   │   ├── postSorting.ts      # 文章排序
 │   │   └── imageAssets.ts      # 响应式图片资源选择
 │   ├── config/                 # 前端配置
-│   │   ├── sponsorConfig.ts    # 赞助选项配置
 │   │   └── coverTemplates.ts   # 封面模板配置
 │   ├── App.tsx                 # 应用入口（路由配置 + 错误边界 + 加载动画）
 │   ├── types.ts                # TypeScript 类型定义
@@ -387,7 +396,7 @@ graph TD
 - **编辑效率** - 支持 Ctrl/Cmd + Z 撤销、Shift + Z 重做、本地草稿恢复、最多 20 个持久化预设、中心线/安全框/网格辅助，以及预览聚焦后的方向键移动和 +/- 缩放
 - **批量生成** - 可在导出面板上传 Markdown frontmatter、CSV 或 JSON，按 title、subtitle/description、slug 批量生成并下载 ZIP；批量处理仅在当前浏览器会话中运行，不会修改 Markdown 文件
 
-封面模板配置位于 `src/config/coverTemplates.ts`，当前仅保留黑白两项；核心渲染逻辑位于 `src/pages/cover/`。纯逻辑回归测试覆盖布局、颜色、文件校验、存储、导出文件名和批量数据解析；Canvas 绘制与浏览器交互仍需通过浏览器回归验证。
+封面模板配置位于 `src/config/coverTemplates.ts`，当前仅保留黑白两项；核心渲染逻辑位于 `src/pages/cover/`。Canvas 绘制与浏览器交互需要通过浏览器回归验证。
 
 ### 订阅更新
 
@@ -432,44 +441,9 @@ export const siteConfig = {
 
 ### 赞助页面配置
 
-赞助页面展示赞助方式，配置文件位于 `src/config/sponsorConfig.ts`。
+赞助页面的三种方式在 `src/pages/Sponsor.tsx` 中定义：贡献代码、提交文章和广告赞助。前两项会读取 `config/site.config.ts` 中的 GitHub 地址；广告卡片是否展示内容由 `config/ads.config.ts` 控制。
 
-**支持的赞助方式**：
-- **赞助代码** - 引导前往 GitHub 贡献代码
-- **赞助文章** - 鼓励提交优质文章
-- **广告赞助** - 展示广告（默认禁用）
-
-**添加新的赞助选项**：
-
-编辑 `src/config/sponsorConfig.ts`，在 `sponsorOptions` 数组中添加新选项：
-
-```typescript
-{
-  id: 'new-option',           // 唯一标识符
-  title: '新赞助方式',         // 显示标题
-  description: '赞助方式描述', // 简短描述
-  icon: 'IconName',           // Lucide React 图标名称
-  buttonLabel: '按钮文字',     // 按钮显示文字
-  url: 'https://example.com', // 点击跳转的 URL
-  disabled: false,            // 是否禁用（可选）
-  comingSoon: false           // 是否即将推出（可选）
-}
-```
-
-**启用已禁用的赞助选项**：
-
-```typescript
-{
-  id: 'ad',
-  // ... 其他字段
-  url: 'https://your-ad-platform.com',
-  disabled: false,      // 改为 false 启用
-  comingSoon: false     // 改为 false
-}
-```
-
-> **注意**：启用赞助选项后，需确保 `url` 字段指向有效链接。
-
+如需新增赞助方式，请在 `Sponsor.tsx` 的 `sponsorOptions` 数组中补充图标、文案和链接，并同步检查按钮可用状态。广告横幅请按下方[广告配置](#广告配置)说明添加。
 ### 广告配置
 
 编辑 `config/ads.config.ts` 配置广告数据，用于在赞助页展示广告横幅。
@@ -496,9 +470,9 @@ export const adsConfig: AdItem[] = [
 | `npm run gen:data` | 仅运行数据生成脚本，从 Markdown 生成 JSON 索引、RSS 和 Sitemap |
 | `npm run prerender` | 仅运行预渲染脚本，生成静态 HTML（需先 `npm run build`） |
 | `npm run typecheck` | TypeScript 类型检查 |
-| `npm run test` | 运行 Vitest 单元测试 |
-| `npm run test:watch` | 监听模式运行单元测试 |
-| `npm run check` | 一键校验：类型检查 + 单元测试 + 数据生成 |
+| `npm run test` | 运行 Vitest 纯函数测试 |
+| `npm run test:watch` | 监听模式运行 Vitest 测试 |
+| `npm run check` | 一键校验：类型检查 + 测试 + 数据生成 |
 
 ## 部署指南
 
@@ -513,6 +487,8 @@ export const adsConfig: AdItem[] = [
 在 Settings → Environment variables 中按需添加：
 - `VITE_SITE_URL`：站点公开访问地址，用于生成 sitemap、RSS 和预渲染 SEO URL；未设置时使用 `config/site.config.ts` 中的 `url`
 - `VITE_BASE_PATH`：站点部署在子路径时使用（如 GitHub Pages 的 `/repo/`），留空为根路径
+
+本地可复制 `.env.example` 为 `.env`。Vite、数据生成和预渲染都会读取这些变量，因此子路径应在构建前配置完成。预渲染会为文章和静态页面写入独立 HTML；平台的 SPA fallback 仅用于未知路径或客户端路由兜底，不应覆盖已有的预渲染文件。
 
 ### 其他平台
 
@@ -543,7 +519,7 @@ location / {
 }
 ```
 
-> **提示**：预渲染阶段已为每篇文章和每个静态页面生成了独立 HTML，部署时可考虑利用此特性做更精细的缓存策略。
+> **提示**：预渲染阶段已为每篇文章和每个静态页面生成了独立 HTML，部署时可考虑利用此特性做更精细的缓存策略。`/favorites` 只使用浏览器本地数据，预渲染页面已设置为 `noindex`。
 
 ## 贡献指南
 

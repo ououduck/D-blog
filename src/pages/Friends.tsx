@@ -45,17 +45,24 @@ export const Friends = () => {
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     getFriends()
       .then((data) => {
+        if (cancelled) return;
         setFriends(data);
         setLoadError(null);
       })
       .catch((error) => {
+        if (cancelled) return;
         console.error('Failed to load friends:', error);
         setLoadError('友链数据加载失败，请稍后刷新重试。');
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, [loadAttempt]);
 
   const containerVariants = shouldReduceMotion ? undefined : staggerContainer;

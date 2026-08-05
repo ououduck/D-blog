@@ -21,9 +21,22 @@ export const getReadingProgress = ({
   const articleBottom = articleTop + rect.height;
   const startScrollTop = articleTop - startOffset;
   const documentMaxScrollTop = Math.max(documentHeight - viewportHeight, 0);
+
+  // Without any document-level scroll range there is no evidence that the
+  // article has been read, even when its end is already inside the viewport.
+  if (documentMaxScrollTop <= 0) {
+    return 0;
+  }
+
   const articleEndScrollTop = articleBottom - endOffset;
   const endScrollTop = Math.min(articleEndScrollTop, documentMaxScrollTop);
-  const totalScrollable = Math.max(endScrollTop - startScrollTop, 1);
+  const totalScrollable = endScrollTop - startScrollTop;
+
+  // A short article may not create any scrollable range. Treat the initial
+  // measurement as unknown instead of marking it complete at scroll position 0.
+  if (totalScrollable <= 0) {
+    return 0;
+  }
 
   return clamp((scrollY - startScrollTop) / totalScrollable, 0, 1);
 };

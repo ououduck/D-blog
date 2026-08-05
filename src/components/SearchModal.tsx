@@ -218,7 +218,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               ) : visibleResults.length > 0 ? (
                 <div className="p-2" role="listbox" aria-label="搜索结果" aria-activedescendant={visibleResults[activeResultIndex] ? `site-search-result-${visibleResults[activeResultIndex].id}` : undefined}>
                   <div className="px-3 pt-3 text-xs font-medium uppercase tracking-[0.2em] text-zinc-700 dark:text-zinc-300">
-                    {results.length} {TEXT.resultsSuffix}
+                    共 {results.length} {TEXT.resultsSuffix}{results.length > visibleResults.length ? `，展示前 ${visibleResults.length} 条` : ''}
                   </div>
                   {visibleResults.map((post, index) => {
                     const isActive = index === activeResultIndex;

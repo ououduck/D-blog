@@ -61,5 +61,3 @@ export const withBasePath = (value, basePath = getBasePath()) => {
 
   return `${baseWithoutTrailing}/${normalizedPath.replace(/^\/+/, '')}${suffix}`;
 };
-
-export const toSitePath = (value = '/', basePath = getBasePath()) => withBasePath(value, basePath);

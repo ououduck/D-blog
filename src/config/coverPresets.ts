@@ -12,7 +12,3 @@ export const coverSizePresets: readonly CoverSizePreset[] = [
   { id: 'ultrawide', label: '21:9', w: 21, h: 9, description: '超宽横幅和标题图' },
   { id: 'og', label: '1.91:1', w: 1.91, h: 1, description: 'Open Graph 社交分享和博客链接预览' },
 ];
-
-export function getCoverSizePreset(label: string): CoverSizePreset | undefined {
-  return coverSizePresets.find((preset) => preset.label === label);
-}

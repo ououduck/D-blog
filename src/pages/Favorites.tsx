@@ -12,14 +12,15 @@ import { assetUrl } from '@/utils/siteUrl';
 export const Favorites = () => {
   const navigate = useNavigate();
   const { posts, loading, error, refresh } = useOfflinePosts();
+  const [removeError, setRemoveError] = React.useState<string | null>(null);
 
   const handleRemove = async (id: string) => {
+    setRemoveError(null);
     try {
       await removeOfflinePost(id);
       await refresh();
     } catch {
-      // The subscription refreshes the list on success; a failed removal is
-      // surfaced by the next explicit refresh without breaking the card UI.
+      setRemoveError('取消收藏失败，请稍后重试。');
     }
   };
   const hasFavorites = posts.length > 0;
@@ -37,6 +38,12 @@ export const Favorites = () => {
       </header>
 
       <section className="mt-7 md:mt-9">
+        {removeError && !loading && (
+          <div role="alert" className="mb-4 flex items-center justify-between gap-3 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+            <span>{removeError}</span>
+            <button type="button" onClick={() => setRemoveError(null)} className="shrink-0 underline underline-offset-2">关闭</button>
+          </div>
+        )}
         {loading ? (
           <div className="space-y-4" aria-busy="true">
             <LoadingStatus label="正在加载本地收藏" />

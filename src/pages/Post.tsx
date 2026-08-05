@@ -14,7 +14,7 @@ import { getRelatedPosts, getSeriesNavigation, type SeriesNavigation } from '@/u
 import { getReadingProgress, isReadingComplete } from '@/utils/readingProgress';
 import { Post as PostType, PostAuthor, PostMetadata } from '../types';
 import { useOfflinePosts } from '@/hooks/useOfflinePosts';
-import { assetUrl, absoluteSiteUrl } from '@/utils/siteUrl';
+import { assetUrl, absoluteSiteUrl, routeUrl } from '@/utils/siteUrl';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
@@ -479,7 +479,7 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
 }
 
 const isSafeMarkdownHref = (href?: string) => {
-  if (!href) {
+  if (!href || href.startsWith('//')) {
     return false;
   }
 
@@ -606,15 +606,16 @@ const createMarkdownComponents = (
       const hrefIsImage = Boolean(href) && isImageUrl(href);
       const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? resolveBrowserAsset(href) : resolvePostsImgPath(href)) : href;
       const safeHref = isSafeMarkdownHref(resolvedHref) ? resolvedHref : undefined;
+      const normalizedHref = safeHref && safeHref.startsWith('/') ? routeUrl(safeHref) : safeHref;
 
-      if (safeHref && isImageUrl(safeHref)) {
+      if (normalizedHref && isImageUrl(normalizedHref)) {
         const imageChild = React.Children.toArray(children).find(
           (child): child is React.ReactElement<MarkdownImageProps> =>
             React.isValidElement(child) && typeof (child.props as Record<string, unknown>).src === 'string'
         );
 
         if (imageChild) {
-          return React.cloneElement(imageChild, { previewSrc: safeHref });
+          return React.cloneElement(imageChild, { previewSrc: normalizedHref });
         }
 
         const imgAlt = React.Children.toArray(children)
@@ -628,7 +629,7 @@ const createMarkdownComponents = (
         return (
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); onPreviewImage({ src: safeHref, alt: imgAlt || undefined }); }}
+            onClick={(e) => { e.preventDefault(); onPreviewImage({ src: normalizedHref, alt: imgAlt || undefined }); }}
             className="block w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100"
             aria-label={imgAlt ? `预览图片：${imgAlt}` : '预览图片'}
           >
@@ -637,11 +638,11 @@ const createMarkdownComponents = (
         );
       }
 
-      if (!safeHref) {
+      if (!normalizedHref) {
         return <>{children}</>;
       }
 
-      return <a href={safeHref} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+      return <a href={normalizedHref} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
     },
     img: ({ src, alt, title, previewSrc, ...props }: MarkdownImageProps) => {
       const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? resolveBrowserAsset(src) : resolvePostsImgPath(src)) : src;
@@ -911,7 +912,13 @@ export const Post = () => {
       return;
     }
 
-    const hashId = decodeURIComponent(window.location.hash.slice(1));
+    let hashId = '';
+    try {
+      hashId = decodeURIComponent(window.location.hash.slice(1));
+    } catch {
+      // Ignore malformed URL fragments instead of interrupting article rendering.
+      return;
+    }
 
     if (!hashId) {
       return;
@@ -986,6 +993,7 @@ export const Post = () => {
     let animationFrame = 0;
     let latestProgress = 0;
     let hasProgressSnapshot = false;
+    let hasScrolledSinceMount = false;
     let completionSaved = false;
     lastReadingSaveRef.current = 0;
     const saveLatestProgress = () => {
@@ -1005,7 +1013,10 @@ export const Post = () => {
       latestProgress = progress;
       hasProgressSnapshot = true;
       const now = Date.now();
-      if (isReadingComplete(progress)) {
+      // The first measurement is only a baseline. Reaching the end counts as
+      // complete after a real scroll event, preventing short posts from being
+      // completed merely because their initial page has no scroll range.
+      if (hasScrolledSinceMount && isReadingComplete(progress)) {
         if (!completionSaved) {
           completionSaved = true;
           lastReadingSaveRef.current = now;
@@ -1013,19 +1024,23 @@ export const Post = () => {
         }
         return;
       }
-      if (now - lastReadingSaveRef.current < 1000) return;
+      if (isReadingComplete(progress) || now - lastReadingSaveRef.current < 1000) return;
       lastReadingSaveRef.current = now;
       saveReadingHistory({ postId: post.id, progress, scrollTop: window.scrollY });
     };
     const scheduleUpdate = () => {
       if (!animationFrame) animationFrame = window.requestAnimationFrame(updateReadingHistory);
     };
+    const handleScroll = () => {
+      hasScrolledSinceMount = true;
+      scheduleUpdate();
+    };
 
     scheduleUpdate();
-    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', scheduleUpdate);
     return () => {
-      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', scheduleUpdate);
       if (animationFrame) window.cancelAnimationFrame(animationFrame);
       saveLatestProgress();

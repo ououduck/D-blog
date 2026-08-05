@@ -139,10 +139,3 @@ export const markdownToFeedHtml = (markdown, options = {}) => {
   const transformed = processor.runSync(tree);
   return processor.stringify(transformed);
 };
-
-export const feedMarkdown = {
-  isSafeUrl,
-  markdownToFeedHtml,
-  resolveImageUrl,
-  resolveLinkUrl
-};

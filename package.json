@@ -2,6 +2,10 @@
   "name": "D-blog | 跑路的duck",
   "private": true,
   "version": "0.0.0",
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  },
   "type": "module",
   "scripts": {
     "gen:images": "node scripts/generate-image-assets.mjs",
