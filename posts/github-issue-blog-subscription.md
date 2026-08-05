@@ -3,6 +3,7 @@ id: github-issue-blog-subscription
 title: 用 GitHub Issue 和 Actions 为静态博客实现新文章订阅
 excerpt: 不依赖第三方推送平台，利用 GitHub Issue 的订阅能力和 GitHub Actions，在发布 Markdown 文章后自动向订阅者发送更新提醒。
 date: 2026-07-22
+updatedAt: 2026-07-22
 category: 教程
 tags:
   - GitHub Actions
@@ -12,6 +13,12 @@ tags:
   - RSS
 coverImage: /posts-img/github-issue-blog-subscription/github-issue-blog-subscription.png
 author: 跑路的duck
+featured: false
+featured-top: 0
+series: false
+series-name: 我的系列
+series-order: 1
+draft: false
 ---
 
 # 用 GitHub Issue 和 Actions 为静态博客实现新文章订阅

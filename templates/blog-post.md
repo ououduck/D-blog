@@ -11,8 +11,8 @@ author: 跑路的duck
 featured: false
 featured-top: 0
 series: false
-# series-name: 我的系列（仅 series: true 时填写）
-# series-order: 1（仅 series: true 时填写，数字越小越靠前）
+series-name: 我的系列
+series-order: 1
 draft: true
 ---
 

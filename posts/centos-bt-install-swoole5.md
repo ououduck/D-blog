@@ -13,6 +13,12 @@ tags:
   - PHP Swoole 扩展安装
 coverImage: /posts-img/centos-bt-install-swoole5/centos-bt-install-swoole5-cover.png
 author: 跑路的duck
+featured: false
+featured-top: 0
+series: false
+series-name: 我的系列
+series-order: 1
+draft: false
 ---
 
 # CentOS 宝塔面板无法安装 Swoole5 解决教程

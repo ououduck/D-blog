@@ -3,6 +3,7 @@ id: codedrobe-desktop
 title: CodeDrobe Desktop主题商店
 excerpt: 面向 AI 桌面应用的开源主题管理器
 date: 2026-08-03
+updatedAt: 2026-08-03
 category: 分享
 tags:
   - AI
@@ -10,6 +11,12 @@ tags:
   - 工具
 coverImage: /posts-img/codedrobe-desktop/codedrobe-desktop.png
 author: 跑路的duck
+featured: false
+featured-top: 0
+series: false
+series-name: 我的系列
+series-order: 1
+draft: false
 ---
 
 

@@ -3,6 +3,7 @@ id: localfileencrypt
 title: LocalFileEncrypt - 文件加密解密工具
 excerpt: 安全的本地加解密工具
 date: 2026-08-03
+updatedAt: 2026-08-03
 category: 分享
 tags:
   - 工具
@@ -11,6 +12,12 @@ tags:
   - 安全
 coverImage: /posts-img/localfileencrypt/localfileencrypt.png
 author: 跑路的duck
+featured: false
+featured-top: 0
+series: false
+series-name: 我的系列
+series-order: 1
+draft: false
 ---
 
 

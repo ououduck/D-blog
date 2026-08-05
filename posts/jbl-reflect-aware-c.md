@@ -14,6 +14,9 @@ coverImage: /posts-img/jbl-reflect-aware-c/jbl-reflect-aware-c.png
 author: 跑路的duck
 featured: false
 featured-top: 0
+series: false
+series-name: 我的系列
+series-order: 1
 draft: false
 ---
 

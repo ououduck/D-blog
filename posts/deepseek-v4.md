@@ -13,6 +13,12 @@ tags:
   - 深度求索
 coverImage: /posts-img/deepseek-v4/deepseek-v4-cover.png
 author: 跑路的duck
+featured: false
+featured-top: 0
+series: false
+series-name: 我的系列
+series-order: 1
+draft: false
 ---
 
 # 时隔一年半 deepseek v4 众望所归  

@@ -13,6 +13,10 @@ coverImage: /posts-img/about-dblog/about-dblog-cover.png
 author: 跑路的duck
 featured: true
 featured-top: 1
+series: false
+series-name: 我的系列
+series-order: 1
+draft: false
 ---
 
 # 关于 D-blog

@@ -11,6 +11,12 @@ tags:
   - 微信
 coverImage: /posts-img/weixin-vs-yuanbao/weixin-vs-yuanbao-cover.png
 author: 跑路的duck
+featured: false
+featured-top: 0
+series: false
+series-name: 我的系列
+series-order: 1
+draft: false
 ---
 
 # 微信和元宝打架？是腾讯内斗还是有意而为？  
