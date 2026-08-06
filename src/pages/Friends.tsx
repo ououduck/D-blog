@@ -131,12 +131,6 @@ export const Friends = () => {
           <div className="min-w-0 flex-1">
             <span className="text-base font-semibold text-zinc-950 dark:text-white">申请友链</span>
             <p className="mt-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">添加本站友链 → 登录 GitHub → 填写信息并提交 Issue</p>
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold">
-              <span className="inline-flex items-center gap-1.5 rounded-control border border-zinc-300 bg-paper px-2.5 py-1.5 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-                自动检测反链
-              </span>
-              <span className="text-zinc-600 dark:text-zinc-400">通常在提交后 30 分钟内处理</span>
-            </div>
           </div>
           <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.4, 0, 0.2, 1] }} className="flex-shrink-0">
             <ChevronDown size={18} className="text-zinc-500 dark:text-zinc-400" />
@@ -157,17 +151,11 @@ export const Friends = () => {
               <div className="border-t border-zinc-200 pb-5 pt-5 dark:border-zinc-800 sm:pb-6 sm:pt-6">
                 <div className="space-y-6">
                   <Surface variant="panel" className="p-4 sm:p-5" aria-labelledby="friend-link-application-guide">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <h2 id="friend-link-application-guide" className="text-base font-bold text-zinc-950 dark:text-zinc-100">
-                          申请说明
-                        </h2>
-                        <p className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">请按以下步骤完成申请，GitHub Issue 会记录申请并由 Action 自动检查反链。</p>
-                      </div>
-                      <div className="flex-shrink-0 rounded-control border border-zinc-400 bg-paper px-3 py-2 text-left dark:border-zinc-600 dark:bg-zinc-950">
-                        <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">处理方式</div>
-                        <div className="mt-0.5 break-all font-mono text-sm font-bold text-zinc-950 dark:text-zinc-100">GitHub Actions</div>
-                      </div>
+                    <div>
+                      <h2 id="friend-link-application-guide" className="text-base font-bold text-zinc-950 dark:text-zinc-100">
+                        申请说明
+                      </h2>
+                      <p className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">请按以下步骤完成申请，GitHub Issue 会记录申请并由 Action 自动检查反链。</p>
                     </div>
                     <ol className="mt-5 grid gap-4 text-sm leading-relaxed text-zinc-800 dark:text-zinc-200 sm:grid-cols-2">
                       <li className="flex gap-3">

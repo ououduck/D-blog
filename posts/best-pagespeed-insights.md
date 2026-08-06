@@ -7,7 +7,7 @@ updatedAt: 2026-08-05
 category: 随笔
 tags:
   - D-blog
-  - PageSpeed-Insights
+  - PageSpeed Insights
   - 网站优化
   - 速度测试
 coverImage: /posts-img/best-pagespeed-insights/best-pagespeed-insights.png
