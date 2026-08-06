@@ -36,12 +36,12 @@ draft: false
 3. 页面生成一个标题以 `[Friend Link]` 开头的 GitHub Issue 草稿。
 4. 申请者在 GitHub 页面检查内容，点击 `Submit new issue` 正式提交。
 5. `issues.opened` 事件触发 Action，bot 立即评论“已收到申请”。
-6. 定时 Action 每 5 分钟扫描一次开放的友链申请，只处理创建时间满 25 分钟的 Issue。
+6. 定时 Action 每 5 分钟扫描一次开放的友链申请，只处理创建时间满 10 分钟的 Issue。
 7. bot 重新校验字段、公开 URL 和文件名，再请求友链页检查 D-blog 反链。
 8. 检查通过后生成 `friends/<filename>.json`，以 `github-actions[bot]` 身份提交并推送到 `main`。
 9. bot 在 Issue 中评论结果，并将成功申请关闭为 `completed`，失败申请关闭为 `not_planned`。
 
-通常情况下，申请会在提交后的 25 至 30 分钟内完成处理。但 GitHub 的 `schedule` 由平台调度，繁忙时可能延迟，因此这里的时间是预期窗口，不是严格 SLA。
+通常情况下，申请会在提交后的 10 至 15 分钟内完成处理。但 GitHub 的 `schedule` 由平台调度，繁忙时可能延迟，因此这里的时间是预期窗口，不是严格 SLA。
 
 ## 为什么选择 Issue 和 Actions
 
@@ -68,7 +68,7 @@ flowchart LR
   C --> D[issues.opened]
   D --> E[立即确认评论]
   E --> F[schedule 每 5 分钟扫描]
-  F --> G{创建是否满 25 分钟}
+  F --> G{创建是否满 10 分钟}
   G -->|否| F
   G -->|是| H[Node.js bot 校验与抓取]
   H --> I{静态 HTML 存在 D-blog 反链}
@@ -100,15 +100,15 @@ on:
     - cron: '*/5 * * * *'
 ```
 
-脚本本身又设置了 25 分钟门槛：
+脚本本身又设置了 10 分钟门槛：
 
 ```js
-export const WAIT_MS = 25 * 60 * 1000;
+export const WAIT_MS = 10 * 60 * 1000;
 
 if (now - Date.parse(issue.created_at) < WAIT_MS) continue;
 ```
 
-定时任务每 5 分钟触发一次，因此理论上第一次符合条件的扫描位于 25 至 30 分钟之间。将等待时间放在脚本里，而不是只依赖 cron 的精确触发，可以在手动运行 `workflow_dispatch` 时保持同样的审核规则。
+定时任务每 5 分钟触发一次，因此理论上第一次符合条件的扫描位于 10 至 15 分钟之间。将等待时间放在脚本里，而不是只依赖 cron 的精确触发，可以在手动运行 `workflow_dispatch` 时保持同样的审核规则。
 
 ## 第一步：在前端生成标准 Issue
 
@@ -373,12 +373,12 @@ permissions:
 2. 填写表单并生成 Issue 草稿。
 3. 在 GitHub 检查标题以 `[Friend Link]` 开头，正文包含所有英文固定字段。
 4. 正式提交 Issue，确认几分钟内出现初始确认评论。
-5. 等待 Issue 创建时间超过 25 分钟，或在满足门槛后手动运行 `Friend Link Bot`。
+5. 等待 Issue 创建时间超过 10 分钟，或在满足门槛后手动运行 `Friend Link Bot`。
 6. 查看 Actions 日志，确认 bot 请求的友链页、校验结果和 Git 操作没有报错。
 7. 审核通过时检查新建的 `friends/<filename>.json`、自动 commit、成功评论和 Issue 状态。
 8. 修改测试页面，移除反链后重新创建测试 Issue，确认失败原因会被评论并且 Issue 被关闭。
 
-Actions 的定时任务并不保证精确时间。如果 Issue 已经超过 25 分钟但没有立即处理，先检查 workflow 是否在默认分支、Actions 是否启用，再从 Actions 页面手动运行一次 `workflow_dispatch`。
+Actions 的定时任务并不保证精确时间。如果 Issue 已经超过 10 分钟但没有立即处理，先检查 workflow 是否在默认分支、Actions 是否启用，再从 Actions 页面手动运行一次 `workflow_dispatch`。
 
 ## 常见失败与排查
 

@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 export const ISSUE_PREFIX = '[Friend Link]';
-export const WAIT_MS = 25 * 60 * 1000;
+export const WAIT_MS = 10 * 60 * 1000;
 const INITIAL_MARKER = '<!-- d-blog-friend-bot:initial -->';
 const ACCEPTED_MARKER = '<!-- d-blog-friend-bot:accepted -->';
 const REJECTED_MARKER = '<!-- d-blog-friend-bot:rejected -->';
@@ -200,7 +200,10 @@ const processOpened = async () => {
   if (!issue.number || !issue.title?.startsWith(ISSUE_PREFIX)) return;
   const comments = await api(`/issues/${issue.number}/comments?per_page=100`);
   if (comments.some((item) => item.body?.includes(INITIAL_MARKER))) return;
-  await comment(issue.number, `${INITIAL_MARKER}\n\n已收到友链申请。提交满 25 分钟后，Action 会检查你填写的友链页是否存在 D-blog 反链；检查通过后会自动加入本站，未通过会说明原因并关闭此 Issue。`);
+  await comment(
+    issue.number,
+    `${INITIAL_MARKER}\n\n## 友链申请已收到\n\n- **当前状态**：等待自动审核\n- **预计时间**：提交满 10 分钟后开始检查，通常在 10 至 15 分钟内处理\n- **检查内容**：友链页是否公开可访问，并在静态 HTML 中包含 D-blog 反链\n\n审核通过后，友链会自动加入本站；如果检查失败，bot 会在此 Issue 中说明原因并关闭申请。`,
+  );
 };
 
 const processReview = async () => {
@@ -213,12 +216,18 @@ const processReview = async () => {
     const application = parseApplication(issue.body);
     const error = application ? await validateApplication(application) : 'Issue 内容不完整，请使用本站生成的申请草稿。';
     if (error) {
-      await comment(issue.number, `${REJECTED_MARKER}\n\n友链申请未通过：${error}`);
+      await comment(
+        issue.number,
+        `${REJECTED_MARKER}\n\n## 友链申请未通过\n\n- **审核结果**：未通过\n- **失败原因**：${error}\n- **Issue 状态**：已关闭\n\n请根据上面的原因修正友链页或申请资料，然后重新生成并提交新的 Issue。`,
+      );
       await close(issue.number, 'not_planned');
       continue;
     }
     if (await alreadyExists(application)) {
-      await comment(issue.number, `${ACCEPTED_MARKER}\n\n该站点已经存在于友链目录中，申请已记录。`);
+      await comment(
+        issue.number,
+        `${ACCEPTED_MARKER}\n\n## 友链申请已处理\n\n- **审核结果**：站点已存在\n- **处理说明**：该站点已经在友链目录中，无需重复添加\n- **Issue 状态**：已关闭\n\n感谢申请。`,
+      );
       await close(issue.number, 'completed');
       continue;
     }
@@ -237,7 +246,10 @@ const processReview = async () => {
     const sha = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
       encoding: 'utf8',
     }).trim();
-    await comment(issue.number, `${ACCEPTED_MARKER}\n\n友链已通过反链检查并自动添加。Commit: ${sha}`);
+    await comment(
+      issue.number,
+      `${ACCEPTED_MARKER}\n\n## 友链申请已通过\n\n- **审核结果**：通过\n- **反链检查**：已找到 D-blog 反链\n- **添加文件**：\`${filePath}\`\n- **Commit**：\`${sha}\`\n- **Issue 状态**：已关闭\n\n友链将在下一次站点部署后显示。感谢申请！`,
+    );
     await close(issue.number, 'completed');
   }
 };

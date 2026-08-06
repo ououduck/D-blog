@@ -176,11 +176,11 @@ export const Friends = () => {
                       </li>
                       <li className="flex gap-3">
                         <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-950">5</span>
-                        <span>Issue 提交后 Action 会先评论确认，通常在约 25 至 30 分钟后检查反链；通过后自动加入本站，失败会评论原因并关闭 Issue。</span>
+                        <span>Issue 提交后 Action 会先评论确认，提交满 10 分钟后开始检查反链，通常在约 10 至 15 分钟内处理。</span>
                       </li>
                     </ol>
                     <p className="mt-5 border-t border-zinc-200 pt-3 text-xs leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-                      友链页必须能直接返回包含 D-blog 标准地址的 HTML；仅在浏览器运行脚本后才出现的链接可能无法通过检测。GitHub 定时任务受平台调度影响，不能保证严格的 30 分钟 SLA。
+                      友链页必须能直接返回包含 D-blog 标准地址的 HTML；仅在浏览器运行脚本后才出现的链接可能无法通过检测。GitHub 定时任务受平台调度影响，10 至 15 分钟是通常窗口，不是严格 SLA。
                     </p>
                   </Surface>
 
@@ -208,7 +208,7 @@ export const Friends = () => {
                     <div className="mb-4">
                       <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">在线填写申请</h2>
                       <p className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                        填写完成后会生成预填好的 GitHub Issue。请确认友链页已公开可访问，Action 会在提交后约 30 分钟检查反链。
+                        填写完成后会生成预填好的 GitHub Issue。请确认友链页已公开可访问，Action 会在提交后约 10 至 15 分钟检查反链。
                       </p>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -411,7 +411,7 @@ export const Friends = () => {
               <div className="border border-zinc-200 bg-zinc-50 p-3 text-sm leading-relaxed text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
                 <div className="font-semibold text-zinc-900 dark:text-zinc-100">{applicationResult.filename}</div>
                 <div className="mt-1">
-                  GitHub Issue 标题会以 <code>[Friend Link]</code> 开头。提交后 bot 会先评论确认，并在约 30 分钟后检查你填写的友链页。
+                  GitHub Issue 标题会以 <code>[Friend Link]</code> 开头。提交后 bot 会先评论确认，并在约 10 至 15 分钟后检查你填写的友链页。
                 </div>
               </div>
               <p className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
