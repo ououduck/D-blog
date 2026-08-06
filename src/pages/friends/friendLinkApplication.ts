@@ -1,24 +1,28 @@
-export const FRIEND_LINK_FIELDS = ['name', 'description', 'avatar', 'url'] as const;
+export const FRIEND_LINK_FIELDS = ['name', 'description', 'avatar', 'url', 'friendPageUrl', 'contact'] as const;
 export type FriendLinkField = (typeof FRIEND_LINK_FIELDS)[number];
 
-export type FriendLinkApplicationValues = Record<FriendLinkField, string>;
+export interface FriendLinkApplicationValues extends Record<FriendLinkField, string> {
+  reciprocalLinkConfirmed: boolean;
+}
 
 export interface FriendLinkApplicationErrors {
   name?: string;
   description?: string;
   avatar?: string;
   url?: string;
+  friendPageUrl?: string;
+  contact?: string;
   filename?: string;
+  reciprocalLinkConfirmed?: string;
 }
 
 export interface FriendLinkApplicationResult {
   filename: string;
-  json: string;
+  issueUrl: string;
   values: FriendLinkApplicationValues;
 }
 
-export const FRIEND_LINK_EMAIL = 'i@pldduck.com';
-export const FRIEND_LINK_EMAIL_SUBJECT = 'D-blog友链申请';
+export const FRIEND_LINK_ISSUE_TITLE_PREFIX = '[Friend Link]';
 
 const FILENAME_PATTERN = /^[A-Za-z0-9_-]+(?:\.json)?$/;
 
@@ -26,7 +30,10 @@ const trimValues = (values: FriendLinkApplicationValues): FriendLinkApplicationV
   name: values.name.trim(),
   description: values.description.trim(),
   avatar: values.avatar.trim(),
-  url: values.url.trim()
+  url: values.url.trim(),
+  friendPageUrl: values.friendPageUrl.trim(),
+  contact: values.contact.trim(),
+  reciprocalLinkConfirmed: values.reciprocalLinkConfirmed,
 });
 
 const isHttpUrl = (value: string) => {
@@ -57,22 +64,7 @@ export const validateFriendLinkFilename = (filename: string): string | null => {
   return null;
 };
 
-export const buildFriendLinkJson = (values: FriendLinkApplicationValues) => {
-  const trimmed = trimValues(values);
-  return JSON.stringify(
-    FRIEND_LINK_FIELDS.reduce<Record<FriendLinkField, string>>((result, field) => {
-      result[field] = trimmed[field];
-      return result;
-    }, {} as Record<FriendLinkField, string>),
-    null,
-    2
-  );
-};
-
-export const validateFriendLinkApplication = (
-  values: FriendLinkApplicationValues,
-  filename: string
-): FriendLinkApplicationErrors => {
+export const validateFriendLinkApplication = (values: FriendLinkApplicationValues, filename: string): FriendLinkApplicationErrors => {
   const trimmed = trimValues(values);
   const errors: FriendLinkApplicationErrors = {};
 
@@ -82,26 +74,50 @@ export const validateFriendLinkApplication = (
     }
   });
 
-  if (trimmed.avatar && !isHttpUrl(trimmed.avatar)) {
-    errors.avatar = '请输入有效的 HTTP(S) 地址。';
-  }
-
-  if (trimmed.url && !isHttpUrl(trimmed.url)) {
-    errors.url = '请输入有效的 HTTP(S) 地址。';
-  }
+  (['avatar', 'url', 'friendPageUrl'] as const).forEach((field) => {
+    if (trimmed[field] && !isHttpUrl(trimmed[field])) {
+      errors[field] = '请输入有效的 HTTP(S) 地址。';
+    }
+  });
 
   const filenameError = validateFriendLinkFilename(filename);
   if (filenameError) {
     errors.filename = filenameError;
   }
 
+  if (!trimmed.reciprocalLinkConfirmed) {
+    errors.reciprocalLinkConfirmed = '请先添加本站友链并确认。';
+  }
+
   return errors;
 };
 
-export const createFriendLinkApplication = (
-  values: FriendLinkApplicationValues,
-  filename: string
-): FriendLinkApplicationResult => {
+export const buildFriendLinkIssueBody = (values: FriendLinkApplicationValues, filename: string) => {
+  const trimmed = trimValues(values);
+  return [
+    '## Friend Link Application',
+    '',
+    `- Site Name: ${trimmed.name}`,
+    `- Site URL: ${trimmed.url}`,
+    `- Friend Page URL: ${trimmed.friendPageUrl}`,
+    `- Avatar URL: ${trimmed.avatar}`,
+    `- Short Description: ${trimmed.description}`,
+    `- Your Name / Contact: ${trimmed.contact}`,
+    `- Filename: ${normalizeFriendLinkFilename(filename)}`,
+    `- Reciprocal Link Added: ${trimmed.reciprocalLinkConfirmed ? 'yes' : 'no'}`,
+  ].join('\n');
+};
+
+export const buildFriendLinkIssueUrl = (values: FriendLinkApplicationValues, filename: string, repoUrl: string) => {
+  const trimmed = trimValues(values);
+  const params = new URLSearchParams({
+    title: `${FRIEND_LINK_ISSUE_TITLE_PREFIX} ${trimmed.name}`,
+    body: buildFriendLinkIssueBody(trimmed, filename),
+  });
+  return `${repoUrl.replace(/\/$/, '')}/issues/new?${params.toString()}`;
+};
+
+export const createFriendLinkApplication = (values: FriendLinkApplicationValues, filename: string, repoUrl: string): FriendLinkApplicationResult => {
   const errors = validateFriendLinkApplication(values, filename);
   if (Object.keys(errors).length > 0) {
     throw new Error('友链申请信息校验失败。');
@@ -110,74 +126,7 @@ export const createFriendLinkApplication = (
   const trimmedValues = trimValues(values);
   return {
     filename: normalizeFriendLinkFilename(filename),
-    json: buildFriendLinkJson(trimmedValues),
-    values: trimmedValues
+    issueUrl: buildFriendLinkIssueUrl(trimmedValues, filename, repoUrl),
+    values: trimmedValues,
   };
-};
-
-export const createFriendLinkMailto = (
-  json: string,
-  email = FRIEND_LINK_EMAIL,
-  subject = FRIEND_LINK_EMAIL_SUBJECT
-) => (
-  `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(json)}`
-);
-
-export const downloadTextFile = (content: string, filename: string, mimeType = 'application/json') => {
-  if (
-    typeof document === 'undefined'
-    || typeof URL === 'undefined'
-    || typeof URL.createObjectURL !== 'function'
-    || typeof URL.revokeObjectURL !== 'function'
-  ) {
-    return false;
-  }
-
-  let objectUrl: string | null = null;
-  try {
-    const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
-    objectUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = objectUrl;
-    link.download = filename;
-    link.rel = 'noopener';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    return true;
-  } catch {
-    return false;
-  } finally {
-    if (objectUrl) {
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl as string), 0);
-    }
-  }
-};
-
-export const copyText = async (value: string) => {
-  if (typeof navigator !== 'undefined' && navigator.clipboard && typeof window !== 'undefined' && window.isSecureContext) {
-    await navigator.clipboard.writeText(value);
-    return;
-  }
-
-  if (typeof document === 'undefined') {
-    throw new Error('当前环境不支持复制。');
-  }
-
-  const textArea = document.createElement('textarea');
-  textArea.value = value;
-  textArea.setAttribute('readonly', '');
-  textArea.style.position = 'fixed';
-  textArea.style.left = '-9999px';
-  document.body.appendChild(textArea);
-  textArea.focus();
-  textArea.select();
-
-  try {
-    if (!document.execCommand('copy')) {
-      throw new Error('复制操作未被浏览器允许。');
-    }
-  } finally {
-    textArea.remove();
-  }
 };

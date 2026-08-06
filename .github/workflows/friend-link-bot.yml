@@ -1,0 +1,33 @@
+name: Friend Link Bot
+
+on:
+  issues:
+    types: [opened]
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: friend-link-bot
+  cancel-in-progress: false
+
+jobs:
+  process:
+    if: github.event_name != 'issues' || startsWith(github.event.issue.title, '[Friend Link]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Process friend-link applications
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_PAYLOAD: ${{ toJson(github.event.issue) }}
+        run: node scripts/friend-link-bot.mjs ${{ github.event_name == 'issues' && 'opened' || 'review' }}
