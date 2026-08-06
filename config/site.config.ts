@@ -21,6 +21,12 @@ export const siteConfig = {
   toc: {
     collapseInactiveRootBranches: true,
   },
+  comments: {
+    repo: 'ououduck/D-blog',
+    repoId: 'R_kgDORApwuA',
+    category: 'Announcements',
+    categoryId: 'DIC_kwDORApwuM4DCztq',
+  },
   friendsPage: {
     repoUrl: 'https://github.com/ououduck/D-blog',
     repoFriendsUrl: 'https://github.com/ououduck/D-blog/tree/main/friends',

@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { easeOut } from '@/utils/motion';
 import DOMPurify from 'dompurify';
 
-import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Download, ChevronDown, ChevronUp, Users, ExternalLink, EyeOff, BookOpen, Bookmark, Minus, Plus, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Download, ChevronDown, ChevronUp, Users, ExternalLink, EyeOff, BookOpen, Bookmark, Minus, Plus, RotateCcw, LoaderCircle, TriangleAlert } from 'lucide-react';
 import { getPostById, getPosts } from '@/services/posts';
 import { getReadingHistoryEntry, saveReadingHistory } from '@/services/readingHistory';
 import { getRelatedPosts, getSeriesNavigation, type SeriesNavigation } from '@/utils/postRelations';
@@ -28,6 +28,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 import { useReadingMode } from '@/components/ReadingModeContext';
 import { ReadingModeToggle } from '@/components/ReadingModeToggle';
+import { GiscusComments } from '@/components/GiscusComments';
 import { getResponsiveImageProps } from '@/utils/imageAssets';
 
 
@@ -46,39 +47,78 @@ type MermaidRenderer = {
   render: (id: string, text: string) => Promise<{ svg: string }>;
 };
 
+type MermaidStatus = 'idle' | 'loading' | 'ready' | 'error';
+
 const getIsDarkTheme = () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 
 const getMermaidConfig = (isDark: boolean) => ({
   startOnLoad: false,
+  securityLevel: 'strict',
   // Keep labels in SVG text nodes so DOMPurify's SVG profile preserves them.
   htmlLabels: false,
-  theme: isDark ? 'dark' : 'base',
+  theme: 'base',
+  flowchart: { htmlLabels: false, curve: 'basis', padding: 16 },
+  sequence: { useMaxWidth: true, diagramMarginX: 24, diagramMarginY: 20 },
   themeVariables: isDark
     ? {
-        primaryColor: '#27272a',
-        primaryTextColor: '#fafafa',
-        primaryBorderColor: '#a1a1aa',
-        lineColor: '#71717a',
-        secondaryColor: '#3f3f46',
-        tertiaryColor: '#18181b',
-        background: '#18181b',
-        mainBkg: '#27272a',
-        nodeBorder: '#a1a1aa',
-        fontSize: '18px',
-        fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+        primaryColor: '#1e293b',
+        primaryTextColor: '#f8fafc',
+        primaryBorderColor: '#60a5fa',
+        lineColor: '#94a3b8',
+        secondaryColor: '#312e81',
+        secondaryTextColor: '#eef2ff',
+        secondaryBorderColor: '#a5b4fc',
+        tertiaryColor: '#134e4a',
+        tertiaryTextColor: '#ecfdf5',
+        tertiaryBorderColor: '#5eead4',
+        background: '#111827',
+        mainBkg: '#1e293b',
+        secondBkg: '#312e81',
+        nodeBorder: '#60a5fa',
+        clusterBkg: '#172033',
+        clusterBorder: '#64748b',
+        titleColor: '#f8fafc',
+        edgeLabelBackground: '#111827',
+        actorBkg: '#1e293b',
+        actorBorder: '#60a5fa',
+        actorTextColor: '#f8fafc',
+        signalColor: '#cbd5e1',
+        signalTextColor: '#f8fafc',
+        noteBkgColor: '#422006',
+        noteBorderColor: '#fbbf24',
+        noteTextColor: '#fef3c7',
+        fontSize: '16px',
+        fontFamily: '"Microsoft YaHei", "PingFang SC", ui-sans-serif, system-ui, sans-serif'
       }
     : {
-        primaryColor: '#f4f4f5',
-        primaryTextColor: '#18181b',
-        primaryBorderColor: '#52525b',
-        lineColor: '#71717a',
-        secondaryColor: '#e4e4e7',
-        tertiaryColor: '#fafafa',
-        background: '#fafafa',
-        mainBkg: '#f4f4f5',
-        nodeBorder: '#52525b',
-        fontSize: '18px',
-        fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+        primaryColor: '#eff6ff',
+        primaryTextColor: '#172033',
+        primaryBorderColor: '#2563eb',
+        lineColor: '#475569',
+        secondaryColor: '#eef2ff',
+        secondaryTextColor: '#312e81',
+        secondaryBorderColor: '#6366f1',
+        tertiaryColor: '#ecfdf5',
+        tertiaryTextColor: '#134e4a',
+        tertiaryBorderColor: '#0f766e',
+        background: '#ffffff',
+        mainBkg: '#eff6ff',
+        secondBkg: '#eef2ff',
+        nodeBorder: '#2563eb',
+        clusterBkg: '#f8fafc',
+        clusterBorder: '#94a3b8',
+        titleColor: '#172033',
+        edgeLabelBackground: '#ffffff',
+        actorBkg: '#eff6ff',
+        actorBorder: '#2563eb',
+        actorTextColor: '#172033',
+        signalColor: '#334155',
+        signalTextColor: '#172033',
+        noteBkgColor: '#fffbeb',
+        noteBorderColor: '#d97706',
+        noteTextColor: '#78350f',
+        fontSize: '16px',
+        fontFamily: '"Microsoft YaHei", "PingFang SC", ui-sans-serif, system-ui, sans-serif'
       }
 } as const);
 
@@ -86,7 +126,7 @@ const HIGHLIGHT_STYLE_ID = 'post-highlight-theme';
 
 const loadHighlightThemeCss = async (isDark: boolean) => {
   const themeModule = isDark
-    ? await import('highlight.js/styles/github-dark-dimmed.css?raw')
+    ? await import('highlight.js/styles/github-dark.css?raw')
     : await import('highlight.js/styles/github.css?raw');
   return themeModule.default;
 };
@@ -323,6 +363,7 @@ const clampMermaidScale = (scale: number) => Math.min(MERMAID_MAX_SCALE, Math.ma
 
 function MermaidBlock({ children, renderer, theme }: { children: string; renderer: MermaidRenderer | null; theme: 'light' | 'dark' }) {
   const [svg, setSvg] = useState('');
+  const [status, setStatus] = useState<MermaidStatus>('idle');
   const [scale, setScale] = useState(MERMAID_MIN_SCALE);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -348,21 +389,25 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
     setSvg('');
     resetView();
     if (!renderer) {
+      setStatus('idle');
       return;
     }
 
     let cancelled = false;
+    setStatus('loading');
 
     const renderDiagram = async () => {
       try {
-        const { svg: renderedSvg } = await renderer.render(mermaidIdRef.current, children);
+        const { svg: renderedSvg } = await renderer.render(mermaidIdRef.current, children.trim());
         if (!cancelled) {
           setSvg(renderedSvg);
+          setStatus('ready');
         }
       } catch (error) {
         if (!cancelled) {
           console.error('Mermaid render error:', error);
           setSvg('');
+          setStatus('error');
         }
       }
     };
@@ -442,10 +487,20 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
   };
 
   if (!svg) {
+    const isError = status === 'error';
     return (
-      <pre className={`my-8 overflow-x-auto rounded-none border p-4 text-sm ${theme === 'dark' ? 'border-zinc-800 bg-[#0d0d0f] text-zinc-300' : 'border-zinc-300 bg-zinc-50 text-zinc-700'}`}>
-        <code>{children}</code>
-      </pre>
+      <div className={`mermaid-container mermaid-status my-8 ${isError ? 'is-error' : ''}`} role={isError ? 'alert' : 'status'} aria-live="polite">
+        <div className="mermaid-status-icon" aria-hidden="true">
+          {isError ? <TriangleAlert size={20} /> : <LoaderCircle className="animate-spin" size={20} />}
+        </div>
+        <div>
+          <p className="mermaid-status-title">{isError ? '图表渲染失败' : '正在生成图表'}</p>
+          <p className="mermaid-status-description">
+            {isError ? '请检查 Mermaid 语法，原始内容已保留在下方。' : '正在加载 Mermaid 并适配当前主题。'}
+          </p>
+        </div>
+        {isError && <pre className="mermaid-source"><code>{children}</code></pre>}
+      </div>
     );
   }
 
@@ -1535,20 +1590,26 @@ export const Post = () => {
                       <BookOpen size={16} className="text-zinc-400" />
                       <h2 id="related-heading" className="font-serif text-xl font-bold text-ink dark:text-white">你可能还喜欢</h2>
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="grid gap-3 sm:gap-4 sm:grid-cols-3">
                       {relatedPosts.map((relatedPost) => (
-                        <Link key={relatedPost.id} to={`/post/${relatedPost.id}`} className="group overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600">
-                          {relatedPost.coverImage ? <ProgressiveImage src={resolveBrowserAsset(relatedPost.coverImage)} alt="" width={relatedPost.coverWidth} height={relatedPost.coverHeight} aspectRatio="16/10" wrapperClassName="block aspect-[16/10] w-full bg-zinc-100 dark:bg-zinc-800" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <div className="flex aspect-[16/10] items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500">无封面</div>}
-                          <div className="p-3.5">
-                            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">{relatedPost.category}</p>
+                        <Link key={relatedPost.id} to={`/post/${relatedPost.id}`} className="group flex min-h-24 overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 sm:block sm:min-h-0">
+                          {relatedPost.coverImage ? <ProgressiveImage src={resolveBrowserAsset(relatedPost.coverImage)} alt="" wrapperClassName="h-24 w-36 flex-none bg-zinc-100 dark:bg-zinc-800 sm:h-auto sm:w-full sm:aspect-[16/10]" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <div className="flex h-24 w-36 flex-none items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500 sm:h-auto sm:w-full sm:aspect-[16/10]">无封面</div>}
+                          <div className="min-w-0 flex-1 p-3 sm:p-3.5">
+                            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500">
+                              <span className="truncate">{relatedPost.category}</span>
+                              <span aria-hidden="true">·</span>
+                              <span className="shrink-0 normal-case tracking-normal">{formatMetaDate(relatedPost.date)}</span>
+                            </div>
                             <h3 className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-800 group-hover:text-black dark:text-zinc-200 dark:group-hover:text-white">{relatedPost.title}</h3>
-                            <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">{relatedPost.excerpt}</p>
+                            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 sm:mt-2">{relatedPost.excerpt}</p>
                           </div>
                         </Link>
                       ))}
                     </div>
                   </section>
                 )}
+
+                <GiscusComments postId={post.id} />
               </>
             )}
           </div>

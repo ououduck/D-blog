@@ -150,6 +150,21 @@ const close = (number, reason) =>
     body: JSON.stringify({ state: 'closed', state_reason: reason }),
   });
 
+const markdownCodeBlock = (value) => {
+  const content = value?.trim() || '(Issue 正文为空)';
+  const longestFence = Math.max(0, ...(content.match(/`+/g) || []).map((item) => item.length));
+  const fence = '`'.repeat(Math.max(3, longestFence + 1));
+  return `${fence}text\n${content}\n${fence}`;
+};
+
+const buildManualReviewSection = (issue) => {
+  const subject = `D-blog 友链人工审核：${issue.title || `Issue #${issue.number}`}`;
+  const body = issue.body?.trim() || '';
+  const mailto = `mailto:i@PLDDUCK.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+  return `### 人工审核\n\n部分框架会在浏览器运行 JavaScript 后才渲染友链，bot 可能无法从静态 HTML 中识别。若你已确认友链正常显示，可以发送邮件到 **i@PLDDUCK.com** 申请人工添加。\n\n[撰写人工审核邮件（已预填原 Issue 内容）](${mailto})\n\n邮件只需保留原 Issue 内容，无需重新整理资料。\n\n<details>\n<summary>查看并复制原 Issue 内容</summary>\n\n${markdownCodeBlock(body)}\n\n</details>`;
+};
+
 const validateApplication = async (application) => {
   if (!/^[A-Za-z0-9_-]+(?:\.json)?$/.test(application.filename) || application.filename.toLowerCase() === '.json') return '文件名不符合规则。';
   if (!(await isSafePublicHttpUrl(application.url))) return '站点地址不是安全的公开 HTTP(S) 地址。';
@@ -218,7 +233,7 @@ const processReview = async () => {
     if (error) {
       await comment(
         issue.number,
-        `${REJECTED_MARKER}\n\n## 友链申请未通过\n\n- **审核结果**：未通过\n- **失败原因**：${error}\n- **Issue 状态**：已关闭\n\n请根据上面的原因修正友链页或申请资料，然后重新生成并提交新的 Issue。`,
+        `${REJECTED_MARKER}\n\n## 友链申请未通过\n\n- **审核结果**：未通过\n- **失败原因**：${error}\n- **Issue 状态**：已关闭\n\n你可以根据上面的原因修正友链页或申请资料，然后重新生成并提交新的 Issue。\n\n---\n\n${buildManualReviewSection(issue)}`,
       );
       await close(issue.number, 'not_planned');
       continue;
