@@ -1,5 +1,3 @@
-import type { CoverTemplate } from '../../config/coverTemplates';
-
 export const COVER_STORAGE_VERSION = 1;
 export const COVER_DRAFT_KEY = 'd-blog-cover-draft-v1';
 export const COVER_PRESETS_KEY = 'd-blog-cover-presets-v1';
@@ -98,5 +96,3 @@ export function deletePreset(name: string): StoredPreset[] {
   try { storage()?.setItem(COVER_PRESETS_KEY, JSON.stringify(next)); } catch { /* ignore */ }
   return next;
 }
-
-export function templateId(template: CoverTemplate): string { return template.id; }

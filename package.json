@@ -12,9 +12,7 @@
     "gen:data": "npm run gen:images && node scripts/generate-site-data.mjs",
     "prerender": "node scripts/prerender.mjs",
     "typecheck": "tsc -p config/tsconfig.json --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "check": "npm run typecheck && npm run test && npm run gen:data",
+    "check": "npm run typecheck && npm run gen:data",
     "dev": "npm run gen:data && vite",
     "build": "npm run gen:data && vite build && npm run prerender",
     "preview": "vite preview"

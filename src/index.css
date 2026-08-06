@@ -344,8 +344,13 @@ html.theme-switching .editorial-input {
 .heading-anchor {
   @apply absolute -left-8 top-1/2 hidden -translate-y-1/2 text-zinc-300 opacity-0 transition-opacity hover:text-zinc-900 dark:text-zinc-600 dark:hover:text-zinc-100 md:inline-flex;
 }
-.group\/heading:hover .heading-anchor {
+.group\/heading:hover .heading-anchor,
+.group\/heading:focus-within .heading-anchor,
+.heading-anchor:focus-visible {
   @apply opacity-100;
+}
+.heading-anchor:focus-visible {
+  @apply rounded-micro outline outline-2 outline-offset-2 outline-zinc-900 dark:outline-zinc-100;
 }
 
   .code-block {

@@ -1,4 +1,3 @@
-import { getExportFilename } from './coverLayout';
 import type { ExportFormat } from './coverTypes';
 
 export function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> {
@@ -56,8 +55,4 @@ export function downloadBlob(blob: Blob, filename: string): void {
   } finally {
     window.setTimeout(() => URL.revokeObjectURL(url), 100);
   }
-}
-
-export function exportFilename(name: string, format: ExportFormat, scale: number): string {
-  return getExportFilename(name, format, scale);
 }

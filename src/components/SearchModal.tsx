@@ -10,7 +10,7 @@ import { easeSmooth } from '@/utils/motion';
 import { SearchField } from '@/components/SearchField';
 
 const TEXT = {
-  searchPlaceholder: '搜索文章... (⌘K)',
+  searchPlaceholder: '搜索文章... (Ctrl/⌘ K)',
   searchEmpty: '输入关键词开始搜索',
   searchScopeLabel: '搜索范围',
   close: '关闭',
@@ -72,6 +72,14 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     scope: searchScope
   });
   const visibleResults = results.slice(0, 8);
+  const searchResultsListboxId = 'site-search-results';
+  const isResultsListboxOpen = !isSearching && !searchError && visibleResults.length > 0;
+  const activeResultId = isResultsListboxOpen && visibleResults[activeResultIndex]
+    ? `site-search-result-${visibleResults[activeResultIndex].id}`
+    : undefined;
+  const searchResultStatus = !isSearching && hasSearchQuery
+    ? `找到 ${results.length} ${TEXT.resultsSuffix}`
+    : '';
   const activeScopeHint = SEARCH_SCOPE_HINTS[searchScope];
   const prefersReducedMotion = useReducedMotion();
   const modalEase = easeSmooth;
@@ -181,6 +189,9 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 onKeyDown={handleInputKeyDown}
                 onClear={clearSearch}
                 aria-labelledby="site-search-title"
+                aria-controls={searchResultsListboxId}
+                aria-expanded={isResultsListboxOpen}
+                aria-activedescendant={activeResultId}
               />
               <button onClick={onClose} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-600 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:text-zinc-300 dark:hover:bg-zinc-800" aria-label="关闭站内搜索">
                 <X size={20} />
@@ -210,6 +221,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto sm:max-h-[60vh] supports-[height:100dvh]:sm:max-h-[60dvh]" aria-busy={isSearching}>
+              <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{searchResultStatus}</div>
               {isSearching ? (
                 <div className="p-12 text-center text-zinc-600 dark:text-zinc-300" role="status" aria-live="polite">
                   <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-zinc-900 border-t-transparent dark:border-zinc-100" aria-hidden="true" />
@@ -222,9 +234,11 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                   <button type="button" onClick={clearSearch} className="editorial-button mt-4">清除搜索</button>
                 </div>
               ) : visibleResults.length > 0 ? (
-                <div className="p-2" role="listbox" aria-label="搜索结果" aria-activedescendant={visibleResults[activeResultIndex] ? `site-search-result-${visibleResults[activeResultIndex].id}` : undefined}>
+                <div id={searchResultsListboxId} className="p-2" role="listbox" aria-label="搜索结果">
                   <div className="px-3 pt-3 text-xs font-medium uppercase tracking-[0.2em] text-zinc-700 dark:text-zinc-300">
-                    共 {results.length} {TEXT.resultsSuffix}{results.length > visibleResults.length ? `，展示前 ${visibleResults.length} 条` : ''}
+                    <span aria-hidden="true">
+                      共 {results.length} {TEXT.resultsSuffix}{results.length > visibleResults.length ? `，展示前 ${visibleResults.length} 条` : ''}
+                    </span>
                   </div>
                   {visibleResults.map((post, index) => {
                     const isActive = index === activeResultIndex;

@@ -22,6 +22,7 @@ import { removeReadingHistory } from '@/services/readingHistory';
 import { isReadingComplete } from '@/utils/readingProgress';
 import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';
 import { Pagination } from '@/components/Pagination';
+import { canonicalizeHomeQuery, getHomeQueryState, setHomeQueryParam } from '@/utils/homeQuery';
 
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
 
@@ -315,14 +316,15 @@ export const Home = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryFromUrl = searchParams.get('category');
   const queryFromUrl = searchParams.get('q') || '';
+  const homeQueryState = useMemo(() => getHomeQueryState(searchParams), [searchParams]);
   const [allPosts, setAllPosts] = useState<PostMetadata[]>(initialPosts);
   const [categories, setCategories] = useState<string[]>(() => getCategories(initialPosts));
   const [selectedCategory, setSelectedCategory] = useState(() => categoryFromUrl || ALL_CATEGORY);
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>(() => homeQueryState.sortOrder);
   const [loading, setLoading] = useState(initialPosts.length === 0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(homeQueryState.page);
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
   const { latest: latestReading, refresh: refreshReadingHistory } = useReadingHistory();
   const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
@@ -372,6 +374,16 @@ export const Home = () => {
   }, [loadAttempt]);
 
   useEffect(() => {
+    const canonicalParams = canonicalizeHomeQuery(searchParams);
+    if (canonicalParams.toString() !== searchParams.toString()) {
+      setSearchParams(canonicalParams, { replace: true });
+    }
+
+    setSortOrder(homeQueryState.sortOrder);
+    setCurrentPage(homeQueryState.page);
+  }, [homeQueryState, searchParams, setSearchParams]);
+
+  useEffect(() => {
     if (!categoryFromUrl) {
       setSelectedCategory(ALL_CATEGORY);
       return;
@@ -386,6 +398,7 @@ export const Home = () => {
       setSearchParams((previous) => {
         const nextParams = new URLSearchParams(previous);
         nextParams.delete('category');
+        nextParams.delete('page');
         return nextParams;
       }, { replace: true });
       setSelectedCategory(ALL_CATEGORY);
@@ -397,10 +410,6 @@ export const Home = () => {
       setSearchQuery(queryFromUrl);
     }
   }, [queryFromUrl, searchQuery, setSearchQuery]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedCategory, sortOrder]);
 
   const displayedPosts = useMemo(() => filterAndSortPosts(results, selectedCategory, sortOrder), [results, selectedCategory, sortOrder]);
   const continueReading = useMemo(() => {
@@ -432,8 +441,19 @@ export const Home = () => {
   const { totalPages } = paginationData;
 
   useEffect(() => {
-    setCurrentPage((previous) => Math.min(previous, totalPages));
-  }, [totalPages]);
+    const categoryStateFromUrl = categoryFromUrl && categories.includes(categoryFromUrl)
+      ? categoryFromUrl
+      : ALL_CATEGORY;
+    const filtersAreSynced = selectedCategory === categoryStateFromUrl && searchQuery === queryFromUrl;
+    const initialSearchIsPending = Boolean(queryFromUrl.trim()) && results === allPosts;
+
+    if (loading || isSearching || !filtersAreSynced || initialSearchIsPending || currentPage <= totalPages) {
+      return;
+    }
+
+    setCurrentPage(totalPages);
+    setSearchParams((previous) => setHomeQueryParam(previous, 'page', totalPages), { replace: true });
+  }, [allPosts, categories, categoryFromUrl, currentPage, isSearching, loading, queryFromUrl, results, searchQuery, selectedCategory, setSearchParams, totalPages]);
 
   const handleSelectCategory = (category: string) => {
     setSelectedCategory(category);
@@ -445,13 +465,20 @@ export const Home = () => {
       } else {
         nextParams.set('category', category);
       }
+      nextParams.delete('page');
 
       return nextParams;
     }, { replace: true });
   };
 
   const handleToggleSort = () => {
-    setSortOrder((current) => current === 'newest' ? 'oldest' : 'newest');
+    const nextSortOrder = sortOrder === 'newest' ? 'oldest' : 'newest';
+    setSortOrder(nextSortOrder);
+    setSearchParams((previous) => {
+      const nextParams = setHomeQueryParam(previous, 'sort', nextSortOrder);
+      nextParams.delete('page');
+      return nextParams;
+    }, { replace: false });
   };
 
   const handleSearchChange = (query: string) => {
@@ -464,6 +491,7 @@ export const Home = () => {
       } else {
         nextParams.delete('q');
       }
+      nextParams.delete('page');
 
       return nextParams;
     }, { replace: true });
@@ -474,6 +502,7 @@ export const Home = () => {
     setSearchParams((previous) => {
       const nextParams = new URLSearchParams(previous);
       nextParams.delete('q');
+      nextParams.delete('page');
       return nextParams;
     }, { replace: true });
   };
@@ -510,7 +539,9 @@ export const Home = () => {
   }, [currentPage, displayedPosts, heroPost, heroSlots, isMobile, postsPerPage]);
 
   const paginate = (pageNumber: number) => {
-    setCurrentPage(Math.min(Math.max(1, pageNumber), totalPages));
+    const nextPage = Math.min(Math.max(1, pageNumber), totalPages);
+    setCurrentPage(nextPage);
+    setSearchParams((previous) => setHomeQueryParam(previous, 'page', nextPage), { replace: false });
     window.requestAnimationFrame(() => {
       const postsPanel = document.getElementById('posts-panel');
       postsPanel?.scrollIntoView({ behavior: shouldReduceMotion ? 'auto' : 'smooth', block: 'start' });

@@ -84,7 +84,8 @@ export const buildRssFeed = (postsInput, {
     const contentHtml = markdownToFeedHtml(post.content || '', {
       siteUrl: normalizedSiteUrl,
       basePath,
-      postUrl
+      postUrl,
+      postId: post.id
     });
 
     return `

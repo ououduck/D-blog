@@ -15,39 +15,56 @@ export const BatchCoverDialog: React.FC<BatchCoverDialogProps> = ({ isOpen, onCl
   const [isReading, setIsReading] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectFileButtonRef = useRef<HTMLButtonElement>(null);
+  const readGenerationRef = useRef(0);
+  const openFilePicker = () => fileInputRef.current?.click();
+
+  const handleClose = () => {
+    readGenerationRef.current += 1;
+    setIsReading(false);
+    onClose();
+  };
 
   useModalOverlay({
     isOpen,
-    onClose,
-    initialFocusRef: fileInputRef,
+    onClose: handleClose,
+    initialFocusRef: selectFileButtonRef,
     containerRef: dialogRef,
   });
 
   if (!isOpen) return null;
 
   const handleFiles = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const generation = ++readGenerationRef.current;
     const files = Array.from(event.target.files || []);
     setIsReading(true); setItems([]); setIssues([]);
     const nextItems: BatchCoverItem[] = []; const nextIssues: BatchParseIssue[] = [];
     for (const file of files) {
       const result = parseBatchText(await file.text(), file.name);
+      if (generation !== readGenerationRef.current) return;
       nextItems.push(...result.items); nextIssues.push(...result.issues.map((issue) => ({ ...issue, message: `${file.name}：${issue.message}` })));
     }
+    if (generation !== readGenerationRef.current) return;
     setItems(nextItems); setIssues(nextIssues); setIsReading(false); event.target.value = '';
   };
 
   return (
-    <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/50 p-4" onClick={handleClose}>
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="batch-cover-title" tabIndex={-1} className="editorial-overlay max-h-[90vh] w-full max-w-2xl overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h2 id="batch-cover-title" className="text-xl font-bold text-ink dark:text-white">批量生成封面</h2>
-          <button type="button" onClick={onClose} aria-label="关闭批量生成" className="rounded-icon p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"><X size={18} /></button>
+          <button type="button" onClick={handleClose} aria-label="关闭批量生成" className="rounded-icon p-2 text-zinc-500 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink dark:hover:bg-zinc-800 dark:focus-visible:outline-white"><X size={18} /></button>
         </div>
         <p className="mb-4 text-sm leading-6 text-zinc-500 dark:text-zinc-400">上传 Markdown、CSV 或 JSON，读取 title、subtitle/description 和 slug；生成结果只会下载为 ZIP，不会修改文章文件。</p>
-        <label className="flex cursor-pointer items-center justify-center rounded-control border border-dashed border-zinc-400 px-4 py-4 text-sm font-semibold text-zinc-700 hover:border-ink dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white">
+        <button
+          ref={selectFileButtonRef}
+          type="button"
+          onClick={openFilePicker}
+          className="flex w-full cursor-pointer items-center justify-center rounded-control border border-dashed border-zinc-400 px-4 py-4 text-sm font-semibold text-zinc-700 hover:border-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white dark:focus-visible:outline-white"
+        >
           选择数据文件
-          <input ref={fileInputRef} type="file" multiple accept=".md,.markdown,.csv,.json,text/markdown,text/csv,application/json" onChange={handleFiles} className="sr-only" />
-        </label>
+        </button>
+        <input ref={fileInputRef} type="file" multiple accept=".md,.markdown,.csv,.json,text/markdown,text/csv,application/json" onChange={handleFiles} className="sr-only" />
         {isReading && <p className="mt-4 text-sm text-zinc-500" role="status">正在读取文件…</p>}
         {issues.length > 0 && <ul className="mt-4 space-y-1 rounded-control border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900" role="alert">{issues.map((issue, index) => <li key={`${issue.line}-${index}`}>第 {issue.line} 行：{issue.message}</li>)}</ul>}
         {items.length > 0 && (

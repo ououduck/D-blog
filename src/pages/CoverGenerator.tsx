@@ -63,6 +63,9 @@ export const CoverGenerator: React.FC = () => {
   const iconInputRef = useRef<HTMLInputElement>(null);
   const fontInputRef = useRef<HTMLInputElement>(null);
   const iconSearchInputRef = useRef<HTMLInputElement>(null);
+  const iconifyDialogRef = useRef<HTMLDivElement>(null);
+  const bgImageLoadGenerationRef = useRef(0);
+  const iconLoadGenerationRef = useRef(0);
   const renderIdRef = useRef(0);
   const shouldReduceMotion = useReducedMotion();
 
@@ -168,7 +171,8 @@ export const CoverGenerator: React.FC = () => {
   useModalOverlay({
     isOpen: showIconifyModal,
     onClose: closeIconifyModal,
-    initialFocusRef: iconSearchInputRef
+    initialFocusRef: iconSearchInputRef,
+    containerRef: iconifyDialogRef
   });
 
   // 折叠面板
@@ -247,11 +251,13 @@ export const CoverGenerator: React.FC = () => {
     setSelectedTemplate(defaultTemplate);
     setLayoutMode('icon-split');
     setTextAlign('center');
+    bgImageLoadGenerationRef.current += 1;
     setBgImage(null);
     setBgFileName(null);
     resetBackgroundImageControls();
     setTransparentBackground(false);
     setJpegQuality(92);
+    iconLoadGenerationRef.current += 1;
     setShowIcon(true);
     setCustomIcon(DEFAULT_ICON_SOURCE);
     setIconifyIconName(null);
@@ -394,8 +400,10 @@ export const CoverGenerator: React.FC = () => {
   }, [redo, undo]);
 
   const handleBgImageFile = useCallback(async (file: File) => {
+    const generation = ++bgImageLoadGenerationRef.current;
     try {
       const image = await loadImageFile(file, 'background');
+      if (generation !== bgImageLoadGenerationRef.current) return;
       setBgImage(image);
       setBgFileName(file.name);
       setBgImageScale(1);
@@ -408,6 +416,7 @@ export const CoverGenerator: React.FC = () => {
       setBgFlipY(false);
       setFeedback({ kind: 'success', message: '背景图片已加载' });
     } catch (error) {
+      if (generation !== bgImageLoadGenerationRef.current) return;
       setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '背景图片加载失败' });
     }
   }, []);
@@ -438,14 +447,17 @@ export const CoverGenerator: React.FC = () => {
 
   const handleIconUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget;
+    const generation = ++iconLoadGenerationRef.current;
     try {
       const file = input.files?.[0];
       if (!file) return;
       const image = await loadImageFile(file, 'icon');
+      if (generation !== iconLoadGenerationRef.current) return;
       setCustomIcon(image.src);
       setIconifyIconName(null);
       setFeedback({ kind: 'success', message: '图标已加载' });
     } catch (error) {
+      if (generation !== iconLoadGenerationRef.current) return;
       setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '图标加载失败' });
     } finally {
       input.value = '';
@@ -1307,7 +1319,7 @@ export const CoverGenerator: React.FC = () => {
                           <button type="button" onClick={() => { setBgImageX(0); setBgImageY(0); }} className="rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">居中</button>
                           <button type="button" onClick={resetBackgroundImageControls} className="rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">重置参数</button>
                         </div>
-                        <button type="button" onClick={() => { setBgImage(null); setBgFileName(null); resetBackgroundImageControls(); }} className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-zinc-500 bg-paper px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink hover:bg-zinc-100 active:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white dark:hover:border-white dark:hover:bg-zinc-800 dark:active:bg-zinc-800">
+                        <button type="button" onClick={() => { bgImageLoadGenerationRef.current += 1; setBgImage(null); setBgFileName(null); resetBackgroundImageControls(); }} className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-zinc-500 bg-paper px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink hover:bg-zinc-100 active:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white dark:hover:border-white dark:hover:bg-zinc-800 dark:active:bg-zinc-800">
                           <X size={14} />移除背景图片
                         </button>
                       </div>
@@ -1744,6 +1756,8 @@ export const CoverGenerator: React.FC = () => {
             onClick={closeIconifyModal}
           >
             <motion.div
+              ref={iconifyDialogRef}
+              tabIndex={-1}
               initial={shouldReduceMotion ? { opacity: 0 } : { scale: 0.98, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={shouldReduceMotion ? { opacity: 0 } : { scale: 0.98, opacity: 0 }}

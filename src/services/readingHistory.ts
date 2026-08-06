@@ -6,7 +6,6 @@ export const READING_HISTORY_EVENT = 'd-blog:reading-history-change';
 export interface ReadingHistoryEntry {
   postId: string;
   progress: number;
-  scrollTop: number;
   updatedAt: number;
 }
 
@@ -16,12 +15,10 @@ const clamp = (value: number) => Math.min(Math.max(value, 0), 1);
 const normalizeEntry = (value: unknown): ReadingHistoryEntry | undefined => {
   if (!isRecord(value) || typeof value.postId !== 'string' || !value.postId.trim()) return undefined;
   if (typeof value.progress !== 'number' || !Number.isFinite(value.progress)) return undefined;
-  if (typeof value.scrollTop !== 'number' || !Number.isFinite(value.scrollTop) || value.scrollTop < 0) return undefined;
   if (typeof value.updatedAt !== 'number' || !Number.isFinite(value.updatedAt) || value.updatedAt < 0) return undefined;
   return {
     postId: value.postId,
     progress: clamp(value.progress),
-    scrollTop: value.scrollTop,
     updatedAt: value.updatedAt
   };
 };
@@ -64,7 +61,6 @@ export const saveReadingHistory = (entry: Omit<ReadingHistoryEntry, 'updatedAt'>
   const nextEntry: ReadingHistoryEntry = {
     postId: entry.postId,
     progress: clamp(entry.progress),
-    scrollTop: Math.max(0, entry.scrollTop),
     updatedAt: entry.updatedAt ?? Date.now()
   };
   if (isReadingComplete(nextEntry.progress)) {

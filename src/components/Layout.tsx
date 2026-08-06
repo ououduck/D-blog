@@ -197,6 +197,10 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const mobileNavPanelRef = useRef<HTMLElement | null>(null);
   const touchStartYRef = useRef<number>(0);
   const touchCurrentYRef = useRef<number>(0);
+  const touchStartXRef = useRef<number>(0);
+  const touchCurrentXRef = useRef<number>(0);
+  const mobileNavScrollRef = useRef<HTMLElement | null>(null);
+  const canStartSwipeRef = useRef(false);
   const isSwipingRef = useRef(false);
   const mobileNavDuration = shouldReduceMotion ? 1 : MOBILE_NAV_ANIMATION_DURATION_MS;
   const isMobileNavOpen = mobileNavPhase === 'open' || mobileNavPhase === 'opening';
@@ -309,11 +313,12 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     afterCloseActionRef.current = null;
 
     if (!afterCloseAction) {
-      window.setTimeout(() => {
+      // Wait for the trigger to leave its disabled animation state before restoring focus.
+      window.requestAnimationFrame(() => {
         const focusTarget = previousActiveElementRef.current ?? mobileNavMenuButtonRef.current;
         focusTarget?.focus();
         previousActiveElementRef.current = null;
-      }, 0);
+      });
     }
 
     afterCloseAction?.();
@@ -426,8 +431,13 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       return;
     }
 
-    touchStartYRef.current = e.touches[0].clientY;
-    touchCurrentYRef.current = e.touches[0].clientY;
+    const touch = e.touches[0];
+    touchStartYRef.current = touch.clientY;
+    touchCurrentYRef.current = touch.clientY;
+    touchStartXRef.current = touch.clientX;
+    touchCurrentXRef.current = touch.clientX;
+    mobileNavScrollRef.current = mobileNavPanelRef.current?.querySelector<HTMLElement>('.mobile-nav-scroll') ?? null;
+    canStartSwipeRef.current = Boolean(mobileNavScrollRef.current && mobileNavScrollRef.current.scrollTop <= 1);
     isSwipingRef.current = false;
   }, [mobileNavPhase]);
 
@@ -436,12 +446,19 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       return;
     }
 
-    const currentY = e.touches[0].clientY;
+    const touch = e.touches[0];
+    const currentY = touch.clientY;
+    const currentX = touch.clientX;
     const deltaY = currentY - touchStartYRef.current;
+    const deltaX = currentX - touchStartXRef.current;
     touchCurrentYRef.current = currentY;
+    touchCurrentXRef.current = currentX;
 
-    // Only allow downward swipe
-    if (deltaY <= 0) return;
+    // Only drag for a predominantly downward gesture from the top of the scrollable menu.
+    const isAtScrollTop = Boolean(mobileNavScrollRef.current && mobileNavScrollRef.current.scrollTop <= 1);
+    if (deltaY <= 0 || deltaY <= Math.abs(deltaX) || !canStartSwipeRef.current || !isAtScrollTop) {
+      return;
+    }
 
     isSwipingRef.current = true;
     const panel = mobileNavPanelRef.current;
@@ -465,10 +482,12 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     }
 
     const deltaY = touchCurrentYRef.current - touchStartYRef.current;
+    const deltaX = touchCurrentXRef.current - touchStartXRef.current;
+    const isAtScrollTop = Boolean(mobileNavScrollRef.current && mobileNavScrollRef.current.scrollTop <= 1);
 
     resetMobileNavDragStyles();
 
-    if (isSwipingRef.current && deltaY > 80) {
+    if (isSwipingRef.current && isAtScrollTop && deltaY > 80 && deltaY > Math.abs(deltaX)) {
       requestCloseMobileNav();
     }
 
@@ -649,6 +668,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                   type="button"
                   className="group inline-flex h-10 items-center gap-1 px-2 py-1 text-sm font-semibold tracking-wide text-zinc-700 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 dark:text-zinc-300 dark:hover:text-white"
                   aria-label="展开收藏与订阅菜单"
+                  aria-haspopup="menu"
                   aria-expanded={isMoreMenuOpen}
                   aria-controls="desktop-more-menu"
                   onClick={() => setIsMoreMenuOpen(true)}
@@ -902,7 +922,8 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
   const routeVariants = prefersReducedMotion
     ? { initial: { opacity: 1 }, animate: { opacity: 1 }, exit: { opacity: 1 } }
     : routeShellVariants;
-  const routeContentKey = `${location.pathname}${location.search}`;
+  // Keep query-only changes mounted so typing in search does not restart the home animation.
+  const routeContentKey = location.pathname;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

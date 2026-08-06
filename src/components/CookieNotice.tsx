@@ -90,13 +90,13 @@ export const CookieNotice: React.FC = () => {
               <div className="flex w-full items-center gap-2 sm:w-auto sm:flex-shrink-0">
                 <button
                   onClick={handleAccept}
-                  className="flex-1 rounded-control border border-zinc-950 bg-zinc-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:scale-[0.98] focus:outline-none dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300 sm:flex-initial"
+                  className="flex-1 rounded-control border border-zinc-950 bg-zinc-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300 dark:focus-visible:outline-zinc-100 sm:flex-initial"
                 >
                   同意
                 </button>
                 <button
                   onClick={handleClose}
-                  className="flex min-h-11 min-w-11 items-center justify-center rounded-icon border border-transparent text-zinc-500 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-700 active:scale-[0.98] focus:outline-none dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                  className="flex min-h-11 min-w-11 items-center justify-center rounded-icon border border-transparent text-zinc-500 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-700 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 dark:focus-visible:outline-zinc-100"
                   aria-label="关闭 Cookie 使用说明"
                 >
                   <X size={18} />

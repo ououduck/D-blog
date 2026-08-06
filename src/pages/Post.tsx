@@ -134,6 +134,22 @@ const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ 
 const TableOfContents = lazy(() => import('../components/TableOfContents').then((m) => ({ default: m.TableOfContents })));
 const ReadingProgressBadge = lazy(() => import('../components/ReadingProgressBadge').then((m) => ({ default: m.ReadingProgressBadge })));
 const MAX_CODE_LINES = 30;
+const READING_SCROLL_KEYS = new Set([
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'End',
+  'Home',
+  'PageDown',
+  'PageUp',
+  ' '
+]);
+
+const isEditableKeyboardTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName);
+};
 
 const extractLangFromChildren = (children: React.ReactNode): string | undefined => {
   const codeChild = React.Children.toArray(children).find(
@@ -178,7 +194,6 @@ const getCodeText = (children: React.ReactNode) => extractTextFromReactNode(chil
   .replace(/\n$/, '');
 
 const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>) => {
-  const preRef = useRef<HTMLPreElement>(null);
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpand, setNeedsExpand] = useState(false);
@@ -279,7 +294,7 @@ const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttr
           <div className="code-line-numbers" aria-hidden="true">
             {lineNumbers.map((number) => <span key={number}>{number}</span>)}
           </div>
-          <pre ref={preRef} {...props} className={`${props.className || ''} !my-0 !min-w-max !bg-transparent !p-3.5 !leading-6 md:!p-5`}>
+          <pre {...props} className={`${props.className || ''} !my-0 !min-w-max !bg-transparent !p-3.5 !leading-6 md:!p-5`}>
             {childrenWithProps}
           </pre>
         </div>
@@ -498,9 +513,10 @@ const isSafeMarkdownHref = (href?: string) => {
 // 渲染时仅对极少数未以 / 开头的相对路径做兜底归一化。
 const isAbsoluteAssetPath = (value: string) => value.startsWith('/') || /^[a-z][a-z0-9+.-]*:/i.test(value);
 
-const resolvePostsImgPath = (value: string) => {
+const resolvePostsImgPath = (value: string, postId?: string) => {
   const clean = value.replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/^(\.\.\/)+/g, '');
-  return assetUrl(`/${clean}`);
+  const normalized = clean.startsWith('posts-img/') ? `/${clean}` : `/posts-img/${postId ? `${postId}/` : ''}${clean}`;
+  return assetUrl(normalized);
 };
 
 const resolveBrowserAsset = (value?: string) => {
@@ -542,7 +558,8 @@ const createMarkdownComponents = (
   mermaidRenderer: MermaidRenderer | null,
   mermaidTheme: 'light' | 'dark',
   imageDimensions: PostMetadata['imageDimensions'],
-  headings: MarkdownHeading[]
+  headings: MarkdownHeading[],
+  postId?: string
 ): Components => {
   let headingCursor = 0;
   const fallbackHeadingIds = new Map<string, number>();
@@ -610,7 +627,7 @@ const createMarkdownComponents = (
   return {
     a: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
       const hrefIsImage = Boolean(href) && isImageUrl(href);
-      const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? resolveBrowserAsset(href) : resolvePostsImgPath(href)) : href;
+      const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? resolveBrowserAsset(href) : resolvePostsImgPath(href, postId)) : href;
       const safeHref = isSafeMarkdownHref(resolvedHref) ? resolvedHref : undefined;
       const normalizedHref = safeHref && safeHref.startsWith('/') ? routeUrl(safeHref) : safeHref;
 
@@ -648,10 +665,29 @@ const createMarkdownComponents = (
         return <>{children}</>;
       }
 
-      return <a href={normalizedHref} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+      // 站内链接保持 SPA 的同页导航；只有真正的 HTTP(S) 外链才新开标签。
+      // 这样文章内锚点不会意外打开新页面，键盘和浏览器历史行为也与普通站内链接一致。
+      const isInternalLink = normalizedHref.startsWith('#')
+        || normalizedHref.startsWith('/')
+        || normalizedHref.startsWith('./')
+        || normalizedHref.startsWith('../');
+      if (isInternalLink) {
+        return <Link to={normalizedHref} {...props}>{children}</Link>;
+      }
+
+      const isHttpExternal = /^https?:/i.test(normalizedHref);
+      return (
+        <a
+          href={normalizedHref}
+          {...(isHttpExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          {...props}
+        >
+          {children}
+        </a>
+      );
     },
     img: ({ src, alt, title, previewSrc, ...props }: MarkdownImageProps) => {
-      const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? resolveBrowserAsset(src) : resolvePostsImgPath(src)) : src;
+      const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? resolveBrowserAsset(src) : resolvePostsImgPath(src, postId)) : src;
       const previewTarget = previewSrc || resolvedSrc || '';
       const dimensions = resolvedSrc ? findImageDimensions(imageDimensions, resolvedSrc) : undefined;
       return (
@@ -775,6 +811,10 @@ export const Post = () => {
     setLoading(true);
     setPost(null);
     setLoadError(null);
+    // Do not expose the previous article's navigation while the next article is loading.
+    setAdjacentPosts({ prev: null, next: null });
+    setSeriesNavigation(null);
+    setRelatedPosts([]);
 
     getPostById(id)
       .then((data) => {
@@ -980,23 +1020,76 @@ export const Post = () => {
     }
 
     const savedEntry = getReadingHistoryEntry(post.id);
-    if (!savedEntry || isReadingComplete(savedEntry.progress)) {
-      return;
-    }
+    if (!savedEntry || isReadingComplete(savedEntry.progress)) return;
 
-    const restoreTimer = window.setTimeout(() => {
+    let cancelled = false;
+    let userIntent = false;
+    let frame = 0;
+    let lastDocumentHeight = -1;
+    let stableFrames = 0;
+    let programmaticScroll = false;
+    let resetProgrammaticFrame = 0;
+
+    const stopRestore = () => {
+      userIntent = true;
+    };
+    const handleScroll = () => {
+      if (!programmaticScroll) stopRestore();
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isEditableKeyboardTarget(event.target) && READING_SCROLL_KEYS.has(event.key)) stopRestore();
+    };
+    const scheduleRestore = () => {
+      if (!frame && !cancelled && !userIntent) frame = window.requestAnimationFrame(restore);
+    };
+    const restore = () => {
+      frame = 0;
+      if (cancelled || userIntent) return;
+      const documentHeight = document.documentElement.scrollHeight;
+      stableFrames = documentHeight === lastDocumentHeight ? stableFrames + 1 : 0;
+      lastDocumentHeight = documentHeight;
       const rect = target.getBoundingClientRect();
       const top = getScrollTopForReadingProgress({
         rect,
         viewportHeight: window.innerHeight,
         scrollY: window.scrollY,
-        documentHeight: document.documentElement.scrollHeight
+        documentHeight
       }, savedEntry.progress);
-
+      programmaticScroll = true;
       window.scrollTo({ top, behavior: 'auto' });
-    }, 80);
+      if (resetProgrammaticFrame) window.cancelAnimationFrame(resetProgrammaticFrame);
+      resetProgrammaticFrame = window.requestAnimationFrame(() => {
+        resetProgrammaticFrame = window.requestAnimationFrame(() => { programmaticScroll = false; });
+      });
+      // Re-apply after layout settles (images, syntax highlighting, and math can resize the article).
+      if (stableFrames < 2) scheduleRestore();
+    };
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(scheduleRestore)
+      : null;
 
-    return () => window.clearTimeout(restoreTimer);
+    window.addEventListener('wheel', stopRestore, { passive: true });
+    window.addEventListener('touchstart', stopRestore, { passive: true });
+    window.addEventListener('pointerdown', stopRestore, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', scheduleRestore);
+    resizeObserver?.observe(target);
+    resizeObserver?.observe(document.documentElement);
+    scheduleRestore();
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('wheel', stopRestore);
+      window.removeEventListener('touchstart', stopRestore);
+      window.removeEventListener('pointerdown', stopRestore);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', scheduleRestore);
+      resizeObserver?.disconnect();
+      if (frame) window.cancelAnimationFrame(frame);
+      if (resetProgrammaticFrame) window.cancelAnimationFrame(resetProgrammaticFrame);
+    };
   }, [post?.id, headings.length]);
 
   useEffect(() => {
@@ -1014,7 +1107,7 @@ export const Post = () => {
     const saveLatestProgress = () => {
       if (!hasProgressSnapshot || completionSaved || isReadingComplete(latestProgress)) return;
       lastReadingSaveRef.current = Date.now();
-      saveReadingHistory({ postId: post.id, progress: latestProgress, scrollTop: window.scrollY });
+      saveReadingHistory({ postId: post.id, progress: latestProgress });
     };
     const updateReadingHistory = () => {
       animationFrame = 0;
@@ -1035,13 +1128,13 @@ export const Post = () => {
         if (!completionSaved) {
           completionSaved = true;
           lastReadingSaveRef.current = now;
-          saveReadingHistory({ postId: post.id, progress, scrollTop: window.scrollY });
+          saveReadingHistory({ postId: post.id, progress });
         }
         return;
       }
       if (isReadingComplete(progress) || now - lastReadingSaveRef.current < 1000) return;
       lastReadingSaveRef.current = now;
-      saveReadingHistory({ postId: post.id, progress, scrollTop: window.scrollY });
+      saveReadingHistory({ postId: post.id, progress });
     };
     const scheduleUpdate = () => {
       if (!animationFrame) animationFrame = window.requestAnimationFrame(updateReadingHistory);
@@ -1092,8 +1185,8 @@ export const Post = () => {
   }, [previewImage, shareModalOpen, adjacentPosts, navigate]);
 
   const markdownComponents = useMemo(
-    () => createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, mermaidTheme, post?.imageDimensions, headings),
-    [isReadingMode, mermaidRenderer, mermaidTheme, post?.imageDimensions, headings]
+    () => createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, mermaidTheme, post?.imageDimensions, headings, post?.id),
+    [mermaidRenderer, mermaidTheme, post?.id, post?.imageDimensions, headings]
   );
 
   if (loading) {
@@ -1322,7 +1415,7 @@ export const Post = () => {
         <div ref={articleBodyRef} className="post-body mx-auto w-full max-w-5xl px-3 pb-12 sm:px-4 md:pb-20 lg:px-0">
           <div className="mx-auto max-w-[46rem]">
             <div className="post-prose prose prose-stone max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:tracking-tight prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-3 dark:prose-h2:border-zinc-800 prose-p:leading-8 prose-li:leading-8 prose-a:break-words prose-a:underline-offset-4 prose-img:rounded-media prose-img:shadow-none prose-blockquote:rounded-none prose-blockquote:border-l-zinc-600 prose-blockquote:bg-zinc-100/70 prose-blockquote:not-italic dark:prose-blockquote:border-l-zinc-400 dark:prose-blockquote:bg-zinc-900 prose-pre:rounded-none prose-pre:border prose-pre:border-zinc-700 prose-pre:bg-[#0d0d0f] prose-pre:p-0">
-              <ReactMarkdown key={`markdown-${isReadingMode ? 'reading' : 'default'}`}
+              <ReactMarkdown
                 remarkPlugins={remarkPlugins}
                 rehypePlugins={rehypePlugins}
                 components={markdownComponents}

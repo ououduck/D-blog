@@ -160,6 +160,11 @@ export const Friends = () => {
           <Sparkles size={14} />
           以下排名不分先后，每次刷新都会随机排序
         </p>
+        {siteConfig.friendsPage.announcement && (
+          <p className="mt-4 max-w-3xl border-l-2 border-zinc-300 pl-3 text-sm leading-6 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+            {siteConfig.friendsPage.announcement}
+          </p>
+        )}
       </header>
 
       <div className="mb-12 border-y border-zinc-200 dark:border-zinc-800">

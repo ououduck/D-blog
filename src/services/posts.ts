@@ -6,16 +6,13 @@ const generatedPostModules = import.meta.glob<PostMetadata[]>('../../generated/p
   import: 'default'
 });
 const initialPosts = Object.values(generatedPostModules)[0] ?? [];
-let postsDataCache: PostMetadata[] | null = initialPosts;
 let postsSearchIndexCache: SearchIndexEntry[] | null = null;
 const SEARCH_CACHE_LIMIT = 80;
 const searchResultsCache = new Map<string, PostSearchResult[]>();
 
 const postFiles = import.meta.glob('../../posts/*.md', { query: '?raw', import: 'default' });
 
-const loadPostsData = async (): Promise<PostMetadata[]> => {
-  return postsDataCache || initialPosts;
-};
+const loadPostsData = async (): Promise<PostMetadata[]> => initialPosts;
 
 const loadPostsSearchData = async (): Promise<Array<PostMetadata & { searchText?: string }>> => {
   const data = await import('../../generated/posts-search.json');

@@ -31,14 +31,16 @@ const isSafeUrl = (value) => {
 
 const stripMarkdownUrlDecorators = (value) => String(value).trim().replace(/\s+["'][^"']*["']$/, '');
 
-const toPostsImgPath = (value) => {
+const toPostsImgPath = (value, postId) => {
   const clean = String(value)
     .replace(/\\/g, '/')
     .replace(/^\/+/, '')
     .replace(/^(\.\.\/)+/g, '')
     .replace(/^\.\/+/, '');
 
-  return `/posts-img/${clean.startsWith('posts-img/') ? clean.slice('posts-img/'.length) : clean}`;
+  return clean.startsWith('posts-img/')
+    ? `/${clean}`
+    : `/posts-img/${postId ? `${postId}/` : ''}${clean}`;
 };
 
 const toAbsoluteSiteUrl = (value, siteUrl, basePath) => {
@@ -63,7 +65,7 @@ const resolveLinkUrl = (value, { siteUrl, basePath, postUrl }) => {
   return toAbsoluteSiteUrl(rawUrl, siteUrl, basePath);
 };
 
-const resolveImageUrl = (value, { siteUrl, basePath }) => {
+const resolveImageUrl = (value, { siteUrl, basePath, postId }) => {
   const rawUrl = stripMarkdownUrlDecorators(value);
   if (!rawUrl) {
     return undefined;
@@ -74,7 +76,7 @@ const resolveImageUrl = (value, { siteUrl, basePath }) => {
   }
 
   return toAbsoluteSiteUrl(
-    rawUrl.startsWith('/') ? rawUrl : toPostsImgPath(rawUrl),
+    rawUrl.startsWith('/') ? rawUrl : toPostsImgPath(rawUrl, postId),
     siteUrl,
     basePath
   );
@@ -91,8 +93,15 @@ const rewriteUrls = (options) => {
         const href = resolveLinkUrl(node.properties.href, options);
         if (href) {
           node.properties.href = href;
-          node.properties.target = '_blank';
-          node.properties.rel = 'noopener noreferrer';
+          const isHttpExternal = /^https?:/i.test(href)
+            && new URL(href).origin !== new URL(options.siteUrl).origin;
+          if (isHttpExternal) {
+            node.properties.target = '_blank';
+            node.properties.rel = 'noopener noreferrer';
+          } else {
+            delete node.properties.target;
+            delete node.properties.rel;
+          }
         } else {
           delete node.properties.href;
         }
@@ -134,7 +143,7 @@ export const markdownToFeedHtml = (markdown, options = {}) => {
 
   const basePath = options.basePath || '/';
   const postUrl = options.postUrl || toAbsoluteSiteUrl('/', siteUrl, basePath);
-  const processor = createProcessor({ siteUrl, basePath, postUrl });
+  const processor = createProcessor({ siteUrl, basePath, postUrl, postId: options.postId });
   const tree = processor.parse(String(markdown || ''));
   const transformed = processor.runSync(tree);
   return processor.stringify(transformed);

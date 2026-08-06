@@ -7,7 +7,7 @@
 ![React](https://img.shields.io/badge/react-19-61dafb.svg)
 ![Vite](https://img.shields.io/badge/vite-6-646cff.svg)
 
-基于 React 19 + Vite 6 + TypeScript 构建的现代化静态博客系统
+基于 React 19 + Vite 6 + TypeScript 构建的现代化博客系统：客户端以 React SPA 运行，并在构建阶段生成站点数据、资源索引和预渲染 HTML。
 
 **在线演示**：<https://blog.pldduck.com>
 
@@ -55,9 +55,9 @@
 
 - **主题系统** - 浅色/深色/跟随系统三种模式，切换时支持 CSS View Transitions API 动画过渡
 - **页面过渡** - 路由切换优先使用 CSS View Transitions API，兜底使用 Framer Motion 动画
-- **导航体验** - 全局搜索弹窗（Ctrl+K 快捷键）、响应式导航栏、移动端底部菜单（下滑手势关闭）
+- **导航体验** - 全局搜索弹窗（Windows/Linux 使用 Ctrl+K，macOS 使用 ⌘K）、响应式导航栏、移动端底部菜单（下滑手势关闭）
 - **品牌加载动画** - 首次访问时显示字母打字动画 + 进度条的品牌加载效果
-- **首页信息流** - 精选横版大图卡片与置顶文章、分类筛选、最新/最早排序、分页与内联全文搜索
+- **首页信息流** - 精选横版大图卡片与置顶文章、分类筛选、最新/最早排序、分页与内联全文搜索；排序和非首页页码会同步到 `sort=oldest`、`page=N`，刷新或浏览器前进/后退可恢复列表状态
 - **辅助细节** - 回到顶部按钮、Cookie 隐私提示、图片渐进式加载、加载骨架屏与错误重试状态
 
 ### 性能与构建
@@ -65,7 +65,7 @@
 - **预渲染** - 为每篇文章和静态页面生成独立 HTML，注入精准的 SEO meta 标签和 JSON-LD 结构化数据，并预加载文章封面图
 - **代码分割** - 页面路由和部分正文能力通过动态 import 懒加载，其余模块由 Vite 默认拆分；构建时同时生成带哈希的静态资源
 - **资源优化** - 构建时 esbuild 压缩与去 console/debugger、文件名哈希缓存、CSS 代码分割
-- **PWA 支持** - Service Worker 缓存策略，manifest 配置，支持离线访问
+- **PWA 支持** - Service Worker 缓存策略与 manifest 配置；收藏文章时缓存应用壳、文章路由和同源图片，断网后可从 IndexedDB 中读取已保存正文
 
 ### SEO 与订阅
 
@@ -77,7 +77,7 @@
 ### 质量保障
 
 - **类型检查** - 使用 TypeScript 对源码进行全量类型检查，并启用未使用声明检查（`npm run typecheck`）
-- **纯函数测试** - Vitest 覆盖站点 URL、阅读进度、标题解析和文章内容校验等关键工具函数（`npm run test`）
+- **纯函数测试** - Vitest 当前覆盖阅读进度、阅读历史兼容、首页查询参数、离线记录协调和分页组件等关键逻辑（`npm run test`）；构建数据校验通过 `npm run gen:data` 执行
 - **一键校验** - `npm run check` 依次执行类型检查、测试与数据生成；数据生成会写入自动生成目录，数据非法（如日期格式错误、分类不在白名单、友链 URL 无效）会直接构建报错
 
 ## 技术栈
@@ -152,9 +152,9 @@ graph LR
 1. **图片资产生成** (`npm run gen:images`) - 扫描 `posts-img/`，先清空并重建 `public/generated-images/`，再使用 `sharp` 生成 WebP 和多种宽度的 fallback 变体，并生成 `generated/image-assets.json`。源图片不会被覆盖；该命令会改写自动生成目录。
 2. **数据生成** (`npm run gen:data`) - 自动先执行图片资产生成，再读取 `posts/` 和 `friends/`，校验 Front Matter、文章 ID、图片尺寸、图片路径、标题锚点、站内链接和外链格式，生成 `generated/` 数据索引以及 `public/sitemap.xml`、`public/feed.xml`。本地图片缺失或尺寸无法读取时构建以非零状态退出；该命令同样会改写自动生成文件。
 3. **Vite 构建** (`npm run build`) - 将 `src/` 编译为 `dist/` 静态资源，并复制原图与生成的响应式图片。
-4. **预渲染** (`npm run prerender`) - 为每篇文章和静态页面生成独立的 `index.html`，注入 SEO 元数据；首屏封面 preload 使用与页面 `<picture>` 相同的 `imagesrcset`，其他图片继续原生懒加载。
+4. **预渲染** (`npm run prerender`) - 为每篇文章和以下静态页面生成独立的 `index.html`：`/`、`/archive`、`/tags`、`/stats`、`/about`、`/friends`、`/cover`、`/watermark`、`/sponsor`；同时注入 SEO 元数据。首屏封面 preload 使用与页面 `<picture>` 相同的 `imagesrcset`，其他图片继续原生懒加载。
 
-文章中继续使用 `/posts-img/...`（或文章目录下的相对路径）引用原图即可，前端会自动选择 WebP 和合适宽度的图片。`generated/`、`public/generated-images/`、RSS 和 Sitemap 都是构建生成内容，不应手工编辑；如果本地工作树出现这些文件的变化，应在确认后再决定是否保留。
+文章中的站内图片推荐使用 `/posts-img/<post-id>/<filename>`；若使用文章目录下的相对路径（例如 `![示例](diagram.png)`），构建校验与前端会将其解析为 `/posts-img/<post-id>/diagram.png`。明确写出 `/posts-img/...` 时则按该路径处理。前端会自动选择 WebP 和合适宽度的图片。`generated/`、`public/generated-images/`、RSS 和 Sitemap 都是构建生成内容，不应手工编辑；如果本地工作树出现这些文件的变化，应在确认后再决定是否保留。
 
 ## 项目结构
 
@@ -447,7 +447,7 @@ export const siteConfig = {
   },
   friendsPage: {
     repoUrl: '...',          // 友链 PR 仓库地址
-    announcement: '...',     // 友链公告（支持 HTML）
+    announcement: '...',     // 友链页面顶部公告（纯文本）
   }
 };
 ```
@@ -468,7 +468,9 @@ export const adsConfig: AdItem[] = [
     title: '腾讯云广告',            // 广告名称
     image: '/ads-img/tencent-cloud.png', // 广告图片（放在 public/ads-img/ 下）
     link: 'https://...',           // 广告跳转链接
-    alt: '腾讯云广告'               // 图片 alt 文本
+    alt: '腾讯云广告',              // 图片 alt 文本
+    width: 984,                     // 图片固有宽度（必填）
+    height: 168                     // 图片固有高度（必填）
   }
 ];
 ```
@@ -484,9 +486,7 @@ export const adsConfig: AdItem[] = [
 | `npm run gen:data` | 先运行 `gen:images`，再从 Markdown 生成 JSON 索引、RSS 和 Sitemap；会改写自动生成文件 |
 | `npm run prerender` | 仅运行预渲染脚本，生成静态 HTML（需先 `npm run build`） |
 | `npm run typecheck` | TypeScript 类型检查 |
-| `npm run test` | 运行 Vitest 纯函数测试 |
-| `npm run test:watch` | 监听模式运行 Vitest 测试 |
-| `npm run check` | 一键校验：类型检查 + 测试 + 数据生成（包含生成目录副作用） |
+| `npm run check` | 类型检查 + 数据生成校验（包含生成目录副作用） |
 
 ## 部署指南
 
@@ -503,6 +503,10 @@ export const adsConfig: AdItem[] = [
 - `VITE_BASE_PATH`：站点部署在子路径时使用（如 GitHub Pages 的 `/repo/`），留空为根路径
 
 本地可复制 `.env.example` 为 `.env`。Vite、数据生成和预渲染都会读取这些变量，因此子路径应在构建前配置完成。预渲染会为文章和静态页面写入独立 HTML；平台的 SPA fallback 仅用于未知路径或客户端路由兜底，不应覆盖已有的预渲染文件。
+
+Service Worker 的作用域跟随部署路径，在线时按页面、静态资源和图片分别缓存。安装时会预缓存应用入口、收藏页懒加载资源及离线运行时清单；收藏文章还会等待 Worker 确认文章路由、应用壳及同源正文图片已写入缓存后才报告“可离线阅读”。断网直达 `/post/<id>` 时优先使用页面缓存，站内 SPA 路由未命中则启动缓存的应用壳，再由 IndexedDB 中保存的 Markdown 正文完成渲染。非应用路由或应用壳不可用时才显示 `offline.html`。
+
+离线正文以 IndexedDB 为主存储；当 IndexedDB 临时不可用时，本次操作回退到 localStorage，后续操作会重新尝试并按 `id`、`savedAt` 合并迁回。localStorage 保留最近一次完整快照，避免临时故障时把待迁移记录误当成全部收藏。删除标记会阻止旧记录在数据库恢复后重新出现，迁移完成后清理对应 fallback 副本。阅读历史继续兼容旧数据，但新记录只保存文章 ID、百分比进度和更新时间，不再保存原始 `scrollTop`。
 
 ### 其他平台
 
@@ -533,7 +537,7 @@ location / {
 }
 ```
 
-> **提示**：预渲染阶段已为每篇文章和每个静态页面生成了独立 HTML，部署时可考虑利用此特性做更精细的缓存策略。`/favorites` 只使用浏览器本地数据，预渲染页面已设置为 `noindex`。
+> **提示**：预渲染阶段已为每篇文章和每个静态页面生成了独立 HTML，部署时可考虑利用此特性做更精细的缓存策略。`/favorites` 只使用浏览器本地数据，预渲染页面已设置为 `noindex`。Cookie 提示当前仅记录“同意”状态，分析脚本仍按 `index.html` 的部署配置加载；如需严格的拒绝即不加载，需要额外实施 consent 门控方案。
 
 ## 贡献指南
 

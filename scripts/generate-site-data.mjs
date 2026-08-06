@@ -257,9 +257,6 @@ const generateSiteStats = (postsWithSearch) => {
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'));
   const categoryStats = countBy(postsWithSearch, (post) => post.category);
   const tagStats = countBy(postsWithSearch.flatMap((post) => post.tags || []), (tag) => tag).slice(0, 12);
-  const yearlyStats = countBy(postsWithSearch, (post) => String(new Date(post.date).getFullYear()))
-    .sort((a, b) => Number(b.name) - Number(a.name))
-    .map((item) => ({ year: item.name, count: item.count }));
   const recentPosts = postsWithSearch
     .slice()
     .sort((a, b) => new Date(b.updatedAt || b.date) - new Date(a.updatedAt || a.date))
@@ -287,7 +284,6 @@ const generateSiteStats = (postsWithSearch) => {
         totalImages,
         categoryStats,
         tagStats,
-        yearlyStats,
         recentPosts,
         topWordCountPosts,
         topImageCountPosts
@@ -681,6 +677,7 @@ const generateSitemap = () => {
     { path: 'friends', changefreq: 'weekly', priority: '0.7', lastmod: today },
     { path: 'about', changefreq: 'monthly', priority: '0.7', lastmod: today },
     { path: 'cover', changefreq: 'monthly', priority: '0.5', lastmod: today },
+    { path: 'watermark', changefreq: 'monthly', priority: '0.5', lastmod: today },
     { path: 'sponsor', changefreq: 'monthly', priority: '0.5', lastmod: today }
   ];
 

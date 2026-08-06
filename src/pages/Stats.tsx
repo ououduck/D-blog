@@ -24,7 +24,6 @@ const EMPTY_SITE_STATS: SiteStats = {
   totalImages: 0,
   categoryStats: [],
   tagStats: [],
-  yearlyStats: [],
   recentPosts: [],
   topWordCountPosts: [],
   topImageCountPosts: []

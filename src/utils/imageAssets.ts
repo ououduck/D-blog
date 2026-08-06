@@ -45,3 +45,13 @@ export const getResponsiveImageProps = (src?: string, sizes?: string): Responsiv
   };
 };
 
+export const getResponsiveImageUrls = (src?: string): string[] => {
+  const asset = findAsset(src);
+  if (!asset) return [];
+
+  return [...new Set([
+    ...(asset.variants?.webp || []).map((variant) => assetUrl(variant.url)),
+    ...(asset.variants?.fallback || []).map((variant) => assetUrl(variant.url))
+  ])];
+};
+

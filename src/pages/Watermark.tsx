@@ -53,6 +53,7 @@ const canvasToBlob = (canvas: HTMLCanvasElement, format: 'png' | 'jpeg', quality
 export const Watermark: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageLoadGenerationRef = useRef(0);
   const [imageState, setImageState] = useState<ImageState | null>(null);
   const [text, setText] = useState(DEFAULT_WATERMARK_OPTIONS.text);
   const [fontSize, setFontSize] = useState(DEFAULT_WATERMARK_OPTIONS.fontSize);
@@ -78,6 +79,7 @@ export const Watermark: React.FC = () => {
   }, [drawPreview]);
 
   const handleFile = async (file?: File) => {
+    const generation = ++imageLoadGenerationRef.current;
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       setFeedback({ kind: 'error', message: '请选择 PNG、JPEG、WebP 等图片文件。' });
@@ -85,9 +87,11 @@ export const Watermark: React.FC = () => {
     }
     try {
       const image = await loadImage(file);
+      if (generation !== imageLoadGenerationRef.current) return;
       setImageState({ image, name: file.name });
       setFeedback(null);
     } catch (error) {
+      if (generation !== imageLoadGenerationRef.current) return;
       setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '图片加载失败。' });
     }
   };
@@ -140,7 +144,7 @@ export const Watermark: React.FC = () => {
           <section className={cardClass}>
             <div className="mb-5 flex items-center justify-between">
               <div className="flex items-center gap-2"><ImageIcon size={18} /><h2 className="font-bold text-ink dark:text-white">图片</h2></div>
-              {imageState && <button type="button" className="rounded-icon p-1 text-zinc-400 hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" onClick={() => setImageState(null)} aria-label="移除图片"><X size={16} /></button>}
+              {imageState && <button type="button" className="rounded-icon p-1 text-zinc-400 hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" onClick={() => { imageLoadGenerationRef.current += 1; setImageState(null); }} aria-label="移除图片"><X size={16} /></button>}
             </div>
             <input ref={fileInputRef} className="hidden" type="file" accept="image/*" onChange={(event) => { void handleFile(event.target.files?.[0]); event.currentTarget.value = ''; }} />
             <button type="button" onClick={() => fileInputRef.current?.click()} className="editorial-button w-full"><Upload size={16} />{imageState ? '更换图片' : '选择图片'}</button>
@@ -153,7 +157,7 @@ export const Watermark: React.FC = () => {
             <label className="mb-4 block"><span className="mb-2 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">水印类型</span><select className={inputClass} value="single" disabled><option value="single">单个水印</option></select></label>
             <label className="mb-4 block"><div className="mb-2 flex justify-between text-xs font-semibold text-zinc-600 dark:text-zinc-400"><span>字体大小</span><output>{fontSize}px</output></div><input className="w-full accent-zinc-900 dark:accent-zinc-100" type="range" min="8" max="240" value={fontSize} onChange={(event) => setFontSize(clampWatermarkFontSize(Number(event.target.value)))} /></label>
             <label className="mb-4 block"><div className="mb-2 flex justify-between text-xs font-semibold text-zinc-600 dark:text-zinc-400"><span>不透明度</span><output>{opacity}%</output></div><input className="w-full accent-zinc-900 dark:accent-zinc-100" type="range" min="0" max="100" value={opacity} onChange={(event) => setOpacity(clampWatermarkOpacity(Number(event.target.value)))} /></label>
-            <fieldset><legend className="mb-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400">位置</legend><div className="grid grid-cols-3 gap-1.5">{positions.map((item) => <button key={item.value} type="button" onClick={() => setPosition(item.value)} className={`rounded-control border px-2 py-2 text-xs transition-colors ${position === item.value ? 'border-zinc-950 bg-zinc-950 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950' : 'border-zinc-200 text-zinc-600 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500'}`}>{item.label}</button>)}</div></fieldset>
+            <fieldset><legend className="mb-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400">位置</legend><div role="group" aria-label="水印位置" className="grid grid-cols-3 gap-1.5">{positions.map((item) => <button key={item.value} type="button" onClick={() => setPosition(item.value)} aria-pressed={position === item.value} className={`rounded-control border px-2 py-2 text-xs transition-colors ${position === item.value ? 'border-zinc-950 bg-zinc-950 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950' : 'border-zinc-200 text-zinc-600 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500'}`}>{item.label}</button>)}</div></fieldset>
           </section>
 
           <section className={cardClass}>

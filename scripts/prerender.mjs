@@ -311,6 +311,7 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
     { path: 'about', title: `关于 - ${SITE_SUFFIX}`, description: '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的用户界面。', schemaType: 'ProfilePage' },
     { path: 'friends', title: `友链 - ${SITE_SUFFIX}`, description: 'D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链。', schemaType: 'CollectionPage' },
     { path: 'cover', title: `封面生成 - ${SITE_SUFFIX}`, description: '在线生成精美博客文章封面图片，支持自定义文字、图标、渐变背景与多种导出比例。', schemaType: 'WebApplication' },
+    { path: 'watermark', title: `水印工具 - ${SITE_SUFFIX}`, description: '在浏览器中为图片添加文字水印，支持实时预览与本地导出。', schemaType: 'WebApplication' },
     { path: 'sponsor', title: `赞助 - ${SITE_SUFFIX}`, description: '支持 D-blog 的多种方式：贡献代码、撰写文章或通过赞助商链接帮助博客持续成长。', schemaType: 'WebPage' }
   ];
 

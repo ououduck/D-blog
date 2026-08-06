@@ -1,13 +1,16 @@
 import type { Post, PostMetadata } from '../types';
-import { assetUrl } from '@/utils/siteUrl';
+import { getResponsiveImageUrls } from '@/utils/imageAssets';
+import { assetUrl, routeUrl } from '@/utils/siteUrl';
 
 export const OFFLINE_POSTS_DB_NAME = 'd-blog-offline-posts';
-export const OFFLINE_POSTS_DB_VERSION = 1;
+export const OFFLINE_POSTS_DB_VERSION = 2;
 export const OFFLINE_POSTS_STORE_NAME = 'posts';
+export const OFFLINE_POSTS_TOMBSTONE_STORE_NAME = 'tombstones';
 export const OFFLINE_POSTS_SCHEMA = 'd-blog-offline-post';
 export const OFFLINE_POSTS_SCHEMA_VERSION = 1;
 export const OFFLINE_POSTS_STORAGE_KEY = 'd-blog-offline-posts-v1';
 export const OFFLINE_POSTS_SYNC_KEY = `${OFFLINE_POSTS_STORAGE_KEY}:sync`;
+export const OFFLINE_POSTS_TOMBSTONES_KEY = `${OFFLINE_POSTS_STORAGE_KEY}:tombstones`;
 export const OFFLINE_POSTS_EVENT_NAME = 'd-blog:offline-posts-change';
 export const OFFLINE_POSTS_CHANNEL_NAME = 'd-blog-offline-posts';
 
@@ -20,10 +23,11 @@ export type OfflinePost = PostMetadata & {
 
 export type OfflinePostInput = PostMetadata | Post;
 export type OfflinePostsListener = () => void;
+export type OfflinePostTombstones = Record<string, number>;
 
 type UnknownRecord = Record<string, unknown>;
+type OfflinePostTombstone = { id: string; deletedAt: number };
 
-const OFFLINE_ASSET_CACHE_NAME = 'dblog-v5-assets';
 const EXTERNAL_URL_PATTERN = /^(?:[a-z][a-z\d+.-]*:|\/\/)/i;
 
 const toOfflineAssetUrl = (value: string, postId: string): string | undefined => {
@@ -61,45 +65,53 @@ const collectOfflineAssetUrls = (post: OfflinePost): string[] => {
     }
   }
 
-  return [...new Set(values
+  const sourceUrls = values
     .map((value) => toOfflineAssetUrl(value, post.id))
-    .filter((value): value is string => Boolean(value)))];
+    .filter((value): value is string => Boolean(value));
+
+  return [...new Set(sourceUrls.flatMap((url) => [url, ...getResponsiveImageUrls(url)]))];
 };
 
-const cacheOfflineAssets = async (post: OfflinePost): Promise<void> => {
-  const urls = collectOfflineAssetUrls(post);
-  if (urls.length === 0 || typeof window === 'undefined') {
-    return;
+const prepareOfflineCache = async (post: OfflinePost): Promise<void> => {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+    throw new Error('当前浏览器不支持离线缓存。');
   }
 
-  try {
-    const worker = navigator.serviceWorker?.controller;
-    worker?.postMessage({ type: 'CACHE_URLS', urls });
-    if (worker) {
-      return;
-    }
-  } catch {
-    // Fall through to the Cache API when the worker is unavailable.
+  const worker = navigator.serviceWorker.controller
+    ?? (await Promise.race([
+      navigator.serviceWorker.ready.then((registration) => registration.active),
+      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8000))
+    ]));
+  if (!worker) {
+    throw new Error('离线缓存尚未就绪，请刷新页面后重试。');
   }
 
-  try {
-    if (!('caches' in window)) {
-      return;
-    }
-    const cache = await window.caches.open(OFFLINE_ASSET_CACHE_NAME);
-    await Promise.all(urls.map(async (url) => {
-      try {
-        const response = await fetch(url, { credentials: 'same-origin' });
-        if (response.ok && new URL(response.url || url, window.location.href).origin === window.location.origin) {
-          await cache.put(url, response.clone());
-        }
-      } catch {
-        // Individual image failures must not fail the article save.
+  await new Promise<void>((resolve, reject) => {
+    const channel = new MessageChannel();
+    const timeout = window.setTimeout(() => {
+      channel.port1.close();
+      reject(new Error('离线缓存准备超时，请稍后重试。'));
+    }, 15000);
+
+    channel.port1.onmessage = (event: MessageEvent<unknown>) => {
+      window.clearTimeout(timeout);
+      channel.port1.close();
+      if (isRecord(event.data) && event.data.ok === true) {
+        resolve();
+        return;
       }
-    }));
-  } catch {
-    // Offline asset caching is best effort.
-  }
+      const message = isRecord(event.data) && typeof event.data.error === 'string'
+        ? event.data.error
+        : '离线缓存准备失败，请稍后重试。';
+      reject(new Error(message));
+    };
+
+    worker.postMessage({
+      type: 'CACHE_OFFLINE_POST',
+      pageUrl: routeUrl(`/post/${encodeURIComponent(post.id)}`),
+      assetUrls: collectOfflineAssetUrls(post)
+    }, [channel.port2]);
+  });
 };
 
 type OfflinePostsChange = {
@@ -109,8 +121,9 @@ type OfflinePostsChange = {
 };
 
 let databasePromise: Promise<IDBDatabase> | null = null;
-let indexedDbDisabled = false;
+let activeDatabase: IDBDatabase | null = null;
 let syncListenersInitialized = false;
+let reconciliationPromise: Promise<void> | null = null;
 let broadcastChannel: BroadcastChannel | null = null;
 const listeners = new Set<OfflinePostsListener>();
 
@@ -289,13 +302,24 @@ const openDatabase = (): Promise<IDBDatabase> => {
       if (!store.indexNames.contains('savedAt')) {
         store.createIndex('savedAt', 'savedAt', { unique: false });
       }
+      if (!database.objectStoreNames.contains(OFFLINE_POSTS_TOMBSTONE_STORE_NAME)) {
+        database.createObjectStore(OFFLINE_POSTS_TOMBSTONE_STORE_NAME, { keyPath: 'id' });
+      }
     };
     request.onsuccess = () => {
       const database = request.result;
+      activeDatabase = database;
+      const invalidateConnection = () => {
+        if (activeDatabase === database) {
+          activeDatabase = null;
+          databasePromise = null;
+        }
+      };
       database.onversionchange = () => {
         database.close();
-        databasePromise = null;
+        invalidateConnection();
       };
+      database.onclose = invalidateConnection;
       resolve(database);
     };
     request.onerror = () => reject(request.error || new Error('无法打开离线文章数据库。'));
@@ -308,61 +332,163 @@ const openDatabase = (): Promise<IDBDatabase> => {
   return databasePromise;
 };
 
-const runTransaction = <T>(
-  mode: IDBTransactionMode,
-  operation: (store: IDBObjectStore) => IDBRequest<T>
-): Promise<T | undefined> => openDatabase().then((database) => new Promise<T | undefined>((resolve, reject) => {
-  let transaction: IDBTransaction;
-  let result: T | undefined;
-  let settled = false;
+const readIndexedDbPosts = async (): Promise<OfflinePost[]> => {
+  const database = await openDatabase();
+  const posts = await new Promise<OfflinePost[]>((resolve, reject) => {
+    let transaction: IDBTransaction;
+    try {
+      transaction = database.transaction(
+        [OFFLINE_POSTS_STORE_NAME, OFFLINE_POSTS_TOMBSTONE_STORE_NAME],
+        'readonly'
+      );
+      const postsRequest = transaction.objectStore(OFFLINE_POSTS_STORE_NAME).getAll();
+      const tombstonesRequest = transaction.objectStore(OFFLINE_POSTS_TOMBSTONE_STORE_NAME).getAll();
+      let rawPosts: unknown[] = [];
+      let rawTombstones: unknown[] = [];
+      postsRequest.onsuccess = () => { rawPosts = Array.isArray(postsRequest.result) ? postsRequest.result : []; };
+      tombstonesRequest.onsuccess = () => { rawTombstones = Array.isArray(tombstonesRequest.result) ? tombstonesRequest.result : []; };
+      transaction.oncomplete = () => {
+        const tombstones = Object.fromEntries(rawTombstones
+          .filter((value): value is OfflinePostTombstone => isRecord(value) && typeof value.id === 'string' && isNonNegativeTimestamp(value.deletedAt))
+          .map((value) => [value.id, value.deletedAt]));
+        resolve(applyTombstones(rawPosts
+          .map(validateOfflinePost)
+          .filter((post): post is OfflinePost => Boolean(post)), tombstones)
+          .sort((a, b) => b.savedAt - a.savedAt));
+      };
+      transaction.onerror = () => reject(transaction.error || new Error('离线文章事务失败。'));
+      transaction.onabort = () => reject(transaction.error || new Error('离线文章事务已中止。'));
+    } catch (error) {
+      reject(error);
+    }
+  });
 
-  const rejectOnce = (error: unknown, fallback: string) => {
-    if (settled) {
+  // Keep a complete last-known snapshot so a transient IndexedDB outage does not
+  // make the fallback journal look like the whole collection.
+  try {
+    writeFallbackPosts(posts);
+  } catch {
+    // IndexedDB remains authoritative when localStorage is unavailable.
+  }
+  return posts;
+};
+
+const runOfflineMutation = async (
+  operation: (posts: IDBObjectStore, tombstones: IDBObjectStore) => void
+): Promise<void> => {
+  const database = await openDatabase();
+  await new Promise<void>((resolve, reject) => {
+    let transaction: IDBTransaction;
+    try {
+      transaction = database.transaction(
+        [OFFLINE_POSTS_STORE_NAME, OFFLINE_POSTS_TOMBSTONE_STORE_NAME],
+        'readwrite'
+      );
+      operation(
+        transaction.objectStore(OFFLINE_POSTS_STORE_NAME),
+        transaction.objectStore(OFFLINE_POSTS_TOMBSTONE_STORE_NAME)
+      );
+    } catch (error) {
+      if (activeDatabase === database) {
+        activeDatabase = null;
+        databasePromise = null;
+      }
+      reject(error);
       return;
     }
-    settled = true;
-    reject(error instanceof Error ? error : new Error(fallback));
-  };
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error || new Error('离线文章事务失败。'));
+    transaction.onabort = () => reject(transaction.error || new Error('离线文章事务已中止。'));
+  });
+};
 
-  try {
-    transaction = database.transaction(OFFLINE_POSTS_STORE_NAME, mode);
-    const request = operation(transaction.objectStore(OFFLINE_POSTS_STORE_NAME));
-    request.onsuccess = () => {
-      result = request.result;
+const persistIndexedDbDelete = async (id: string, deletedAt: number): Promise<void> => {
+  await runOfflineMutation((postsStore, tombstonesStore) => {
+    const postRequest = postsStore.get(id);
+    const tombstoneRequest = tombstonesStore.get(id);
+    let currentPost: OfflinePost | undefined;
+    let currentDeletedAt = -1;
+    let completedRequests = 0;
+
+    const commit = () => {
+      completedRequests += 1;
+      if (completedRequests < 2 || currentDeletedAt > deletedAt) return;
+      if (!currentPost || currentPost.savedAt <= deletedAt) postsStore.delete(id);
+      tombstonesStore.put({ id, deletedAt } satisfies OfflinePostTombstone);
     };
-    request.onerror = () => rejectOnce(request.error, '离线文章请求失败。');
-    transaction.oncomplete = () => {
-      if (!settled) {
-        settled = true;
-        resolve(result);
+    postRequest.onsuccess = () => {
+      currentPost = validateOfflinePost(postRequest.result);
+      commit();
+    };
+    tombstoneRequest.onsuccess = () => {
+      const value: unknown = tombstoneRequest.result;
+      if (isRecord(value) && isNonNegativeTimestamp(value.deletedAt)) {
+        currentDeletedAt = value.deletedAt;
       }
+      commit();
     };
-    transaction.onerror = () => rejectOnce(transaction.error, '离线文章事务失败。');
-    transaction.onabort = () => rejectOnce(transaction.error, '离线文章事务已中止。');
-  } catch (error) {
-    rejectOnce(error, '离线文章事务失败。');
+  });
+};
+
+const saveIndexedDbPostIfCurrent = async (post: OfflinePost): Promise<boolean> => {
+  const database = await openDatabase();
+  return new Promise<boolean>((resolve, reject) => {
+    let accepted = false;
+    let transaction: IDBTransaction;
+    try {
+      transaction = database.transaction(
+        [OFFLINE_POSTS_STORE_NAME, OFFLINE_POSTS_TOMBSTONE_STORE_NAME],
+        'readwrite'
+      );
+      const postsStore = transaction.objectStore(OFFLINE_POSTS_STORE_NAME);
+      const tombstonesStore = transaction.objectStore(OFFLINE_POSTS_TOMBSTONE_STORE_NAME);
+      const postRequest = postsStore.get(post.id);
+      const tombstoneRequest = tombstonesStore.get(post.id);
+      let currentPost: OfflinePost | undefined;
+      let deletedAt = -1;
+      let completedRequests = 0;
+
+      const commit = () => {
+        completedRequests += 1;
+        if (completedRequests < 2) return;
+        if (deletedAt >= post.savedAt) return;
+
+        accepted = true;
+        if (!currentPost || post.savedAt >= currentPost.savedAt) {
+          postsStore.put(post);
+        }
+        tombstonesStore.delete(post.id);
+      };
+      postRequest.onsuccess = () => {
+        currentPost = validateOfflinePost(postRequest.result);
+        commit();
+      };
+      tombstoneRequest.onsuccess = () => {
+        const value: unknown = tombstoneRequest.result;
+        if (isRecord(value) && isNonNegativeTimestamp(value.deletedAt)) {
+          deletedAt = value.deletedAt;
+        }
+        commit();
+      };
+    } catch (error) {
+      if (activeDatabase === database) {
+        activeDatabase = null;
+        databasePromise = null;
+      }
+      reject(error);
+      return;
+    }
+    transaction.oncomplete = () => resolve(accepted);
+    transaction.onerror = () => reject(transaction.error || new Error('离线文章事务失败。'));
+    transaction.onabort = () => reject(transaction.error || new Error('离线文章事务已中止。'));
+  });
+};
+
+const withFallbackLock = async <T>(operation: () => T | Promise<T>): Promise<T> => {
+  if (typeof navigator !== 'undefined' && navigator.locks) {
+    return navigator.locks.request(`${OFFLINE_POSTS_STORAGE_KEY}:lock`, operation);
   }
-}));
-
-const readIndexedDbPost = async (id: string): Promise<OfflinePost | undefined> => {
-  const result = await runTransaction<unknown>('readonly', (store) => store.get(id));
-  return validateOfflinePost(result);
-};
-
-const readIndexedDbPosts = async (): Promise<OfflinePost[]> => {
-  const result = await runTransaction<unknown[]>('readonly', (store) => store.getAll());
-  return (Array.isArray(result) ? result : [])
-    .map(validateOfflinePost)
-    .filter((post): post is OfflinePost => Boolean(post))
-    .sort((a, b) => b.savedAt - a.savedAt);
-};
-
-const writeIndexedDbPost = async (post: OfflinePost): Promise<void> => {
-  await runTransaction('readwrite', (store) => store.put(post));
-};
-
-const removeIndexedDbPost = async (id: string): Promise<void> => {
-  await runTransaction('readwrite', (store) => store.delete(id));
+  return operation();
 };
 
 const readFallbackPosts = (): OfflinePost[] => {
@@ -378,9 +504,9 @@ const readFallbackPosts = (): OfflinePost[] => {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return parsed
+    return applyTombstones(parsed
       .map(validateOfflinePost)
-      .filter((post): post is OfflinePost => Boolean(post))
+      .filter((post): post is OfflinePost => Boolean(post)), readTombstones())
       .sort((a, b) => b.savedAt - a.savedAt);
   } catch {
     return [];
@@ -398,9 +524,115 @@ const writeFallbackPosts = (posts: OfflinePost[]): void => {
   }
 };
 
-const useFallback = () => {
-  indexedDbDisabled = true;
-  databasePromise = null;
+const readTombstones = (): OfflinePostTombstones => {
+  try {
+    if (typeof localStorage === 'undefined') return {};
+    const parsed: unknown = JSON.parse(localStorage.getItem(OFFLINE_POSTS_TOMBSTONES_KEY) || '{}');
+    if (!isRecord(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter(([, value]) => isNonNegativeTimestamp(value)),
+    ) as OfflinePostTombstones;
+  } catch {
+    return {};
+  }
+};
+
+const writeTombstones = (tombstones: OfflinePostTombstones): void => {
+  if (typeof localStorage === 'undefined') throw new Error('当前浏览器不支持本地存储。');
+  localStorage.setItem(OFFLINE_POSTS_TOMBSTONES_KEY, JSON.stringify(tombstones));
+};
+
+export const mergeOfflinePostTombstones = (
+  ...sources: OfflinePostTombstones[]
+): OfflinePostTombstones => {
+  const merged: OfflinePostTombstones = {};
+  sources.forEach((source) => Object.entries(source).forEach(([id, timestamp]) => {
+    merged[id] = Math.max(merged[id] ?? 0, timestamp);
+  }));
+  return merged;
+};
+
+const applyTombstones = (posts: OfflinePost[], tombstones: OfflinePostTombstones): OfflinePost[] => (
+  posts.filter((post) => tombstones[post.id] === undefined || post.savedAt > tombstones[post.id])
+);
+
+/** Merge stores deterministically, preferring the newest savedAt and honoring deletes. */
+export const reconcileOfflinePosts = (
+  indexedDbPosts: OfflinePost[],
+  fallbackPosts: OfflinePost[],
+  tombstones: OfflinePostTombstones = {},
+): OfflinePost[] => {
+  const merged = new Map<string, OfflinePost>();
+  [...indexedDbPosts, ...fallbackPosts].forEach((post) => {
+    const current = merged.get(post.id);
+    if (!current || post.savedAt > current.savedAt) merged.set(post.id, post);
+  });
+  return applyTombstones([...merged.values()], tombstones).sort((a, b) => b.savedAt - a.savedAt);
+};
+
+const reconcileStores = async (): Promise<void> => {
+  if (reconciliationPromise) return reconciliationPromise;
+  reconciliationPromise = (async () => {
+    const fallback = readFallbackPosts();
+    const localTombstones = readTombstones();
+    const fallbackById = new Map(fallback.map((post) => [post.id, post]));
+    const ids = new Set([...fallbackById.keys(), ...Object.keys(localTombstones)]);
+
+    await runOfflineMutation((postsStore, tombstonesStore) => {
+      ids.forEach((id) => {
+        const postRequest = postsStore.get(id);
+        const tombstoneRequest = tombstonesStore.get(id);
+        let currentPost: OfflinePost | undefined;
+        let currentDeletedAt: number | undefined;
+        let completedRequests = 0;
+
+        const reconcileId = () => {
+          completedRequests += 1;
+          if (completedRequests < 2) return;
+
+          const fallbackPost = fallbackById.get(id);
+          const fallbackDeletedAt = localTombstones[id];
+          const deletedAt = Math.max(currentDeletedAt ?? -1, fallbackDeletedAt ?? -1);
+          const newestPost = [currentPost, fallbackPost]
+            .filter((post): post is OfflinePost => Boolean(post))
+            .sort((a, b) => b.savedAt - a.savedAt)[0];
+
+          if (deletedAt >= (newestPost?.savedAt ?? -1)) {
+            postsStore.delete(id);
+            tombstonesStore.put({ id, deletedAt } satisfies OfflinePostTombstone);
+          } else if (newestPost) {
+            postsStore.put(newestPost);
+            tombstonesStore.delete(id);
+          }
+        };
+
+        postRequest.onsuccess = () => {
+          currentPost = validateOfflinePost(postRequest.result);
+          reconcileId();
+        };
+        tombstoneRequest.onsuccess = () => {
+          const value: unknown = tombstoneRequest.result;
+          if (isRecord(value) && isNonNegativeTimestamp(value.deletedAt)) {
+            currentDeletedAt = value.deletedAt;
+          }
+          reconcileId();
+        };
+      });
+    });
+
+    try {
+      // Keep the fallback as a complete last-known mirror. It must remain
+      // readable if IndexedDB becomes temporarily unavailable later.
+      const currentTombstones = readTombstones();
+      Object.entries(localTombstones).forEach(([id, deletedAt]) => {
+        if (currentTombstones[id] === deletedAt) delete currentTombstones[id];
+      });
+      writeTombstones(currentTombstones);
+    } catch {
+      // IndexedDB remains authoritative while localStorage is unavailable.
+    }
+  })().finally(() => { reconciliationPromise = null; });
+  return reconciliationPromise;
 };
 
 const notifyListeners = () => {
@@ -478,65 +710,100 @@ export const subscribeOfflinePosts = (listener: OfflinePostsListener): (() => vo
 };
 
 export const getOfflinePost = async (id: string): Promise<OfflinePost | undefined> => {
-  if (typeof id !== 'string' || !id.trim()) {
-    return undefined;
+  if (typeof id !== 'string' || !id.trim()) return undefined;
+  try {
+    await reconcileStores();
+    return (await readIndexedDbPosts()).find((post) => post.id === id);
+  } catch {
+    return readFallbackPosts().find((post) => post.id === id);
   }
-  if (!indexedDbDisabled) {
-    try {
-      return await readIndexedDbPost(id);
-    } catch {
-      useFallback();
-    }
-  }
-  return readFallbackPosts().find((post) => post.id === id);
 };
 
 export const getOfflinePosts = async (): Promise<OfflinePost[]> => {
-  if (!indexedDbDisabled) {
-    try {
-      return await readIndexedDbPosts();
-    } catch {
-      useFallback();
-    }
+  try {
+    await reconcileStores();
+    return await readIndexedDbPosts();
+  } catch {
+    return readFallbackPosts();
   }
-  return readFallbackPosts();
 };
 
 export const saveOfflinePost = async (post: OfflinePostInput): Promise<OfflinePost> => {
   const offlinePost = createOfflinePost(post);
-  if (!indexedDbDisabled) {
-    try {
-      await writeIndexedDbPost(offlinePost);
-      emitChange('save', offlinePost.id);
-      void cacheOfflineAssets(offlinePost);
-      return offlinePost;
-    } catch {
-      useFallback();
-    }
+  await prepareOfflineCache(offlinePost);
+  let savedToIndexedDb = false;
+  let rejectedByNewerDelete = false;
+  try {
+    await reconcileStores();
+    savedToIndexedDb = await saveIndexedDbPostIfCurrent(offlinePost);
+    rejectedByNewerDelete = !savedToIndexedDb;
+  } catch {
+    // Retry IndexedDB on the next operation; localStorage remains available now.
   }
 
-  const posts = readFallbackPosts().filter((savedPost) => savedPost.id !== offlinePost.id);
-  writeFallbackPosts([...posts, offlinePost]);
+  let newerDeleteToPersist: number | undefined;
+  try {
+    await withFallbackLock(() => {
+      const tombstones = readTombstones();
+      const newerDelete = tombstones[offlinePost.id];
+      if ((newerDelete ?? -1) >= offlinePost.savedAt) {
+        rejectedByNewerDelete = true;
+        newerDeleteToPersist = newerDelete;
+        return;
+      }
+      const fallbackPosts = readFallbackPosts()
+        .filter((savedPost) => savedPost.id !== offlinePost.id);
+      writeFallbackPosts([...fallbackPosts, offlinePost]);
+      delete tombstones[offlinePost.id];
+      writeTombstones(tombstones);
+    });
+  } catch (error) {
+    if (!savedToIndexedDb) throw error;
+  }
+  if (newerDeleteToPersist !== undefined) {
+    try { await persistIndexedDbDelete(offlinePost.id, newerDeleteToPersist); } catch { /* Fallback tombstone remains durable. */ }
+  }
+  if (rejectedByNewerDelete) {
+    throw new Error('文章已在其他页面取消收藏，请重新操作。');
+  }
   emitChange('save', offlinePost.id);
-  void cacheOfflineAssets(offlinePost);
   return offlinePost;
 };
 
 export const removeOfflinePost = async (id: string): Promise<void> => {
-  if (typeof id !== 'string' || !id.trim()) {
-    return;
+  if (typeof id !== 'string' || !id.trim()) return;
+  const tombstones = readTombstones();
+  const deletedAt = Math.max(tombstones[id] ?? -1, Date.now());
+  tombstones[id] = deletedAt;
+  let savedFallbackTombstone = false;
+  try {
+    writeTombstones(tombstones);
+    savedFallbackTombstone = true;
+  } catch {
+    // IndexedDB can still persist the deletion when localStorage is blocked.
   }
-  if (!indexedDbDisabled) {
-    try {
-      await removeIndexedDbPost(id);
-      emitChange('remove', id);
-      return;
-    } catch {
-      useFallback();
+
+  let deletedFromIndexedDb = false;
+  try {
+    await persistIndexedDbDelete(id, deletedAt);
+    deletedFromIndexedDb = true;
+  } catch {
+    if (!savedFallbackTombstone) {
+      throw new Error('无法持久化收藏删除操作，请稍后重试。');
     }
   }
 
-  const posts = readFallbackPosts();
-  writeFallbackPosts(posts.filter((post) => post.id !== id));
+  try {
+    await withFallbackLock(() => {
+      const currentTombstones = readTombstones();
+      currentTombstones[id] = Math.max(currentTombstones[id] ?? 0, deletedAt);
+      writeTombstones(currentTombstones);
+      writeFallbackPosts(readFallbackPosts().filter((post) => post.id !== id));
+    });
+  } catch {
+    if (!deletedFromIndexedDb && !savedFallbackTombstone) {
+      throw new Error('无法删除离线收藏。');
+    }
+  }
   emitChange('remove', id);
 };

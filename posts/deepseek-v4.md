@@ -16,8 +16,6 @@ author: 跑路的duck
 featured: false
 featured-top: 0
 series: false
-series-name: 我的系列
-series-order: 1
 draft: false
 ---
 
@@ -31,7 +29,7 @@ draft: false
 **Flash** 是 **284B** 总参 **13B** 激活  
 [![DeepSeek介绍](/posts-img/deepseek-v4/deepseek-v4-1.png)](/posts-img/deepseek-v4/deepseek-v4-1.png "DeepSeek介绍")  
 **两档都支持1M上下文**  
-**相较于上一点V3还是提升不少**  
+**相较于上一代 V3 仍有明显提升**
 
 ---
 
@@ -44,7 +42,8 @@ draft: false
 ## 重点：这次DeepSeek-V4开创了一种全新的注意力机制  
 **DeepSeek-V4 开创了一种全新的注意力机制，在 token 维度进行压缩，结合 DSA 稀疏注意力（DeepSeek Sparse Attention），实现了全球领先的长上下文能力，并且相比于传统方法大幅降低了对计算和显存的需求**  
 - 相比于上一代V3.2降低了3-10倍的算力需求  
-[![DeepSeek-V4算计需求降低](/posts-img/deepseek-v4/deepseek-v4-2.png)](/posts-img/deepseek-v4/deepseek-v4-2.png "DeepSeek-V4算计需求降低")  
+[![DeepSeek-V4算力需求降低](/posts-img/deepseek-v4/deepseek-v4-2.png)](/posts-img/deepseek-v4/deepseek-v4-2.png "DeepSeek-V4算力需求降低")
+
 - V4-Pro 比 V3.2 降低 3.7 倍  
 - V4-Flash 比 V3.2 降低 9.8 倍  
 **也就是说 在相同算力下 可以处理更多请求(硅基流动狂喜 bushi)**  

@@ -16,8 +16,6 @@ author: 跑路的duck
 featured: false
 featured-top: 0
 series: false
-series-name: 我的系列
-series-order: 1
 draft: false
 ---
 
@@ -74,13 +72,18 @@ yum install brotli-devel
 
 ![centos-bt-install-swoole5-step-02](/posts-img/centos-bt-install-swoole5/centos-bt-install-swoole5-step-02.png)
 
-安装完成后，可确认是否安装成功：
+安装完成后，可使用以下命令确认依赖是否已安装：
+
+```bash
+rpm -q brotli-devel
+```
+
 ---
 
 ### 第三步：重新安装 Swoole5
 
 回到宝塔面板：
-1. 进入【软件商店： 
+1. 进入【软件商店】；
 2. 找到对应 PHP 版本  
 3. 安装 Swoole5  
 
@@ -91,13 +94,13 @@ yum install brotli-devel
 
 ## 原因分析
 
-Swoole 5 在编译时依赖 `brotli` 压缩库，如果系统中没：`brotli-devel`，就会导致编译败。
+Swoole 5 在编译时依赖 `brotli` 压缩库，如果系统中没有安装 `brotli-devel`，就会导致编译失败。
 CentOS 默认环境中通常不会自带该依赖，因此需要手动安装：
 ---
 
 ## 总结
 
-如果你在 **CentOS + 宝塔面板** 环境下安：Swoole5 失败，可以按照以下顺序排查：
+如果你在 **CentOS + 宝塔面板** 环境下安装 Swoole5 失败，可以按照以下顺序排查：
 
 1. 执行 `yum update`  
 2. 安装依赖 `yum install brotli-devel`  
