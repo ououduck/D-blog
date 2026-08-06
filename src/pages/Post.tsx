@@ -11,7 +11,7 @@ import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Che
 import { getPostById, getPosts } from '@/services/posts';
 import { getReadingHistoryEntry, saveReadingHistory } from '@/services/readingHistory';
 import { getRelatedPosts, getSeriesNavigation, type SeriesNavigation } from '@/utils/postRelations';
-import { getReadingProgress, isReadingComplete } from '@/utils/readingProgress';
+import { getReadingProgress, getScrollTopForReadingProgress, isReadingComplete } from '@/utils/readingProgress';
 import { Post as PostType, PostAuthor, PostMetadata } from '../types';
 import { useOfflinePosts } from '@/hooks/useOfflinePosts';
 import { assetUrl, absoluteSiteUrl, routeUrl } from '@/utils/siteUrl';
@@ -974,7 +974,8 @@ export const Post = () => {
   }, [post]);
 
   useEffect(() => {
-    if (!post || typeof window === 'undefined' || window.location.hash) {
+    const target = articleBodyRef.current;
+    if (!post || !target || typeof window === 'undefined' || window.location.hash) {
       return;
     }
 
@@ -984,7 +985,15 @@ export const Post = () => {
     }
 
     const restoreTimer = window.setTimeout(() => {
-      window.scrollTo({ top: savedEntry.scrollTop, behavior: 'auto' });
+      const rect = target.getBoundingClientRect();
+      const top = getScrollTopForReadingProgress({
+        rect,
+        viewportHeight: window.innerHeight,
+        scrollY: window.scrollY,
+        documentHeight: document.documentElement.scrollHeight
+      }, savedEntry.progress);
+
+      window.scrollTo({ top, behavior: 'auto' });
     }, 80);
 
     return () => window.clearTimeout(restoreTimer);
