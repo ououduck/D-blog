@@ -298,7 +298,7 @@ export const ArchivePage = () => {
                       onClick={() => toggleYear(group.year)}
                       className="group flex w-full items-center justify-between gap-4 border-b border-zinc-300 pb-3 text-left transition-colors hover:border-zinc-500 dark:border-zinc-700 dark:hover:border-zinc-500"
                       aria-expanded={isYearExpanded}
-                      aria-label={`${isYearExpanded ? '折叠' : '展开'} ${group.year} 年的文章`}
+                      aria-label={`${isYearExpanded ? '折叠' : '展开'} ${group.year}的文章`}
                     >
                       <span className="flex items-center gap-3">
                         <motion.span
@@ -309,7 +309,7 @@ export const ArchivePage = () => {
                           <ChevronDown size={17} />
                         </motion.span>
                         <h2 className="font-serif text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-3xl">
-                          {group.year} 年
+                          {group.year}
                         </h2>
                       </span>
                       <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">{group.total} 篇</span>
