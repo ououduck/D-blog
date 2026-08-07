@@ -4,8 +4,11 @@ export const READING_PROGRESS_COMPLETION_THRESHOLD = 1;
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
+type ReadingBoundaryRect = Pick<DOMRect, 'top' | 'height' | 'bottom'>;
+
 type ReadingProgressInput = {
-  rect: Pick<DOMRect, 'top' | 'height' | 'bottom'>;
+  rect: ReadingBoundaryRect;
+  endRect?: ReadingBoundaryRect;
   viewportHeight: number;
   scrollY: number;
   documentHeight: number;
@@ -17,14 +20,17 @@ type ReadingScrollRange = {
   documentMaxScrollTop: number;
 };
 
-const getReadingScrollRange = ({ rect, viewportHeight, scrollY, documentHeight }: ReadingProgressInput): ReadingScrollRange => {
+const getReadingScrollRange = (input: ReadingProgressInput): ReadingScrollRange => {
+  const { rect, viewportHeight, scrollY, documentHeight } = input;
   const startOffset = viewportHeight * READING_PROGRESS_START_RATIO;
   const endOffset = viewportHeight * READING_PROGRESS_END_RATIO;
   const articleTop = rect.top + scrollY;
-  const articleBottom = articleTop + rect.height;
+  const readingEnd = input.endRect
+    ? input.endRect.top + scrollY
+    : articleTop + rect.height;
   const startScrollTop = articleTop - startOffset;
   const documentMaxScrollTop = Math.max(documentHeight - viewportHeight, 0);
-  const articleEndScrollTop = articleBottom - endOffset;
+  const articleEndScrollTop = readingEnd - endOffset;
   const endScrollTop = Math.min(articleEndScrollTop, documentMaxScrollTop);
 
   return { startScrollTop, endScrollTop, documentMaxScrollTop };

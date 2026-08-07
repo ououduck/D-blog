@@ -6,6 +6,7 @@ import { getReadingProgress, READING_PROGRESS_END_RATIO } from '@/utils/readingP
 
 interface ReadingProgressBadgeProps {
   targetRef: RefObject<HTMLElement | null>;
+  endRef?: RefObject<HTMLElement | null>;
   onVisibilityChange?: (visible: boolean) => void;
 }
 
@@ -17,7 +18,7 @@ const DESKTOP_BADGE_STYLE = {
   bottom: 'calc(var(--cookie-notice-height, 0px) + 5rem)'
 } as const;
 
-export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.memo(({ targetRef, onVisibilityChange }) => {
+export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.memo(({ targetRef, endRef, onVisibilityChange }) => {
   const shouldReduceMotion = useReducedMotion();
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -45,15 +46,18 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       }
 
       const rect = target.getBoundingClientRect();
+      const endRect = endRef?.current?.getBoundingClientRect();
       const nextProgress = getReadingProgress({
         rect,
+        endRect,
         viewportHeight: window.innerHeight,
         scrollY: window.scrollY,
         documentHeight: document.documentElement.scrollHeight
       });
       const nextPercentage = Math.round(nextProgress * 100);
       const currentPercentage = Math.round(progressRef.current * 100);
-      const nextVisible = rect.bottom > window.innerHeight * READING_PROGRESS_END_RATIO || nextProgress >= 1;
+      const visibilityRect = endRect ?? rect;
+      const nextVisible = visibilityRect.bottom > window.innerHeight * READING_PROGRESS_END_RATIO || nextProgress >= 1;
 
       if (nextPercentage !== currentPercentage) {
         progressRef.current = nextProgress;
@@ -82,7 +86,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
         window.cancelAnimationFrame(animationFrame);
       }
     };
-  }, [targetRef]);
+  }, [endRef, targetRef]);
 
   useEffect(() => {
     onVisibilityChange?.(isVisible);

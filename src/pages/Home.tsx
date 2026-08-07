@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Calendar, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronRight, Share2 } from 'lucide-react';
+import { Calendar, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronRight, Share2, X } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
 import { getInitialPosts, getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
@@ -471,6 +471,12 @@ export const Home = () => {
     }, { replace: true });
   };
 
+  const handleAbandonReading = () => {
+    if (!continueReading) return;
+    removeReadingHistory(continueReading.post.id);
+    refreshReadingHistory();
+  };
+
   const handleToggleSort = () => {
     const nextSortOrder = sortOrder === 'newest' ? 'oldest' : 'newest';
     setSortOrder(nextSortOrder);
@@ -572,9 +578,20 @@ export const Home = () => {
               <h2 id="continue-reading-heading" className="truncate font-serif text-xl font-bold text-ink dark:text-white">{continueReading.post.title}</h2>
               <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{continueReading.post.category} · 已阅读 {Math.round(continueReading.entry.progress * 100)}%</p>
             </div>
-            <Link to={`/post/${continueReading.post.id}`} className="editorial-button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold" aria-label={`继续阅读：${continueReading.post.title}`}>
-              继续阅读 <ChevronRight size={15} />
-            </Link>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Link to={`/post/${continueReading.post.id}`} className="editorial-button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold" aria-label={`继续阅读：${continueReading.post.title}`}>
+                继续阅读 <ChevronRight size={15} />
+              </Link>
+              <button
+                type="button"
+                onClick={handleAbandonReading}
+                className="editorial-button inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm"
+                aria-label={`放弃阅读：${continueReading.post.title}`}
+                title="放弃阅读"
+              >
+                放弃阅读 <X size={15} aria-hidden="true" />
+              </button>
+            </div>
           </div>
           <div className="mt-4 h-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800" aria-hidden="true">
             <div className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100" style={{ width: `${Math.round(continueReading.entry.progress * 100)}%` }} />

@@ -835,6 +835,7 @@ export const Post = () => {
   const [seriesNavigation, setSeriesNavigation] = useState<SeriesNavigation | null>(null);
   const [relatedPosts, setRelatedPosts] = useState<PostMetadata[]>([]);
   const articleBodyRef = useRef<HTMLDivElement>(null);
+  const readingEndRef = useRef<HTMLDivElement>(null);
   const lastReadingSaveRef = useRef(0);
 
   useEffect(() => {
@@ -1104,8 +1105,10 @@ export const Post = () => {
       stableFrames = documentHeight === lastDocumentHeight ? stableFrames + 1 : 0;
       lastDocumentHeight = documentHeight;
       const rect = target.getBoundingClientRect();
+      const endRect = readingEndRef.current?.getBoundingClientRect();
       const top = getScrollTopForReadingProgress({
         rect,
+        endRect,
         viewportHeight: window.innerHeight,
         scrollY: window.scrollY,
         documentHeight
@@ -1145,7 +1148,7 @@ export const Post = () => {
       if (frame) window.cancelAnimationFrame(frame);
       if (resetProgrammaticFrame) window.cancelAnimationFrame(resetProgrammaticFrame);
     };
-  }, [post?.id, headings.length]);
+  }, [post?.id, headings.length, relatedPosts.length]);
 
   useEffect(() => {
     const target = articleBodyRef.current;
@@ -1167,8 +1170,10 @@ export const Post = () => {
     const updateReadingHistory = () => {
       animationFrame = 0;
       const rect = target.getBoundingClientRect();
+      const endRect = readingEndRef.current?.getBoundingClientRect();
       const progress = getReadingProgress({
         rect,
+        endRect,
         viewportHeight: window.innerHeight,
         scrollY: window.scrollY,
         documentHeight: document.documentElement.scrollHeight
@@ -1208,7 +1213,7 @@ export const Post = () => {
       if (animationFrame) window.cancelAnimationFrame(animationFrame);
       saveLatestProgress();
     };
-  }, [post?.id, post?.content]);
+  }, [post?.id, post?.content, relatedPosts.length]);
 
   useEffect(() => {
     if (isReadingMode && shareModalOpen) {
@@ -1341,7 +1346,7 @@ export const Post = () => {
 
       <Suspense fallback={null}>
         {previewImage && <ImageViewer src={previewImage.src} alt={previewImage.alt} onClose={() => setPreviewImage(null)} />}
-        {!isReadingMode && <ReadingProgressBadge targetRef={articleBodyRef} onVisibilityChange={setMobileFloatingVisible} />}
+        {!isReadingMode && <ReadingProgressBadge targetRef={articleBodyRef} endRef={readingEndRef} onVisibilityChange={setMobileFloatingVisible} />}
         {!isReadingMode && headings.length > 0 && (
           <TableOfContents
             headings={headings}
@@ -1583,6 +1588,8 @@ export const Post = () => {
                     </span>
                   </div>
                 </nav>
+
+                <div ref={readingEndRef} aria-hidden="true" className="h-0" />
 
                 {relatedPosts.length > 0 && (
                   <section className="post-related mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8" aria-labelledby="related-heading">
