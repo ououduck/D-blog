@@ -70,7 +70,7 @@ export const Favorites = () => {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-live="polite">
             {posts.map((post) => (
               <article key={post.id} className="flex h-full min-w-0 flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600">
-                <Link to={`/post/${encodeURIComponent(post.id)}`} className="block aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-800" aria-label={`阅读文章：${post.title}`}>
+                <Link to={`/post/${encodeURIComponent(post.id)}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]" aria-label={`阅读文章：${post.title}`}>
                   {post.coverImage ? (
                     <ProgressiveImage src={assetUrl(post.coverImage)} alt={post.title} loading="lazy" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/10" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
                   ) : (
@@ -79,17 +79,17 @@ export const Favorites = () => {
                     </div>
                   )}
                 </Link>
-                <div className="flex flex-grow flex-col p-4 md:p-5">
-                  <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <div className="flex flex-grow flex-col p-3.5 md:p-5">
+                  <div className="mb-1.5 flex items-center gap-2 text-[11px] md:mb-2 font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                     <span>{post.category}</span>
                     <span aria-hidden="true">/</span>
                     <span className="normal-case tracking-normal">已收藏</span>
                   </div>
                   <Link to={`/post/${encodeURIComponent(post.id)}`} aria-label={`阅读文章：${post.title}`}>
-                    <h2 className="mb-2 line-clamp-2 font-serif text-base font-bold leading-snug text-ink hover:underline dark:text-zinc-100 md:text-lg">{post.title}</h2>
+                    <h2 className="mb-1.5 line-clamp-2 md:mb-2 font-serif text-base font-bold leading-snug text-ink hover:underline dark:text-zinc-100 md:text-lg">{post.title}</h2>
                   </Link>
-                  <p className="mb-3 line-clamp-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{post.excerpt}</p>
-                  <div className="mt-auto flex items-center gap-3 border-t border-zinc-200 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                  <p className="mb-2 line-clamp-2 text-sm leading-5 md:mb-3 md:leading-6 text-zinc-600 dark:text-zinc-300">{post.excerpt}</p>
+                  <div className="mt-auto flex items-center gap-3 border-t border-zinc-200 pt-2.5 text-[11px] md:pt-3 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
                     <span className="flex items-center gap-1"><Calendar size={11} />{formatDate(post.date, 'zh-CN', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                     <span className="flex items-center gap-1"><Clock size={11} />{post.readTime}</span>
                     <button

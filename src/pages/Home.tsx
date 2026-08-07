@@ -63,15 +63,15 @@ const FeaturedPostSkeleton: React.FC<{ shouldReduceMotion: boolean }> = ({ shoul
   <div aria-hidden="true" className="col-span-full overflow-hidden rounded-surface border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
     <div className="md:grid md:min-h-80 md:grid-cols-5">
       <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="aspect-[16/9] md:col-span-3 md:aspect-auto" />
-      <div className="flex flex-col p-5 md:col-span-2 md:p-7">
-        <div className="mb-4 flex items-center gap-3">
+      <div className="flex flex-col p-4 md:col-span-2 md:p-7">
+        <div className="mb-3 flex items-center gap-3 md:mb-4">
           <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-16" />
           <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-12" />
         </div>
-        <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="mb-3 h-8 w-4/5" />
+        <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="mb-2 h-8 w-4/5 md:mb-3" />
         <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="mb-2 h-3 w-full" />
-        <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="mb-4 h-3 w-3/4" />
-        <div className="mt-auto flex items-center gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+        <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="mb-3 h-3 w-3/4 md:mb-4" />
+        <div className="mt-auto flex items-center gap-3 border-t border-zinc-200 pt-3 dark:border-zinc-800 md:pt-4">
           <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-20" />
           <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-16" />
         </div>
@@ -82,8 +82,8 @@ const FeaturedPostSkeleton: React.FC<{ shouldReduceMotion: boolean }> = ({ shoul
 
 const PostCardSkeleton: React.FC<{ shouldReduceMotion: boolean }> = ({ shouldReduceMotion }) => (
   <div aria-hidden="true" className="overflow-hidden rounded-surface border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-    <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="aspect-[16/10]" />
-    <div className="space-y-3 p-4 md:p-5">
+    <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="aspect-[16/9] md:aspect-[16/10]" />
+    <div className="space-y-2.5 p-3.5 md:space-y-3 md:p-5">
       <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-20" />
       <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-4 w-4/5" />
       <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-full" />
@@ -178,8 +178,8 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
               </div>
             )}
           </Link>
-          <div className="flex flex-col p-5 md:col-span-2 md:p-7">
-            <div className="mb-4 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+          <div className="flex flex-col p-4 md:col-span-2 md:p-7">
+            <div className="mb-3 flex items-center gap-3 text-[11px] md:mb-4 font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
               <span>{post.category}</span>
               <span aria-hidden="true">/</span>
               <span>精选</span>
@@ -191,13 +191,13 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
               )}
             </div>
             <Link to={`/post/${post.id}`} aria-label={`阅读文章：${post.title}`}>
-              <h2 className="mb-3 font-serif text-xl font-bold leading-tight text-ink hover:underline dark:text-white md:text-3xl">
+              <h2 className="mb-2 font-serif text-xl md:mb-3 font-bold leading-tight text-ink hover:underline dark:text-white md:text-3xl">
                 {post.title}
               </h2>
             </Link>
-            <p className="mb-4 line-clamp-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{post.excerpt}</p>
+            <p className="mb-3 line-clamp-3 text-sm leading-5 md:mb-4 md:leading-6 text-zinc-600 dark:text-zinc-300">{post.excerpt}</p>
             <Tags />
-            <div className="mt-5 flex items-center gap-3 border-t border-zinc-200 pt-4 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-auto">
+            <div className="mt-4 flex items-center gap-3 border-t border-zinc-200 pt-3 text-xs md:pt-4 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-auto">
               <span className="flex items-center gap-1.5"><Calendar size={12} />{post.date}</span>
               <span className="flex items-center gap-1.5"><Clock size={12} />{post.readTime}</span>
               <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
@@ -213,7 +213,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
   return (
     <motion.article layout variants={cardVariants} transition={{ duration: 0.25, ease: easeOut }} className="flex h-full min-w-0 flex-col" onMouseEnter={() => preloadPage(`/post/${post.id}`)}>
       <div className="flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600">
-        <Link to={`/post/${post.id}`} className="block aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-800" aria-label={`阅读文章：${post.title}`}>
+        <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
               <ProgressiveImage {...getResponsiveImageProps(post.coverImage, "(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw")} src={assetUrl(post.coverImage)} alt={post.title} loading="lazy" fetchPriority="auto" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
           ) : (
@@ -222,21 +222,21 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
             </div>
           )}
         </Link>
-        <div className="flex flex-grow flex-col p-4 md:p-5">
-          <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        <div className="flex flex-grow flex-col p-3.5 md:p-5">
+          <div className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider md:mb-2 text-zinc-500 dark:text-zinc-400">
             <span>{post.category}</span>
             {isPinnedFeaturedPost(post) && (
               <span className="ml-auto flex items-center gap-1 normal-case tracking-normal"><Pin size={10} />置顶</span>
             )}
           </div>
           <Link to={`/post/${post.id}`} aria-label={`阅读文章：${post.title}`}>
-            <h3 className="mb-2 line-clamp-2 font-serif text-base font-bold leading-snug text-ink hover:underline dark:text-zinc-100 md:text-lg">
+            <h3 className="mb-1.5 line-clamp-2 font-serif text-base font-bold leading-snug md:mb-2 text-ink hover:underline dark:text-zinc-100 md:text-lg">
               {post.title}
             </h3>
           </Link>
-          <p className="mb-3 line-clamp-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{post.excerpt}</p>
+          <p className="mb-2 line-clamp-2 text-sm leading-5 text-zinc-600 md:mb-3 md:leading-6 dark:text-zinc-300">{post.excerpt}</p>
           <Tags />
-          <div className="mt-4 flex items-center gap-3 border-t border-zinc-200 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+          <div className="mt-3 flex items-center gap-3 border-t border-zinc-200 pt-2.5 text-[11px] md:mt-4 md:pt-3 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             <span className="flex items-center gap-1"><Calendar size={11} />{post.date}</span>
             <span className="flex items-center gap-1"><Clock size={11} />{post.readTime}</span>
             <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white" aria-label={`分享文章：${post.title}`}>

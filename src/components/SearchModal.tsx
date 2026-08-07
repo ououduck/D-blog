@@ -175,7 +175,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       {isOpen && (
         <div className="fixed inset-0 z-modal flex items-end justify-center sm:items-center sm:px-4 sm:py-8">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: prefersReducedMotion ? 0 : 0.16, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/55" aria-hidden="true" />
-          <motion.div ref={modalRef} tabIndex={-1} initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }} transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: modalEase }} className="relative z-10 flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden editorial-sheet border border-b-0 border-zinc-300 bg-paper pb-[env(safe-area-inset-bottom,0px)] shadow-none supports-[height:100dvh]:max-h-[88dvh] dark:border-zinc-700 dark:bg-void sm:max-h-[80vh] sm:rounded-overlay sm:border-b sm:pb-0 supports-[height:100dvh]:sm:max-h-[80dvh]" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
+          <motion.div ref={modalRef} tabIndex={-1} initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }} transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: modalEase }} className="relative z-10 flex max-h-[100vh] w-full max-w-2xl flex-col overflow-hidden editorial-sheet border border-b-0 border-zinc-300 bg-paper pb-[env(safe-area-inset-bottom,0px)] shadow-none supports-[height:100dvh]:max-h-[100dvh] dark:border-zinc-700 dark:bg-void sm:max-h-[80vh] sm:rounded-overlay sm:border-b sm:pb-0 supports-[height:100dvh]:sm:max-h-[80dvh]" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
             <h2 id="site-search-title" className="sr-only">站内搜索</h2>
             <div className="flex items-center border-b border-zinc-100 p-4 dark:border-zinc-800">
               <SearchField
@@ -220,7 +220,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               <p className="mt-2 text-xs text-zinc-700 dark:text-zinc-300">{activeScopeHint}</p>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto sm:max-h-[60vh] supports-[height:100dvh]:sm:max-h-[60dvh]" aria-busy={isSearching}>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain sm:max-h-[60vh] supports-[height:100dvh]:sm:max-h-[60dvh]" aria-busy={isSearching}>
               <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{searchResultStatus}</div>
               {isSearching ? (
                 <div className="p-12 text-center text-zinc-600 dark:text-zinc-300" role="status" aria-live="polite">
