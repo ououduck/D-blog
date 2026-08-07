@@ -1,0 +1,33 @@
+# HTML and the service worker must revalidate so deployments cannot mix versions.
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+# The stable CSS URL is intentionally revalidated on each deployment.
+/assets/*.css
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Hashed JavaScript and other generated assets can be cached for a long time.
+/assets/*.js
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*.png
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*.jpg
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*.jpeg
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*.gif
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*.webp
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*.avif
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*.svg
+  Cache-Control: public, max-age=31536000, immutable
+
+# Missing static assets must remain real 404s; apply SPA fallback only to routes.

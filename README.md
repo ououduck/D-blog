@@ -503,6 +503,8 @@ export const adsConfig: AdItem[] = [
 - `VITE_SITE_URL`：站点公开访问地址，用于生成 sitemap、RSS 和预渲染 SEO URL；未设置时使用 `config/site.config.ts` 中的 `url`
 - `VITE_BASE_PATH`：站点部署在子路径时使用（如 GitHub Pages 的 `/repo/`），留空为根路径
 
+仓库会将入口 CSS 输出为稳定的 `/assets/index.css`，并通过 `public/_headers` 为 Cloudflare Pages 提供缓存策略；JS 和其他静态资源仍使用内容 hash。EdgeOne Pages 不一定读取 `_headers`，请在控制台为 HTML、`sw.js` 和 `/assets/*.css` 配置 `max-age=0, must-revalidate`，为带 hash 的 JS、字体和图片配置长期 immutable 缓存。两个平台都不要把缺失的 `.css`、`.js` 或字体请求回退到 `index.html`，否则会以错误 MIME 类型加载失败。
+
 本地可复制 `.env.example` 为 `.env`。Vite、数据生成和预渲染都会读取这些变量，因此子路径应在构建前配置完成。预渲染会为文章和静态页面写入独立 HTML；平台的 SPA fallback 仅用于未知路径或客户端路由兜底，不应覆盖已有的预渲染文件。
 
 Service Worker 的作用域跟随部署路径，在线时按页面、静态资源和图片分别缓存。安装时会预缓存应用入口、收藏页懒加载资源及离线运行时清单；收藏文章还会等待 Worker 确认文章路由、应用壳及同源正文图片已写入缓存后才报告“可离线阅读”。断网直达 `/post/<id>` 时优先使用页面缓存，站内 SPA 路由未命中则启动缓存的应用壳，再由 IndexedDB 中保存的 Markdown 正文完成渲染。非应用路由或应用壳不可用时才显示 `offline.html`。

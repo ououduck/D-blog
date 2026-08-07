@@ -27,6 +27,9 @@ visit(DIST_DIR);
 const getMatches = (value, pattern) => [...value.matchAll(pattern)].map((match) => match[0]);
 const warnings = [];
 const errors = [];
+const localStylesheetPattern = /<link\b[^>]*\brel=["']stylesheet["'][^>]*\bhref=["']([^"']+)["'][^>]*>/gi;
+const localAssetPattern = /^(?:.*\/)?assets\/(.+\.css)$/;
+const localStylesheets = new Set();
 
 for (const filePath of htmlFiles) {
   const html = fs.readFileSync(filePath, 'utf8');
@@ -34,6 +37,17 @@ for (const filePath of htmlFiles) {
   const canonicalCount = getMatches(html, /<link\b[^>]*\brel=["']canonical["'][^>]*>/gi).length;
   const jsonLdTags = getMatches(html, /<script\b[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi);
   const rootContent = html.match(/<div\b[^>]*\bid=["']root["'][^>]*>([\s\S]*?)<\/div>/i)?.[1]?.trim() || '';
+
+  for (const match of html.matchAll(localStylesheetPattern)) {
+    const href = match[1].split(/[?#]/, 1)[0];
+    const assetMatch = href.match(localAssetPattern);
+    if (!assetMatch) continue;
+    const assetPath = path.join(DIST_DIR, 'assets', assetMatch[1]);
+    localStylesheets.add(assetPath);
+    if (!fs.existsSync(assetPath)) {
+      errors.push(`${relativePath}: stylesheet not found (${href})`);
+    }
+  }
 
   const isOfflineFallback = relativePath === 'offline.html';
   if (!/<title>[\s\S]+<\/title>/i.test(html)) errors.push(`${relativePath}: missing title`);
@@ -51,6 +65,20 @@ for (const filePath of htmlFiles) {
       errors.push(`${relativePath}: invalid JSON-LD`);
     }
   }
+}
+
+if (localStylesheets.size === 0) {
+  errors.push('no generated local stylesheet references found');
+} else {
+  for (const stylesheetPath of localStylesheets) {
+    if (/-[A-Za-z0-9_-]+\.css$/.test(path.basename(stylesheetPath))) {
+      errors.push(`stable stylesheet has a content hash (${path.basename(stylesheetPath)})`);
+    }
+  }
+}
+
+if (!entryHtml.includes('https://www.clarity.ms/tag/')) {
+  errors.push('entry HTML is missing the Clarity script URL');
 }
 
 const assetsDir = path.join(DIST_DIR, 'assets');
