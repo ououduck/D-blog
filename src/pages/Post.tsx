@@ -1341,6 +1341,15 @@ export const Post = () => {
       name: author.name,
       url: author.url
     })),
+    articleBody: post.content,
+    wordCount: post.wordCount,
+    inLanguage: 'zh-CN',
+    articleSection: post.category,
+    isPartOf: {
+      '@type': 'WebSite',
+      name: siteConfig.title,
+      url: absoluteSiteUrl('/', siteConfig.url)
+    },
     mainEntityOfPage: absoluteSiteUrl(`/post/${post.id}`, siteConfig.url),
     publisher: {
       '@type': 'Organization',

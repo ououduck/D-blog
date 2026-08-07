@@ -9,6 +9,8 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
+document.head.querySelectorAll('[data-rh="true"]').forEach((element) => element.remove());
+
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>

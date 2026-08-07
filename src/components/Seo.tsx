@@ -23,6 +23,8 @@ interface SeoProps {
 
 const toAbsoluteUrl = (value?: string) => absoluteSiteUrl(value, siteConfig.url, getSiteBasePath());
 
+const stripQueryAndHash = (value: string) => value.split(/[?#]/, 1)[0] || '/';
+
 const withBaseUrls = (value: unknown): unknown => {
   if (Array.isArray(value)) {
     return value.map(withBaseUrls);
@@ -63,7 +65,8 @@ export const Seo: React.FC<SeoProps> = ({
   noindex = false
 }) => {
   const fullTitle = title === siteConfig.title ? siteConfig.title : `${title} - ${siteConfig.title}`;
-  const canonicalUrl = toAbsoluteUrl(url);
+  const hasQueryState = Boolean(url && /[?#]/.test(url));
+  const canonicalUrl = toAbsoluteUrl(stripQueryAndHash(url || '/'));
   const imageUrl = toAbsoluteUrl(image);
   const schema = structuredData
     ? (Array.isArray(structuredData) ? structuredData : [structuredData]).map(withBaseUrls) as Array<Record<string, unknown>>
@@ -83,9 +86,9 @@ export const Seo: React.FC<SeoProps> = ({
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
-      <meta name="robots" content={noindex ? 'noindex,nofollow' : 'index,follow,max-image-preview:large'} />
+      <meta key="robots" name="robots" content={noindex || hasQueryState ? 'noindex,follow' : 'index,follow,max-image-preview:large'} />
       {keywords && <meta name="keywords" content={keywords} />}
-      <link rel="canonical" href={canonicalUrl} />
+      <link key="canonical" rel="canonical" href={canonicalUrl} />
       <link rel="alternate" type="application/rss+xml" title={`${siteConfig.title} RSS`} href={toAbsoluteUrl('/feed.xml')} />
 
       <meta property="og:locale" content="zh_CN" />
@@ -94,6 +97,7 @@ export const Seo: React.FC<SeoProps> = ({
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={imageUrl} />
+      <meta property="og:image:alt" content={fullTitle} />
       <meta property="og:url" content={canonicalUrl} />
       {type === 'article' && publishedTime && <meta property="article:published_time" content={publishedTime} />}
       {type === 'article' && modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
@@ -105,6 +109,7 @@ export const Seo: React.FC<SeoProps> = ({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={imageUrl} />
+      <meta name="twitter:image:alt" content={fullTitle} />
       <meta name="twitter:url" content={canonicalUrl} />
 
       {schema.length > 0 && (

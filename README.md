@@ -159,7 +159,7 @@ graph LR
 
 ```text
 D-blog/
-├── index.html                   # HTML 入口（字体、Clarity / Cloudflare / Umami 分析注入）
+├── index.html                   # HTML 入口（字体、Clarity / Umami 分析注入）
 ├── .env.example                 # 环境变量示例（站点 URL、子路径）
 ├── config/                      # 配置文件
 │   ├── site.config.ts          # 站点全局配置（标题、作者、社交链接、备案等）

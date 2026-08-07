@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
+import matter from 'gray-matter';
 import { fileURLToPath } from 'url';
 import { loadSiteConfig, getSiteBasePath, toAbsoluteUrl } from './site-config-loader.mjs';
 import { withBasePath } from './base-path.mjs';
@@ -13,6 +14,7 @@ const __dirname = path.dirname(__filename);
 
 const DIST_DIR = path.join(__dirname, '../dist');
 const POSTS_FILE = path.join(__dirname, '../generated/posts.json');
+const POSTS_DIR = path.join(__dirname, '../posts');
 const IMAGE_MANIFEST_FILE = path.join(__dirname, '../generated/image-assets.json');
 const imageManifest = fs.existsSync(IMAGE_MANIFEST_FILE)
   ? JSON.parse(fs.readFileSync(IMAGE_MANIFEST_FILE, 'utf-8'))
@@ -81,7 +83,9 @@ export const injectSeoMeta = (
     html = upsertHeadTag(html, descriptionMetaPattern, metaDescTag);
   }
 
-  if (canonicalUrl) {
+  if (canonicalUrl === null) {
+    html = html.replace(canonicalLinkPattern, '');
+  } else if (canonicalUrl) {
     const canonicalTag = `<link rel="canonical" href="${escapeHtmlAttribute(canonicalUrl)}">`;
     html = upsertHeadTag(html, canonicalLinkPattern, canonicalTag);
   }
@@ -146,19 +150,25 @@ const createStaticPageMeta = ({ path: pagePath, title, description, schemaType =
       name: siteTitle,
       url: siteAbsoluteUrl('/')
     },
-    image
+    image,
+    inLanguage: 'zh-CN'
   };
 
   return `
+    <meta property="og:locale" content="zh_CN">
+    <meta property="og:site_name" content="${escapeHtmlAttribute(siteTitle)}">
     <meta property="og:type" content="website">
     <meta property="og:title" content="${escapeHtmlAttribute(title)}">
     <meta property="og:description" content="${escapeHtmlAttribute(description)}">
     <meta property="og:url" content="${escapeHtmlAttribute(pageUrl)}">
     <meta property="og:image" content="${escapeHtmlAttribute(image)}">
+    <meta property="og:image:alt" content="${escapeHtmlAttribute(title)}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${escapeHtmlAttribute(title)}">
     <meta name="twitter:description" content="${escapeHtmlAttribute(description)}">
     <meta name="twitter:image" content="${escapeHtmlAttribute(image)}">
+    <meta name="twitter:image:alt" content="${escapeHtmlAttribute(title)}">
+    <meta name="twitter:url" content="${escapeHtmlAttribute(pageUrl)}">
     <script type="application/ld+json">${escapeJsonForHtml(structuredData)}</script>`;
 };
 
@@ -172,6 +182,7 @@ const createHomeMeta = () => {
     description: siteConfig.description,
     url: homeUrl,
     image,
+    inLanguage: 'zh-CN',
     potentialAction: {
       '@type': 'SearchAction',
       target: `${homeUrl}?q={search_term_string}`,
@@ -180,15 +191,19 @@ const createHomeMeta = () => {
   };
 
   return `
+    <meta property="og:locale" content="zh_CN">
+    <meta property="og:site_name" content="${escapeHtmlAttribute(siteTitle)}">
     <meta property="og:type" content="website">
     <meta property="og:title" content="${escapeHtmlAttribute(siteTitle)}">
     <meta property="og:description" content="${escapeHtmlAttribute(siteConfig.description)}">
     <meta property="og:url" content="${escapeHtmlAttribute(homeUrl)}">
     <meta property="og:image" content="${escapeHtmlAttribute(image)}">
+    <meta property="og:image:alt" content="${escapeHtmlAttribute(siteTitle)}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${escapeHtmlAttribute(siteTitle)}">
     <meta name="twitter:description" content="${escapeHtmlAttribute(siteConfig.description)}">
     <meta name="twitter:image" content="${escapeHtmlAttribute(image)}">
+    <meta name="twitter:url" content="${escapeHtmlAttribute(homeUrl)}">
     <script type="application/ld+json">${escapeJsonForHtml(websiteData)}</script>`;
 };
 
@@ -235,7 +250,13 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
   }
 
   const template = stripNonCriticalPreloads(fs.readFileSync(indexHtmlPath, 'utf-8'));
-  const posts = JSON.parse(fs.readFileSync(postsFile, 'utf-8'));
+  const posts = JSON.parse(fs.readFileSync(postsFile, 'utf-8')).map((post) => {
+    if (!post.filePath) return post;
+    const sourcePath = path.join(__dirname, '..', post.filePath.replace(/^\//, ''));
+    if (!fs.existsSync(sourcePath)) return post;
+    const parsed = matter(fs.readFileSync(sourcePath, 'utf-8'));
+    return { ...post, content: parsed.content };
+  });
 
   logger.start('Pre-render static routes');
 
@@ -251,22 +272,28 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
     const publishDate = post.date;
     const modifiedDate = post.updatedAt || post.date;
 
+    const postAuthors = post.authors?.length > 0 ? post.authors : [{ name: authorName }];
     const ogMeta = `
+    <meta property="og:locale" content="zh_CN">
+    <meta property="og:site_name" content="${escapeHtmlAttribute(siteTitle)}">
     <meta property="og:type" content="article">
     <meta property="og:title" content="${escapeHtmlAttribute(title)}">
     <meta property="og:description" content="${escapeHtmlAttribute(description)}">
     <meta property="og:url" content="${escapeHtmlAttribute(postUrl)}">
     <meta property="og:image" content="${escapeHtmlAttribute(coverImage)}">
+    <meta property="og:image:alt" content="${escapeHtmlAttribute(title)}">
     <meta property="article:published_time" content="${escapeHtmlAttribute(publishDate)}">
     <meta property="article:modified_time" content="${escapeHtmlAttribute(modifiedDate)}">
+    ${postAuthors.map((author) => `<meta property="article:author" content="${escapeHtmlAttribute(author.name)}">`).join('\n    ')}
     <meta property="article:section" content="${escapeHtmlAttribute(post.category || '')}">
     ${(post.tags || []).map((tag) => `<meta property="article:tag" content="${escapeHtmlAttribute(tag)}">`).join('\n    ')}
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${escapeHtmlAttribute(title)}">
     <meta name="twitter:description" content="${escapeHtmlAttribute(description)}">
-    <meta name="twitter:image" content="${escapeHtmlAttribute(coverImage)}">`;
+    <meta name="twitter:image" content="${escapeHtmlAttribute(coverImage)}">
+    <meta name="twitter:image:alt" content="${escapeHtmlAttribute(title)}">
+    <meta name="twitter:url" content="${escapeHtmlAttribute(postUrl)}">`;
 
-    const postAuthorName = post.authors?.[0]?.name || authorName;
     const structuredData = {
       '@context': 'https://schema.org',
       '@type': 'Article',
@@ -275,7 +302,17 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
       image: coverImage,
       datePublished: publishDate,
       dateModified: modifiedDate,
-      author: { '@type': 'Person', name: postAuthorName },
+      author: postAuthors.map((author) => ({ '@type': 'Person', name: author.name, ...(author.url ? { url: author.url } : {}) })),
+      articleBody: post.content,
+      wordCount: post.wordCount,
+      keywords: (post.tags || []).join(', '),
+      inLanguage: 'zh-CN',
+      articleSection: post.category || undefined,
+      isPartOf: {
+        '@type': 'WebSite',
+        name: siteTitle,
+        url: siteAbsoluteUrl('/')
+      },
       mainEntityOfPage: postUrl,
       publisher: {
         '@type': 'Organization',
@@ -341,7 +378,7 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
     `页面不存在 - ${SITE_SUFFIX}`,
     '你访问的页面不存在，可能已经移动或删除。',
     '',
-    { canonicalUrl: siteAbsoluteUrl('/404.html'), robots: NOINDEX_ROBOTS }
+    { canonicalUrl: null, robots: NOINDEX_ROBOTS }
   );
 
   logger.step('Generated post pages', `count=${posts.length}`);

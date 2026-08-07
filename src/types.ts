@@ -58,6 +58,7 @@ export interface PostMetadata {
   coverHeight?: number;
   imageDimensions?: Record<string, ImageDimensions>;
   readTime: string;
+  wordCount?: number;
   featured?: boolean;
   'featured-top'?: number;
   series?: boolean;

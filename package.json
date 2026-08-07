@@ -11,6 +11,7 @@
     "gen:images": "node scripts/generate-image-assets.mjs",
     "gen:data": "npm run gen:images && node scripts/generate-site-data.mjs",
     "prerender": "node scripts/prerender.mjs",
+    "audit:build": "node scripts/audit-build.mjs",
     "typecheck": "tsc -p config/tsconfig.json --noEmit",
     "check": "npm run typecheck && npm run gen:data",
     "dev": "npm run gen:data && vite",
