@@ -25,5 +25,5 @@ draft: false
 不知道还能薅多久 看到就赶紧薅
 
 # 点此注册(求走AFF)  
-[带AFF链接](https://tokenrhythm.studio/i/rf_tr_MKB2vD9RbmuiLGWHrsEkG0A2)
-[不带AFF链接](https://tokenrhythm.studio)
+[带AFF链接](https://tokenrhythm.studio/i/rf_tr_MKB2vD9RbmuiLGWHrsEkG0A2)  
+[不带AFF链接](https://tokenrhythm.studio)  
