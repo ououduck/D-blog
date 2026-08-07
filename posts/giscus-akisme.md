@@ -269,5 +269,5 @@ https://github.com/你的用户名/你的仓库/settings/interaction_limits
 
 对于使用 GitHub 托管源码的静态博客，giscus 可以用很低的接入成本提供完整的评论体验，Akismet 则负责过滤常见的垃圾内容。两者结合后，博客不需要搭建数据库、用户系统或单独的评论后端，就能拥有 GitHub 登录、Discussion 存储、评论通知和自动垃圾审查功能。
 
-本文参考并沿用了[二叉树树博客原文章](https://2x.nz/posts/giscus-akismet)的配图。
+本文参考并沿用了[二叉树树博客原文章](https://2x.nz/posts/giscus-akismet)的配图。  
 此外，请注意，本文采用了AI润色，请注意辨别。
