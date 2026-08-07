@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ExternalLink, Github, Sparkles, ChevronDown, Globe2, X } from 'lucide-react';
+import { ArrowRight, Check, ExternalLink, Github, Sparkles, ChevronDown, Globe2, X } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
 import { siteConfig } from '@config/site.config';
 import { getFriends } from '@/services/friends';
@@ -26,6 +26,7 @@ const EMPTY_APPLICATION_VALUES: FriendLinkApplicationValues = {
 
 export const Friends = () => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [currentApplicationStep, setCurrentApplicationStep] = useState(1);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -85,6 +86,10 @@ export const Friends = () => {
 
     const result = createFriendLinkApplication(applicationValues, applicationFilename, siteConfig.friendsPage.repoUrl);
     setApplicationResult(result);
+  };
+
+  const advanceApplicationStep = (step: number) => {
+    setCurrentApplicationStep((current) => Math.max(current, step));
   };
 
   const getFriendDomain = (url: string) => {
@@ -157,37 +162,46 @@ export const Friends = () => {
                       </h2>
                       <p className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">请按以下步骤完成申请，GitHub Issue 会记录申请并由 Action 自动检查反链。</p>
                     </div>
-                    <ol className="mt-5 grid gap-4 text-sm leading-relaxed text-zinc-800 dark:text-zinc-200 sm:grid-cols-2">
-                      <li className="flex gap-3">
-                        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-950">1</span>
-                        <span>先在自己的公开友链页加入 D-blog，并确认页面无需登录即可访问；检测只读取这个友链页的静态 HTML。</span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-950">2</span>
-                        <span>点击“登录 GitHub”，在 GitHub 官方页面完成登录。本站不会读取或保存你的 GitHub 账号信息。</span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-950">3</span>
-                        <span>填写全部站点资料、友链页链接、联系方式和文件名，勾选已添加 D-blog 后生成 Issue 草稿。</span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-950">4</span>
-                        <span>在 GitHub 中检查预填内容并点击“Submit new issue”正式提交；只生成草稿不会触发审核。</span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-950">5</span>
-                        <span>Issue 提交后 Action 会先评论确认，提交满 10 分钟后开始检查反链，通常在约 10 至 15 分钟内处理。</span>
-                      </li>
+                    <ol className="mt-5 space-y-3 text-sm">
+                      {[
+                        ['添加本站友链', '先在自己的公开友链页加入 D-blog，并确认页面无需登录即可访问。'],
+                        ['登录 GitHub', '在 GitHub 官方页面完成登录，本站不会读取或保存账号信息。'],
+                        ['填写信息并提交 Issue', '填写站点资料，生成草稿并在 GitHub 中正式提交。'],
+                        ['等待 bot 审核', '提交后由 Action 检查反链并自动处理申请。'],
+                      ].map(([title, description], index) => {
+                        const step = index + 1;
+                        const completed = currentApplicationStep > step;
+                        const active = currentApplicationStep === step;
+                        return (
+                          <li key={title} className="relative flex gap-3">
+                            {step < 4 && <span aria-hidden="true" className="absolute left-3 top-7 h-7 border-l border-zinc-300 dark:border-zinc-700" />}
+                            <span className={`relative z-10 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold ${completed || active ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                              {completed ? <Check size={14} /> : step}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className={`font-semibold ${active ? 'text-zinc-950 dark:text-white' : 'text-zinc-600 dark:text-zinc-400'}`} aria-current={active ? 'step' : undefined}>{title}</div>
+                              <p className="mt-1 text-zinc-600 dark:text-zinc-400">{description}</p>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ol>
-                    <p className="mt-5 border-t border-zinc-200 pt-3 text-xs leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-                      友链页必须能直接返回包含 D-blog 标准地址的 HTML；仅在浏览器运行脚本后才出现的链接可能无法通过检测。GitHub 定时任务受平台调度影响，10 至 15 分钟是通常窗口，不是严格 SLA。
-                    </p>
                   </Surface>
 
-                  <Surface variant="card" className="p-4 sm:p-5" aria-labelledby="friend-link-site-info">
-                    <h2 id="friend-link-site-info" className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      本站信息（提交前请先添加本站友链）
-                    </h2>
+                  <AnimatePresence mode="wait" initial={false}>
+                    {currentApplicationStep === 1 && (
+                      <motion.div key="friend-link-step-1" initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}>
+                        <Surface variant="card" className="p-4 sm:p-5" aria-labelledby="friend-link-site-info">
+                          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">第一步</p>
+                              <h2 id="friend-link-site-info" className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">添加本站友链</h2>
+                            </div>
+                            <button type="button" onClick={() => advanceApplicationStep(2)} className="editorial-button-primary">
+                              我已完成
+                              <ArrowRight size={16} />
+                            </button>
+                          </div>
                     <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
                       <ProgressiveImage
                         src={siteInfo.avatar}
@@ -202,8 +216,34 @@ export const Friends = () => {
                         <div className="break-all font-mono text-xs leading-relaxed text-zinc-700 dark:text-zinc-400 select-all">LOGO：{siteInfo.avatar}</div>
                       </div>
                     </div>
-                  </Surface>
-
+                        </Surface>
+                      </motion.div>
+                    )}
+                    {currentApplicationStep === 2 && (
+                      <motion.div key="friend-link-step-2" initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}>
+                        <Surface variant="card" className="p-4 sm:p-5">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">第二步</p>
+                              <h2 className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">登录 GitHub</h2>
+                              <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">请在 GitHub 官方页面完成登录。本站不会读取或保存你的 GitHub 账号信息。</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <a href="https://github.com/login" target="_blank" rel="noopener noreferrer" className="editorial-button inline-flex items-center gap-2">
+                                <Github size={16} />
+                                登录 GitHub
+                              </a>
+                              <button type="button" onClick={() => advanceApplicationStep(3)} className="editorial-button-primary">
+                                我已登录
+                                <ArrowRight size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        </Surface>
+                      </motion.div>
+                    )}
+                    {currentApplicationStep === 3 && (
+                      <motion.div key="friend-link-step-3" initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}>
                   <form noValidate onSubmit={handleCompleteApplication} className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
                     <div className="mb-4">
                       <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">在线填写申请</h2>
@@ -294,7 +334,33 @@ export const Friends = () => {
                         生成 GitHub Issue 草稿
                       </button>
                     </div>
+                    {applicationResult && (
+                      <div className="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">提交 Issue 后返回这里</span>
+                        <button type="button" onClick={() => advanceApplicationStep(4)} className="editorial-button-primary inline-flex items-center gap-2">
+                          我已提交
+                          <ArrowRight size={16} />
+                        </button>
+                      </div>
+                    )}
                   </form>
+                      </motion.div>
+                    )}
+                    {currentApplicationStep === 4 && (
+                      <motion.div key="friend-link-step-4" initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                        <Surface variant="panel" className="p-4 sm:p-5">
+                          <div className="flex items-start gap-3">
+                            <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"><Check size={16} /></span>
+                            <div>
+                              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">第四步</p>
+                              <h2 className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">等待 bot 审核</h2>
+                              <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">Issue 提交后，Action 会先评论确认，并在提交满 10 分钟后检查友链页。通常会在约 10 至 15 分钟内完成审核，检测通过后自动添加友链。</p>
+                            </div>
+                          </div>
+                        </Surface>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </motion.div>
