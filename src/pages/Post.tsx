@@ -1085,18 +1085,35 @@ export const Post = () => {
     let stableFrames = 0;
     let programmaticScroll = false;
     let resetProgrammaticFrame = 0;
+    let restoreDelay = 0;
+    const restoreGraceUntil = performance.now() + 500;
 
     const stopRestore = () => {
       userIntent = true;
     };
     const handleScroll = () => {
-      if (!programmaticScroll) stopRestore();
+      if (!programmaticScroll && performance.now() >= restoreGraceUntil) stopRestore();
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isEditableKeyboardTarget(event.target) && READING_SCROLL_KEYS.has(event.key)) stopRestore();
     };
     const scheduleRestore = () => {
       if (!frame && !cancelled && !userIntent) frame = window.requestAnimationFrame(restore);
+    };
+    const scheduleDelayedRestore = () => {
+      if (restoreDelay || cancelled || userIntent) return;
+      const delay = Math.max(restoreGraceUntil - performance.now(), 0);
+      restoreDelay = window.setTimeout(() => {
+        restoreDelay = 0;
+        scheduleRestore();
+      }, delay);
+    };
+    const scheduleLayoutRestore = () => {
+      if (performance.now() < restoreGraceUntil) {
+        scheduleDelayedRestore();
+        return;
+      }
+      scheduleRestore();
     };
     const restore = () => {
       frame = 0;
@@ -1105,7 +1122,12 @@ export const Post = () => {
       stableFrames = documentHeight === lastDocumentHeight ? stableFrames + 1 : 0;
       lastDocumentHeight = documentHeight;
       const rect = target.getBoundingClientRect();
-      const endRect = readingEndRef.current?.getBoundingClientRect();
+      const endTarget = readingEndRef.current;
+      const endRect = endTarget?.getBoundingClientRect();
+      if (!endTarget || !endRect) {
+        scheduleLayoutRestore();
+        return;
+      }
       const top = getScrollTopForReadingProgress({
         rect,
         endRect,
@@ -1123,7 +1145,7 @@ export const Post = () => {
       if (stableFrames < 2) scheduleRestore();
     };
     const resizeObserver = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(scheduleRestore)
+      ? new ResizeObserver(scheduleLayoutRestore)
       : null;
 
     window.addEventListener('wheel', stopRestore, { passive: true });
@@ -1131,10 +1153,11 @@ export const Post = () => {
     window.addEventListener('pointerdown', stopRestore, { passive: true });
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('resize', scheduleRestore);
+    window.addEventListener('resize', scheduleLayoutRestore);
     resizeObserver?.observe(target);
     resizeObserver?.observe(document.documentElement);
-    scheduleRestore();
+    if (readingEndRef.current) resizeObserver?.observe(readingEndRef.current);
+    scheduleDelayedRestore();
 
     return () => {
       cancelled = true;
@@ -1143,12 +1166,13 @@ export const Post = () => {
       window.removeEventListener('pointerdown', stopRestore);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('resize', scheduleRestore);
+      window.removeEventListener('resize', scheduleLayoutRestore);
       resizeObserver?.disconnect();
       if (frame) window.cancelAnimationFrame(frame);
+      if (restoreDelay) window.clearTimeout(restoreDelay);
       if (resetProgrammaticFrame) window.cancelAnimationFrame(resetProgrammaticFrame);
     };
-  }, [post?.id, headings.length, relatedPosts.length]);
+  }, [post?.id, headings.length]);
 
   useEffect(() => {
     const target = articleBodyRef.current;
