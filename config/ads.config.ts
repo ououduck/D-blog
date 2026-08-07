@@ -35,13 +35,5 @@ export const adsConfig: AdItem[] = [
     alt: '腾讯云广告',
     width: 984,
     height: 168
-  }, {
-    id: 'picui',
-    title: 'PICUI图床',
-    image: '/ads-img/picui.png',
-    link: 'https://picui.cn',
-    alt: 'PICUI图床广告',
-    width: 984,
-    height: 168
   }
 ];
