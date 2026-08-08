@@ -19,10 +19,10 @@ export const createBuildLogger = (scope) => {
     success(message, detail = '') {
       write('done', message, detail);
     },
-    warn(message, detail = '') {
+    warn(message, detail = '', output = true) {
       const text = `${message}${formatDetail(detail)}`;
       warnings.push(text);
-      console.warn(`[${scope}] warn ${text}`);
+      if (output) console.warn(`[${scope}] warn ${text}`);
     },
     error(message, detail = '') {
       console.error(`[${scope}] error ${message}${formatDetail(detail)}`);

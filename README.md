@@ -127,8 +127,11 @@ npm run check
 # 本地开发
 npm run dev
 
-# 生产构建
+# 生产构建（默认输出阶段摘要）
 npm run build
+
+# 输出所有 Vite 构建明细
+npm run build:verbose
 
 # 预览构建结果
 npm run preview
@@ -481,7 +484,8 @@ export const adsConfig: AdItem[] = [
 | 命令 | 功能 |
 | --- | --- |
 | `npm run dev` | 启动开发服务器（端口 3000），同时执行 `gen:data` |
-| `npm run build` | 生产构建：生成数据 → Vite 构建 → 预渲染 HTML |
+| `npm run build` | 生产构建：生成图片和数据 → Vite 构建 → 预渲染 HTML → 产物审计；默认输出阶段摘要、耗时和告警 |
+| `npm run build:verbose` | 以详细模式运行生产构建，保留 Vite 的完整构建输出，用于排查构建问题 |
 | `npm run preview` | 预览生产构建结果 |
 | `npm run gen:images` | 清空并重建响应式图片输出目录 `public/generated-images/`，同时更新图片资产清单 |
 | `npm run gen:data` | 先运行 `gen:images`，再从 Markdown 生成 JSON 索引、RSS 和 Sitemap；会改写自动生成文件 |

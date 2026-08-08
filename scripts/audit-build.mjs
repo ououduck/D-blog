@@ -1,16 +1,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { createBuildLogger } from './build-logger.mjs';
 
 const DIST_DIR = path.resolve('dist');
 const strict = process.argv.includes('--strict');
+const verbose = process.env.BUILD_VERBOSE === '1';
+const logger = createBuildLogger('audit:build');
 const maxInitialScriptBytes = 600 * 1024;
 const maxInitialStyleBytes = 180 * 1024;
 const entryHtml = fs.existsSync(path.join(DIST_DIR, 'index.html'))
   ? fs.readFileSync(path.join(DIST_DIR, 'index.html'), 'utf8')
   : '';
 
+logger.start('Audit build output');
+
 if (!fs.existsSync(DIST_DIR)) {
-  console.error('[audit:build] dist directory not found. Run "npm run build" first.');
+  logger.error('dist directory not found', 'Run "npm run build" first.');
+  logger.summary({ html: 0, 'initial-js': '0.0KiB', 'initial-css': '0.0KiB', errors: 1 });
   process.exit(1);
 }
 
@@ -97,8 +103,13 @@ if (fs.existsSync(assetsDir)) {
 if (initialScriptBytes > maxInitialScriptBytes) warnings.push(`initial JavaScript is ${(initialScriptBytes / 1024).toFixed(1)} KiB`);
 if (initialStyleBytes > maxInitialStyleBytes) warnings.push(`initial CSS is ${(initialStyleBytes / 1024).toFixed(1)} KiB`);
 
-console.log(`[audit:build] html=${htmlFiles.length} initial-js=${(initialScriptBytes / 1024).toFixed(1)}KiB initial-css=${(initialStyleBytes / 1024).toFixed(1)}KiB`);
-for (const warning of warnings) console.warn(`[audit:build] warn ${warning}`);
-for (const error of errors) console.error(`[audit:build] error ${error}`);
+for (const warning of warnings) logger.warn(warning, '', verbose);
+for (const error of errors) logger.error(error);
+logger.summary({
+  html: htmlFiles.length,
+  'initial-js': `${(initialScriptBytes / 1024).toFixed(1)}KiB`,
+  'initial-css': `${(initialStyleBytes / 1024).toFixed(1)}KiB`,
+  errors: errors.length
+});
 
 if (errors.length > 0 || (strict && warnings.length > 0)) process.exit(1);
