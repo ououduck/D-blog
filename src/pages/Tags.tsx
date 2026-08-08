@@ -219,7 +219,7 @@ export const Tags = () => {
                 </h2>
                 <button
                   onClick={() => updateTagParam()}
-                  className="inline-flex min-h-11 w-fit items-center gap-2 rounded-control border border-zinc-400 bg-paper px-4 py-2 text-sm font-bold text-ink transition-colors hover:border-ink hover:bg-zinc-100 focus-visible:border-ink focus-visible:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 active:scale-[.98] dark:border-zinc-600 dark:bg-void dark:text-white dark:hover:border-white dark:hover:bg-zinc-900 dark:focus-visible:border-white dark:focus-visible:bg-zinc-900 dark:focus-visible:outline-zinc-100"
+                    className="editorial-button inline-flex w-full gap-2 px-4 font-bold sm:w-fit"
                 >
                   <ArrowLeft size={15} />
                   返回全部标签

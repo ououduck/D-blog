@@ -622,9 +622,9 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     <>
       <nav className={`site-navbar fixed left-0 right-0 top-0 ${isMobileNavMounted ? 'z-nav-panel' : 'z-nav'} border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void`}>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, ease: easeSmooth }} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-16">
-          <Link to="/" className="group z-50 flex min-w-0 shrink-0 items-center space-x-2.5 sm:space-x-3">
+          <Link to="/" className="group z-50 flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
             <ProgressiveImage src={assetUrl(siteConfig.logoSmall)} alt={`${siteConfig.title} 站点标志`} fetchPriority="high" width={96} height={96} wrapperClassName="h-8 w-8 bg-white sm:h-9 sm:w-9" className="h-8 w-8 object-cover sm:h-9 sm:w-9" />
-            <span className="truncate font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:text-2xl">{siteConfig.title}</span>
+            <span className="max-w-[calc(100vw-9.5rem)] truncate font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:max-w-none sm:text-2xl">{siteConfig.title}</span>
           </Link>
 
           <div className="hidden min-w-0 shrink items-center gap-4 lg:flex">
@@ -710,10 +710,10 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           </div>
 
           <div className="flex items-center gap-1.5 lg:hidden">
-            <button onClick={onSearchClick} className="inline-flex h-11 w-11 items-center justify-center rounded-icon border border-zinc-300 bg-paper text-zinc-700 shadow-none transition-colors duration-200 hover:border-zinc-500 hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800" aria-label="打开站内搜索">
+            <button onClick={onSearchClick} className="editorial-icon-button h-11 w-11" aria-label="打开站内搜索">
               <Search size={18} />
             </button>
-            <button ref={mobileNavMenuButtonRef} onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className={`z-50 inline-flex h-11 w-11 items-center justify-center rounded-icon border shadow-none transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${
+            <button ref={mobileNavMenuButtonRef} onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className={`z-50 inline-flex h-11 w-11 items-center justify-center rounded-icon border shadow-none transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 ${
               isMobileNavOpen
                 ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950'
                 : 'border-zinc-300 bg-paper text-zinc-700 hover:border-zinc-500 hover:bg-zinc-100 hover:text-ink dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white'
@@ -858,7 +858,7 @@ const Footer = () => {
             <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{siteConfig.description}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium text-zinc-600 dark:text-zinc-400 sm:gap-x-5 sm:gap-y-3">
             {allNavItems.map((item) => {
               if ('path' in item) {
                 return (

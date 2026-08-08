@@ -343,12 +343,12 @@ export const Friends = () => {
                       </label>
                       {applicationErrors.reciprocalLinkConfirmed && <span id="reciprocal-link-error" className="sm:col-span-2 -mt-2 text-xs text-red-600 dark:text-red-400">{applicationErrors.reciprocalLinkConfirmed}</span>}
                     </div>
-                    <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                    <div className="mt-5 flex flex-col gap-2 border-t border-zinc-200 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:border-0 sm:pt-0 dark:border-zinc-800">
                       <a href="https://github.com/login" target="_blank" rel="noopener noreferrer" className="editorial-button inline-flex items-center gap-2 px-4">
                         <Github size={16} />
                         登录 GitHub
                       </a>
-                      <button type="submit" className="editorial-button-primary inline-flex items-center gap-2 px-5">
+                      <button type="submit" className="editorial-button-primary inline-flex w-full items-center gap-2 px-5 sm:w-auto">
                         <Github size={16} />
                         生成 GitHub Issue 草稿
                       </button>

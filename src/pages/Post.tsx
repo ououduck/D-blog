@@ -1442,12 +1442,12 @@ export const Post = () => {
             animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
             transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.06, duration: 0.3, ease: easeOut }}
           >
-            <h1 className="mb-5 text-balance font-serif text-3xl font-bold leading-[1.18] tracking-[-0.02em] text-ink dark:text-white md:mb-6 md:text-5xl lg:text-[3.5rem]">
+            <h1 className="mb-5 break-words text-balance font-serif text-3xl font-bold leading-[1.18] tracking-[-0.02em] text-ink [overflow-wrap:anywhere] dark:text-white md:mb-6 md:text-5xl lg:text-[3.5rem]">
               {post.title}
             </h1>
 
             {!isReadingMode && (
-              <div className="post-meta print-hidden mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-zinc-500 dark:text-zinc-500 md:gap-2.5 md:text-xs">
+              <div className="post-meta print-hidden mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-1.5 text-[11px] font-semibold text-zinc-500 dark:text-zinc-500 sm:gap-2 md:gap-2.5 md:text-xs">
                 <span className="inline-flex max-w-full items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
                   <Users size={14} />
                   <span className="truncate">{authorsLabel}</span>
@@ -1584,7 +1584,7 @@ export const Post = () => {
                 )}
 
                 <nav aria-label="文章导航" className="post-navigation mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8">
-                  <div className="grid gap-6 sm:grid-cols-2 sm:gap-10">
+                    <div className="grid gap-5 sm:grid-cols-2 sm:gap-10">
                     {adjacentPosts.prev ? (
                       <Link
                         to={`/post/${adjacentPosts.prev.id}`}
@@ -1602,7 +1602,7 @@ export const Post = () => {
                     {adjacentPosts.next ? (
                       <Link
                         to={`/post/${adjacentPosts.next.id}`}
-                        className="group flex min-h-11 min-w-0 items-start justify-end gap-3 rounded-control py-1 text-right"
+                        className="group flex min-h-11 min-w-0 items-start gap-3 rounded-control py-1 text-left sm:justify-end sm:text-right"
                       >
                         <span className="min-w-0">
                           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">下一篇</span>
@@ -1630,7 +1630,7 @@ export const Post = () => {
                       <BookOpen size={16} className="text-zinc-400" />
                       <h2 id="related-heading" className="font-serif text-xl font-bold text-ink dark:text-white">你可能还喜欢</h2>
                     </div>
-                    <div className="grid gap-3 sm:gap-4 sm:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
                       {relatedPosts.map((relatedPost) => (
                         <Link key={relatedPost.id} to={`/post/${relatedPost.id}`} className="group flex h-24 overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-500 focus-visible:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-visible:border-zinc-500 sm:block sm:h-auto">
                           {relatedPost.coverImage ? <ProgressiveImage src={resolveBrowserAsset(relatedPost.coverImage)} alt="" wrapperClassName="aspect-video h-24 w-auto flex-none bg-zinc-100 dark:bg-zinc-800 sm:h-auto sm:w-full sm:aspect-[16/10]" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <div className="flex aspect-video h-24 w-auto flex-none items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500 sm:h-auto sm:w-full sm:aspect-[16/10]">无封面</div>}

@@ -36,7 +36,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
   const hasCalledCloseRef = useRef(false);
 
   useModalOverlay({
-    isOpen,
+    isOpen: shouldRender,
     onClose,
     initialFocusRef,
     containerRef: modalRef

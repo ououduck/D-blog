@@ -252,7 +252,7 @@ export const ArchivePage = () => {
             onClick={toggleAll}
             disabled={groups.length === 0}
             aria-pressed={allGroupsExpanded}
-            className="inline-flex min-h-11 w-fit items-center gap-1.5 px-2 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100"
+            className="editorial-button inline-flex w-fit gap-1.5 px-3 py-2 text-sm font-medium disabled:opacity-40"
           >
             {allGroupsExpanded ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
             {allGroupsExpanded ? '全部折叠' : '全部展开'}

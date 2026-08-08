@@ -33,6 +33,7 @@ const inputClass = 'editorial-input';
 const cardClass = 'editorial-surface p-4 min-[360px]:p-5 md:p-6';
 const MAX_IMAGE_FILE_BYTES = 25 * 1024 * 1024;
 const MAX_IMAGE_PIXELS = 40_000_000;
+const MAX_EXPORT_PIXELS = 24_000_000;
 
 const loadImage = (file: File) => new Promise<HTMLImageElement>((resolve, reject) => {
   const url = URL.createObjectURL(file);
@@ -119,6 +120,11 @@ export const Watermark: React.FC = () => {
 
   const exportImage = async () => {
     if (!imageState) return;
+    const totalPixels = imageState.image.naturalWidth * imageState.image.naturalHeight;
+    if (totalPixels > MAX_EXPORT_PIXELS) {
+      setFeedback({ kind: 'error', message: `导出像素不能超过 ${Math.round(MAX_EXPORT_PIXELS / 1_000_000)}00 万，请先在导出前缩小图片尺寸。` });
+      return;
+    }
     setIsExporting(true);
     setFeedback(null);
     try {
@@ -176,13 +182,13 @@ export const Watermark: React.FC = () => {
             <h2 className="mb-5 font-bold text-ink dark:text-white">导出</h2>
             <div className="mb-4 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2"><label className="min-w-0 text-xs font-semibold text-zinc-600 dark:text-zinc-400">格式<select className={`${inputClass} mt-2 min-w-0`} value={format} onChange={(event) => setFormat(event.target.value as 'png' | 'jpeg')}><option value="png">PNG</option><option value="jpeg">JPEG</option></select></label><label className="min-w-0 text-xs font-semibold text-zinc-600 dark:text-zinc-400">质量<select className={`${inputClass} mt-2 min-w-0`} value={quality} disabled={format === 'png'} onChange={(event) => setQuality(Number(event.target.value))}><option value="100">100%</option><option value="92">92%</option><option value="80">80%</option></select></label></div>
             <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2"><button type="button" className="editorial-button min-h-11 min-w-0" onClick={reset}><RefreshCw size={15} />重置</button><button type="button" className="editorial-button-primary min-h-11 min-w-0" disabled={!imageState || isExporting} onClick={() => { void exportImage(); }}><Download size={15} />{isExporting ? '处理中…' : '下载图片'}</button></div>
-            {feedback && <p className={`mt-3 text-xs ${feedback.kind === 'error' ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`} role="status">{feedback.message}</p>}
+            {feedback && <p className={`mt-3 break-words text-xs ${feedback.kind === 'error' ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`} role="status">{feedback.message}</p>}
           </section>
         </aside>
 
-        <section className={`${cardClass} min-h-[30rem]`} aria-label="水印预览">
+        <section className={`${cardClass} min-h-[26rem] md:min-h-[30rem]`} aria-label="水印预览">
           <div className="mb-5 flex items-center justify-between border-b border-zinc-200 pb-4 dark:border-zinc-800"><div><p className="mb-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">Preview</p><h2 className="font-serif text-xl font-bold text-ink dark:text-white">实时预览</h2></div>{imageState && <span className="text-xs text-zinc-500 dark:text-zinc-400">{format.toUpperCase()}</span>}</div>
-          <div className="flex min-h-[24rem] min-w-0 items-center justify-center overflow-hidden rounded-control border border-zinc-200 bg-zinc-100 p-3 dark:border-zinc-800 dark:bg-zinc-950/60 min-[360px]:p-4 md:min-h-[34rem]">
+          <div className="flex min-h-[20rem] min-w-0 items-center justify-center overflow-hidden rounded-control border border-zinc-200 bg-zinc-100 p-3 dark:border-zinc-800 dark:bg-zinc-950/60 min-[360px]:min-h-[24rem] min-[360px]:p-4 md:min-h-[34rem]">
             {imageState ? <canvas ref={canvasRef} className="block h-auto max-h-[32rem] max-w-full object-contain shadow-sm" aria-label="添加水印后的图片预览" /> : <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-11 min-w-0 flex-col items-center justify-center gap-3 px-2 text-zinc-500 transition-colors hover:text-ink dark:text-zinc-400 dark:hover:text-white"><ImageIcon size={40} strokeWidth={1.2} /><span className="text-center text-sm">选择图片开始预览</span></button>}
           </div>
         </section>

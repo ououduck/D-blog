@@ -25,6 +25,10 @@ import type { BackgroundFit, CoverRenderOptions, LayoutMode, ShadowConfig, TextA
 import { deletePreset, readDraft, readPresets, type CoverDraft, type StoredPreset, writeDraft, writePreset } from './cover/coverStorage';
 
 const DEFAULT_ICON_SOURCE = assetUrl('/logo.png');
+const MAX_BATCH_ITEMS = 30;
+const MAX_BATCH_OUTPUT_PIXELS = 64_000_000;
+
+const yieldToBrowser = () => new Promise<void>((resolve) => window.setTimeout(resolve, 0));
 
 type Feedback = {
   kind: 'success' | 'error' | 'info';
@@ -101,6 +105,10 @@ export const CoverGenerator: React.FC = () => {
   const [showGuides, setShowGuides] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const dragStateRef = useRef({ pointerId: -1, startX: 0, startY: 0, imageX: 0, imageY: 0 });
+  const pendingBackgroundPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const backgroundPositionFrameRef = useRef<number | null>(null);
+  const pendingWheelDeltaRef = useRef(0);
+  const wheelFrameRef = useRef<number | null>(null);
 
   // 图标状态
   const [showIcon, setShowIcon] = useState(true);
@@ -598,21 +606,41 @@ export const CoverGenerator: React.FC = () => {
     if (!bgImage || dragStateRef.current.pointerId !== e.pointerId) return;
     const rect = e.currentTarget.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-    setBgImageX(clamp(
-      dragStateRef.current.imageX + (e.clientX - dragStateRef.current.startX) * canvasSize.width / rect.width,
-      -canvasSize.width,
-      canvasSize.width
-    ));
-    setBgImageY(clamp(
-      dragStateRef.current.imageY + (e.clientY - dragStateRef.current.startY) * canvasSize.height / rect.height,
-      -canvasSize.height,
-      canvasSize.height
-    ));
+    pendingBackgroundPositionRef.current = {
+      x: clamp(
+        dragStateRef.current.imageX + (e.clientX - dragStateRef.current.startX) * canvasSize.width / rect.width,
+        -canvasSize.width,
+        canvasSize.width
+      ),
+      y: clamp(
+        dragStateRef.current.imageY + (e.clientY - dragStateRef.current.startY) * canvasSize.height / rect.height,
+        -canvasSize.height,
+        canvasSize.height
+      )
+    };
+    if (backgroundPositionFrameRef.current !== null) return;
+    backgroundPositionFrameRef.current = window.requestAnimationFrame(() => {
+      backgroundPositionFrameRef.current = null;
+      const position = pendingBackgroundPositionRef.current;
+      if (!position) return;
+      setBgImageX(position.x);
+      setBgImageY(position.y);
+    });
   }, [bgImage, canvasSize.height, canvasSize.width]);
 
   const handleCanvasPointerEnd = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (dragStateRef.current.pointerId !== e.pointerId) return;
     if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    if (backgroundPositionFrameRef.current !== null) {
+      window.cancelAnimationFrame(backgroundPositionFrameRef.current);
+      backgroundPositionFrameRef.current = null;
+    }
+    const position = pendingBackgroundPositionRef.current;
+    if (position) {
+      setBgImageX(position.x);
+      setBgImageY(position.y);
+      pendingBackgroundPositionRef.current = null;
+    }
     dragStateRef.current.pointerId = -1;
     setIsDragging(false);
   }, []);
@@ -620,8 +648,18 @@ export const CoverGenerator: React.FC = () => {
   const handleCanvasWheel = useCallback((e: React.WheelEvent<HTMLCanvasElement>) => {
     if (!bgImage) return;
     e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setBgImageScale(prev => Math.max(MIN_BACKGROUND_SCALE, Math.min(prev * delta, MAX_BACKGROUND_SCALE)));
+    pendingWheelDeltaRef.current += e.deltaY > 0 ? -1 : 1;
+    if (wheelFrameRef.current !== null) return;
+    wheelFrameRef.current = window.requestAnimationFrame(() => {
+      wheelFrameRef.current = null;
+      const steps = pendingWheelDeltaRef.current;
+      pendingWheelDeltaRef.current = 0;
+      if (!steps) return;
+      setBgImageScale((current) => Math.max(
+        MIN_BACKGROUND_SCALE,
+        Math.min(current * Math.pow(steps > 0 ? 1.1 : 0.9, Math.abs(steps)), MAX_BACKGROUND_SCALE)
+      ));
+    });
   }, [bgImage]);
 
   const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLCanvasElement>) => {
@@ -695,6 +733,12 @@ export const CoverGenerator: React.FC = () => {
 
   const generateBatch = useCallback(async (items: BatchCoverItem[]) => {
     if (isGenerating || isExporting || !items.length) return;
+    const outputSize = { width: Math.round(canvasSize.width * exportScale), height: Math.round(canvasSize.height * exportScale) };
+    const totalOutputPixels = outputSize.width * outputSize.height * items.length;
+    if (items.length > MAX_BATCH_ITEMS || totalOutputPixels > MAX_BATCH_OUTPUT_PIXELS) {
+      setFeedback({ kind: 'error', message: `批量导出最多支持 ${MAX_BATCH_ITEMS} 个封面和 ${Math.round(MAX_BATCH_OUTPUT_PIXELS / 1_000_000)}00 万总像素，请降低数量或导出倍数后重试。` });
+      return;
+    }
     const controller = new AbortController();
     batchAbortRef.current = controller;
     setShowBatchDialog(false);
@@ -702,7 +746,6 @@ export const CoverGenerator: React.FC = () => {
     setIsExporting(true);
     setFeedback({ kind: 'info', message: `正在生成批量封面（0/${items.length}）…` });
     try {
-      const outputSize = { width: Math.round(canvasSize.width * exportScale), height: Math.round(canvasSize.height * exportScale) };
       const zip = await createBatchZip((async function* () {
         for (const item of items) {
           if (controller.signal.aborted) throw new Error('批量生成已取消');
@@ -715,6 +758,7 @@ export const CoverGenerator: React.FC = () => {
           const mime = exportFormat === 'jpeg' ? 'image/jpeg' : 'image/png';
           const blob = await canvasToBlob(canvas, mime, exportFormat === 'jpeg' ? jpegQuality / 100 : undefined);
           yield { filename: getExportFilename(item.slug, exportFormat, exportScale), blob };
+          await yieldToBrowser();
         }
       })(), (completed) => {
         setBatchProgress({ completed, total: items.length });
@@ -813,6 +857,11 @@ export const CoverGenerator: React.FC = () => {
     generateCover();
   }, [generateCover]);
 
+  useEffect(() => () => {
+    if (backgroundPositionFrameRef.current !== null) window.cancelAnimationFrame(backgroundPositionFrameRef.current);
+    if (wheelFrameRef.current !== null) window.cancelAnimationFrame(wheelFrameRef.current);
+  }, []);
+
   const inputClass = "editorial-input py-2.5";
   const rangeClass = "h-11 w-full cursor-pointer accent-ink dark:accent-white";
   const colorClass = "h-11 w-full cursor-pointer rounded-control border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-zinc-900";
@@ -859,8 +908,8 @@ export const CoverGenerator: React.FC = () => {
       </div>
 
       {draftRestored && (
-        <div className="mb-4 flex items-center justify-between gap-3 rounded-surface border border-dashed border-zinc-300 bg-paper px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300" role="status">
-          <span>已恢复上次编辑设置；本地图片和字体需要重新上传。</span>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-surface border border-dashed border-zinc-300 bg-paper px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300" role="status">
+          <span className="min-w-0 flex-1">已恢复上次编辑设置；本地图片和字体需要重新上传。</span>
           <button type="button" onClick={() => setDraftRestored(false)} className="min-h-11 shrink-0 rounded-control px-3 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800">知道了</button>
         </div>
       )}
@@ -878,7 +927,7 @@ export const CoverGenerator: React.FC = () => {
         <div
           role={feedback.kind === 'error' ? 'alert' : 'status'}
           aria-live={feedback.kind === 'error' ? 'assertive' : 'polite'}
-          className={`mb-5 flex items-center justify-between gap-3 rounded-surface border px-4 py-3 text-sm ${
+          className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-surface border px-4 py-3 text-sm ${
             feedback.kind === 'error'
               ? 'border-dashed border-ink bg-paper font-semibold text-ink dark:border-white dark:bg-zinc-900 dark:text-white'
               : feedback.kind === 'success'
@@ -886,7 +935,7 @@ export const CoverGenerator: React.FC = () => {
                 : 'border-zinc-400 bg-paper text-zinc-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300'
           }`}
         >
-          <span>{feedback.message}</span>
+          <span className="min-w-0 flex-1 break-words">{feedback.message}</span>
           <button type="button" onClick={() => setFeedback(null)} aria-label="关闭提示" title="关闭提示" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-control border-l border-current/20 hover:bg-black/5 dark:hover:bg-white/10">
             <X size={16} aria-hidden="true" />
           </button>

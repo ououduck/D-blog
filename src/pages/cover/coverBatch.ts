@@ -118,6 +118,7 @@ export async function createBatchZip(
   for await (const result of canvases) {
     if (signal?.aborted) throw new Error('批量生成已取消');
     zip.file(result.filename, result.blob); completed += 1; onProgress?.(completed);
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }
   return zip.generateAsync({ type: 'blob' });
 }

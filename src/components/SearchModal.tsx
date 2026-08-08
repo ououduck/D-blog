@@ -68,6 +68,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   const [searchScope, setSearchScope] = useState<PostSearchScope>('all');
   const [activeResultIndex, setActiveResultIndex] = useState(0);
   const [searchHistory, setSearchHistory] = useState<string[]>(readSearchHistory);
+  const [isOverlayActive, setIsOverlayActive] = useState(isOpen);
   const { searchQuery, isSearching, searchError, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch({
     scope: searchScope
   });
@@ -85,11 +86,17 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   const modalEase = easeSmooth;
 
   useModalOverlay({
-    isOpen,
+    isOpen: isOverlayActive,
     onClose,
     initialFocusRef: inputRef,
     containerRef: modalRef
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsOverlayActive(true);
+    }
+  }, [isOpen]);
 
   const saveHistory = (query: string) => {
     if (!query.trim()) return;
@@ -171,7 +178,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={() => setIsOverlayActive(false)}>
       {isOpen && (
         <div className="fixed inset-0 z-modal flex items-end justify-center sm:items-center sm:px-4 sm:py-8">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: prefersReducedMotion ? 0 : 0.16, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/55" aria-hidden="true" />
@@ -188,6 +195,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 onValueChange={handleSearch}
                 onKeyDown={handleInputKeyDown}
                 onClear={clearSearch}
+                role="combobox"
                 aria-labelledby="site-search-title"
                 aria-controls={searchResultsListboxId}
                 aria-expanded={isResultsListboxOpen}

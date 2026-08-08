@@ -49,8 +49,10 @@ export const BatchCoverDialog: React.FC<BatchCoverDialogProps> = ({ isOpen, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/50 p-4" onClick={handleClose}>
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="batch-cover-title" tabIndex={-1} className="editorial-overlay max-h-[90vh] w-full max-w-2xl overflow-y-auto p-5" onClick={(event) => event.stopPropagation()}>
+    <div className="fixed inset-0 z-modal flex items-end justify-center bg-black/50 sm:items-center sm:p-4" onClick={handleClose}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="batch-cover-title" tabIndex={-1} className="editorial-overlay max-h-[88vh] w-full overflow-hidden rounded-b-none border-b-0 pb-[env(safe-area-inset-bottom,0px)] supports-[height:100dvh]:max-h-[88dvh] sm:max-w-2xl sm:rounded-overlay sm:border-b sm:pb-0" onClick={(event) => event.stopPropagation()}>
+        <div className="flex justify-center px-4 pt-3 sm:hidden"><div className="h-1.5 w-14 rounded-full bg-zinc-300/80 dark:bg-zinc-700/80" /></div>
+        <div className="max-h-[calc(88vh-18px)] overflow-y-auto overscroll-contain p-5 supports-[height:100dvh]:max-h-[calc(88dvh-18px)] sm:max-h-[90vh] supports-[height:100dvh]:sm:max-h-[90dvh]">
         <div className="mb-4 flex items-center justify-between">
           <h2 id="batch-cover-title" className="text-xl font-bold text-ink dark:text-white">批量生成封面</h2>
           <button type="button" onClick={handleClose} aria-label="关闭批量生成" title="关闭" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-500 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink dark:hover:bg-zinc-800 dark:focus-visible:outline-white"><X size={18} /></button>
@@ -76,6 +78,7 @@ export const BatchCoverDialog: React.FC<BatchCoverDialogProps> = ({ isOpen, onCl
             <button type="button" onClick={() => onGenerate(items)} className="mt-4 min-h-11 w-full rounded-control bg-ink px-4 py-3 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-white dark:text-ink dark:hover:bg-zinc-200">开始生成 ZIP</button>
           </>
         )}
+        </div>
       </div>
     </div>
   );

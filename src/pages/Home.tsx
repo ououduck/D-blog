@@ -197,7 +197,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
             </Link>
             <p className="mb-3 line-clamp-3 text-sm leading-5 md:mb-4 md:leading-6 text-zinc-600 dark:text-zinc-300">{post.excerpt}</p>
             <Tags />
-            <div className="mt-4 flex items-center gap-3 border-t border-zinc-200 pt-3 text-xs md:pt-4 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-auto">
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-3 text-xs md:pt-4 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-auto">
               <span className="flex items-center gap-1.5"><Calendar size={12} />{post.date}</span>
               <span className="flex items-center gap-1.5"><Clock size={12} />{post.readTime}</span>
               <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
@@ -236,7 +236,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
           </Link>
           <p className="mb-2 line-clamp-2 text-sm leading-5 text-zinc-600 md:mb-3 md:leading-6 dark:text-zinc-300">{post.excerpt}</p>
           <Tags />
-          <div className="mt-3 flex items-center gap-3 border-t border-zinc-200 pt-2.5 text-[11px] md:mt-4 md:pt-3 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-[11px] md:mt-4 md:pt-3 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             <span className="flex items-center gap-1"><Calendar size={11} />{post.date}</span>
             <span className="flex items-center gap-1"><Clock size={11} />{post.readTime}</span>
             <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
@@ -264,7 +264,7 @@ const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
         initial={shouldReduceMotion ? false : 'hidden'}
         animate="visible"
         transition={shouldReduceMotion ? { duration: 0 } : undefined}
-        className="flex items-center justify-between gap-3 border-y border-zinc-200 py-3 dark:border-zinc-800"
+        className="flex items-center justify-between gap-2 border-y border-zinc-200 py-3 sm:gap-3 dark:border-zinc-800"
       >
 
       <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain scroll-smooth no-scrollbar">
