@@ -28,7 +28,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
-const buttonClass = 'inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-zinc-300 bg-paper px-3 text-sm font-semibold text-zinc-700 transition-colors active:scale-[.98] hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white';
+const buttonClass = 'inline-flex h-11 min-w-11 items-center justify-center rounded-control border border-zinc-300 bg-paper px-3 text-sm font-semibold text-zinc-700 transition-[background-color,border-color,color,opacity,transform] duration-150 active:scale-[.98] hover:border-ink hover:bg-zinc-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100 dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white';
 const activeButtonClass = 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink';
 
 export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
@@ -55,10 +55,10 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
         <ChevronLeft size={15} />
         <span className="hidden sm:inline">上一页</span>
       </button>
-      <div className="flex flex-wrap items-center justify-center gap-1" aria-label={`第 ${currentPage} 页，共 ${totalPages} 页`}>
+      <div className="flex min-w-0 flex-wrap items-center justify-center gap-1.5" aria-label={`第 ${currentPage} 页，共 ${totalPages} 页`}>
         {getPaginationItems(currentPage, totalPages).map((item) => {
           if (typeof item !== 'number') {
-            return <span key={item} className="flex h-9 min-w-5 items-center justify-center px-1 text-sm text-zinc-400" aria-hidden="true">…</span>;
+            return <span key={item} className="flex h-11 min-w-4 items-center justify-center text-sm text-zinc-400" aria-hidden="true">…</span>;
           }
           return (
             <button
@@ -88,7 +88,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
             }
           }}
           aria-label={`跳转到第几页，共 ${totalPages} 页`}
-          className="h-9 w-14 rounded-full border border-zinc-300 bg-paper px-2 text-center text-sm font-semibold text-ink outline-none transition-colors focus:border-ink dark:border-zinc-700 dark:bg-void dark:text-white dark:focus:border-white"
+          className="h-11 w-14 rounded-control border border-zinc-300 bg-paper px-2 text-center text-sm font-semibold text-ink outline-none transition-colors hover:border-zinc-400 focus:border-ink dark:border-zinc-700 dark:bg-void dark:text-white dark:hover:border-zinc-600 dark:focus:border-white"
         />
       </div>
       <button type="button" onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className={`${buttonClass} px-3`} aria-label="下一页">

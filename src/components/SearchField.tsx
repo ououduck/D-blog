@@ -44,7 +44,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(({
   const clearButtonSizeClass = size === 'large' ? 'h-14' : 'h-11';
 
   return (
-    <div className={`group relative ${containerClassName}`}>
+    <div className={`group relative min-w-0 ${disabled ? 'opacity-75' : ''} ${containerClassName}`}>
       <Search
         aria-hidden="true"
         size={16}
@@ -57,7 +57,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(({
         value={value}
         onChange={(event) => onValueChange?.(event.target.value)}
         disabled={disabled}
-        className={`w-full appearance-none rounded-control border pl-10 text-ink outline-none transition-colors placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white dark:placeholder:text-zinc-500 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-webkit-search-results-button]:hidden [&::-webkit-search-results-decoration]:hidden ${variantClasses[variant]} ${sizeClass} ${inputSpacing} ${className}`}
+        className={`w-full min-w-0 appearance-none rounded-control border pl-10 text-ink outline-none transition-[background-color,border-color,color,box-shadow] duration-150 placeholder:text-zinc-400 hover:border-zinc-400 disabled:cursor-not-allowed dark:text-white dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-webkit-search-results-button]:hidden [&::-webkit-search-results-decoration]:hidden ${variantClasses[variant]} ${sizeClass} ${inputSpacing} ${className}`}
       />
       {(showClear || endAction) && (
         <div className="absolute inset-y-0 right-0 flex items-center">

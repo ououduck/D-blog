@@ -3,7 +3,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Download, RefreshCw, Type, Image as ImageIcon, Palette,
   Sparkles, Upload, X, Search, Copy, Check, Layout, Shuffle,
-  ChevronDown, ChevronUp, Frame, SplitSquareHorizontal, AlignLeft, AlignCenter, AlignRight, Wand2, ArrowLeftRight, RotateCcw
+  ChevronDown, ChevronUp, Eye, Frame, SplitSquareHorizontal, AlignLeft, AlignCenter, AlignRight, Wand2, ArrowLeftRight, RotateCcw, RotateCw
 } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { SearchField } from '../components/SearchField';
@@ -49,7 +49,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ icon, title, sectionKey, 
     <div className="flex min-w-0 items-center gap-2">
       {icon}
       <h2 className="font-bold text-ink dark:text-white">{title}</h2>
-      <button type="button" onClick={() => onToggle(sectionKey)} aria-expanded={!collapsed} aria-label={`${collapsed ? '展开' : '收起'}${title}`} className="inline-flex rounded-icon p-1 text-zinc-400 transition-opacity hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white">
+      <button type="button" onClick={() => onToggle(sectionKey)} aria-expanded={!collapsed} aria-label={`${collapsed ? '展开' : '收起'}${title}`} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-400 transition-opacity hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white">
         {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
       </button>
     </div>
@@ -814,10 +814,10 @@ export const CoverGenerator: React.FC = () => {
   }, [generateCover]);
 
   const inputClass = "editorial-input py-2.5";
-  const rangeClass = "w-full accent-ink dark:accent-white";
+  const rangeClass = "h-11 w-full cursor-pointer accent-ink dark:accent-white";
   const colorClass = "h-11 w-full cursor-pointer rounded-control border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-zinc-900";
   const cardClass = "editorial-surface overflow-hidden transition-colors";
-  const dashedBtnClass = "flex items-center justify-center gap-2 rounded-control border border-dashed border-zinc-400 bg-paper px-4 py-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 active:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800 dark:active:bg-zinc-800";
+  const dashedBtnClass = "flex min-h-11 items-center justify-center gap-2 rounded-control border border-dashed border-zinc-400 bg-paper px-4 py-3 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 active:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800 dark:active:bg-zinc-800";
   const chipClass = "inline-flex items-center rounded-full border border-zinc-300 bg-paper px-3 py-1 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300";
 
   return (
@@ -847,7 +847,7 @@ export const CoverGenerator: React.FC = () => {
             tabIndex={activeTab === tab ? 0 : -1}
             onClick={() => setActiveTab(tab)}
             onKeyDown={handleTabKeyDown}
-            className={`rounded-control px-5 py-2.5 text-sm font-semibold transition-colors ${
+            className={`min-h-11 rounded-control px-5 py-2.5 text-sm font-semibold transition-colors ${
               activeTab === tab
                 ? 'bg-ink text-white dark:bg-white dark:text-ink'
                 : 'text-zinc-600 hover:bg-zinc-100 hover:text-ink dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'
@@ -861,7 +861,7 @@ export const CoverGenerator: React.FC = () => {
       {draftRestored && (
         <div className="mb-4 flex items-center justify-between gap-3 rounded-surface border border-dashed border-zinc-300 bg-paper px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300" role="status">
           <span>已恢复上次编辑设置；本地图片和字体需要重新上传。</span>
-          <button type="button" onClick={() => setDraftRestored(false)} className="shrink-0 rounded-control px-2 py-1 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800">知道了</button>
+          <button type="button" onClick={() => setDraftRestored(false)} className="min-h-11 shrink-0 rounded-control px-3 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800">知道了</button>
         </div>
       )}
 
@@ -895,6 +895,9 @@ export const CoverGenerator: React.FC = () => {
 
       <div className="grid min-w-0 gap-5 lg:grid-cols-3 lg:gap-6">
         <div className="order-2 min-w-0 space-y-4 lg:order-1 lg:col-span-1">
+          <a href="#cover-live-preview" className="flex min-h-11 items-center justify-center gap-2 rounded-control border border-zinc-300 bg-paper px-4 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800 dark:hover:text-white lg:hidden">
+            <Eye size={16} aria-hidden="true" />查看实时预览
+          </a>
           {activeTab === 'content' && (
             <div id="cover-panel-content" role="tabpanel" aria-labelledby="cover-tab-content" className="space-y-4">
               <div className={cardClass}>
@@ -904,7 +907,7 @@ export const CoverGenerator: React.FC = () => {
                     title="文字内容"
                     sectionKey="text-content" collapsed={isCollapsed("text-content")} onToggle={toggleSection}
                     action={
-                      <button type="button" aria-label="交换左右文字" onClick={swapMainTexts} className="rounded-icon p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" title="交换左右文字">
+                      <button type="button" aria-label="交换左右文字" onClick={swapMainTexts} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" title="交换左右文字">
                         <ArrowLeftRight size={16} />
                       </button>
                     }
@@ -942,7 +945,7 @@ export const CoverGenerator: React.FC = () => {
                     title="图标设置"
                     sectionKey="icon" collapsed={isCollapsed("icon")} onToggle={toggleSection}
                     action={
-                      <label className="flex cursor-pointer items-center gap-2">
+                      <label className="flex min-h-11 cursor-pointer items-center gap-2">
                         <input type="checkbox" checked={showIcon} onChange={(e) => setShowIcon(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
                         <span className="text-xs text-zinc-500 dark:text-zinc-400">显示</span>
                       </label>
@@ -976,7 +979,7 @@ export const CoverGenerator: React.FC = () => {
                         type="button"
                         aria-label="随机风格"
                         onClick={randomizeStyle}
-                        className="rounded-icon p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white"
                         title="随机风格"
                       >
                         <Shuffle size={16} />
@@ -1053,13 +1056,13 @@ export const CoverGenerator: React.FC = () => {
                         key={preset.name}
                         type="button"
                         onClick={preset.action}
-                        className="rounded-control border border-zinc-200 bg-zinc-50 px-3 py-3 text-xs font-semibold text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-700"
+                        className="min-h-11 rounded-control border border-zinc-200 bg-zinc-50 px-3 py-3 text-xs font-semibold text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-700"
                       >
                         {preset.name}
                       </button>
                     ))}
                   </div>
-                  <button type="button" onClick={resetStyleSettings} className="mt-3 flex w-full items-center justify-center gap-2 rounded-control border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:text-ink dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
+                  <button type="button" onClick={resetStyleSettings} className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-control border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:text-ink dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
                     <RotateCcw size={14} />重置样式参数
                   </button>
                 </div>
@@ -1099,14 +1102,14 @@ export const CoverGenerator: React.FC = () => {
                         </label>
                             <input type="range" min="100" max="900" step="100" value={fontWeight} aria-label="字体粗细" aria-valuetext={`${fontWeight}`} onChange={(e) => setFontWeight(Number(e.target.value))} className={rangeClass} />
                       </div>
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex min-h-11 cursor-pointer items-center gap-2">
                         <input type="checkbox" checked={autoTextColor} onChange={(e) => setAutoTextColor(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
                         <span className="text-xs text-zinc-500 dark:text-zinc-400">自动反色（根据背景）</span>
                       </label>
                       {!autoTextColor && (
                         <div>
                           <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">文字颜色</label>
-                          <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className={colorClass} />
+                          <input type="color" value={textColor} aria-label="文字颜色" onChange={(e) => setTextColor(e.target.value)} className={colorClass} />
                         </div>
                       )}
                       <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" onChange={handleFontUpload} className="hidden" />
@@ -1125,7 +1128,7 @@ export const CoverGenerator: React.FC = () => {
                     title="文字描边"
                     sectionKey="stroke" collapsed={isCollapsed("stroke")} onToggle={toggleSection}
                     action={
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex min-h-11 cursor-pointer items-center gap-2">
                         <input type="checkbox" checked={textStroke.enabled} onChange={(e) => setTextStroke({ ...textStroke, enabled: e.target.checked })} className="rounded-control accent-ink dark:accent-white" />
                         <span className="text-xs text-zinc-500 dark:text-zinc-400">启用</span>
                       </label>
@@ -1141,7 +1144,7 @@ export const CoverGenerator: React.FC = () => {
                       </div>
                       <div>
                         <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">描边颜色</label>
-                        <input type="color" value={textStroke.color} onChange={(e) => setTextStroke({ ...textStroke, color: e.target.value })} className={colorClass} />
+                        <input type="color" value={textStroke.color} aria-label="描边颜色" onChange={(e) => setTextStroke({ ...textStroke, color: e.target.value })} className={colorClass} />
                       </div>
                     </div>
                   )}
@@ -1165,25 +1168,25 @@ export const CoverGenerator: React.FC = () => {
                             <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                               <span>模糊半径</span><span className="tabular-nums">{textShadow.blur}px</span>
                             </label>
-                            <input type="range" min="0" max="40" value={textShadow.blur} onChange={(e) => setTextShadow({ ...textShadow, blur: Number(e.target.value) })} className={rangeClass} />
+                            <input type="range" min="0" max="40" value={textShadow.blur} aria-label="模糊半径" aria-valuetext={`${textShadow.blur}px`} onChange={(e) => setTextShadow({ ...textShadow, blur: Number(e.target.value) })} className={rangeClass} />
                           </div>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                                 <span>X 偏移</span><span className="tabular-nums">{textShadow.x}px</span>
                               </label>
-                              <input type="range" min="-20" max="20" value={textShadow.x} onChange={(e) => setTextShadow({ ...textShadow, x: Number(e.target.value) })} className={rangeClass} />
+                              <input type="range" min="-20" max="20" value={textShadow.x} aria-label="阴影 X 偏移" aria-valuetext={`${textShadow.x}px`} onChange={(e) => setTextShadow({ ...textShadow, x: Number(e.target.value) })} className={rangeClass} />
                             </div>
                             <div>
                               <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                                 <span>Y 偏移</span><span className="tabular-nums">{textShadow.y}px</span>
                               </label>
-                              <input type="range" min="-20" max="20" value={textShadow.y} onChange={(e) => setTextShadow({ ...textShadow, y: Number(e.target.value) })} className={rangeClass} />
+                              <input type="range" min="-20" max="20" value={textShadow.y} aria-label="阴影 Y 偏移" aria-valuetext={`${textShadow.y}px`} onChange={(e) => setTextShadow({ ...textShadow, y: Number(e.target.value) })} className={rangeClass} />
                             </div>
                           </div>
                           <div>
                             <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">阴影颜色</label>
-                            <input type="color" value={textShadow.color} onChange={(e) => setTextShadow({ ...textShadow, color: e.target.value })} className={colorClass} />
+                            <input type="color" value={textShadow.color} aria-label="阴影颜色" onChange={(e) => setTextShadow({ ...textShadow, color: e.target.value })} className={colorClass} />
                           </div>
                         </>
                       )}
@@ -1202,19 +1205,19 @@ export const CoverGenerator: React.FC = () => {
                           <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                             <span>大小</span><span className="tabular-nums">{iconSize}px</span>
                           </label>
-                          <input type="range" min="32" max="200" value={iconSize} onChange={(e) => setIconSize(Number(e.target.value))} className={rangeClass} />
+                          <input type="range" min="32" max="200" value={iconSize} aria-label="图标大小" aria-valuetext={`${iconSize}px`} onChange={(e) => setIconSize(Number(e.target.value))} className={rangeClass} />
                         </div>
                         <div>
                           <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">图标颜色</label>
-                          <input type="color" value={iconColor} onChange={(e) => setIconColor(e.target.value)} className={colorClass} />
+                          <input type="color" value={iconColor} aria-label="图标颜色" onChange={(e) => setIconColor(e.target.value)} className={colorClass} />
                         </div>
                         <div>
                           <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                             <span>圆角</span><span className="tabular-nums">{iconBorderRadius}%</span>
                           </label>
-                          <input type="range" min="0" max="50" value={iconBorderRadius} onChange={(e) => setIconBorderRadius(Number(e.target.value))} className={rangeClass} />
+                          <input type="range" min="0" max="50" value={iconBorderRadius} aria-label="图标圆角" aria-valuetext={`${iconBorderRadius}%`} onChange={(e) => setIconBorderRadius(Number(e.target.value))} className={rangeClass} />
                         </div>
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex min-h-11 cursor-pointer items-center gap-2">
                           <input type="checkbox" checked={iconBgEnabled} onChange={(e) => setIconBgEnabled(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
                           <span className="text-xs text-zinc-500 dark:text-zinc-400">显示图标背景</span>
                         </label>
@@ -1231,7 +1234,7 @@ export const CoverGenerator: React.FC = () => {
                     title="背景遮罩"
                     sectionKey="overlay" collapsed={isCollapsed("overlay")} onToggle={toggleSection}
                     action={
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex min-h-11 cursor-pointer items-center gap-2">
                         <input type="checkbox" checked={overlayEnabled} onChange={(e) => setOverlayEnabled(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
                         <span className="text-xs text-zinc-500 dark:text-zinc-400">启用</span>
                       </label>
@@ -1241,19 +1244,19 @@ export const CoverGenerator: React.FC = () => {
                     <div className="space-y-3">
                       <div>
                         <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">遮罩颜色</label>
-                        <input type="color" value={overlayColor} onChange={(e) => setOverlayColor(e.target.value)} className={colorClass} />
+                        <input type="color" value={overlayColor} aria-label="遮罩颜色" onChange={(e) => setOverlayColor(e.target.value)} className={colorClass} />
                       </div>
                       <div>
                         <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                           <span>模糊</span><span className="tabular-nums">{overlayBlur}px</span>
                         </label>
-                        <input type="range" min="0" max="20" value={overlayBlur} onChange={(e) => setOverlayBlur(Number(e.target.value))} className={rangeClass} />
+                        <input type="range" min="0" max="20" value={overlayBlur} aria-label="遮罩模糊" aria-valuetext={`${overlayBlur}px`} onChange={(e) => setOverlayBlur(Number(e.target.value))} className={rangeClass} />
                       </div>
                       <div>
                         <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                           <span>透明度</span><span className="tabular-nums">{overlayOpacity}%</span>
                         </label>
-                        <input type="range" min="0" max="100" value={overlayOpacity} onChange={(e) => setOverlayOpacity(Number(e.target.value))} className={rangeClass} />
+                        <input type="range" min="0" max="100" value={overlayOpacity} aria-label="遮罩透明度" aria-valuetext={`${overlayOpacity}%`} onChange={(e) => setOverlayOpacity(Number(e.target.value))} className={rangeClass} />
                       </div>
                     </div>
                   )}
@@ -1275,51 +1278,51 @@ export const CoverGenerator: React.FC = () => {
                               <p className="truncate text-xs font-semibold text-ink dark:text-white">{bgFileName}</p>
                               <p className="mt-1 text-[11px] text-zinc-400">{bgImage ? `${bgImage.naturalWidth} × ${bgImage.naturalHeight}px` : '已加载'} · 可继续调整</p>
                             </div>
-                            <button type="button" onClick={() => bgImageInputRef.current?.click()} className="rounded-control px-2 py-1 text-xs font-semibold text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700">替换</button>
+                            <button type="button" onClick={() => bgImageInputRef.current?.click()} className="min-h-11 rounded-control px-3 text-xs font-semibold text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700">替换</button>
                           </div>
                         )}
                         <div>
                           <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                             <span>缩放</span><span className="tabular-nums">{bgImageScale.toFixed(2)}x</span>
                           </label>
-                          <input type="range" min={MIN_BACKGROUND_SCALE} max={MAX_BACKGROUND_SCALE} step="0.05" value={bgImageScale} onChange={(e) => setBgImageScale(Number(e.target.value))} className={rangeClass} />
+                          <input type="range" min={MIN_BACKGROUND_SCALE} max={MAX_BACKGROUND_SCALE} step="0.05" value={bgImageScale} aria-label="背景图片缩放" aria-valuetext={`${bgImageScale.toFixed(2)} 倍`} onChange={(e) => setBgImageScale(Number(e.target.value))} className={rangeClass} />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400"><span>水平位置</span><span>{bgImageX}px</span></label>
-                            <input type="range" min={-canvasSize.width} max={canvasSize.width} value={bgImageX} onChange={(e) => setBgImageX(Number(e.target.value))} className={rangeClass} />
+                            <input type="range" min={-canvasSize.width} max={canvasSize.width} value={bgImageX} aria-label="背景图片水平位置" aria-valuetext={`${bgImageX}px`} onChange={(e) => setBgImageX(Number(e.target.value))} className={rangeClass} />
                           </div>
                           <div>
                             <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400"><span>垂直位置</span><span>{bgImageY}px</span></label>
-                            <input type="range" min={-canvasSize.height} max={canvasSize.height} value={bgImageY} onChange={(e) => setBgImageY(Number(e.target.value))} className={rangeClass} />
+                            <input type="range" min={-canvasSize.height} max={canvasSize.height} value={bgImageY} aria-label="背景图片垂直位置" aria-valuetext={`${bgImageY}px`} onChange={(e) => setBgImageY(Number(e.target.value))} className={rangeClass} />
                           </div>
                         </div>
                         <div>
                           <span className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">图片适配</span>
                           <div className="grid grid-cols-2 gap-2">
                             {([{ value: 'cover' as BackgroundFit, label: '铺满裁剪' }, { value: 'contain' as BackgroundFit, label: '完整显示' }]).map(option => (
-                              <button type="button" key={option.value} onClick={() => { setBgFit(option.value); setBgImageX(0); setBgImageY(0); }} aria-pressed={bgFit === option.value} className={`rounded-control border-2 px-3 py-2 text-xs font-semibold transition-colors ${bgFit === option.value ? 'border-ink bg-ink/5 text-ink dark:border-white dark:bg-white/10 dark:text-white' : 'border-zinc-200 text-zinc-500 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-400'}`}>{option.label}</button>
+                              <button type="button" key={option.value} onClick={() => { setBgFit(option.value); setBgImageX(0); setBgImageY(0); }} aria-pressed={bgFit === option.value} className={`min-h-11 rounded-control border-2 px-3 py-2 text-xs font-semibold transition-colors ${bgFit === option.value ? 'border-ink bg-ink/5 text-ink dark:border-white dark:bg-white/10 dark:text-white' : 'border-zinc-200 text-zinc-500 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-400'}`}>{option.label}</button>
                             ))}
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                          <button type="button" onClick={() => setBgFlipX(value => !value)} aria-pressed={bgFlipX} className="rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">水平翻转 {bgFlipX ? '✓' : ''}</button>
-                          <button type="button" onClick={() => setBgFlipY(value => !value)} aria-pressed={bgFlipY} className="rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">垂直翻转 {bgFlipY ? '✓' : ''}</button>
+                          <button type="button" onClick={() => setBgFlipX(value => !value)} aria-pressed={bgFlipX} className="min-h-11 rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">水平翻转 {bgFlipX ? '✓' : ''}</button>
+                          <button type="button" onClick={() => setBgFlipY(value => !value)} aria-pressed={bgFlipY} className="min-h-11 rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">垂直翻转 {bgFlipY ? '✓' : ''}</button>
                         </div>
-                        <button type="button" onClick={() => setSelectedTemplate(templates.find(template => template.id === 'white') || selectedTemplate)} className="w-full rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">切换到纯白底</button>
+                        <button type="button" onClick={() => setSelectedTemplate(templates.find(template => template.id === 'white') || selectedTemplate)} className="min-h-11 w-full rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">切换到纯白底</button>
                         <div>
                           <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400"><span>模糊</span><span className="tabular-nums">{bgBlur}px</span></label>
-                          <input type="range" min="0" max="20" value={bgBlur} onChange={(e) => setBgBlur(Number(e.target.value))} className={rangeClass} />
+                          <input type="range" min="0" max="20" value={bgBlur} aria-label="背景模糊" aria-valuetext={`${bgBlur}px`} onChange={(e) => setBgBlur(Number(e.target.value))} className={rangeClass} />
                         </div>
                         <div>
                           <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400"><span>不透明度</span><span className="tabular-nums">{bgOpacity}%</span></label>
-                          <input type="range" min="0" max="100" value={bgOpacity} onChange={(e) => setBgOpacity(Number(e.target.value))} className={rangeClass} />
+                          <input type="range" min="0" max="100" value={bgOpacity} aria-label="背景不透明度" aria-valuetext={`${bgOpacity}%`} onChange={(e) => setBgOpacity(Number(e.target.value))} className={rangeClass} />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                          <button type="button" onClick={() => { setBgImageX(0); setBgImageY(0); }} className="rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">居中</button>
-                          <button type="button" onClick={resetBackgroundImageControls} className="rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">重置参数</button>
+                          <button type="button" onClick={() => { setBgImageX(0); setBgImageY(0); }} className="min-h-11 rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">居中</button>
+                          <button type="button" onClick={resetBackgroundImageControls} className="min-h-11 rounded-control border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">重置参数</button>
                         </div>
-                        <button type="button" onClick={() => { bgImageLoadGenerationRef.current += 1; setBgImage(null); setBgFileName(null); resetBackgroundImageControls(); }} className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-zinc-500 bg-paper px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink hover:bg-zinc-100 active:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white dark:hover:border-white dark:hover:bg-zinc-800 dark:active:bg-zinc-800">
+                        <button type="button" onClick={() => { bgImageLoadGenerationRef.current += 1; setBgImage(null); setBgFileName(null); resetBackgroundImageControls(); }} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-control border border-dashed border-zinc-500 bg-paper px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink hover:bg-zinc-100 active:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white dark:hover:border-white dark:hover:bg-zinc-800 dark:active:bg-zinc-800">
                           <X size={14} />移除背景图片
                         </button>
                       </div>
@@ -1404,7 +1407,7 @@ export const CoverGenerator: React.FC = () => {
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex min-h-11 cursor-pointer items-center gap-2">
                         <input type="checkbox" checked={showCorners} onChange={(e) => setShowCorners(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
                         <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">角标装饰</span>
                       </label>
@@ -1413,19 +1416,19 @@ export const CoverGenerator: React.FC = () => {
                       <div className="space-y-3 pl-6 border-l-2 border-zinc-100 dark:border-zinc-800">
                         <div>
                           <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">角标颜色</label>
-                          <input type="color" value={cornerColor} onChange={(e) => setCornerColor(e.target.value)} className={colorClass} />
+                          <input type="color" value={cornerColor} aria-label="角标颜色" onChange={(e) => setCornerColor(e.target.value)} className={colorClass} />
                         </div>
                         <div>
                           <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                             <span>角标透明度</span><span className="tabular-nums">{cornerOpacity}%</span>
                           </label>
-                          <input type="range" min="10" max="100" value={cornerOpacity} onChange={(e) => setCornerOpacity(Number(e.target.value))} className={rangeClass} />
+                          <input type="range" min="10" max="100" value={cornerOpacity} aria-label="角标透明度" aria-valuetext={`${cornerOpacity}%`} onChange={(e) => setCornerOpacity(Number(e.target.value))} className={rangeClass} />
                         </div>
                       </div>
                     )}
 
                     <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex min-h-11 cursor-pointer items-center gap-2">
                         <input type="checkbox" checked={showSeparator} onChange={(e) => setShowSeparator(e.target.checked)} className="rounded-control accent-ink dark:accent-white" />
                         <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">分隔线</span>
                       </label>
@@ -1434,13 +1437,13 @@ export const CoverGenerator: React.FC = () => {
                       <div className="space-y-3 pl-6 border-l-2 border-zinc-100 dark:border-zinc-800">
                         <div>
                           <label className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">分隔线颜色</label>
-                          <input type="color" value={separatorColor} onChange={(e) => setSeparatorColor(e.target.value)} className={colorClass} />
+                          <input type="color" value={separatorColor} aria-label="分隔线颜色" onChange={(e) => setSeparatorColor(e.target.value)} className={colorClass} />
                         </div>
                         <div>
                           <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                             <span>透明度</span><span className="tabular-nums">{separatorOpacity}%</span>
                           </label>
-                          <input type="range" min="10" max="100" value={separatorOpacity} onChange={(e) => setSeparatorOpacity(Number(e.target.value))} className={rangeClass} />
+                          <input type="range" min="10" max="100" value={separatorOpacity} aria-label="分隔线透明度" aria-valuetext={`${separatorOpacity}%`} onChange={(e) => setSeparatorOpacity(Number(e.target.value))} className={rangeClass} />
                         </div>
                       </div>
                     )}
@@ -1474,7 +1477,7 @@ export const CoverGenerator: React.FC = () => {
                             type="button"
                             onClick={() => setActiveRatioLabel(ratio.label)}
                             aria-pressed={activeRatioLabel === ratio.label}
-                            className={`rounded-control border-2 px-3 py-2 text-sm font-semibold transition-colors ${
+                            className={`min-h-11 rounded-control border-2 px-3 py-2 text-sm font-semibold transition-colors ${
                               activeRatioLabel === ratio.label
                                 ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
                                 : 'border-zinc-200 text-zinc-600 hover:border-ink dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-white'
@@ -1494,7 +1497,7 @@ export const CoverGenerator: React.FC = () => {
                             type="button"
                             onClick={() => setExportFormat(f)}
                             aria-pressed={exportFormat === f}
-                            className={`rounded-control border-2 px-3 py-2 text-sm font-semibold uppercase transition-colors ${
+                            className={`min-h-11 rounded-control border-2 px-3 py-2 text-sm font-semibold uppercase transition-colors ${
                               exportFormat === f
                                 ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
                                 : 'border-zinc-200 text-zinc-600 hover:border-ink dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-white'
@@ -1516,8 +1519,8 @@ export const CoverGenerator: React.FC = () => {
                     <div>
                       <span id="cover-background-label" className="mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400">导出背景</span>
                       <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="cover-background-label">
-                        <button type="button" onClick={() => setTransparentBackground(false)} aria-pressed={!transparentBackground} className={`rounded-control border-2 px-3 py-2 text-xs font-semibold ${!transparentBackground ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink' : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'}`}>跟随模板底色</button>
-                        <button type="button" onClick={() => { if (exportFormat === 'png') setTransparentBackground(true); }} disabled={exportFormat !== 'png'} aria-pressed={transparentBackground && exportFormat === 'png'} className={`rounded-control border-2 px-3 py-2 text-xs font-semibold ${transparentBackground && exportFormat === 'png' ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink' : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'} disabled:cursor-not-allowed disabled:opacity-40`}>透明背景（PNG）</button>
+                        <button type="button" onClick={() => setTransparentBackground(false)} aria-pressed={!transparentBackground} className={`min-h-11 rounded-control border-2 px-3 py-2 text-xs font-semibold ${!transparentBackground ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink' : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'}`}>跟随模板底色</button>
+                        <button type="button" onClick={() => { if (exportFormat === 'png') setTransparentBackground(true); }} disabled={exportFormat !== 'png'} aria-pressed={transparentBackground && exportFormat === 'png'} className={`min-h-11 rounded-control border-2 px-3 py-2 text-xs font-semibold ${transparentBackground && exportFormat === 'png' ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink' : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'} disabled:cursor-not-allowed disabled:opacity-40`}>透明背景（PNG）</button>
                       </div>
                       <p className="mt-1 text-xs text-zinc-400">透明背景会在预览中显示棋盘格，JPEG 始终使用模板底色。</p>
                     </div>
@@ -1551,16 +1554,16 @@ export const CoverGenerator: React.FC = () => {
                       placeholder="预设名称（可选）"
                       aria-label="预设名称"
                     />
-                    <button type="button" onClick={savePreset} className="shrink-0 rounded-control bg-ink px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-ink dark:hover:bg-zinc-200">保存</button>
+                    <button type="button" onClick={savePreset} className="min-h-11 shrink-0 rounded-control bg-ink px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-ink dark:hover:bg-zinc-200">保存</button>
                   </div>
                   <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">预设只保存文字和样式设置；本地图片、上传字体不会写入浏览器存储。</p>
                   {presets.length > 0 ? (
                     <ul className="mt-3 space-y-2" aria-label="已保存预设">
                       {presets.map((preset) => (
                         <li key={`${preset.name}-${preset.createdAt}`} className="flex items-center gap-2 rounded-control border border-zinc-200 px-3 py-2 dark:border-zinc-700">
-                          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink dark:text-white">{preset.name}</span>
-                          <button type="button" onClick={() => loadPreset(preset)} className="rounded-control px-2 py-1 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white">加载</button>
-                          <button type="button" onClick={() => removePreset(preset.name)} className="rounded-control px-2 py-1 text-xs font-semibold text-zinc-500 hover:bg-zinc-100 hover:text-ink dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`删除预设：${preset.name}`}>删除</button>
+                          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink dark:text-white" title={preset.name}>{preset.name}</span>
+                          <button type="button" onClick={() => loadPreset(preset)} className="min-h-11 shrink-0 rounded-control px-3 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white">加载</button>
+                          <button type="button" onClick={() => removePreset(preset.name)} className="min-h-11 shrink-0 rounded-control px-3 text-xs font-semibold text-zinc-500 hover:bg-zinc-100 hover:text-ink dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white" aria-label={`删除预设：${preset.name}`}>删除</button>
                         </li>
                       ))}
                     </ul>
@@ -1575,7 +1578,7 @@ export const CoverGenerator: React.FC = () => {
                     type="button"
                     onClick={generateCover}
                   disabled={isGenerating}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-control border border-zinc-200 bg-zinc-100 px-4 py-2.5 font-semibold text-ink transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+                  className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-control border border-zinc-200 bg-zinc-100 px-4 py-2.5 font-semibold text-ink transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
                 >
                   <RefreshCw size={18} className={isGenerating && !shouldReduceMotion ? 'animate-spin' : ''} />
                   重新生成
@@ -1585,7 +1588,7 @@ export const CoverGenerator: React.FC = () => {
                   type="button"
                   onClick={() => setShowBatchDialog(true)}
                   disabled={isGenerating || isExporting}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-control border border-zinc-400 px-4 py-2.5 font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900"
+                  className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-control border border-zinc-400 px-4 py-2.5 font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900"
                 >
                   <Upload size={18} />
                   批量生成 ZIP
@@ -1595,7 +1598,7 @@ export const CoverGenerator: React.FC = () => {
                   type="button"
                   onClick={downloadCover}
                   disabled={isGenerating || isExporting}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-control border border-ink bg-ink px-4 py-2.5 font-semibold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white dark:bg-white dark:text-ink dark:hover:bg-zinc-200"
+                  className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-control border border-ink bg-ink px-4 py-2.5 font-semibold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white dark:bg-white dark:text-ink dark:hover:bg-zinc-200"
                 >
                   <Download size={18} />
                   下载封面
@@ -1605,7 +1608,7 @@ export const CoverGenerator: React.FC = () => {
                   type="button"
                   onClick={copyToClipboard}
                   disabled={isGenerating}
-                  className={`flex flex-1 items-center justify-center gap-2 rounded-control border px-4 py-2.5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-control border px-4 py-2.5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                     copied
                       ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
                       : 'border-zinc-400 text-zinc-700 hover:border-ink hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900'
@@ -1615,7 +1618,7 @@ export const CoverGenerator: React.FC = () => {
                   {copied ? '已复制' : '复制到剪贴板'}
                 </button>
 
-                <button type="button" onClick={resetAllSettings} className="flex items-center justify-center gap-2 rounded-control border border-dashed border-zinc-500 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white">
+                <button type="button" onClick={resetAllSettings} className="flex min-h-11 items-center justify-center gap-2 rounded-control border border-dashed border-zinc-500 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink dark:border-zinc-600 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white">
                   <RotateCcw size={16} />重置全部设置
                 </button>
               </div>
@@ -1623,7 +1626,7 @@ export const CoverGenerator: React.FC = () => {
           )}
         </div>
 
-        <div className="order-1 min-w-0 lg:order-2 lg:col-span-2">
+        <div id="cover-live-preview" className="order-1 min-w-0 scroll-mt-24 lg:order-2 lg:col-span-2">
           <div className="editorial-surface min-w-0 p-4 md:p-5 lg:sticky lg:top-24">
             <div className="mb-4 flex flex-col gap-4 border-b border-zinc-200/70 pb-4 dark:border-zinc-800/80 md:flex-row md:items-start md:justify-between">
               <div>
@@ -1644,22 +1647,22 @@ export const CoverGenerator: React.FC = () => {
             </div>
 
             <div className="mb-4 flex flex-wrap gap-2">
-              <button type="button" onClick={() => setShowGuides((value) => !value)} aria-pressed={showGuides} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800">安全框/中心线</button>
-              <button type="button" onClick={() => setShowGrid((value) => !value)} aria-pressed={showGrid} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800">网格</button>
-              <button type="button" onClick={undo} disabled={!canUndo} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800" title="撤销（Ctrl/Cmd + Z）">
-                撤销
+              <button type="button" onClick={() => setShowGuides((value) => !value)} aria-pressed={showGuides} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800">安全框/中心线</button>
+              <button type="button" onClick={() => setShowGrid((value) => !value)} aria-pressed={showGrid} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800">网格</button>
+              <button type="button" onClick={undo} disabled={!canUndo} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800" title="撤销（Ctrl/Cmd + Z）" aria-label="撤销">
+                <RotateCcw size={16} aria-hidden="true" />撤销
               </button>
-              <button type="button" onClick={redo} disabled={!canRedo} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800" title="重做（Ctrl/Cmd + Shift + Z）">
-                重做
+              <button type="button" onClick={redo} disabled={!canRedo} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800" title="重做（Ctrl/Cmd + Shift + Z）" aria-label="重做">
+                <RotateCw size={16} aria-hidden="true" />重做
               </button>
-              <button type="button" onClick={randomizeStyle} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800">
+              <button type="button" onClick={randomizeStyle} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800">
                 <Shuffle size={16} />随机样式
               </button>
-                <button type="button" onClick={generateCover} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800">
+                <button type="button" onClick={generateCover} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-zinc-300 bg-paper px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800">
                 <RefreshCw size={16} className={isGenerating && !shouldReduceMotion ? 'animate-spin' : ''} />刷新预览
               </button>
               {bgImage && (
-                <button type="button" onClick={resetBackgroundImageControls} className="inline-flex items-center gap-2 rounded-control border border-zinc-300 bg-paper px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800">
+                <button type="button" onClick={resetBackgroundImageControls} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-zinc-300 bg-paper px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink active:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white dark:active:bg-zinc-800">
                   <RotateCcw size={16} />重置背景位置
                 </button>
               )}
@@ -1737,10 +1740,10 @@ export const CoverGenerator: React.FC = () => {
       </div>
 
       {batchProgress && (
-        <div className="fixed inset-x-4 bottom-4 z-modal mx-auto max-w-md rounded-control border border-zinc-300 bg-paper p-4 text-sm text-ink shadow-xl dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" role="status" aria-live="polite">
+        <div className="fixed inset-x-4 z-modal mx-auto max-w-md rounded-control border border-zinc-300 bg-paper p-4 text-sm text-ink shadow-xl dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" style={{ bottom: 'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + env(safe-area-inset-bottom, 0px) + 1rem)' }} role="status" aria-live="polite">
           <div className="flex items-center justify-between gap-3"><span>批量生成中</span><strong>{batchProgress.completed}/{batchProgress.total}</strong></div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700"><div className="h-full bg-ink transition-[width] dark:bg-white" style={{ width: `${batchProgress.total ? batchProgress.completed / batchProgress.total * 100 : 0}%` }} /></div>
-          <button type="button" onClick={() => batchAbortRef.current?.abort()} className="mt-3 rounded-control border border-zinc-300 px-3 py-1.5 text-xs font-semibold hover:border-ink dark:border-zinc-700 dark:hover:border-white">取消</button>
+          <button type="button" onClick={() => batchAbortRef.current?.abort()} className="mt-3 min-h-11 rounded-control border border-zinc-300 px-4 text-xs font-semibold hover:border-ink dark:border-zinc-700 dark:hover:border-white">取消</button>
         </div>
       )}
 
@@ -1770,7 +1773,7 @@ export const CoverGenerator: React.FC = () => {
             >
               <div className="mb-4 flex items-center justify-between">
                 <h2 id="iconify-dialog-title" className="text-xl font-bold text-ink dark:text-white">搜索 Iconify 图标</h2>
-                <button type="button" onClick={closeIconifyModal} aria-label="关闭图标搜索" title="关闭" className="rounded-icon p-2 text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800">
+                <button type="button" onClick={closeIconifyModal} aria-label="关闭图标搜索" title="关闭" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800">
                   <X size={20} aria-hidden="true" />
                 </button>
               </div>

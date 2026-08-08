@@ -78,9 +78,16 @@ export const Friends = () => {
 
   const handleCompleteApplication = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const form = event.currentTarget;
     const errors = validateFriendLinkApplication(applicationValues, applicationFilename);
     setApplicationErrors(errors);
     if (Object.keys(errors).length > 0) {
+      const firstErrorField = (
+        ['name', 'description', 'avatar', 'url', 'friendPageUrl', 'contact', 'filename', 'reciprocalLinkConfirmed'] as const
+      ).find((field) => errors[field]);
+      requestAnimationFrame(() => {
+        form.querySelector<HTMLElement>(`[data-application-field="${firstErrorField}"]`)?.focus();
+      });
       return;
     }
 
@@ -266,10 +273,14 @@ export const Friends = () => {
                           <span className="mb-1.5 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">{label}</span>
                           <input
                             type={['url', 'avatar', 'friendPageUrl'].includes(field) ? 'url' : 'text'}
+                            name={field}
                             value={applicationValues[field]}
                             onChange={(event) => handleApplicationFieldChange(field, event.target.value)}
                             placeholder={placeholder}
                             className="editorial-input"
+                            required
+                            autoComplete={field === 'name' ? 'organization' : field === 'url' ? 'url' : 'off'}
+                            data-application-field={field}
                             aria-invalid={Boolean(applicationErrors[field])}
                             aria-describedby={applicationErrors[field] ? `${field}-error` : undefined}
                           />
@@ -284,6 +295,7 @@ export const Friends = () => {
                         <span className="mb-1.5 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">文件名（纯英文）</span>
                         <input
                           type="text"
+                          name="filename"
                           value={applicationFilename}
                           onChange={(event) => {
                             setApplicationFilename(event.target.value);
@@ -293,7 +305,10 @@ export const Friends = () => {
                             }));
                           }}
                           placeholder="例如：my-blog"
-                          className="w-full rounded-control border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-300"
+                          className="editorial-input"
+                          required
+                          autoComplete="off"
+                          data-application-field="filename"
                           aria-invalid={Boolean(applicationErrors.filename)}
                           aria-describedby={applicationErrors.filename ? 'friend-filename-error' : undefined}
                         />
@@ -303,9 +318,10 @@ export const Friends = () => {
                           </span>
                         )}
                       </label>
-                      <label className="sm:col-span-2 flex items-start gap-3 border-t border-zinc-200 pt-4 text-sm leading-relaxed dark:border-zinc-800">
+                      <label className="sm:col-span-2 flex min-h-11 cursor-pointer items-center gap-3 border-t border-zinc-200 py-2 text-sm leading-relaxed dark:border-zinc-800">
                         <input
                           type="checkbox"
+                          name="reciprocalLinkConfirmed"
                           checked={applicationValues.reciprocalLinkConfirmed}
                           onChange={(event) => {
                             setApplicationValues((current) => ({
@@ -317,12 +333,15 @@ export const Friends = () => {
                               reciprocalLinkConfirmed: undefined,
                             }));
                           }}
-                          className="mt-1 h-4 w-4 accent-zinc-900 dark:accent-zinc-100"
+                          className="h-4 w-4 flex-shrink-0 accent-zinc-900 dark:accent-zinc-100"
+                          required
+                          data-application-field="reciprocalLinkConfirmed"
                           aria-invalid={Boolean(applicationErrors.reciprocalLinkConfirmed)}
+                          aria-describedby={applicationErrors.reciprocalLinkConfirmed ? 'reciprocal-link-error' : undefined}
                         />
                         <span className="text-zinc-700 dark:text-zinc-300">我已经先在自己的博客友链页加入 D-blog，并确认这个友链页可以直接访问。</span>
                       </label>
-                      {applicationErrors.reciprocalLinkConfirmed && <span className="sm:col-span-2 -mt-2 text-xs text-red-600 dark:text-red-400">{applicationErrors.reciprocalLinkConfirmed}</span>}
+                      {applicationErrors.reciprocalLinkConfirmed && <span id="reciprocal-link-error" className="sm:col-span-2 -mt-2 text-xs text-red-600 dark:text-red-400">{applicationErrors.reciprocalLinkConfirmed}</span>}
                     </div>
                     <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                       <a href="https://github.com/login" target="_blank" rel="noopener noreferrer" className="editorial-button inline-flex items-center gap-2 px-4">
@@ -396,9 +415,9 @@ export const Friends = () => {
               href={friend.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative block h-full rounded-surface border border-zinc-300 bg-paper p-5 transition-colors duration-150 hover:border-ink dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-white"
+              className="group relative block h-full rounded-surface border border-zinc-300 bg-paper p-5 transition-colors duration-150 hover:border-ink focus-visible:border-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-white dark:focus-visible:border-white dark:focus-visible:outline-zinc-100"
             >
-              <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:text-zinc-500">
+              <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 group-focus-visible:opacity-100 dark:text-zinc-500">
                 <ExternalLink size={16} />
               </div>
               <div className="flex items-start gap-4 pr-5">
@@ -467,7 +486,7 @@ export const Friends = () => {
               <button
                 type="button"
                 onClick={() => setApplicationResult(null)}
-                className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-icon text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:text-zinc-100"
+                className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-icon text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100"
                 aria-label="关闭 Issue 草稿弹窗"
               >
                 <X size={18} />

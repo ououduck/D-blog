@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MessageSquareText } from 'lucide-react';
 
 import { siteConfig } from '@config/site.config';
@@ -7,11 +7,27 @@ const getGiscusTheme = () => document.documentElement.classList.contains('dark')
 
 export const GiscusComments = ({ postId }: { postId: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine);
+
+  useEffect(() => {
+    const syncConnection = () => setIsOffline(!navigator.onLine);
+    window.addEventListener('online', syncConnection);
+    window.addEventListener('offline', syncConnection);
+    return () => {
+      window.removeEventListener('online', syncConnection);
+      window.removeEventListener('offline', syncConnection);
+    };
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || isOffline) return;
 
+    setIsLoaded(false);
+    setLoadFailed(false);
     const script = document.createElement('script');
     script.src = 'https://giscus.app/client.js';
     script.async = true;
@@ -28,7 +44,11 @@ export const GiscusComments = ({ postId }: { postId: string }) => {
     script.dataset.theme = getGiscusTheme();
     script.dataset.lang = 'zh-CN';
     script.dataset.loading = 'lazy';
+    const handleScriptError = () => setLoadFailed(true);
+    script.addEventListener('error', handleScriptError, { once: true });
     container.replaceChildren(script);
+
+    const loadTimeout = window.setTimeout(() => setLoadFailed(true), 12000);
 
     const syncTheme = () => {
       const iframe = container.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
@@ -38,14 +58,33 @@ export const GiscusComments = ({ postId }: { postId: string }) => {
         }
       }, 'https://giscus.app');
     };
+    const handleGiscusMessage = (event: MessageEvent) => {
+      const iframe = container.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+      if (
+        event.origin !== 'https://giscus.app'
+        || event.source !== iframe?.contentWindow
+        || typeof event.data?.giscus !== 'object'
+      ) {
+        return;
+      }
+
+      window.clearTimeout(loadTimeout);
+      setIsLoaded(true);
+      setLoadFailed(false);
+    };
     const observer = new MutationObserver(syncTheme);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(container, { childList: true, subtree: true });
+    window.addEventListener('message', handleGiscusMessage);
 
     return () => {
+      window.clearTimeout(loadTimeout);
+      script.removeEventListener('error', handleScriptError);
       observer.disconnect();
+      window.removeEventListener('message', handleGiscusMessage);
       container.replaceChildren();
     };
-  }, [postId]);
+  }, [isOffline, loadAttempt, postId]);
 
   return (
     <section className="giscus-comments mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800 md:mt-16 md:pt-10" aria-labelledby="comments-heading">
@@ -53,7 +92,21 @@ export const GiscusComments = ({ postId }: { postId: string }) => {
         <MessageSquareText size={18} className="text-zinc-400" aria-hidden="true" />
         <h2 id="comments-heading" className="font-serif text-xl font-bold text-ink dark:text-white">评论</h2>
       </div>
-      <div ref={containerRef} />
+      {isOffline ? (
+        <div role="status" className="border-y border-zinc-200 px-4 py-6 text-sm leading-6 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+          当前处于离线状态，恢复网络后评论区会自动加载。
+        </div>
+      ) : loadFailed ? (
+        <div role="alert" className="border-y border-zinc-200 px-4 py-6 text-sm leading-6 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+          <p>评论区加载失败，请检查网络连接后重试。</p>
+          <button type="button" onClick={() => setLoadAttempt((attempt) => attempt + 1)} className="editorial-button mt-4">重新加载评论</button>
+        </div>
+      ) : !isLoaded ? (
+        <div role="status" aria-live="polite" className="border-y border-zinc-200 px-4 py-6 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+          正在加载评论区…
+        </div>
+      ) : null}
+      <div ref={containerRef} className={isOffline ? 'hidden' : undefined} />
     </section>
   );
 };

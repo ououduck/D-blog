@@ -131,8 +131,8 @@ export const SlideModal: React.FC<SlideModalProps> = ({
               className={`
                 relative z-10
                 w-full
-                max-h-[85vh]
-                supports-[height:100dvh]:max-h-[85dvh]
+                max-h-[88vh]
+                supports-[height:100dvh]:max-h-[88dvh]
                 overflow-hidden
                 editorial-sheet
                 border border-b-0
@@ -153,7 +153,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
               <div className="flex justify-center px-4 pt-3">
                 <div className="h-1.5 w-14 rounded-full bg-zinc-300/80 dark:bg-zinc-700/80" />
               </div>
-              <div className="max-h-[calc(85vh-18px)] supports-[height:100dvh]:max-h-[calc(85dvh-18px)] overflow-y-auto">
+              <div className="max-h-[calc(88vh-18px)] supports-[height:100dvh]:max-h-[calc(88dvh-18px)] overflow-y-auto overscroll-contain">
                 {children}
               </div>
             </motion.div>
@@ -182,7 +182,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
               exit="exit"
               transition={{ duration: modalDuration, ease: [0.4, 0, 0.2, 1] }}
             >
-              <div className="max-h-[80vh] supports-[height:100dvh]:max-h-[80dvh] overflow-y-auto">
+              <div className="max-h-[80vh] supports-[height:100dvh]:max-h-[80dvh] overflow-y-auto overscroll-contain">
                 {children}
               </div>
             </motion.div>

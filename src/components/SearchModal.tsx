@@ -207,7 +207,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                     type="button"
                     onClick={() => setSearchScope(option.value)}
                     aria-pressed={searchScope === option.value}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors active:scale-[0.98] ${
+                    className={`min-h-11 rounded-control border px-3 py-2 text-xs font-semibold transition-colors active:scale-[0.98] ${
                       searchScope === option.value
                         ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'
                         : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:text-ink dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:text-white'
@@ -285,9 +285,9 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                   <div className="mb-3 px-2 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">搜索历史</div>
                   <div className="flex flex-wrap gap-2">
                     {searchHistory.map((query) => (
-                      <div key={query} className="group flex items-center rounded-full border border-zinc-200 bg-zinc-50 py-1 pl-3 pr-1 text-sm text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-800">
-                        <button type="button" className="mr-1 min-h-9 hover:text-zinc-900 dark:hover:text-white" onClick={() => handleSearch(query)}>{query}</button>
-                        <button type="button" className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 active:scale-[0.98] dark:hover:bg-zinc-700 dark:hover:text-zinc-200" onClick={(e) => removeHistory(query, e)} aria-label={`删除搜索历史：${query}`}>
+                      <div key={query} className="group flex min-h-11 min-w-0 max-w-full items-center rounded-control border border-zinc-200 bg-zinc-50 pl-3 pr-0.5 text-sm text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-800">
+                        <button type="button" className="mr-1 min-h-11 min-w-0 truncate hover:text-zinc-900 dark:hover:text-white" title={query} onClick={() => handleSearch(query)}>{query}</button>
+                        <button type="button" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 active:scale-[0.98] dark:hover:bg-zinc-700 dark:hover:text-zinc-200" onClick={(e) => removeHistory(query, e)} aria-label={`删除搜索历史：${query}`}>
                           <X size={12} />
                         </button>
                       </div>
@@ -302,8 +302,9 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               )}
             </div>
 
-            <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50 p-3 text-xs text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300">
-              <span id="site-search-desc">使用方向键浏览结果，按 Enter 打开文章</span>
+            <span id="site-search-desc" className="sr-only">使用方向键浏览结果，按 Enter 打开文章，按 Escape 关闭搜索。</span>
+            <div className="hidden items-center justify-between border-t border-zinc-100 bg-zinc-50 p-3 text-xs text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300 sm:flex">
+              <span>使用方向键浏览结果，按 Enter 打开文章</span>
               <div className="flex items-center gap-2">
                 <kbd className="rounded-control border border-zinc-200 bg-white px-2 py-0.5 font-mono dark:border-zinc-700 dark:bg-zinc-800">esc</kbd>
                 <span>{TEXT.close}</span>

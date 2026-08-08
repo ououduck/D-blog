@@ -24,7 +24,7 @@ export const ContentStatus: React.FC<ContentStatusProps> = ({
   <div
     role={variant === 'error' ? 'alert' : 'status'}
     className={mergeClassName(
-      'border-y py-10 text-center',
+      'border-y px-3 py-10 text-center sm:px-6',
       variant === 'error'
         ? 'border-dashed border-zinc-500 dark:border-zinc-500'
         : 'border-zinc-200 dark:border-zinc-800',

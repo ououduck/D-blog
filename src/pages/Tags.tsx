@@ -192,11 +192,11 @@ export const Tags = () => {
                       animate={{ opacity: 1 }}
                       transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, delay: Math.min(index * 0.012, 0.06), ease: easeOut }}
                       onClick={() => updateTagParam(tag.name)}
-                      className={`${getTagSize(tag.count)} relative border-b border-zinc-300 px-2 py-1.5 font-bold leading-tight text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-900 sm:px-3 sm:py-2 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-100 dark:hover:text-zinc-100`}
+                      className={`${getTagSize(tag.count)} relative inline-flex min-h-11 max-w-full items-center justify-center break-words border-b border-zinc-300 px-2 py-1.5 text-center font-bold leading-tight text-zinc-700 transition-colors [overflow-wrap:anywhere] hover:border-zinc-900 hover:text-zinc-900 focus-visible:border-zinc-900 focus-visible:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 sm:px-3 sm:py-2 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-100 dark:hover:text-zinc-100 dark:focus-visible:border-zinc-100 dark:focus-visible:text-zinc-100 dark:focus-visible:outline-zinc-100`}
                       aria-label={`查看标签 ${tag.name}，共 ${tag.count} 篇文章`}
                     >
-                      {tag.name}
-                      <span className="ml-1.5 text-[10px] opacity-60 sm:ml-2 sm:text-xs">({tag.count})</span>
+                      <span className="min-w-0 break-words [overflow-wrap:anywhere]">{tag.name}</span>
+                      <span className="ml-1.5 flex-shrink-0 text-[10px] opacity-60 sm:ml-2 sm:text-xs">({tag.count})</span>
                     </motion.button>
                   ))}
                 </div>
@@ -219,7 +219,7 @@ export const Tags = () => {
                 </h2>
                 <button
                   onClick={() => updateTagParam()}
-                  className="inline-flex w-fit items-center gap-2 rounded-control border border-zinc-400 active:scale-[.98] bg-paper px-4 py-2 text-sm font-bold text-ink transition-colors hover:border-ink hover:bg-zinc-100 dark:border-zinc-600 dark:bg-void dark:text-white dark:hover:border-white dark:hover:bg-zinc-900"
+                  className="inline-flex min-h-11 w-fit items-center gap-2 rounded-control border border-zinc-400 bg-paper px-4 py-2 text-sm font-bold text-ink transition-colors hover:border-ink hover:bg-zinc-100 focus-visible:border-ink focus-visible:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 active:scale-[.98] dark:border-zinc-600 dark:bg-void dark:text-white dark:hover:border-white dark:hover:bg-zinc-900 dark:focus-visible:border-white dark:focus-visible:bg-zinc-900 dark:focus-visible:outline-zinc-100"
                 >
                   <ArrowLeft size={15} />
                   返回全部标签

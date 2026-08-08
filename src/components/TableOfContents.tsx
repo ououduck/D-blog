@@ -20,19 +20,19 @@ import {
 
 const formatIndex = (value: number) => String(value).padStart(2, '0');
 const MOBILE_TOC_TRIGGER_STYLE = {
-  bottom: 'max(calc(var(--cookie-notice-height, 0px) + env(safe-area-inset-bottom, 0px) + 8.5rem), calc(var(--cookie-notice-height, 0px) + 8.5rem))'
+  bottom: 'max(calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + env(safe-area-inset-bottom, 0px) + 8.5rem), calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 8.5rem))'
 } as const;
 const DESKTOP_TOC_TRIGGER_STYLE = {
-  bottom: 'calc(var(--cookie-notice-height, 0px) + 9rem)'
+  bottom: 'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 9rem)'
 } as const;
 const DESKTOP_TOC_POPOVER_STYLE = {
   right: '1.5rem',
-  bottom: 'calc(var(--cookie-notice-height, 0px) + 12.5rem)'
+  bottom: 'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 12.5rem)'
 } as const;
 const MOBILE_TOC_SHEET_STYLE = {
   left: 'env(safe-area-inset-left, 0px)',
   right: 'env(safe-area-inset-right, 0px)',
-  bottom: 'calc(var(--cookie-notice-height, 0px) + env(safe-area-inset-bottom, 0px))'
+  bottom: 'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + env(safe-area-inset-bottom, 0px))'
 } as const;
 const MOBILE_SCROLL_STYLE = {
   WebkitOverflowScrolling: 'touch' as const
@@ -385,7 +385,7 @@ export const TableOfContents: React.FC<{
                     <button
                       type="button"
                       onClick={() => toggleNode(item.id)}
-                      className={`mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-icon transition-colors duration-200 active:scale-[0.98] ${
+                      className={`inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-icon transition-colors duration-200 active:scale-[0.98] ${
                         isInActiveBranch
                           ? 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300'
                           : 'text-zinc-400 hover:bg-zinc-200/80 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'
@@ -515,7 +515,7 @@ export const TableOfContents: React.FC<{
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-icon bg-zinc-100 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-700 active:scale-[0.98] dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-300 lg:hidden"
+            className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-icon bg-zinc-100 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-700 active:scale-[0.98] dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-300 lg:hidden"
             aria-label="关闭目录"
           >
             <X size={16} />
@@ -573,7 +573,7 @@ export const TableOfContents: React.FC<{
             window.scrollTo({ top: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth' });
             if (isMobileViewport) setIsOpen(false);
           }}
-          className="flex w-full items-center justify-center gap-2 rounded-control py-2 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 active:scale-[0.98] dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-control py-2 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 active:scale-[0.98] dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
           aria-label="回到顶部"
         >
           <ArrowUp size={14} />

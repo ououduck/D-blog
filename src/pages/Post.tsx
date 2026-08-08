@@ -1466,7 +1466,7 @@ export const Post = () => {
                   <Clock size={14} />
                   <span>{post.readTime}</span>
                 </span>
-                <button type="button" onClick={() => setShareModalOpen(true)} className="print-hidden inline-flex items-center gap-1.5 rounded-micro border border-zinc-400 bg-zinc-100 px-3 py-1.5 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400" aria-label={`分享文章：${post.title}`}>
+                <button type="button" onClick={() => setShareModalOpen(true)} className="print-hidden inline-flex min-h-11 items-center gap-1.5 rounded-control border border-zinc-400 bg-zinc-100 px-3 py-2 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400" aria-label={`分享文章：${post.title}`}>
                   <Share2 size={14} />
                   分享
                 </button>
@@ -1481,7 +1481,7 @@ export const Post = () => {
                   disabled={isSaving}
                   aria-pressed={isSaved}
                   aria-label={isSaved ? `取消收藏：${post.title}` : `收藏文章：${post.title}`}
-                  className="print-hidden inline-flex items-center gap-1.5 rounded-micro border border-zinc-400 bg-zinc-100 px-3 py-1.5 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400"
+                  className="print-hidden inline-flex min-h-11 items-center gap-1.5 rounded-control border border-zinc-400 bg-zinc-100 px-3 py-2 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60 disabled:active:scale-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400"
                 >
                   <Bookmark size={14} fill={isSaved ? 'currentColor' : 'none'} />
                   {isSaving ? '保存中' : isSaved ? '已收藏' : '收藏'}
@@ -1588,7 +1588,7 @@ export const Post = () => {
                     {adjacentPosts.prev ? (
                       <Link
                         to={`/post/${adjacentPosts.prev.id}`}
-                        className="group flex min-w-0 items-start gap-3 text-left"
+                        className="group flex min-h-11 min-w-0 items-start gap-3 rounded-control py-1 text-left"
                       >
                         <ArrowLeft size={17} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100" />
                         <span className="min-w-0">
@@ -1602,7 +1602,7 @@ export const Post = () => {
                     {adjacentPosts.next ? (
                       <Link
                         to={`/post/${adjacentPosts.next.id}`}
-                        className="group flex min-w-0 items-start justify-end gap-3 text-right"
+                        className="group flex min-h-11 min-w-0 items-start justify-end gap-3 rounded-control py-1 text-right"
                       >
                         <span className="min-w-0">
                           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">下一篇</span>
@@ -1632,7 +1632,7 @@ export const Post = () => {
                     </div>
                     <div className="grid gap-3 sm:gap-4 sm:grid-cols-3">
                       {relatedPosts.map((relatedPost) => (
-                        <Link key={relatedPost.id} to={`/post/${relatedPost.id}`} className="group flex h-24 overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 sm:block sm:h-auto">
+                        <Link key={relatedPost.id} to={`/post/${relatedPost.id}`} className="group flex h-24 overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-500 focus-visible:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-visible:border-zinc-500 sm:block sm:h-auto">
                           {relatedPost.coverImage ? <ProgressiveImage src={resolveBrowserAsset(relatedPost.coverImage)} alt="" wrapperClassName="aspect-video h-24 w-auto flex-none bg-zinc-100 dark:bg-zinc-800 sm:h-auto sm:w-full sm:aspect-[16/10]" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <div className="flex aspect-video h-24 w-auto flex-none items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500 sm:h-auto sm:w-full sm:aspect-[16/10]">无封面</div>}
                           <div className="min-w-0 flex-1 overflow-hidden p-2 sm:p-3.5">
                             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500">

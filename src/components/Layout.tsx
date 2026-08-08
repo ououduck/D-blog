@@ -687,7 +687,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                       tabIndex: isMoreMenuOpen && index === desktopMoreMenuActiveIndex ? 0 : -1,
                       onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => handleDesktopMoreMenuItemKeyDown(event, index),
                       onClick: () => closeDesktopMoreMenu(),
-                      className: 'flex min-w-0 items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white'
+                      className: 'flex min-h-11 min-w-0 items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white'
                     };
                     if ('path' in item) {
                       return <Link key={item.key} {...itemProps} to={item.path} onMouseEnter={() => preloadPage(item.path)}>{content}</Link>;
@@ -862,7 +862,7 @@ const Footer = () => {
             {allNavItems.map((item) => {
               if ('path' in item) {
                 return (
-                  <Link key={item.path} to={item.path} className="transition-colors hover:text-ink dark:hover:text-white">
+                  <Link key={item.path} to={item.path} className="inline-flex min-h-11 items-center transition-colors hover:text-ink dark:hover:text-white">
                     {item.label}
                   </Link>
                 );
@@ -874,7 +874,7 @@ const Footer = () => {
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="transition-colors hover:text-ink dark:hover:text-white"
+                  className="inline-flex min-h-11 items-center transition-colors hover:text-ink dark:hover:text-white"
                 >
                   {item.label}
                 </a>
@@ -885,7 +885,7 @@ const Footer = () => {
 
         <div className="mt-7 flex flex-col gap-2 border-t border-zinc-200/70 pt-5 text-xs text-zinc-600 dark:border-zinc-800/70 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
           <p>{siteConfig.footerText} · {siteConfig.author.name}</p>
-          <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-ink dark:hover:text-white">
+          <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center transition-colors hover:text-ink dark:hover:text-white">
             {siteConfig.beian.text}
           </a>
         </div>

@@ -30,7 +30,9 @@ const positions: Array<{ value: WatermarkPosition; label: string }> = [
 ];
 
 const inputClass = 'editorial-input';
-const cardClass = 'editorial-surface p-5 md:p-6';
+const cardClass = 'editorial-surface p-4 min-[360px]:p-5 md:p-6';
+const MAX_IMAGE_FILE_BYTES = 25 * 1024 * 1024;
+const MAX_IMAGE_PIXELS = 40_000_000;
 
 const loadImage = (file: File) => new Promise<HTMLImageElement>((resolve, reject) => {
   const url = URL.createObjectURL(file);
@@ -85,9 +87,18 @@ export const Watermark: React.FC = () => {
       setFeedback({ kind: 'error', message: '请选择 PNG、JPEG、WebP 等图片文件。' });
       return;
     }
+    if (file.size > MAX_IMAGE_FILE_BYTES) {
+      setFeedback({ kind: 'error', message: '图片文件不能超过 25MB，请压缩后重试。' });
+      return;
+    }
     try {
       const image = await loadImage(file);
       if (generation !== imageLoadGenerationRef.current) return;
+      const totalPixels = image.naturalWidth * image.naturalHeight;
+      if (!image.naturalWidth || !image.naturalHeight || totalPixels > MAX_IMAGE_PIXELS) {
+        setFeedback({ kind: 'error', message: '图片总像素不能超过 4000 万像素，请缩小尺寸后重试。' });
+        return;
+      }
       setImageState({ image, name: file.name });
       setFeedback(null);
     } catch (error) {
@@ -144,34 +155,35 @@ export const Watermark: React.FC = () => {
           <section className={cardClass}>
             <div className="mb-5 flex items-center justify-between">
               <div className="flex items-center gap-2"><ImageIcon size={18} /><h2 className="font-bold text-ink dark:text-white">图片</h2></div>
-              {imageState && <button type="button" className="rounded-icon p-1 text-zinc-400 hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" onClick={() => { imageLoadGenerationRef.current += 1; setImageState(null); }} aria-label="移除图片"><X size={16} /></button>}
+              {imageState && <button type="button" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-400 hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white" onClick={() => { imageLoadGenerationRef.current += 1; setImageState(null); setFeedback(null); }} aria-label="移除图片" title="移除图片"><X size={16} /></button>}
             </div>
             <input ref={fileInputRef} className="hidden" type="file" accept="image/*" onChange={(event) => { void handleFile(event.target.files?.[0]); event.currentTarget.value = ''; }} />
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="editorial-button w-full"><Upload size={16} />{imageState ? '更换图片' : '选择图片'}</button>
-            {imageState && <p className="mt-3 truncate text-xs text-zinc-500 dark:text-zinc-400">{imageState.name} · {imageState.image.naturalWidth} × {imageState.image.naturalHeight}</p>}
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="editorial-button min-h-11 w-full"><Upload size={16} />{imageState ? '更换图片' : '选择图片'}</button>
+            <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">支持常见图片格式，最大 25MB、4000 万像素。</p>
+            {imageState && <p className="mt-2 truncate text-xs text-zinc-500 dark:text-zinc-400" title={`${imageState.name} · ${imageState.image.naturalWidth} × ${imageState.image.naturalHeight}`}>{imageState.name} · {imageState.image.naturalWidth} × {imageState.image.naturalHeight}</p>}
           </section>
 
           <section className={cardClass}>
             <h2 className="mb-5 font-bold text-ink dark:text-white">水印设置</h2>
             <label className="mb-4 block"><span className="mb-2 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">水印文字</span><input className={inputClass} value={text} maxLength={120} onChange={(event) => setText(event.target.value)} placeholder="输入水印文字" /></label>
             <label className="mb-4 block"><span className="mb-2 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">水印类型</span><select className={inputClass} value="single" disabled><option value="single">单个水印</option></select></label>
-            <label className="mb-4 block"><div className="mb-2 flex justify-between text-xs font-semibold text-zinc-600 dark:text-zinc-400"><span>字体大小</span><output>{fontSize}px</output></div><input className="w-full accent-zinc-900 dark:accent-zinc-100" type="range" min="8" max="240" value={fontSize} onChange={(event) => setFontSize(clampWatermarkFontSize(Number(event.target.value)))} /></label>
-            <label className="mb-4 block"><div className="mb-2 flex justify-between text-xs font-semibold text-zinc-600 dark:text-zinc-400"><span>不透明度</span><output>{opacity}%</output></div><input className="w-full accent-zinc-900 dark:accent-zinc-100" type="range" min="0" max="100" value={opacity} onChange={(event) => setOpacity(clampWatermarkOpacity(Number(event.target.value)))} /></label>
-            <fieldset><legend className="mb-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400">位置</legend><div role="group" aria-label="水印位置" className="grid grid-cols-3 gap-1.5">{positions.map((item) => <button key={item.value} type="button" onClick={() => setPosition(item.value)} aria-pressed={position === item.value} className={`rounded-control border px-2 py-2 text-xs transition-colors ${position === item.value ? 'border-zinc-950 bg-zinc-950 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950' : 'border-zinc-200 text-zinc-600 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500'}`}>{item.label}</button>)}</div></fieldset>
+            <label className="mb-4 block"><div className="mb-1 flex justify-between text-xs font-semibold text-zinc-600 dark:text-zinc-400"><span>字体大小</span><output>{fontSize}px</output></div><div className="flex min-h-11 items-center"><input className="h-11 w-full cursor-pointer accent-zinc-900 dark:accent-zinc-100" type="range" min="8" max="240" value={fontSize} onChange={(event) => setFontSize(clampWatermarkFontSize(Number(event.target.value)))} /></div></label>
+            <label className="mb-4 block"><div className="mb-1 flex justify-between text-xs font-semibold text-zinc-600 dark:text-zinc-400"><span>不透明度</span><output>{opacity}%</output></div><div className="flex min-h-11 items-center"><input className="h-11 w-full cursor-pointer accent-zinc-900 dark:accent-zinc-100" type="range" min="0" max="100" value={opacity} onChange={(event) => setOpacity(clampWatermarkOpacity(Number(event.target.value)))} /></div></label>
+            <fieldset><legend className="mb-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400">位置</legend><div role="group" aria-label="水印位置" className="grid grid-cols-3 gap-1.5">{positions.map((item) => <button key={item.value} type="button" onClick={() => setPosition(item.value)} aria-pressed={position === item.value} className={`min-h-11 min-w-0 rounded-control border px-1 text-[11px] leading-tight transition-colors min-[360px]:px-2 min-[360px]:text-xs ${position === item.value ? 'border-zinc-950 bg-zinc-950 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950' : 'border-zinc-200 text-zinc-600 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500'}`}>{item.label}</button>)}</div></fieldset>
           </section>
 
           <section className={cardClass}>
             <h2 className="mb-5 font-bold text-ink dark:text-white">导出</h2>
-            <div className="mb-4 grid grid-cols-2 gap-2"><label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">格式<select className={`${inputClass} mt-2`} value={format} onChange={(event) => setFormat(event.target.value as 'png' | 'jpeg')}><option value="png">PNG</option><option value="jpeg">JPEG</option></select></label><label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">质量<select className={`${inputClass} mt-2`} value={quality} disabled={format === 'png'} onChange={(event) => setQuality(Number(event.target.value))}><option value="100">100%</option><option value="92">92%</option><option value="80">80%</option></select></label></div>
-            <div className="flex gap-2"><button type="button" className="editorial-button flex-1" onClick={reset}><RefreshCw size={15} />重置</button><button type="button" className="editorial-button-primary flex-1" disabled={!imageState || isExporting} onClick={() => { void exportImage(); }}><Download size={15} />{isExporting ? '处理中…' : '下载图片'}</button></div>
+            <div className="mb-4 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2"><label className="min-w-0 text-xs font-semibold text-zinc-600 dark:text-zinc-400">格式<select className={`${inputClass} mt-2 min-w-0`} value={format} onChange={(event) => setFormat(event.target.value as 'png' | 'jpeg')}><option value="png">PNG</option><option value="jpeg">JPEG</option></select></label><label className="min-w-0 text-xs font-semibold text-zinc-600 dark:text-zinc-400">质量<select className={`${inputClass} mt-2 min-w-0`} value={quality} disabled={format === 'png'} onChange={(event) => setQuality(Number(event.target.value))}><option value="100">100%</option><option value="92">92%</option><option value="80">80%</option></select></label></div>
+            <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2"><button type="button" className="editorial-button min-h-11 min-w-0" onClick={reset}><RefreshCw size={15} />重置</button><button type="button" className="editorial-button-primary min-h-11 min-w-0" disabled={!imageState || isExporting} onClick={() => { void exportImage(); }}><Download size={15} />{isExporting ? '处理中…' : '下载图片'}</button></div>
             {feedback && <p className={`mt-3 text-xs ${feedback.kind === 'error' ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`} role="status">{feedback.message}</p>}
           </section>
         </aside>
 
         <section className={`${cardClass} min-h-[30rem]`} aria-label="水印预览">
           <div className="mb-5 flex items-center justify-between border-b border-zinc-200 pb-4 dark:border-zinc-800"><div><p className="mb-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">Preview</p><h2 className="font-serif text-xl font-bold text-ink dark:text-white">实时预览</h2></div>{imageState && <span className="text-xs text-zinc-500 dark:text-zinc-400">{format.toUpperCase()}</span>}</div>
-          <div className="flex min-h-[24rem] items-center justify-center rounded-control border border-zinc-200 bg-zinc-100 p-4 dark:border-zinc-800 dark:bg-zinc-950/60 md:min-h-[34rem]">
-            {imageState ? <canvas ref={canvasRef} className="max-h-[32rem] max-w-full object-contain shadow-sm" aria-label="添加水印后的图片预览" /> : <button type="button" onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-3 text-zinc-500 transition-colors hover:text-ink dark:text-zinc-400 dark:hover:text-white"><ImageIcon size={40} strokeWidth={1.2} /><span className="text-sm">选择图片开始预览</span></button>}
+          <div className="flex min-h-[24rem] min-w-0 items-center justify-center overflow-hidden rounded-control border border-zinc-200 bg-zinc-100 p-3 dark:border-zinc-800 dark:bg-zinc-950/60 min-[360px]:p-4 md:min-h-[34rem]">
+            {imageState ? <canvas ref={canvasRef} className="block h-auto max-h-[32rem] max-w-full object-contain shadow-sm" aria-label="添加水印后的图片预览" /> : <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-11 min-w-0 flex-col items-center justify-center gap-3 px-2 text-zinc-500 transition-colors hover:text-ink dark:text-zinc-400 dark:hover:text-white"><ImageIcon size={40} strokeWidth={1.2} /><span className="text-center text-sm">选择图片开始预览</span></button>}
           </div>
         </section>
       </div>

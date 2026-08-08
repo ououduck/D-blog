@@ -81,11 +81,23 @@ export const renderWatermark = (canvas: HTMLCanvasElement, image: CanvasImageSou
     return;
   }
 
-  const fontSize = clampWatermarkFontSize(options.fontSize);
+  const requestedFontSize = Number.isFinite(options.fontSize) && options.fontSize > 0
+    ? Math.min(240, options.fontSize)
+    : DEFAULT_WATERMARK_OPTIONS.fontSize;
   const opacity = clampWatermarkOpacity(options.opacity) / 100;
   const padding = Math.max(0, options.padding ?? DEFAULT_WATERMARK_OPTIONS.padding ?? 32);
   const fontFamily = options.fontFamily || DEFAULT_WATERMARK_OPTIONS.fontFamily;
+  const availableWidth = Math.max(1, width - padding * 2);
+  const minimumFontSize = Math.min(requestedFontSize, Math.max(4, Math.min(12, width * 0.02)));
   context.save();
+  context.font = `600 ${requestedFontSize}px ${fontFamily}`;
+  const measuredWidth = context.measureText(text).width;
+  const proportionalFontSize = measuredWidth > availableWidth
+    ? requestedFontSize * availableWidth / measuredWidth
+    : requestedFontSize;
+  const fontSize = measuredWidth > availableWidth
+    ? Math.max(minimumFontSize, proportionalFontSize)
+    : requestedFontSize;
   context.font = `600 ${fontSize}px ${fontFamily}`;
   context.textBaseline = 'alphabetic';
   const point = getWatermarkPoint(width, height, fontSize, options.position, padding);
@@ -95,6 +107,6 @@ export const renderWatermark = (canvas: HTMLCanvasElement, image: CanvasImageSou
   context.shadowBlur = Math.max(2, fontSize * 0.12);
   context.shadowOffsetY = Math.max(1, fontSize * 0.04);
   context.fillStyle = '#ffffff';
-  context.fillText(text, point.x, point.y);
+  context.fillText(text, point.x, point.y, availableWidth);
   context.restore();
 };

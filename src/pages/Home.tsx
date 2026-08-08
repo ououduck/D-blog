@@ -168,7 +168,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
         className="col-span-full w-full"
         onMouseEnter={() => preloadPage(`/post/${post.id}`)}
       >
-        <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 md:grid md:grid-cols-5">
+        <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-within:border-zinc-500 md:grid md:grid-cols-5">
           <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:col-span-3 md:aspect-auto md:min-h-80" aria-label={`阅读文章：${post.title}`}>
             {post.coverImage ? (
               <ProgressiveImage {...getResponsiveImageProps(post.coverImage, "(max-width: 767px) 100vw, 60vw")} src={assetUrl(post.coverImage)} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
@@ -212,7 +212,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
 
   return (
     <motion.article layout variants={cardVariants} transition={{ duration: 0.25, ease: easeOut }} className="flex h-full min-w-0 flex-col" onMouseEnter={() => preloadPage(`/post/${post.id}`)}>
-      <div className="flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600">
+      <div className="flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-within:border-zinc-500">
         <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
               <ProgressiveImage {...getResponsiveImageProps(post.coverImage, "(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw")} src={assetUrl(post.coverImage)} alt={post.title} loading="lazy" fetchPriority="auto" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
@@ -267,14 +267,14 @@ const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
         className="flex items-center justify-between gap-3 border-y border-zinc-200 py-3 dark:border-zinc-800"
       >
 
-      <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
+      <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain scroll-smooth no-scrollbar">
         <div className="flex items-center gap-2" role="group" aria-label="文章分类筛选">
           {[ALL_CATEGORY, ...categories].map((category) => (
             <button
               key={category}
               onClick={() => onSelect(category)}
               aria-pressed={selected === category}
-              className={`whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors active:scale-[.98] ${
+              className={`min-h-11 whitespace-nowrap rounded-control border px-3.5 py-2 text-sm font-semibold transition-colors active:scale-[.98] ${
                 selected === category
                   ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
                   : 'border-zinc-300 bg-paper text-zinc-700 hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white'
@@ -285,7 +285,7 @@ const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
           ))}
         </div>
       </div>
-      <button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} className="flex shrink-0 items-center gap-1.5 rounded-control border border-zinc-300 active:scale-[.98] bg-paper px-3 py-1.5 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white">
+      <button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink active:scale-[.98] dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white">
         {sortOrder === 'newest' ? <ArrowDownWideNarrow size={14} /> : <ArrowUpWideNarrow size={14} />}
         <span>{sortOrder === 'newest' ? '最新' : '最早'}</span>
       </button>

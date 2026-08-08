@@ -252,7 +252,7 @@ export const ArchivePage = () => {
             onClick={toggleAll}
             disabled={groups.length === 0}
             aria-pressed={allGroupsExpanded}
-            className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:text-zinc-100"
+            className="inline-flex min-h-11 w-fit items-center gap-1.5 px-2 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100"
           >
             {allGroupsExpanded ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
             {allGroupsExpanded ? '全部折叠' : '全部展开'}
@@ -296,7 +296,7 @@ export const ArchivePage = () => {
                   >
                     <button
                       onClick={() => toggleYear(group.year)}
-                      className="group flex w-full items-center justify-between gap-4 border-b border-zinc-300 pb-3 text-left transition-colors hover:border-zinc-500 dark:border-zinc-700 dark:hover:border-zinc-500"
+                      className="group flex min-h-11 w-full items-center justify-between gap-4 border-b border-zinc-300 pb-3 text-left transition-colors hover:border-zinc-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:hover:border-zinc-500 dark:focus-visible:outline-zinc-100"
                       aria-expanded={isYearExpanded}
                       aria-label={`${isYearExpanded ? '折叠' : '展开'} ${group.year}的文章`}
                     >
@@ -339,7 +339,7 @@ export const ArchivePage = () => {
                                 >
                                   <button
                                     onClick={() => toggleMonth(group.year, monthGroup.monthNum)}
-                                    className="group mb-2 flex w-full items-center gap-2 text-left"
+                                    className="group mb-2 flex min-h-11 w-full items-center gap-2 px-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100"
                                     aria-expanded={isMonthExpanded}
                                     aria-label={`${isMonthExpanded ? '折叠' : '展开'} ${monthGroup.month}的文章`}
                                   >
@@ -373,16 +373,16 @@ export const ArchivePage = () => {
                                             >
                                               <Link
                                                 to={`/post/${post.id}`}
-                                                className="group grid gap-x-5 gap-y-1 border-b border-zinc-200 py-4 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600 md:grid-cols-[4.25rem_minmax(0,1fr)_auto] md:items-baseline md:py-4"
+                                                className="group grid min-w-0 gap-x-5 gap-y-1 border-b border-zinc-200 py-4 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600 md:grid-cols-[4.25rem_minmax(0,1fr)_auto] md:items-baseline md:py-4"
                                               >
                                                 <time className="font-mono text-xs font-medium text-zinc-500 dark:text-zinc-400 md:pt-1">
                                                   {formatDay(post.date)}
                                                 </time>
-                                                <h4 className="min-w-0 font-serif text-lg font-bold leading-snug text-zinc-900 transition-colors group-hover:text-zinc-600 dark:text-zinc-100 dark:group-hover:text-zinc-300 md:text-xl">
+                                                <h4 className="min-w-0 break-words font-serif text-lg font-bold leading-snug text-zinc-900 transition-colors [overflow-wrap:anywhere] group-hover:text-zinc-600 dark:text-zinc-100 dark:group-hover:text-zinc-300 md:text-xl">
                                                   {post.title}
                                                   <ArrowUpRight className="ml-1 inline-block -translate-y-0.5 opacity-0 transition-opacity group-hover:opacity-100" size={14} />
                                                 </h4>
-                                                <p className="text-xs text-zinc-500 dark:text-zinc-400 md:whitespace-nowrap">
+                                                <p className="min-w-0 break-words text-xs text-zinc-500 [overflow-wrap:anywhere] dark:text-zinc-400 md:whitespace-nowrap">
                                                   {post.category} <span className="mx-1 text-zinc-300 dark:text-zinc-700">·</span> {post.readTime}
                                                 </p>
                                               </Link>
