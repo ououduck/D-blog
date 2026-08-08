@@ -1,11 +1,9 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
-import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { flushSync } from 'react-dom';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
-import { siteConfig } from '@config/site.config';
 import { pageLoaders } from './utils/preload';
 import { getRouterBasename } from './utils/siteUrl';
 import { OfflineStatus } from './components/OfflineStatus';
@@ -24,40 +22,6 @@ const Sponsor = lazy(pageLoaders['/sponsor']);
 const Favorites = lazy(pageLoaders['/favorites']);
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
 const CookieNotice = lazy(() => import('./components/CookieNotice').then((m) => ({ default: m.CookieNotice })));
-
-const LoadingScreen: React.FC = () => {
-  const letterVariants: Variants = {
-    initial: { y: 100 },
-    animate: (index: number) => ({
-      y: 0,
-      transition: { duration: 0.8, ease: [0.33, 1, 0.68, 1], delay: 0.1 + index * 0.05 }
-    })
-  };
-
-  return (
-    <motion.div
-      className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-ink text-white dark:bg-black"
-      exit={{ clipPath: 'circle(0% at 50% 50%)', transition: { duration: 0.7, ease: [0.76, 0, 0.24, 1] } }}
-      aria-hidden="true"
-    >
-      <div className="relative flex flex-col items-center">
-        <div className="flex overflow-hidden pb-2">
-          {siteConfig.title.split('').map((char, index) => (
-            <motion.span key={`${char}-${index}`} custom={index} variants={letterVariants} initial="initial" animate="animate" className="font-serif text-6xl font-bold tracking-tighter md:text-8xl">
-              {char}
-            </motion.span>
-          ))}
-        </div>
-        <motion.div initial={{ scaleX: 0, opacity: 0 }} animate={{ scaleX: 1, opacity: 1 }} transition={{ delay: 0.8, duration: 0.8 }} className="relative mt-6 h-[2px] w-48 overflow-hidden rounded-full bg-zinc-800 md:w-64">
-          <motion.div className="absolute inset-y-0 left-0 w-full bg-zinc-100" initial={{ x: '-100%' }} animate={{ x: '100%' }} transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }} />
-        </motion.div>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.6 }} transition={{ delay: 1, duration: 0.6 }} className="mt-6 text-[10px] font-light uppercase tracking-[0.6em]">
-          LOADING
-        </motion.div>
-      </div>
-    </motion.div>
-  );
-};
 
 const RouteFallback: React.FC = () => (
   <div className="mx-auto flex min-h-[50vh] max-w-7xl items-center justify-center">
@@ -160,61 +124,20 @@ const AppRoutes: React.FC = () => {
 };
 
 const AppShell: React.FC = () => {
-  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [showCookieNotice, setShowCookieNotice] = useState(false);
 
   useEffect(() => {
-    if (!showLoadingScreen) {
-      const timer = window.setTimeout(() => {
-        setShowCookieNotice(true);
-      }, 2000);
-      return () => window.clearTimeout(timer);
-    }
-
     const timer = window.setTimeout(() => {
-      try {
-        sessionStorage.setItem('hasVisited', 'true');
-      } catch {
-        // The loading screen still completes when session storage is unavailable.
-      }
-      setShowLoadingScreen(false);
       setShowCookieNotice(true);
-    }, 900);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [showLoadingScreen]);
-
-  useEffect(() => {
-    if (showLoadingScreen) {
-      return;
-    }
-
-    let isFirstVisit = false;
-    try {
-      isFirstVisit = sessionStorage.getItem('hasVisited') !== 'true';
-    } catch {
-      isFirstVisit = true;
-    }
-
-    if (!isFirstVisit) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setShowLoadingScreen(true);
-    }, 0);
-
+    }, 2000);
     return () => window.clearTimeout(timer);
-  }, [showLoadingScreen]);
+  }, []);
 
   return (
     <ErrorBoundary>
       <AppRoutes />
       <OfflineStatus />
       <ServiceWorkerUpdatePrompt />
-      <AnimatePresence>{showLoadingScreen && <LoadingScreen />}</AnimatePresence>
       {showCookieNotice && (
         <Suspense fallback={null}>
           <CookieNotice />

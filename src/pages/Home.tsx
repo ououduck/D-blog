@@ -302,7 +302,7 @@ const Hero = () => {
       <motion.p initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={introTransition} className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
         {siteConfig.subtitle}
       </motion.p>
-      <motion.h1 initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.03, duration: 0.3, ease: easeOut }} className="mb-3 font-serif text-4xl font-bold tracking-tight text-ink dark:text-white sm:text-5xl md:text-6xl">
+      <motion.h1 initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.03, duration: 0.3, ease: easeOut }} className="mb-3 font-serif text-5xl font-bold tracking-tight text-ink dark:text-white sm:text-6xl md:text-7xl">
         {siteConfig.title}
       </motion.h1>
       <motion.p initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.06, duration: 0.25, ease: easeOut }} className="mx-auto max-w-xl text-sm leading-6 text-zinc-600 dark:text-zinc-300 md:text-base">
