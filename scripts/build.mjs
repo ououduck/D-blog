@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 
 const startedAt = Date.now();
@@ -24,7 +25,17 @@ const stages = [
     command: process.execPath,
     args: [viteCli, 'build', ...(verbose ? [] : ['--logLevel', 'warn'])]
   },
-  { name: 'Pre-render static routes', command: process.execPath, args: ['scripts/prerender.mjs'] },
+  {
+    name: 'Bundle server-side renderer',
+    command: process.execPath,
+    args: [viteCli, 'build', '--config', 'vite.ssr.config.ts', ...(verbose ? [] : ['--logLevel', 'warn'])]
+  },
+  {
+    name: 'Snapshot clean HTML template',
+    command: process.execPath,
+    args: ['-e', "const fs=require('fs');const s='dist/index.html',d='dist-ssr/index.template.html';fs.copyFileSync(s,d);console.log('[build] template snapshot saved')"]
+  },
+  { name: 'Generate static HTML (SSG)', command: process.execPath, args: ['scripts/ssg.mjs'] },
   { name: 'Audit build output', command: process.execPath, args: ['scripts/audit-build.mjs'] }
 ];
 

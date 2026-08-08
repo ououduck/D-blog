@@ -31,6 +31,34 @@ const visit = (directory) => {
 visit(DIST_DIR);
 
 const getMatches = (value, pattern) => [...value.matchAll(pattern)].map((match) => match[0]);
+
+/**
+ * 提取 <div id="root"> 的完整内部内容（div 深度计数，避免内容中的嵌套 div 截断）。
+ */
+const extractRootContent = (html) => {
+  const match = html.match(/<div\b[^>]*\bid=["']root["'][^>]*>/i);
+  if (!match) return '';
+  const start = match.index;
+  const openTag = match[0];
+  let depth = 1; // root div 自身计一层
+  let i = start + openTag.length;
+  while (i < html.length) {
+    const open = html.indexOf('<div', i);
+    const close = html.indexOf('</div>', i);
+    const next = open !== -1 && (close === -1 || open < close) ? open : close;
+    if (next === -1) return '';
+    if (next === close) {
+      depth -= 1;
+      if (depth === 0) {
+        return html.slice(start + openTag.length, next).trim();
+      }
+    } else {
+      depth += 1;
+    }
+    i = next + 4;
+  }
+  return '';
+};
 const warnings = [];
 const errors = [];
 const localStylesheetPattern = /<link\b[^>]*\brel=["']stylesheet["'][^>]*\bhref=["']([^"']+)["'][^>]*>/gi;
@@ -42,7 +70,7 @@ for (const filePath of htmlFiles) {
   const relativePath = path.relative(DIST_DIR, filePath) || 'index.html';
   const canonicalCount = getMatches(html, /<link\b[^>]*\brel=["']canonical["'][^>]*>/gi).length;
   const jsonLdTags = getMatches(html, /<script\b[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi);
-  const rootContent = html.match(/<div\b[^>]*\bid=["']root["'][^>]*>([\s\S]*?)<\/div>/i)?.[1]?.trim() || '';
+  const rootContent = extractRootContent(html);
 
   for (const match of html.matchAll(localStylesheetPattern)) {
     const href = match[1].split(/[?#]/, 1)[0];
@@ -56,12 +84,13 @@ for (const filePath of htmlFiles) {
   }
 
   const isOfflineFallback = relativePath === 'offline.html';
-  if (!/<title>[\s\S]+<\/title>/i.test(html)) errors.push(`${relativePath}: missing title`);
+  if (!/<title\b[^>]*>[\s\S]+<\/title>/i.test(html)) errors.push(`${relativePath}: missing title`);
   if (!isOfflineFallback && !/<meta\b[^>]*\bname=["']description["'][^>]*>/i.test(html)) errors.push(`${relativePath}: missing description`);
   if (!isOfflineFallback && !/<meta\b[^>]*\bname=["']robots["'][^>]*>/i.test(html)) errors.push(`${relativePath}: missing robots`);
   if (canonicalCount > 1) errors.push(`${relativePath}: duplicate canonical tags (${canonicalCount})`);
   if (jsonLdTags.length === 0) warnings.push(`${relativePath}: missing JSON-LD`);
   if (rootContent === '') warnings.push(`${relativePath}: static HTML has an empty root; content remains client-rendered`);
+  if (!isOfflineFallback && rootContent.length < 64) warnings.push(`${relativePath}: root content looks too thin (${rootContent.length} chars); SSG may not have rendered body content`);
 
   for (const tag of jsonLdTags) {
     const json = tag.replace(/^.*?>/s, '').replace(/<\/script>\s*$/i, '');

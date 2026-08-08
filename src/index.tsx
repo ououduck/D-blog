@@ -11,11 +11,18 @@ if (!rootElement) {
 
 document.head.querySelectorAll('[data-rh="true"]').forEach((element) => element.remove());
 
-const root = ReactDOM.createRoot(rootElement);
-root.render(
+// 生产构建的静态 HTML 已含服务端渲染内容，使用水合接管（hydrateRoot 需一次性传入元素）；
+// 开发模式（空 root）走普通客户端渲染。
+const app = (
   <React.StrictMode>
     <App />
   </React.StrictMode>
 );
+
+if (rootElement.childElementCount > 0) {
+  ReactDOM.hydrateRoot(rootElement, app);
+} else {
+  ReactDOM.createRoot(rootElement).render(app);
+}
 
 registerServiceWorker();

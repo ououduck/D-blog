@@ -10,9 +10,11 @@ export const GiscusComments = ({ postId }: { postId: string }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
+    // 水合后同步真实网络状态（SSR 首帧固定为在线，避免水合冲突）。
+    setIsOffline(typeof navigator !== 'undefined' && !navigator.onLine);
     const syncConnection = () => setIsOffline(!navigator.onLine);
     window.addEventListener('online', syncConnection);
     window.addEventListener('offline', syncConnection);

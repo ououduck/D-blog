@@ -10,6 +10,7 @@ import { pageLoaders } from './utils/preload';
 import { getRouterBasename } from './utils/siteUrl';
 import { OfflineStatus } from './components/OfflineStatus';
 import { ServiceWorkerUpdatePrompt } from './components/ServiceWorkerUpdatePrompt';
+import { SsgRouteContext, readSsgRouteData } from './ssr/routeData';
 
 const Post = lazy(() => import('./pages/Post').then((m) => ({ default: m.Post })));
 const About = lazy(pageLoaders['/about']);
@@ -104,7 +105,14 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 const AppRoutes: React.FC = () => {
   const location = useLocation();
   const [displayLocation, setDisplayLocation] = useState(location);
-  const hasViewTransition = typeof document !== 'undefined' && 'startViewTransition' in document;
+  // SSR 与客户端首帧保持一致（false），水合后检测并开启 View Transitions。
+  const [hasViewTransition, setHasViewTransition] = useState(false);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+      setHasViewTransition(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (location.pathname === displayLocation.pathname && location.search === displayLocation.search) {
@@ -151,19 +159,8 @@ const AppRoutes: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
-  const [showLoadingScreen, setShowLoadingScreen] = useState(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    try {
-      return sessionStorage.getItem('hasVisited') !== 'true';
-    } catch {
-      return true;
-    }
-  });
-
+const AppShell: React.FC = () => {
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [showCookieNotice, setShowCookieNotice] = useState(false);
 
   useEffect(() => {
@@ -189,23 +186,57 @@ const App: React.FC = () => {
     };
   }, [showLoadingScreen]);
 
+  useEffect(() => {
+    if (showLoadingScreen) {
+      return;
+    }
+
+    let isFirstVisit = false;
+    try {
+      isFirstVisit = sessionStorage.getItem('hasVisited') !== 'true';
+    } catch {
+      isFirstVisit = true;
+    }
+
+    if (!isFirstVisit) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowLoadingScreen(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [showLoadingScreen]);
+
+  return (
+    <ErrorBoundary>
+      <AppRoutes />
+      <OfflineStatus />
+      <ServiceWorkerUpdatePrompt />
+      <AnimatePresence>{showLoadingScreen && <LoadingScreen />}</AnimatePresence>
+      {showCookieNotice && (
+        <Suspense fallback={null}>
+          <CookieNotice />
+        </Suspense>
+      )}
+    </ErrorBoundary>
+  );
+};
+
+const App: React.FC = () => {
+  const ssgRouteData = readSsgRouteData();
+
   return (
     <HelmetProvider>
-      <ErrorBoundary>
-        <Router basename={getRouterBasename()}>
-          <AppRoutes />
-          <OfflineStatus />
-          <ServiceWorkerUpdatePrompt />
-          <AnimatePresence>{showLoadingScreen && <LoadingScreen />}</AnimatePresence>
-          {showCookieNotice && (
-            <Suspense fallback={null}>
-              <CookieNotice />
-            </Suspense>
-          )}
-        </Router>
-      </ErrorBoundary>
+      <Router basename={getRouterBasename()}>
+        <SsgRouteContext.Provider value={ssgRouteData}>
+          <AppShell />
+        </SsgRouteContext.Provider>
+      </Router>
     </HelmetProvider>
   );
 };
 
+export { AppShell };
 export default App;

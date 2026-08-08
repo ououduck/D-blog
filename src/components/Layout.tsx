@@ -70,21 +70,22 @@ const ThemeToggle = () => {
   type Theme = 'light' | 'dark' | 'system';
   const hasInitializedThemeRef = useRef(false);
   const prefersReducedMotion = useSiteReducedMotion();
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('theme') as Theme;
-        return saved || 'system';
-      } catch {
-        return 'system';
-      }
-    }
-    return 'system';
-  });
+  const [theme, setTheme] = useState<Theme>('system');
 
   useEffect(() => {
     const root = document.documentElement;
     const systemQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    // 水合后恢复用户保存的主题。SSR 首帧固定为 system，避免水合冲突。
+    let effectiveTheme: Theme = theme;
+    try {
+      const saved = localStorage.getItem('theme') as Theme | null;
+      if (theme === 'system' && saved && saved !== 'system') {
+        effectiveTheme = saved;
+      }
+    } catch {
+      // Theme persistence is optional when browser storage is unavailable.
+    }
 
     const applyTheme = (nextTheme: Theme) => {
       const applyChanges = () => {
@@ -124,10 +125,16 @@ const ThemeToggle = () => {
       return () => systemQuery.removeListener(handleSystemChange);
     };
 
-    applyTheme(theme);
+    if (effectiveTheme !== theme) {
+      // 首次应用用户保存的主题：跳过过渡动画，直接生效。
+      hasInitializedThemeRef.current = true;
+      setTheme(effectiveTheme);
+    }
+
+    applyTheme(effectiveTheme);
     hasInitializedThemeRef.current = true;
     try {
-      localStorage.setItem('theme', theme);
+      localStorage.setItem('theme', effectiveTheme);
     } catch {
       // Theme persistence is optional when browser storage is unavailable.
     }

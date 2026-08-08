@@ -30,6 +30,7 @@ import { useReadingMode } from '@/components/ReadingModeContext';
 import { ReadingModeToggle } from '@/components/ReadingModeToggle';
 import { GiscusComments } from '@/components/GiscusComments';
 import { getResponsiveImageProps } from '@/utils/imageAssets';
+import { useSsgRouteData } from '@/ssr/routeData';
 
 
 type BlockCodeProps = {
@@ -816,8 +817,13 @@ const createMarkdownComponents = (
 export const Post = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [post, setPost] = useState<PostType | null>(null);
-  const [loading, setLoading] = useState(true);
+  // SSG 场景：构建期已把文章数据（含正文）注入 routeData，首帧同步渲染正文；
+  // SPA 导航到其他文章时 routeData 无数据，回落到异步加载（loading 初始 true）。
+  const ssgRouteData = useSsgRouteData();
+  const ssgPost = ssgRouteData?.post;
+  const hasSsgPost = ssgPost !== undefined && ssgPost.id === id;
+  const [post, setPost] = useState<PostType | null>(() => ssgPost ?? null);
+  const [loading, setLoading] = useState(!hasSsgPost);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt?: string } | null>(null);
@@ -825,15 +831,15 @@ export const Post = () => {
   const [remarkPlugins, setRemarkPlugins] = useState<MarkdownPlugin[]>([remarkGfm]);
   const [rehypePlugins, setRehypePlugins] = useState<MarkdownPlugin[]>([]);
   const [mermaidRenderer, setMermaidRenderer] = useState<MermaidRenderer | null>(null);
-  const [mermaidTheme, setMermaidTheme] = useState<'light' | 'dark'>(() => getIsDarkTheme() ? 'dark' : 'light');
+  const [mermaidTheme, setMermaidTheme] = useState<'light' | 'dark'>('light');
   const [mobileFloatingVisible, setMobileFloatingVisible] = useState(false);
   const shouldReduceMotion = useReducedMotion();
   const { isReadingMode, exitReadingMode } = useReadingMode();
   const { isSaved, isSaving, error: offlineError, toggleSaved } = useOfflinePosts(post ?? undefined);
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
-  const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostMetadata | null; next: PostMetadata | null }>({ prev: null, next: null });
-  const [seriesNavigation, setSeriesNavigation] = useState<SeriesNavigation | null>(null);
-  const [relatedPosts, setRelatedPosts] = useState<PostMetadata[]>([]);
+  const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostMetadata | null; next: PostMetadata | null }>(ssgRouteData?.adjacentPosts ?? { prev: null, next: null });
+  const [seriesNavigation, setSeriesNavigation] = useState<SeriesNavigation | null>(ssgRouteData?.seriesNavigation ?? null);
+  const [relatedPosts, setRelatedPosts] = useState<PostMetadata[]>(ssgRouteData?.relatedPosts ?? []);
   const articleBodyRef = useRef<HTMLDivElement>(null);
   const readingEndRef = useRef<HTMLDivElement>(null);
   const lastReadingSaveRef = useRef(0);

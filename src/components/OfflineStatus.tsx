@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 export const OfflineStatus: React.FC = () => {
-  const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine);
+  const [isOffline, setIsOffline] = useState(false);
   const [showRecovered, setShowRecovered] = useState(false);
 
   const recoveredTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // 水合后同步真实网络状态（SSR 首帧固定为在线，避免水合冲突）。
+    setIsOffline(typeof navigator !== 'undefined' && !navigator.onLine);
     const handleOffline = () => {
       setShowRecovered(false);
       setIsOffline(true);

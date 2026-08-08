@@ -1,5 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useLocation } from 'react-router-dom';
 import { siteConfig } from '@config/site.config';
 import { absoluteSiteUrl, getSiteBasePath } from '@/utils/siteUrl';
 
@@ -53,7 +54,7 @@ export const Seo: React.FC<SeoProps> = ({
   title,
   description = siteConfig.description,
   image = siteConfig.seoImage,
-  url = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/',
+  url,
   type = 'website',
   publishedTime,
   modifiedTime,
@@ -64,9 +65,11 @@ export const Seo: React.FC<SeoProps> = ({
   structuredData,
   noindex = false
 }) => {
+  const location = useLocation();
+  const resolvedUrl = url ?? location.pathname + location.search;
   const fullTitle = title === siteConfig.title ? siteConfig.title : `${title} - ${siteConfig.title}`;
-  const hasQueryState = Boolean(url && /[?#]/.test(url));
-  const canonicalUrl = toAbsoluteUrl(stripQueryAndHash(url || '/'));
+  const hasQueryState = Boolean(resolvedUrl && /[?#]/.test(resolvedUrl));
+  const canonicalUrl = toAbsoluteUrl(stripQueryAndHash(resolvedUrl || '/'));
   const imageUrl = toAbsoluteUrl(image);
   const schema = structuredData
     ? (Array.isArray(structuredData) ? structuredData : [structuredData]).map(withBaseUrls) as Array<Record<string, unknown>>

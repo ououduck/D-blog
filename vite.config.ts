@@ -175,7 +175,8 @@ export default defineConfig(({ command, mode }) => {
     plugins: [react(), offlinePostAssetsPlugin(), postsImgPublicPlugin()],
     base: appBase,
     esbuild: command === 'build' ? {
-      drop: ['console', 'debugger'],
+      // BUILD_KEEP_CONSOLE=1 时保留 console（调试 hydration 警告等），默认构建仍移除。
+      drop: process.env.BUILD_KEEP_CONSOLE === '1' ? [] : ['console', 'debugger'],
     } : undefined,
     css: {
       postcss: path.resolve(__dirname, './config/postcss.config.js'),
