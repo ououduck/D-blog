@@ -28,8 +28,8 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
-const buttonClass = 'inline-flex h-11 min-w-11 items-center justify-center rounded-control border border-zinc-300 bg-paper px-3 text-sm font-semibold text-zinc-700 transition-[background-color,border-color,color,opacity,transform] duration-150 active:scale-[.98] hover:border-ink hover:bg-zinc-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100 dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white';
-const activeButtonClass = 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink';
+const buttonClass = 'inline-flex h-11 min-w-11 items-center justify-center rounded-control border border-zinc-300 bg-paper px-3 text-sm font-semibold text-zinc-700 transition-[background-color,border-color,color,opacity,transform,box-shadow] duration-150 active:scale-[.98] hover:border-ink hover:bg-zinc-100 hover:text-ink hover:shadow-[0_1px_2px_rgba(24,24,27,0.08)] disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100 dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white dark:hover:shadow-none';
+const activeButtonClass = 'border-ink bg-ink text-white shadow-[0_1px_3px_rgba(24,24,27,0.35)] hover:border-ink hover:bg-ink hover:text-white dark:border-white dark:bg-white dark:text-ink dark:shadow-none dark:hover:border-white dark:hover:bg-white dark:hover:text-ink';
 
 export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
   const [pageInput, setPageInput] = useState(String(currentPage));

@@ -215,7 +215,7 @@ export const Tags = () => {
               <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="min-w-0 font-serif text-2xl font-bold text-zinc-900 dark:text-zinc-100 md:text-3xl">
                   标签: <span className="break-words underline decoration-zinc-400 underline-offset-4 dark:decoration-zinc-600">{selectedTag}</span>
-                  <span className="ml-3 text-base text-zinc-400">({selectedTagInfo?.count ?? 0} 篇)</span>
+                  <span className="ml-3 text-base text-zinc-400">({hasSearchQuery ? filteredSelectedTagPosts.length : selectedTagInfo?.count ?? 0} 篇)</span>
                 </h2>
                 <button
                   onClick={() => updateTagParam()}

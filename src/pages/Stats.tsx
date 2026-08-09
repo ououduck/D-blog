@@ -170,7 +170,7 @@ export const Stats = () => {
       </header>
 
       {siteStatsLoading ? (
-        <div className="grid min-w-0 gap-4 py-8 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 md:py-10" aria-busy="true">
+        <div className="grid min-w-0 gap-4 py-8 min-[400px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 md:py-10" aria-busy="true">
           <LoadingStatus label="正在加载站点统计" className="col-span-full" />
           {Array.from({ length: 5 }).map((_, index) => (
             <Surface key={index} aria-hidden="true" className="min-w-0 min-h-52 animate-pulse p-5 sm:min-h-56 sm:p-6">
@@ -197,7 +197,7 @@ export const Stats = () => {
         <>
           <section className="mt-8 md:mt-10" aria-labelledby="site-overview-title">
             <h2 id="site-overview-title" className="mb-4 font-serif text-2xl font-bold text-zinc-900 dark:text-zinc-100">站点概览</h2>
-            <div className="grid min-w-0 gap-3 min-[480px]:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
+            <div className="grid min-w-0 gap-3 min-[400px]:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
               <SummaryCard icon={FileText} title="当前文章数" value={formatValue(siteStats.totalPosts)} detail="已公开发布的文章总数" />
               <SummaryCard icon={Type} title="总字数" value={formatValue(siteStats.totalWords)} detail="按正文内容累计的总阅读字数" />
               <SummaryCard icon={FolderTree} title="总分类数" value={formatValue(siteStats.totalCategories)} detail="当前启用的文章分类数量" />

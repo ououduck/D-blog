@@ -93,7 +93,7 @@ const AppRoutes: React.FC = () => {
         flushSync(() => {
           setDisplayLocation(location);
         });
-        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+        window.scrollTo({ top: 0, behavior: 'auto' as ScrollBehavior });
       });
       return;
     }

@@ -39,6 +39,114 @@ const escapeJsonForHtml = (value) => JSON.stringify(value)
   .replace(/\u2028/g, '\\u2028')
   .replace(/\u2029/g, '\\u2029');
 
+/**
+ * 把渲染完成的 HTML 中的 Suspense 边界“展平”为最终静态内容。
+ *
+ * renderToPipeableStream（onAllReady）虽然保证所有懒加载边界内容完整，
+ * 但序列化时会把真实内容放进 <div hidden id="S:x">，页面位置只留下 fallback
+ * （首页/文章页是转圈占位）。浏览器要等水合后 $RC 脚本才能把内容换回原位：
+ * - 首屏 LCP 被拖到水合完成之后（实测 ~4.9s）；
+ * - 不执行 JS 的爬虫/智能体只能看到空转占位，读不到正文。
+ *
+ * 这是构建期 SSG：内容必然完整，直接就地替换：
+ *   <!--$?--><template id="B:x"></template><fallback><!--/$-->  →  <!--$-->内容<!--/$-->
+ *   并删除 <div hidden id="S:x">内容</div> 与 <script>$RC("B:x","S:x")</script>。
+ * 展平后客户端水合时，React 会把已就绪的边界内容原位水合（lazy 模块加载完成后
+ * 直接接管已渲染的 DOM，不再回退到 fallback），SSR 输出与客户端语义保持一致。
+ */
+const flattenSuspenseBoundaries = (html) => {
+  // React 19 把恢复函数与调用写在同一 <script> 里：`<script>...;$RC("B:x","S:x")</script>`。
+  const rcCallPattern = /\$RC\("([^"]+)","([^"]+)"\)/g;
+  const boundaries = [];
+  const scriptRanges = [];
+  let match;
+  while ((match = rcCallPattern.exec(html)) !== null) {
+    boundaries.push({ boundaryId: match[1], hiddenId: match[2] });
+    // 定位包裹 $RC 调用的完整 <script>…</script>，整体移除（同一 script 内多个调用只记录一次）。
+    const scriptStart = html.lastIndexOf('<script', match.index);
+    const scriptEnd = html.indexOf('</script>', match.index) + '</script>'.length;
+    if (scriptStart >= 0 && scriptEnd > scriptStart) {
+      const key = `${scriptStart}:${scriptEnd}`;
+      if (!scriptRanges.some(([s, e]) => s === scriptStart && e === scriptEnd)) {
+        scriptRanges.push([scriptStart, scriptEnd]);
+      }
+    }
+  }
+  if (boundaries.length === 0) {
+    return html;
+  }
+
+  const findHiddenDivContent = (hiddenId) => {
+    const idIdx = html.indexOf(`id="${hiddenId}"`);
+    if (idIdx < 0) {
+      return null;
+    }
+    const openTagStart = html.lastIndexOf('<div', idIdx);
+    const contentStart = html.indexOf('>', idIdx) + 1;
+    let depth = 1;
+    let i = contentStart;
+    let contentEnd = -1;
+    while (i < html.length) {
+      const open = html.indexOf('<div', i);
+      const close = html.indexOf('</div>', i);
+      const next = open !== -1 && (close === -1 || open < close) ? open : close;
+      if (next === -1) {
+        break;
+      }
+      if (next === close) {
+        depth -= 1;
+        if (depth === 0) {
+          contentEnd = next;
+          break;
+        }
+      } else {
+        depth += 1;
+      }
+      i = next + 4;
+    }
+    if (contentEnd < 0) {
+      return null;
+    }
+    return {
+      content: html.slice(contentStart, contentEnd),
+      start: openTagStart,
+      end: contentEnd + '</div>'.length
+    };
+  };
+
+  const replacements = [];
+  for (const { boundaryId, hiddenId } of boundaries) {
+    const hidden = findHiddenDivContent(hiddenId);
+    const templateIdx = html.indexOf(`<template id="${boundaryId}">`);
+    if (!hidden || templateIdx < 0) {
+      continue;
+    }
+    const fallbackStart = html.lastIndexOf('<!--$?-->', templateIdx);
+    const fallbackEndIdx = html.indexOf('<!--/$-->', templateIdx);
+    if (fallbackStart < 0 || fallbackEndIdx < 0) {
+      continue;
+    }
+    const fallbackEnd = fallbackEndIdx + '<!--/$-->'.length;
+    replacements.push({
+      start: fallbackStart,
+      end: fallbackEnd,
+      text: `<!--$-->${hidden.content}<!--/$-->`
+    });
+    replacements.push({ start: hidden.start, end: hidden.end, text: '' });
+  }
+  for (const [scriptStart, scriptEnd] of scriptRanges) {
+    replacements.push({ start: scriptStart, end: scriptEnd, text: '' });
+  }
+
+  // 从后往前应用，保证先前记录的索引不因替换而偏移。
+  replacements.sort((a, b) => b.start - a.start);
+  let result = html;
+  for (const { start, end, text } of replacements) {
+    result = result.slice(0, start) + text + result.slice(end);
+  }
+  return result;
+};
+
 const imageManifest = fs.existsSync(IMAGE_MANIFEST_FILE)
   ? JSON.parse(fs.readFileSync(IMAGE_MANIFEST_FILE, 'utf-8'))
   : { assets: {} };
@@ -273,6 +381,8 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   const writePage = async (url, relativePath, extraHead = '', options = {}) => {
     const { html, head, routeData } = await renderPage(url);
     let pageHtml = injectRootContent(template, html);
+    // 展平 Suspense 边界：真实内容就地内联，爬虫/智能体可读，浏览器无需等水合。
+    pageHtml = flattenSuspenseBoundaries(pageHtml);
     pageHtml = mergeHead(pageHtml, head, `${extraHead}${NOSCRIPT_FALLBACK}`);
     // 注入路由数据（文章页正文等），供客户端水合使用。
     const routeDataScript = createRouteDataScript(routeData);
@@ -314,6 +424,7 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   const { html: homeHtml, head: homeHead, routeData: homeRouteData } = await renderPage('/');
   const homeRouteDataScript = createRouteDataScript(homeRouteData);
   let homePage = injectRootContent(template, homeHtml);
+  homePage = flattenSuspenseBoundaries(homePage);
   if (homeRouteDataScript) {
     homePage = homePage.replace(/<div\b[^>]*\bid=["']root["'][^>]*>/i, (match) => `${homeRouteDataScript}\n    ${match}`);
   }
@@ -324,9 +435,12 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   await writePage('/favorites', 'favorites');
 
   // 5. 404 页（根级独立 HTML，Cloudflare Pages 以 404.html 作为 404 响应）。
+  // 渲染路径 /__missing__ 是占位路由，不能出现在 canonical 中，mergeHead 之后显式剥离。
   const { html: notFoundHtml, head: notFoundHead } = await renderPage('/__missing__');
   const notFoundPage = injectRootContent(template, notFoundHtml);
-  writeStandaloneHtml('404.html', mergeHead(notFoundPage, notFoundHead, NOSCRIPT_FALLBACK));
+  const flattenedNotFoundPage = flattenSuspenseBoundaries(notFoundPage);
+  const mergedNotFoundPage = mergeHead(flattenedNotFoundPage, notFoundHead, NOSCRIPT_FALLBACK);
+  writeStandaloneHtml('404.html', mergedNotFoundPage.replace(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\/?\s*>/i, ''));
   logger.step('Generated 404 page');
 
   logger.summary({

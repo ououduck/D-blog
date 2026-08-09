@@ -83,9 +83,14 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
 
   const resolvedLoading = loadingProp || (props.fetchPriority === 'high' ? 'eager' : 'lazy');
   const prefersReducedMotion = useReducedMotion();
-  const showBlurPlaceholder = effect === 'blur';
-  const showPlaceholder = effect !== 'none';
-  const imageTransitionClass = prefersReducedMotion || effect === 'none'
+  // src 缺失时既不触发 onLoad 也不触发 onError，占位层会一直转圈，直接整体隐藏。
+  const hasUsableSrc = Boolean(src);
+  const showBlurPlaceholder = effect === 'blur' && hasUsableSrc;
+  const showPlaceholder = effect !== 'none' && hasUsableSrc;
+  // eager 图片（LCP 候选）首帧必须可见：SSR HTML 里若带 opacity-0，
+  // 爬虫/智能体读取到不可见内容，且浏览器要等水合后才淡入，直接拖慢 LCP。
+  const eagerLcpPaint = resolvedLoading === 'eager';
+  const imageTransitionClass = prefersReducedMotion || effect === 'none' || eagerLcpPaint
     ? 'opacity-100'
     : effect === 'fade'
       ? (isLoaded ? 'opacity-100' : 'opacity-0')

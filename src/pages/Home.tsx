@@ -8,7 +8,6 @@ import { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { usePostSearch } from '@/hooks/usePostSearch';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
@@ -27,6 +26,10 @@ import { canonicalizeHomeQuery, getHomeQueryState, setHomeQueryParam } from '@/u
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
 
 const ALL_CATEGORY = '全部';
+// 分页与精选槽位固定为常量（不随视口变化）：SSR 与客户端水合后首帧完全一致，
+// 避免媒体查询导致的文章数/布局重排（CLS）。网格列数由 Tailwind 响应式类原生控制。
+const POSTS_PER_PAGE = 9;
+const HERO_SLOTS = 3;
 const initialPosts = getInitialPosts();
 
 const listSwapTransition = {
@@ -95,11 +98,10 @@ const PostCardSkeleton: React.FC<{ shouldReduceMotion: boolean }> = ({ shouldRed
   </div>
 );
 
-const LoadingGrid: React.FC<{ isMobile: boolean; heroSlots: number; label: string; hasFeatured: boolean }> = ({ isMobile, heroSlots, label, hasFeatured }) => {
+const LoadingGrid: React.FC<{ heroSlots: number; label: string; hasFeatured: boolean }> = ({ heroSlots, label, hasFeatured }) => {
   const shouldReduceMotion = useReducedMotion();
-  const postsPerPage = isMobile ? 5 : 9;
   const featuredSlots = hasFeatured ? heroSlots : 0;
-  const regularSkeletonCount = Math.max(0, postsPerPage - featuredSlots);
+  const regularSkeletonCount = Math.max(0, POSTS_PER_PAGE - featuredSlots);
 
   return (
     <motion.div variants={shouldReduceMotion ? undefined : fadeInUp} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
@@ -125,6 +127,16 @@ const filterAndSortPosts = (
 
 const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean; onShare: (post: PostMetadata) => void }> = ({ post, index, featured, onShare }) => {
   const shouldReduceMotion = useReducedMotion();
+  // memoize 图片 props，避免列表重渲染（过滤/排序/阅读进度）时产生新对象，
+  // 从而让 React.memo(ProgressiveImage) 真正生效。
+  const responsiveImageProps = useMemo(
+    () => (post.coverImage
+      ? getResponsiveImageProps(post.coverImage, featured
+        ? '(max-width: 767px) 100vw, 60vw'
+        : '(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw')
+      : {}),
+    [featured, post.coverImage]
+  );
   const cardVariants = {
     hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 8 },
     visible: {
@@ -171,7 +183,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
         <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-within:border-zinc-500 md:grid md:grid-cols-5">
           <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:col-span-3 md:aspect-auto md:min-h-80" aria-label={`阅读文章：${post.title}`}>
             {post.coverImage ? (
-              <ProgressiveImage {...getResponsiveImageProps(post.coverImage, "(max-width: 767px) 100vw, 60vw")} src={assetUrl(post.coverImage)} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
+              <ProgressiveImage {...responsiveImageProps} src={assetUrl(post.coverImage)} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
             ) : (
               <div className="flex h-full min-h-56 items-center justify-center bg-zinc-100 dark:bg-zinc-800">
                 <Sparkles className="h-12 w-12 text-zinc-300 dark:text-zinc-600" />
@@ -215,7 +227,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
       <div className="flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-within:border-zinc-500">
         <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
-              <ProgressiveImage {...getResponsiveImageProps(post.coverImage, "(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw")} src={assetUrl(post.coverImage)} alt={post.title} loading="lazy" fetchPriority="auto" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
+              <ProgressiveImage {...responsiveImageProps} src={assetUrl(post.coverImage)} alt={post.title} loading="lazy" fetchPriority="auto" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-300 dark:text-zinc-600">
               <Sparkles className="h-9 w-9" />
@@ -267,17 +279,17 @@ const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
         className="flex items-center justify-between gap-2 border-y border-zinc-200 py-3 sm:gap-3 dark:border-zinc-800"
       >
 
-      <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain scroll-smooth no-scrollbar">
+      <div className="filter-scroll-mask min-w-0 flex-1 overflow-x-auto overscroll-x-contain scroll-smooth no-scrollbar">
         <div className="flex items-center gap-2" role="group" aria-label="文章分类筛选">
           {[ALL_CATEGORY, ...categories].map((category) => (
             <button
               key={category}
               onClick={() => onSelect(category)}
               aria-pressed={selected === category}
-              className={`min-h-11 whitespace-nowrap rounded-control border px-3.5 py-2 text-sm font-semibold transition-colors active:scale-[.98] ${
+              className={`min-h-11 whitespace-nowrap rounded-control border px-3.5 py-2 text-sm font-semibold transition-[background-color,border-color,color,transform,box-shadow] duration-150 active:scale-[.98] ${
                 selected === category
-                  ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink'
-                  : 'border-zinc-300 bg-paper text-zinc-700 hover:border-ink hover:text-ink dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:text-white'
+                  ? 'border-ink bg-ink text-white shadow-[0_1px_3px_rgba(24,24,27,0.3)] dark:border-white dark:bg-white dark:text-ink dark:shadow-none'
+                  : 'border-zinc-300 bg-paper text-zinc-700 shadow-none hover:border-ink hover:bg-zinc-100 hover:text-ink hover:shadow-[0_1px_2px_rgba(24,24,27,0.08)] dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white dark:hover:shadow-none'
               }`}
             >
               {category}
@@ -285,7 +297,7 @@ const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
           ))}
         </div>
       </div>
-      <button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-ink hover:bg-zinc-100 hover:text-ink active:scale-[.98] dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white">
+      <button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-[background-color,border-color,color,transform,box-shadow] duration-150 hover:border-ink hover:bg-zinc-100 hover:text-ink hover:shadow-[0_1px_2px_rgba(24,24,27,0.08)] active:scale-[.98] dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white dark:hover:shadow-none">
         {sortOrder === 'newest' ? <ArrowDownWideNarrow size={14} /> : <ArrowUpWideNarrow size={14} />}
         <span>{sortOrder === 'newest' ? '最新' : '最早'}</span>
       </button>
@@ -294,20 +306,19 @@ const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
 };
 
 const Hero = () => {
-  const shouldReduceMotion = useReducedMotion();
-  const introTransition = shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: easeOut };
-
+  // LCP 元素首帧即渲染最终可见状态：SSR HTML 中不可见（opacity:0）会拖慢
+  // LCP 且 JS 失败时内容完全不可见，故不设入场动画。
   return (
     <div className="px-4 pb-8 pt-5 text-center md:pb-10 md:pt-8">
-      <motion.p initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={introTransition} className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
         {siteConfig.subtitle}
-      </motion.p>
-      <motion.h1 initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.03, duration: 0.3, ease: easeOut }} className="mb-3 font-serif text-5xl font-bold tracking-tight text-ink dark:text-white sm:text-6xl md:text-7xl">
+      </p>
+      <h1 className="mb-3 text-balance font-serif text-5xl font-bold tracking-tight text-ink [overflow-wrap:anywhere] dark:text-white max-[400px]:text-4xl sm:text-6xl md:text-7xl">
         {siteConfig.title}
-      </motion.h1>
-      <motion.p initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.06, duration: 0.25, ease: easeOut }} className="mx-auto max-w-xl text-sm leading-6 text-zinc-600 dark:text-zinc-300 md:text-base">
+      </h1>
+      <p className="mx-auto max-w-xl text-sm leading-6 text-zinc-600 dark:text-zinc-300 md:text-base">
         {siteConfig.description}
-      </motion.p>
+      </p>
     </div>
   );
 };
@@ -332,10 +343,8 @@ export const Home = () => {
     initialQuery: queryFromUrl
   });
 
-  const isMobile = useMediaQuery('(max-width: 767px)', false);
-  const isLargeDesktop = useMediaQuery('(min-width: 1024px)', true);
   const shouldReduceMotion = useReducedMotion();
-  const postsPerPage = isMobile ? 5 : 9;
+  const postsPerPage = POSTS_PER_PAGE;
 
   useEffect(() => {
     let cancelled = false;
@@ -426,7 +435,7 @@ export const Home = () => {
   }, [allPosts, latestReading, refreshReadingHistory]);
 
   const heroPost = useMemo(() => getHeroPost(displayedPosts), [displayedPosts]);
-  const heroSlots = heroPost ? (isMobile ? 1 : isLargeDesktop ? 3 : 2) : 0;
+  const heroSlots = heroPost ? HERO_SLOTS : 0;
 
   const paginationData = useMemo(() => {
     const totalSlots = displayedPosts.reduce(
@@ -457,6 +466,7 @@ export const Home = () => {
 
   const handleSelectCategory = (category: string) => {
     setSelectedCategory(category);
+    setCurrentPage(1);
     setSearchParams((previous) => {
       const nextParams = new URLSearchParams(previous);
 
@@ -480,6 +490,7 @@ export const Home = () => {
   const handleToggleSort = () => {
     const nextSortOrder = sortOrder === 'newest' ? 'oldest' : 'newest';
     setSortOrder(nextSortOrder);
+    setCurrentPage(1);
     setSearchParams((previous) => {
       const nextParams = setHomeQueryParam(previous, 'sort', nextSortOrder);
       nextParams.delete('page');
@@ -489,6 +500,7 @@ export const Home = () => {
 
   const handleSearchChange = (query: string) => {
     handleSearch(query);
+    setCurrentPage(1);
     setSearchParams((previous) => {
       const nextParams = new URLSearchParams(previous);
 
@@ -505,6 +517,7 @@ export const Home = () => {
 
   const handleClearSearch = () => {
     clearSearch();
+    setCurrentPage(1);
     setSearchParams((previous) => {
       const nextParams = new URLSearchParams(previous);
       nextParams.delete('q');
@@ -516,10 +529,6 @@ export const Home = () => {
   const currentPosts = useMemo(() => {
     const pageStart = (currentPage - 1) * postsPerPage;
     const pageEnd = pageStart + postsPerPage;
-
-    if (isMobile) {
-      return displayedPosts.slice(pageStart, pageEnd);
-    }
 
     const pagedPosts: PostMetadata[] = [];
     let consumedSlots = 0;
@@ -542,7 +551,7 @@ export const Home = () => {
     }
 
     return pagedPosts;
-  }, [currentPage, displayedPosts, heroPost, heroSlots, isMobile, postsPerPage]);
+  }, [currentPage, displayedPosts, heroPost, heroSlots, postsPerPage]);
 
   const paginate = (pageNumber: number) => {
     const nextPage = Math.min(Math.max(1, pageNumber), totalPages);
@@ -567,7 +576,7 @@ export const Home = () => {
 
   return (
       <div className="pb-8 md:pb-12">
-      <Seo title={siteConfig.title} description={siteConfig.description} url="/" />
+      <Seo title={siteConfig.title} description={siteConfig.description} noindex={hasSearchQuery} />
       <Hero />
 
       {continueReading && (
@@ -615,7 +624,6 @@ export const Home = () => {
 
         {loading || isSearching ? (
           <LoadingGrid
-            isMobile={isMobile}
             heroSlots={heroSlots}
             label={isSearching ? '正在搜索文章' : '正在加载文章列表'}
             hasFeatured={hasFeaturedPost}

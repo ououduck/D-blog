@@ -3,8 +3,6 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { motion } from 'framer-motion';
-import { easeOut } from '@/utils/motion';
 import DOMPurify from 'dompurify';
 
 import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Download, ChevronDown, ChevronUp, Users, ExternalLink, EyeOff, BookOpen, Bookmark, Minus, Plus, RotateCcw, LoaderCircle, TriangleAlert } from 'lucide-react';
@@ -39,6 +37,7 @@ type BlockCodeProps = {
 
 type MarkdownImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   previewSrc?: string;
+  node?: unknown;
 };
 
 type MarkdownPlugin = unknown;
@@ -234,7 +233,7 @@ const getCodeText = (children: React.ReactNode) => extractTextFromReactNode(chil
   .replace(/\r\n?/g, '\n')
   .replace(/\n$/, '');
 
-const PreBlock = ({ children, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>) => {
+const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement> & { node?: unknown }) => {
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpand, setNeedsExpand] = useState(false);
@@ -368,8 +367,15 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
   const [scale, setScale] = useState(MERMAID_MIN_SCALE);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const mermaidIdRef = useRef(`mermaid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`);
+  const mermaidIdRef = useRef<string | null>(null);
   const dragRef = useRef({ pointerId: -1, startX: 0, startY: 0, startPositionX: 0, startPositionY: 0 });
+
+  const getMermaidId = () => {
+    if (mermaidIdRef.current === null) {
+      mermaidIdRef.current = `mermaid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    }
+    return mermaidIdRef.current;
+  };
 
   const resetView = () => {
     setScale(MERMAID_MIN_SCALE);
@@ -399,7 +405,7 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
 
     const renderDiagram = async () => {
       try {
-        const { svg: renderedSvg } = await renderer.render(mermaidIdRef.current, children.trim());
+        const { svg: renderedSvg } = await renderer.render(getMermaidId(), children.trim());
         if (!cancelled) {
           setSvg(renderedSvg);
           setStatus('ready');
@@ -658,17 +664,21 @@ const createMarkdownComponents = (
     }
   };
 
-  const renderHeading = (level: number, Tag: string, { children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
+  const renderHeading = (level: number, Tag: string, { children, node: _node, ...props }: React.HTMLAttributes<HTMLHeadingElement> & { node?: unknown }) => {
     const id = resolveHeadingId(level, children);
     return React.createElement(
       Tag,
       { ...props, id, className: 'heading-anchor-wrapper' },
+      // 锚点用 span+role 模拟按钮而非 <button>：标题内部可能已有链接/交互元素，
+      // 嵌套 <button> 属非法 HTML，会导致水合告警与点击行为异常。
       React.createElement(
-        'button',
+        'span',
         {
-          type: 'button',
           className: 'heading-anchor',
+          role: 'button',
+          tabIndex: 0,
           onClick: (e: React.MouseEvent) => { e.stopPropagation(); handleHeadingClick(id); },
+          onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleHeadingClick(id); } },
           'aria-label': `复制标题链接：${extractTextFromReactNode(children)}`,
           title: '复制链接',
         },
@@ -681,14 +691,15 @@ const createMarkdownComponents = (
   const isImageUrl = (url: string) => /\.(jpe?g|png|gif|webp|avif|svg|bmp|ico)(\?.*)?$/i.test(url);
 
   return {
-    a: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
+    a: ({ href, children, node: _node, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }) => {
       const hrefIsImage = Boolean(href) && isImageUrl(href);
       const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? resolveBrowserAsset(href) : resolvePostsImgPath(href, postId)) : href;
       const safeHref = isSafeMarkdownHref(resolvedHref) ? resolvedHref : undefined;
       const normalizedHref = safeHref && safeHref.startsWith('/') ? routeUrl(safeHref) : safeHref;
 
       if (normalizedHref && isImageUrl(normalizedHref)) {
-        const imageChild = React.Children.toArray(children).find(
+        const childElements = React.Children.toArray(children);
+        const imageChild = childElements.find(
           (child): child is React.ReactElement<MarkdownImageProps> =>
             React.isValidElement(child) && typeof (child.props as Record<string, unknown>).src === 'string'
         );
@@ -697,7 +708,16 @@ const createMarkdownComponents = (
           return React.cloneElement(imageChild, { previewSrc: normalizedHref });
         }
 
-        const imgAlt = React.Children.toArray(children)
+        // 自定义 img 渲染器会输出已含预览按钮的 <figure>，不能再包一层按钮
+        // （嵌套交互元素属非法 HTML，且会双重触发预览）。
+        const containsMarkdownFigure = childElements.some(
+          (child) => React.isValidElement(child) && (child.props as Record<string, unknown>)['data-role'] === 'markdown-figure'
+        );
+        if (containsMarkdownFigure) {
+          return <>{children}</>;
+        }
+
+        const imgAlt = childElements
           .map((child) => {
             if (React.isValidElement(child) && (child.props as Record<string, unknown>).alt) {
               return (child.props as Record<string, unknown>).alt as string;
@@ -742,12 +762,12 @@ const createMarkdownComponents = (
         </a>
       );
     },
-    img: ({ src, alt, title, previewSrc, ...props }: MarkdownImageProps) => {
+    img: ({ src, alt, title, previewSrc, node: _node, ...props }: MarkdownImageProps) => {
       const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? resolveBrowserAsset(src) : resolvePostsImgPath(src, postId)) : src;
       const previewTarget = previewSrc || resolvedSrc || '';
       const dimensions = resolvedSrc ? findImageDimensions(imageDimensions, resolvedSrc) : undefined;
       return (
-        <figure className="group/myimage my-7 md:my-10">
+        <figure data-role="markdown-figure" className="group/myimage my-7 md:my-10">
           <button
             type="button"
             onClick={() => onPreviewImage({ src: previewTarget, alt })}
@@ -779,14 +799,14 @@ const createMarkdownComponents = (
       );
     },
     pre: PreBlock,
-    table: ({ children, ...props }: React.TableHTMLAttributes<HTMLTableElement>) => (
+    table: ({ children, node: _node, ...props }: React.TableHTMLAttributes<HTMLTableElement> & { node?: unknown }) => (
       <div className="table-wrapper">
         <table {...props} className="min-w-full">
           {children}
         </table>
       </div>
     ),
-    code: ({ className, children, ...props }) => {
+    code: ({ className, children, node: _node, ...props }) => {
       const { isBlock, ...restProps } = props as React.HTMLAttributes<HTMLElement> & BlockCodeProps;
       const isBlockCode = Boolean(isBlock) || /language-(\w+)/.test(className || '');
 
@@ -992,6 +1012,8 @@ export const Post = () => {
 
   useEffect(() => {
     if (!post?.content || !hasCodeBlocks(post.content)) {
+      // 当前内容无需高亮主题时，移除历史残留的样式节点，避免泄漏到其他页面。
+      document.getElementById(HIGHLIGHT_STYLE_ID)?.remove();
       return;
     }
 
@@ -1012,6 +1034,13 @@ export const Post = () => {
       cancelled = true;
     };
   }, [mermaidTheme, post?.content]);
+
+  // 离开文章页时移除注入的高亮主题样式，避免跨路由泄漏。
+  useEffect(() => {
+    return () => {
+      document.getElementById(HIGHLIGHT_STYLE_ID)?.remove();
+    };
+  }, []);
 
   const headings = useMemo(() => extractMarkdownHeadings(post?.content ?? ''), [post?.content]);
 
@@ -1443,11 +1472,8 @@ export const Post = () => {
             </div>
           )}
 
-          <motion.div
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
-            animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-            transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.06, duration: 0.3, ease: easeOut }}
-          >
+          {/* LCP 元素首帧即渲染最终可见状态，不设入场动画（避免 SSR 输出 opacity:0） */}
+          <div>
             <h1 className="mb-5 break-words text-balance font-serif text-3xl font-bold leading-[1.18] tracking-[-0.02em] text-ink [overflow-wrap:anywhere] dark:text-white md:mb-6 md:text-5xl lg:text-[3.5rem]">
               {post.title}
             </h1>
@@ -1495,19 +1521,14 @@ export const Post = () => {
                 <span className="sr-only" role="status" aria-live="polite">{savedFeedback || offlineError || ''}</span>
               </div>
             )}
-          </motion.div>
+          </div>
         </header>
 
         {post.coverImage && (
           <button type="button" className="post-cover print-hidden mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0" onClick={() => setPreviewImage({ src: resolveBrowserAsset(post.coverImage), alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
-            <motion.div
-              initial={shouldReduceMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.1, duration: 0.22, ease: easeOut }}
-              className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-media border border-zinc-300 bg-zinc-100 shadow-none dark:border-zinc-700 dark:bg-zinc-900 sm:aspect-[16/8] md:mb-14 lg:aspect-[21/9]"
-            >
+            <div className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-media border border-zinc-300 bg-zinc-100 shadow-none dark:border-zinc-700 dark:bg-zinc-900 sm:aspect-[16/8] md:mb-14 lg:aspect-[21/9]">
               <ProgressiveImage {...getResponsiveImageProps(post.coverImage, "(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px")} src={resolveBrowserAsset(post.coverImage)} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
-            </motion.div>
+            </div>
           </button>
         )}
 

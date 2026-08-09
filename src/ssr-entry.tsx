@@ -11,14 +11,33 @@ import { Post } from './types';
  * 使用 renderToPipeableStream（而非 renderToString）：路由组件均为 React.lazy
  * 懒加载，renderToString 不支持 Suspense，会中止服务端渲染。
  * onAllReady 表示所有 Suspense 边界（含懒加载组件）均已就绪，输出完整静态 HTML。
+ *
+ * 若懒加载 chunk 迟迟无法 resolve，onAllReady 可能永不触发导致构建永久挂起，
+ * 因此设置渲染超时：超时后 reject，由调用方记录错误并中止该页渲染。
  */
+const RENDER_TIMEOUT_MS = 30000;
+
 const renderTreeToString = (
   node: React.ReactNode,
   onError?: (error: unknown) => void
 ): Promise<string> =>
-  new Promise((resolve, _reject) => {
+  new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      reject(new Error('SSR render timed out: a lazy route chunk may have failed to load.'));
+    }, RENDER_TIMEOUT_MS);
+
     const stream = renderToPipeableStream(node, {
       onAllReady() {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timer);
         const chunks: string[] = [];
         stream.pipe(
           new Writable({

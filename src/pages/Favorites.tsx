@@ -17,8 +17,8 @@ export const Favorites = () => {
   const handleRemove = async (id: string) => {
     setRemoveError(null);
     try {
+      // useOfflinePosts 已订阅变更并自动 refresh，无需手动刷新（避免重复读 IndexedDB）。
       await removeOfflinePost(id);
-      await refresh();
     } catch {
       setRemoveError('取消收藏失败，请稍后重试。');
     }

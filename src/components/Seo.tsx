@@ -24,7 +24,38 @@ interface SeoProps {
 
 const toAbsoluteUrl = (value?: string) => absoluteSiteUrl(value, siteConfig.url, getSiteBasePath());
 
-const stripQueryAndHash = (value: string) => value.split(/[?#]/, 1)[0] || '/';
+// canonical 只保留影响页面内容的查询参数（如分类筛选），
+// 丢弃搜索/分页/排序等衍生 UI 状态，避免软重复内容与 canonical 抖动。
+const CANONICAL_QUERY_PARAMS = new Set(['category']);
+
+const buildCanonicalPath = (value: string) => {
+  const withoutHash = value.split('#', 1)[0] || '/';
+  const queryIndex = withoutHash.indexOf('?');
+  const pathname = queryIndex === -1 ? withoutHash : withoutHash.slice(0, queryIndex) || '/';
+  const query = queryIndex === -1 ? '' : withoutHash.slice(queryIndex + 1);
+  if (!query) {
+    return pathname;
+  }
+
+  const params = new URLSearchParams(query);
+  const kept: string[] = [];
+  CANONICAL_QUERY_PARAMS.forEach((key) => {
+    const paramValue = params.get(key);
+    if (paramValue) {
+      kept.push(`${key}=${encodeURIComponent(paramValue)}`);
+    }
+  });
+  return kept.length ? `${pathname}?${kept.join('&')}` : pathname;
+};
+
+const hasSearchParam = (value: string) => {
+  const withoutHash = value.split('#', 1)[0];
+  const queryIndex = withoutHash.indexOf('?');
+  if (queryIndex === -1) {
+    return false;
+  }
+  return new URLSearchParams(withoutHash.slice(queryIndex + 1)).has('q');
+};
 
 const withBaseUrls = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -68,8 +99,8 @@ export const Seo: React.FC<SeoProps> = ({
   const location = useLocation();
   const resolvedUrl = url ?? location.pathname + location.search;
   const fullTitle = title === siteConfig.title ? siteConfig.title : `${title} - ${siteConfig.title}`;
-  const hasQueryState = Boolean(resolvedUrl && /[?#]/.test(resolvedUrl));
-  const canonicalUrl = toAbsoluteUrl(stripQueryAndHash(resolvedUrl || '/'));
+  const isSearchVariant = hasSearchParam(resolvedUrl);
+  const canonicalUrl = toAbsoluteUrl(buildCanonicalPath(resolvedUrl || '/'));
   const imageUrl = toAbsoluteUrl(image);
   const schema = structuredData
     ? (Array.isArray(structuredData) ? structuredData : [structuredData]).map(withBaseUrls) as Array<Record<string, unknown>>
@@ -81,7 +112,15 @@ export const Seo: React.FC<SeoProps> = ({
           alternateName: siteConfig.subtitle,
           description,
           url: toAbsoluteUrl('/'),
-          inLanguage: 'zh-CN'
+          inLanguage: 'zh-CN',
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: {
+              '@type': 'EntryPoint',
+              urlTemplate: `${toAbsoluteUrl('/')}?q={search_term_string}`
+            },
+            'query-input': 'required name=search_term_string'
+          }
         }]
       : [];
 
@@ -89,7 +128,7 @@ export const Seo: React.FC<SeoProps> = ({
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
-      <meta key="robots" name="robots" content={noindex || hasQueryState ? 'noindex,follow' : 'index,follow,max-image-preview:large'} />
+      <meta key="robots" name="robots" content={noindex || isSearchVariant ? 'noindex,follow' : 'index,follow,max-image-preview:large'} />
       {keywords && <meta name="keywords" content={keywords} />}
       <link key="canonical" rel="canonical" href={canonicalUrl} />
       <link rel="alternate" type="application/rss+xml" title={`${siteConfig.title} RSS`} href={toAbsoluteUrl('/feed.xml')} />

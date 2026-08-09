@@ -55,3 +55,23 @@ export const getResponsiveImageUrls = (src?: string): string[] => {
   ])];
 };
 
+/**
+ * 返回资源清单中宽度最大的变体 URL。用于图片预览等场景，
+ * 避免直接加载可能超过 2000px 的原始图（节省移动端流量与内存）。
+ * 无匹配变体时返回 undefined，调用方应回退到原 src。
+ */
+export const getLargestImageUrl = (src?: string): string | undefined => {
+  const asset = findAsset(src);
+  if (!asset) return undefined;
+
+  const allVariants = [
+    ...(asset.variants?.webp || []),
+    ...(asset.variants?.fallback || [])
+  ];
+  const largest = allVariants.reduce<ImageAssetVariant | null>(
+    (current, variant) => (!current || variant.width > current.width ? variant : current),
+    null
+  );
+  return largest ? assetUrl(largest.url) : undefined;
+};
+

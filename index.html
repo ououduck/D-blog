@@ -7,7 +7,8 @@
     <link rel="icon" href="%BASE_URL%favicon.ico" />
     <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
     <link rel="apple-touch-icon" href="%BASE_URL%pwa-192.png" />
-    <link rel="alternate" type="application/rss+xml" title="D-blog RSS" href="%BASE_URL%feed.xml" />
+    <!-- 首屏 CSS 预取：与 Vite 注入的样式表（含 crossorigin）保持一致，避免预取与正式请求被判定为两个请求而重复下载 -->
+    <link rel="preload" as="style" href="%BASE_URL%assets/index.css" crossorigin />
     <meta name="description" content="跑路的duck的个人博客，分享前端技术、编程教程与生活感悟，探索极致的静态页面体验。" />
     <meta name="keywords" content="D-blog,跑路的duck,前端博客,技术分享,编程教程,React,TypeScript,Web开发" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f0e9" />
@@ -37,15 +38,22 @@
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
     </noscript>
 
-    <!-- Clarity Analytics (early, non-blocking load) -->
+    <!-- Clarity Analytics：等 load 事件后再注入标签，避免与分析/智能体无关的脚本抢占首屏主线程 -->
     <script>
     (function (c, l, a, r, i, t, y) {
-      c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
-      t = l.createElement(r);
-      t.async = 1;
-      t.src = 'https://www.clarity.ms/tag/' + i;
-      y = l.getElementsByTagName(r)[0];
-      y.parentNode.insertBefore(t, y);
+      var inject = function () {
+        c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
+        t = l.createElement(r);
+        t.async = 1;
+        t.src = 'https://www.clarity.ms/tag/' + i;
+        y = l.getElementsByTagName(r)[0];
+        y.parentNode.insertBefore(t, y);
+      };
+      if (l.readyState === 'complete' || l.readyState === 'interactive') {
+        inject();
+      } else {
+        l.addEventListener('load', inject);
+      }
     })(window, document, 'clarity', 'script', 'wloc3f723i');
     </script>
 </head>

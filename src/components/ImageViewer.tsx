@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Maximize2, Minus, Plus, RotateCcw, X } from 'lucide-react';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { getLargestImageUrl } from '@/utils/imageAssets';
 
 interface ImageViewerProps {
   src: string | null;
@@ -38,6 +39,8 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
   const pinchStartRef = useRef({ distance: 0, scale: 1 });
   const lastTapRef = useRef(0);
   const isOpen = Boolean(src);
+  // 预览使用响应式变体中的最大图，避免直接加载超过 2000px 的原始文件。
+  const displaySrc = useMemo(() => getLargestImageUrl(src ?? undefined) ?? src, [src]);
 
   useModalOverlay({
     isOpen,
@@ -72,9 +75,9 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
   const handleToggleZoom = () => zoomTo(scale > 1 ? 1 : 2.4);
 
   const handleDownload = () => {
-    if (!src) return;
+    if (!displaySrc) return;
     const link = document.createElement('a');
-    link.href = src;
+    link.href = displaySrc;
     link.download = alt?.trim() || 'image';
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
@@ -246,7 +249,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
               </div>
             )}
             <img
-              src={src}
+              src={displaySrc}
               alt={alt || ''}
               draggable={false}
               onLoad={() => { setIsLoaded(true); setHasError(false); }}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://web-mcp.com/schema/webmcp.schema.json",
+  "version": "1.0",
+  "site": {
+    "name": "D-blog",
+    "description": "跑路的duck的技术分享和生活随笔",
+    "url": "https://blog.pldduck.com",
+    "language": "zh-CN",
+    "author": "跑路的duck"
+  },
+  "discovery": {
+    "llmsTxt": "https://blog.pldduck.com/llms.txt",
+    "sitemap": "https://blog.pldduck.com/sitemap.xml",
+    "robots": "https://blog.pldduck.com/robots.txt",
+    "feed": "https://blog.pldduck.com/feed.xml"
+  },
+  "capabilities": {
+    "staticMarkup": true,
+    "fullArticleContent": true
+  }
+}

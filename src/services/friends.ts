@@ -1,6 +1,7 @@
 import { Friend } from '../types';
 
 let friendsDataCache: Friend[] | null = null;
+let shuffledCache: Friend[] | null = null;
 
 const shuffle = <T,>(items: T[]): T[] => {
   const result = [...items];
@@ -25,5 +26,9 @@ const loadFriendsData = async (): Promise<Friend[]> => {
 
 export const getFriends = async (): Promise<Friend[]> => {
   const friends = await loadFriendsData();
-  return shuffle(friends);
+  // 会话内只打乱一次：多次调用返回稳定顺序，避免列表顺序在每次渲染时随机变化。
+  if (!shuffledCache) {
+    shuffledCache = shuffle(friends);
+  }
+  return shuffledCache;
 };

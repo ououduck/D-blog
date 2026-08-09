@@ -269,16 +269,6 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       onClick: () => requestCloseMobileNav(() => onSearchClick())
     }
   ];
-  const navListVariants = {
-
-    hidden: {},
-    visible: {
-      transition: {
-        staggerChildren: 0.04,
-        delayChildren: 0.05
-      }
-    }
-  };
   const navItemVariants = {
     hidden: { opacity: 0, y: -6 },
     visible: {
@@ -628,14 +618,14 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   return (
     <>
       <nav className={`site-navbar fixed left-0 right-0 top-0 ${isMobileNavMounted ? 'z-nav-panel' : 'z-nav'} border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void`}>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, ease: easeSmooth }} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-16">
+        <motion.div initial={false} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-16">
           <Link to="/" className="group z-50 flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
             <ProgressiveImage src={assetUrl(siteConfig.logoSmall)} alt={`${siteConfig.title} 站点标志`} fetchPriority="high" width={96} height={96} wrapperClassName="h-8 w-8 bg-white sm:h-9 sm:w-9" className="h-8 w-8 object-cover sm:h-9 sm:w-9" />
             <span className="max-w-[calc(100vw-9.5rem)] truncate font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:max-w-none sm:text-2xl">{siteConfig.title}</span>
           </Link>
 
           <div className="hidden min-w-0 shrink items-center gap-4 lg:flex">
-            <motion.div className="flex min-w-0 shrink gap-2" variants={navListVariants} initial="hidden" animate="visible">
+            <motion.div className="flex min-w-0 shrink gap-2" initial={false} animate="visible">
               {navItems.map((item) => {
                 const isActive = isNavItemActive(item.path);
 
@@ -977,7 +967,7 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
           <AnimatePresence
             mode="wait"
             initial={false}
-            onExitComplete={() => window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })}
+            onExitComplete={() => window.scrollTo({ top: 0, behavior: 'auto' as ScrollBehavior })}
           >
             <motion.div key={routeContentKey} variants={routeVariants} initial="initial" animate="animate" exit="exit" className="mx-auto min-w-0 w-full max-w-7xl">
               {children}

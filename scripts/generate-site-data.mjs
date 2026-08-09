@@ -708,10 +708,34 @@ const generateSitemap = () => {
 </urlset>`;
 
   fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap.xml'), sitemapContent);
-  fs.writeFileSync(
-    path.join(PUBLIC_DIR, 'robots.txt'),
-    `User-agent: *\r\nAllow: /\r\nDisallow: /api/\r\nDisallow: /generated/\r\nDisallow: /*.json$\r\nDisallow: /sw.js\r\nDisallow: /workbox-*.js\r\n\r\nCrawl-delay: 1\r\n\r\nSitemap: ${siteAbsoluteUrl('/sitemap.xml')}\r\n`
-  );
+  const robotsTxt = [
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /api/',
+    'Disallow: /generated/',
+    'Disallow: /sw.js',
+    'Disallow: /workbox-*.js',
+    '',
+    // AI 智能体（Agent browsing）：站点为静态 SSR 页面，正文可直接抓取，全部放行。
+    'User-agent: GPTBot',
+    'Allow: /',
+    '',
+    'User-agent: ClaudeBot',
+    'Allow: /',
+    '',
+    'User-agent: Google-Extended',
+    'Allow: /',
+    '',
+    'User-agent: CCBot',
+    'Allow: /',
+    '',
+    'User-agent: PerplexityBot',
+    'Allow: /',
+    '',
+    `Sitemap: ${siteAbsoluteUrl('/sitemap.xml')}`,
+    ''
+  ].join('\r\n');
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'robots.txt'), robotsTxt);
   logger.step('Generated sitemap.xml', `urls=${staticPages.length + posts.length}`);
 };
 
@@ -728,13 +752,52 @@ const generateRss = () => {
   logger.step('Generated feed.xml', `items=${postsWithSearch.length}`);
 };
 
+/**
+ * llms.txt：面向 AI 智能体/LLM 的站点导航文件（https://llmstxt.org）。
+ * 提供站点简介与文章链接列表，便于智能体浏览时快速定位内容。
+ */
+const generateLlmsTxt = () => {
+  const sortedPosts = [...posts].sort((a, b) => (a.date > b.date ? -1 : 1));
+  const postLines = sortedPosts.map(
+    (post) => `- [${post.title}](${siteAbsoluteUrl(`/post/${post.id}`)}): ${post.excerpt.replace(/\n+/g, ' ').trim()}`
+  );
+
+  const content = [
+    `# ${SITE_TITLE}`,
+    '',
+    `> ${SITE_DESCRIPTION}`,
+    '',
+    `> 作者：${AUTHOR_NAME}`,
+    `> 语言：zh-CN`,
+    '',
+    '## 站内页面',
+    '',
+    `- [首页](${siteAbsoluteUrl('/')})`,
+    `- [归档](${siteAbsoluteUrl('/archive')})`,
+    `- [标签](${siteAbsoluteUrl('/tags')})`,
+    `- [统计](${siteAbsoluteUrl('/stats')})`,
+    `- [友链](${siteAbsoluteUrl('/friends')})`,
+    `- [关于](${siteAbsoluteUrl('/about')})`,
+    `- [赞助](${siteAbsoluteUrl('/sponsor')})`,
+    `- [RSS 订阅](${siteAbsoluteUrl('/feed.xml')})`,
+    '',
+    '## 文章',
+    '',
+    ...postLines,
+    ''
+  ].join('\n');
+
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'llms.txt'), content);
+  logger.step('Generated llms.txt', `posts=${posts.length}`);
+};
 
 generateSitemap();
 generateRss();
+generateLlmsTxt();
 
 logger.summary({
   posts: posts.length,
   friends: friends.length,
-  outputs: 5,
+  outputs: 6,
   siteUrl: SITE_URL
 });
