@@ -69,7 +69,7 @@ export const Favorites = () => {
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-live="polite">
             {posts.map((post) => (
-              <article key={post.id} className="flex h-full min-w-0 flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600">
+              <article key={post.id} className="flex h-full min-w-0 flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-zinc-400 hover:shadow-[0_4px_12px_rgba(24,24,27,0.08)] dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:shadow-black/20">
                 <Link to={`/post/${encodeURIComponent(post.id)}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]" aria-label={`阅读文章：${post.title}`}>
                   {post.coverImage ? (
                     <ProgressiveImage src={assetUrl(post.coverImage)} alt={post.title} loading="lazy" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/10" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />

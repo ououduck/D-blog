@@ -4,7 +4,8 @@ export const siteConfig = {
   description: '跑路的duck的技术分享和生活随笔',
   logo: 'https://blog.pldduck.com/logo.png',
   logoSmall: '/logo-96.png',
-  seoImage: 'https://blog.pldduck.com/logo.png',
+  // 社交分享卡片（1200×630，1.91:1），由 scripts/generate-og-card.mjs 在构建期生成。
+  seoImage: 'https://blog.pldduck.com/og-card.png',
   footerText: '©2026 PLDDUCK',
   url: 'https://blog.pldduck.com',
   social: {

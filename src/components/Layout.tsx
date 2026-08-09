@@ -206,6 +206,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const touchCurrentYRef = useRef<number>(0);
   const touchStartXRef = useRef<number>(0);
   const touchCurrentXRef = useRef<number>(0);
+  const touchStartTimeRef = useRef<number>(0);
   const mobileNavScrollRef = useRef<HTMLElement | null>(null);
   const canStartSwipeRef = useRef(false);
   const isSwipingRef = useRef(false);
@@ -433,6 +434,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     touchCurrentYRef.current = touch.clientY;
     touchStartXRef.current = touch.clientX;
     touchCurrentXRef.current = touch.clientX;
+    touchStartTimeRef.current = Date.now();
     mobileNavScrollRef.current = mobileNavPanelRef.current?.querySelector<HTMLElement>('.mobile-nav-scroll') ?? null;
     canStartSwipeRef.current = Boolean(mobileNavScrollRef.current && mobileNavScrollRef.current.scrollTop <= 1);
     isSwipingRef.current = false;
@@ -484,7 +486,12 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
     resetMobileNavDragStyles();
 
-    if (isSwipingRef.current && isAtScrollTop && deltaY > 80 && deltaY > Math.abs(deltaX)) {
+    // 手势关闭：距离足够（>80px）直接关闭；距离不足但快速甩动（>40px 且速度 >0.11px/ms）也视为有意关闭。
+    const elapsed = touchStartTimeRef.current > 0 ? Date.now() - touchStartTimeRef.current : 0;
+    const velocity = elapsed > 0 ? deltaY / elapsed : 0;
+    const shouldDismiss = isSwipingRef.current && isAtScrollTop && deltaY > Math.abs(deltaX) && (deltaY > 80 || (deltaY > 40 && velocity > 0.11));
+
+    if (shouldDismiss) {
       requestCloseMobileNav();
     }
 
@@ -644,7 +651,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                       <span className="relative z-10">{item.label}</span>
                       <span
                         aria-hidden="true"
-                        className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-none bg-zinc-900 dark:bg-zinc-100 transition-all duration-[250ms] ${
+                        className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-none bg-zinc-900 dark:bg-zinc-100 transition-[transform,opacity] duration-[250ms] ${
                           isActive
                             ? 'scale-x-100 opacity-100'
                             : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
@@ -716,8 +723,8 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                 : 'border-zinc-300 bg-paper text-zinc-700 hover:border-zinc-500 hover:bg-zinc-100 hover:text-ink dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white'
             }`} aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
               <div className="relative flex h-[18px] w-[18px] items-center justify-center">
-                <Menu size={18} className={`absolute transition-all duration-300 ${isMobileNavOpen ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'}`} />
-                <X size={18} className={`absolute transition-all duration-300 ${isMobileNavOpen ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-0 opacity-0'}`} />
+                <Menu size={18} className={`absolute transition-[opacity,transform] duration-300 ${isMobileNavOpen ? 'rotate-90 scale-50 opacity-0' : 'rotate-0 scale-100 opacity-100'}`} />
+                <X size={18} className={`absolute transition-[opacity,transform] duration-300 ${isMobileNavOpen ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-50 opacity-0'}`} />
               </div>
             </button>
           </div>

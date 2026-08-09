@@ -428,6 +428,14 @@ html.theme-switching .editorial-input {
     @apply hidden text-xs font-medium text-emerald-700 dark:text-emerald-300 sm:inline;
   }
 
+  @keyframes copy-pop {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .copy-pop {
+    animation: copy-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
   .code-scroll {
     @apply relative overflow-x-auto touch-pan-x;
     scrollbar-width: thin;
@@ -825,6 +833,10 @@ html.dark .mermaid-diagram > svg {
 
   .mermaid-scene {
     will-change: auto;
+  }
+
+  .copy-pop {
+    animation: none;
   }
 }
 

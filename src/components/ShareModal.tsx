@@ -144,7 +144,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             className="editorial-button-primary rounded-control active:scale-[0.98]"
             aria-label="复制标题、简介和链接"
           >
-            {copiedType === 'all' ? <Check size={16} /> : <Copy size={16} />}
+            {copiedType === 'all' ? <span className="copy-pop"><Check size={16} /></span> : <Copy size={16} />}
             {copiedType === 'all' ? '已复制全部' : '复制完整分享'}
           </button>
           <button
@@ -153,7 +153,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             className="editorial-button rounded-control active:scale-[0.98]"
             aria-label="仅复制文章链接"
           >
-            {copiedType === 'link' ? <Check size={16} /> : <LinkIcon size={16} />}
+            {copiedType === 'link' ? <span className="copy-pop"><Check size={16} /></span> : <LinkIcon size={16} />}
             {copiedType === 'link' ? '链接已复制' : '仅复制链接'}
           </button>
         </div>

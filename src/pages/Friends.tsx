@@ -144,7 +144,7 @@ export const Friends = () => {
             <span className="text-base font-semibold text-zinc-950 dark:text-white">申请友链</span>
             <p className="mt-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">添加本站友链 → 登录 GitHub → 填写信息并提交 Issue</p>
           </div>
-          <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.4, 0, 0.2, 1] }} className="flex-shrink-0">
+          <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: easeOut }} className="flex-shrink-0">
             <ChevronDown size={18} className="text-zinc-500 dark:text-zinc-400" />
           </motion.div>
         </button>
@@ -157,7 +157,7 @@ export const Friends = () => {
               initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
-              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.28, ease: easeOut }}
               className="overflow-hidden"
             >
               <div className="border-t border-zinc-200 pb-5 pt-5 dark:border-zinc-800 sm:pb-6 sm:pt-6">

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { easeOut } from '@/utils/motion';
 
 interface SlideModalProps {
   isOpen: boolean;
@@ -148,7 +149,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
               initial="hidden"
               animate="visible"
               exit="exit"
-              transition={{ duration: modalDuration, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ duration: modalDuration, ease: easeOut }}
             >
               <div className="flex justify-center px-4 pt-3">
                 <div className="h-1.5 w-14 rounded-full bg-zinc-300/80 dark:bg-zinc-700/80" />
@@ -180,7 +181,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
               initial="hidden"
               animate="visible"
               exit="exit"
-              transition={{ duration: modalDuration, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ duration: modalDuration, ease: easeOut }}
             >
               <div className="max-h-[80vh] supports-[height:100dvh]:max-h-[80dvh] overflow-y-auto overscroll-contain">
                 {children}

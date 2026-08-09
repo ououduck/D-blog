@@ -159,7 +159,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
             sizes={sizes}
             srcSet={srcSet}
             className={mergeClassName(
-              'relative transition-all duration-500 ease-out',
+              'relative transition-opacity duration-500 ease-out',
               imageTransitionClass,
               className
             )}

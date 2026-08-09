@@ -60,8 +60,13 @@ coverage
 # Auto-generated at build time
 public/feed.xml
 public/sitemap.xml
+public/sitemap-pages.xml
+public/sitemap-posts.xml
+public/sitemap-images.xml
+public/sitemap-index.xml
 public/robots.txt
 public/llms.txt
+public/og-card.png
 public/generated-images/
 
 # Local tool data

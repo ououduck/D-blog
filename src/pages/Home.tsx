@@ -224,7 +224,7 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
 
   return (
     <motion.article layout variants={cardVariants} transition={{ duration: 0.25, ease: easeOut }} className="flex h-full min-w-0 flex-col" onMouseEnter={() => preloadPage(`/post/${post.id}`)}>
-      <div className="flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-within:border-zinc-500">
+      <div className="flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-zinc-400 hover:shadow-[0_4px_12px_rgba(24,24,27,0.08)] focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:shadow-black/20 dark:focus-within:border-zinc-500">
         <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]" aria-label={`阅读文章：${post.title}`}>
           {post.coverImage ? (
               <ProgressiveImage {...responsiveImageProps} src={assetUrl(post.coverImage)} alt={post.title} loading="lazy" fetchPriority="auto" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
@@ -576,7 +576,13 @@ export const Home = () => {
 
   return (
       <div className="pb-8 md:pb-12">
-      <Seo title={siteConfig.title} description={siteConfig.description} noindex={hasSearchQuery} />
+      {/* 搜索意图：有结果的可抓取搜索页（?q=xxx）保留索引并展示搜索主题；
+          无结果的空结果页 noindex，避免内容贫瘠页进索引。 */}
+      <Seo
+        title={hasSearchQuery && results.length > 0 ? `搜索：${searchQuery}` : siteConfig.title}
+        description={siteConfig.description}
+        noindex={hasSearchQuery && results.length === 0}
+      />
       <Hero />
 
       {continueReading && (

@@ -319,7 +319,7 @@ const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<R
         <div className="code-toolbar-actions">
           {copied && <span className="code-copy-feedback" role="status" aria-live="polite">代码已复制</span>}
           <button type="button" onClick={handleCopy} className={`code-action-btn ${copied ? 'code-action-btn-success' : ''}`} title={copied ? '已复制' : '复制代码'} aria-label={copied ? '已复制' : '复制代码'}>
-            {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+            {copied ? <span className="copy-pop"><Check size={15} aria-hidden="true" /></span> : <Copy size={15} aria-hidden="true" />}
             <span>{copied ? '已复制' : '复制'}</span>
           </button>
           <button type="button" onClick={handleDownload} className="code-action-btn" title="下载代码" aria-label="下载代码">
@@ -1371,11 +1371,22 @@ export const Post = () => {
     image: post.coverImage ? [absoluteSiteUrl(post.coverImage, siteConfig.url)] : [absoluteSiteUrl(siteConfig.seoImage, siteConfig.url)],
     datePublished: post.date,
     dateModified: post.updatedAt || post.date,
-    author: authors.map((author) => ({
-      '@type': 'Person',
-      name: author.name,
-      url: author.url
-    })),
+    author: authors.map((author) => {
+      const isSiteAuthor = author.name === siteConfig.author.name;
+      return {
+        '@type': 'Person',
+        name: author.name,
+        ...(author.url ? { url: author.url } : {}),
+        // 站点作者补齐同源社交链接与邮箱，增强实体可信度；
+        // 其他作者沿用其 frontmatter 提供的 url。
+        ...(isSiteAuthor
+          ? {
+              sameAs: [siteConfig.social.github],
+              email: siteConfig.social.rawEmail
+            }
+          : {})
+      };
+    }),
     articleBody: post.content,
     wordCount: post.wordCount,
     inLanguage: 'zh-CN',

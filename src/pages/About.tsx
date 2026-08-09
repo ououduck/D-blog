@@ -1,14 +1,44 @@
 import { Github, Mail, Code, Terminal } from 'lucide-react';
 import { siteConfig } from '@config/site.config';
+import { absoluteSiteUrl } from '@/utils/siteUrl';
 import { Seo } from '../components/Seo';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { Surface } from '@/components/ui/Surface';
 import { IssueSubscriptionCard } from '@/components/IssueSubscriptionCard';
 
+const aboutPageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'ProfilePage',
+  name: `${siteConfig.author.name} - 关于`,
+  description: '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的用户界面。',
+  url: absoluteSiteUrl('/about', siteConfig.url),
+  inLanguage: 'zh-CN',
+  isPartOf: {
+    '@type': 'WebSite',
+    name: siteConfig.title,
+    url: absoluteSiteUrl('/', siteConfig.url)
+  },
+  mainEntity: {
+    '@type': 'Person',
+    name: siteConfig.author.name,
+    jobTitle: siteConfig.author.role,
+    description: siteConfig.author.bio,
+    url: absoluteSiteUrl('/about', siteConfig.url),
+    image: siteConfig.author.avatar,
+    sameAs: [siteConfig.social.github]
+  }
+};
+
 export const About = () => {
   return (
     <div className="mx-auto max-w-4xl pb-10 pt-6 md:pb-16 md:pt-10">
-      <Seo title="关于" description="关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的用户界面。" />
+      <Seo
+        title="关于"
+        description="关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的用户界面。"
+        url="/about"
+        image={siteConfig.author.avatar}
+        structuredData={aboutPageSchema}
+      />
 
       <header className="mb-6 md:mb-8">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">About</p>

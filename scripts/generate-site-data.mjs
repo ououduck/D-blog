@@ -680,8 +680,11 @@ const generateSitemap = () => {
     { path: 'watermark', changefreq: 'monthly', priority: '0.5', lastmod: today },
     { path: 'sponsor', changefreq: 'monthly', priority: '0.5', lastmod: today }
   ];
+  const postUrl = (post) => siteAbsoluteUrl(`/post/${post.id}`);
+  const postLastmod = (post) => new Date(post.updatedAt || post.date).toISOString().split('T')[0];
 
-  const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>
+  // 1. 静态页面 sitemap。
+  const pagesXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   ${staticPages
     .map(
@@ -694,20 +697,91 @@ const generateSitemap = () => {
   </url>`
     )
     .join('')}
+</urlset>`;
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap-pages.xml'), pagesXml);
+
+  // 2. 文章 sitemap。
+  const postsXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   ${posts
     .map(
       (post) => `
   <url>
-    <loc>${xmlEscape(siteAbsoluteUrl(`/post/${post.id}`))}</loc>
-    <lastmod>${new Date(post.updatedAt || post.date).toISOString().split('T')[0]}</lastmod>
+    <loc>${xmlEscape(postUrl(post))}</loc>
+    <lastmod>${postLastmod(post)}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>`
     )
     .join('')}
 </urlset>`;
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap-posts.xml'), postsXml);
 
-  fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap.xml'), sitemapContent);
+  // 3. 图片 sitemap：收录文章封面与正文图片，仅限本地资源（/posts-img、/generated-images）。
+  //    外部图床/URL 无法确认可抓取，不进入 image sitemap。
+  const isLocalImage = (url) => /^\/?(?:posts-img|generated-images)\//.test(String(url));
+  const normalizeImageUrl = (url) => {
+    const clean = String(url).replace(/^\/+/, '');
+    return siteAbsoluteUrl(`/${clean.split(/[?#]/, 1)[0]}`);
+  };
+  const imagesXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  ${posts
+    .map((post) => {
+      // 封面与正文图按 URL 去重：部分文章正文会再次引用封面图，
+      // 避免 image sitemap 中出现重复条目。
+      const seen = new Set();
+      const images = [];
+      const addImage = (imageUrl) => {
+        const normalized = normalizeImageUrl(imageUrl);
+        if (isLocalImage(imageUrl) && !seen.has(normalized)) {
+          seen.add(normalized);
+          images.push({ loc: normalized, title: post.title });
+        }
+      };
+      if (post.coverImage) {
+        addImage(post.coverImage);
+      }
+      Object.keys(post.imageDimensions || {}).forEach(addImage);
+      if (images.length === 0) {
+        return '';
+      }
+      return `
+  <url>
+    <loc>${xmlEscape(postUrl(post))}</loc>${images
+      .map(
+        (image) => `
+    <image:image>
+      <image:loc>${xmlEscape(image.loc)}</image:loc>
+      <image:title>${xmlEscape(image.title)}</image:title>
+    </image:image>`
+      )
+      .join('')}
+  </url>`;
+    })
+    .join('')}
+</urlset>`;
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap-images.xml'), imagesXml);
+
+  // 4. sitemap index：聚合三个子 sitemap，robots.txt 指向该 index。
+  const sitemapIndexXml = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>${xmlEscape(siteAbsoluteUrl('/sitemap-pages.xml'))}</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>${xmlEscape(siteAbsoluteUrl('/sitemap-posts.xml'))}</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>${xmlEscape(siteAbsoluteUrl('/sitemap-images.xml'))}</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
+</sitemapindex>`;
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap-index.xml'), sitemapIndexXml);
+
   const robotsTxt = [
     'User-agent: *',
     'Allow: /',
@@ -732,11 +806,23 @@ const generateSitemap = () => {
     'User-agent: PerplexityBot',
     'Allow: /',
     '',
-    `Sitemap: ${siteAbsoluteUrl('/sitemap.xml')}`,
+    'User-agent: Amazonbot',
+    'Allow: /',
+    '',
+    'User-agent: Applebot-Extended',
+    'Allow: /',
+    '',
+    'User-agent: Meta-ExternalAgent',
+    'Allow: /',
+    '',
+    'User-agent: cohere-ai',
+    'Allow: /',
+    '',
+    `Sitemap: ${siteAbsoluteUrl('/sitemap-index.xml')}`,
     ''
   ].join('\r\n');
   fs.writeFileSync(path.join(PUBLIC_DIR, 'robots.txt'), robotsTxt);
-  logger.step('Generated sitemap.xml', `urls=${staticPages.length + posts.length}`);
+  logger.step('Generated sitemaps', `pages=${staticPages.length} posts=${posts.length} imageSitemap=1 index=1`);
 };
 
 const generateRss = () => {

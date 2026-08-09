@@ -30,4 +30,29 @@
 /assets/*.svg
   Cache-Control: public, max-age=31536000, immutable
 
+# Generated responsive images and original post images have stable URLs
+# (regenerated deterministically at build time), safe for long-lived caching.
+/generated-images/*
+  Cache-Control: public, max-age=31536000, immutable
+/posts-img/*
+  Cache-Control: public, max-age=31536000, immutable
+/ads-img/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Top-level brand assets (logo, PWA icons, share card) change only on redeploy.
+/logo.png
+  Cache-Control: public, max-age=31536000, immutable
+/og-card.png
+  Cache-Control: public, max-age=31536000, immutable
+/logo-96.png
+  Cache-Control: public, max-age=31536000, immutable
+/pwa-192.png
+  Cache-Control: public, max-age=31536000, immutable
+/pwa-512.png
+  Cache-Control: public, max-age=31536000, immutable
+/favicon.ico
+  Cache-Control: public, max-age=31536000, immutable
+/manifest.webmanifest
+  Cache-Control: public, max-age=86400
+
 # Missing static assets must remain real 404s; apply SPA fallback only to routes.

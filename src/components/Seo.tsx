@@ -37,13 +37,15 @@ const buildCanonicalPath = (value: string) => {
     return pathname;
   }
 
+  // 只保留影响页面内容的参数（如分类筛选），并按固定顺序归一化：
+  // 丢弃空值与重复值，避免同一页产生多条 canonical 或 canonical 抖动。
   const params = new URLSearchParams(query);
   const kept: string[] = [];
   CANONICAL_QUERY_PARAMS.forEach((key) => {
-    const paramValue = params.get(key);
-    if (paramValue) {
+    const uniqueValues = Array.from(new Set(params.getAll(key))).filter((value) => value.trim() !== '');
+    uniqueValues.forEach((paramValue) => {
       kept.push(`${key}=${encodeURIComponent(paramValue)}`);
-    }
+    });
   });
   return kept.length ? `${pathname}?${kept.join('&')}` : pathname;
 };
@@ -121,6 +123,20 @@ export const Seo: React.FC<SeoProps> = ({
             },
             'query-input': 'required name=search_term_string'
           }
+        }, {
+          // 全站 Organization 实体：Google 建议站点级 schema 在各页重复出现，
+          // 文章页的 publisher 是独立 Organization 实体，两者互不影响。
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: siteConfig.title,
+          alternateName: siteConfig.subtitle,
+          url: toAbsoluteUrl('/'),
+          logo: {
+            '@type': 'ImageObject',
+            url: toAbsoluteUrl(siteConfig.logo)
+          },
+          email: siteConfig.social.rawEmail,
+          sameAs: [siteConfig.social.github]
         }]
       : [];
 
