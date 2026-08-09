@@ -1,9 +1,9 @@
 ---
-id: <% tp.file.title %>
-title: <% tp.file.title %>
+id: {{title}}
+title: {{title}}
 excerpt: 
-date: <% tp.date.now("YYYY-MM-DD") %>
-updatedAt: <% tp.date.now("YYYY-MM-DD") %>
+date: {{date}}
+updatedAt: {{date}}
 category: 随笔
 tags: []
 coverImage: 
@@ -15,4 +15,3 @@ series: false
 # series-order
 draft: true
 ---
-
