@@ -99,7 +99,7 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       ? createPortal(
           <div
             style={MOBILE_BADGE_STYLE}
-            className="fixed-control-position pointer-events-none fixed z-floating flex h-11 flex-col justify-center rounded-control border border-zinc-300 bg-paper px-2.5 shadow-none dark:border-zinc-700 dark:bg-zinc-900 lg:hidden"
+            className="reading-progress-badge fixed-control-position pointer-events-none fixed z-floating flex h-11 flex-col justify-center rounded-control border border-zinc-300 bg-paper px-2.5 shadow-none dark:border-zinc-700 dark:bg-zinc-900 lg:hidden"
           >
             <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
               <span>进度</span>

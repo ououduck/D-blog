@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Check, ExternalLink, Github, Sparkles, ChevronDown, Globe2, X } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
 import { siteConfig } from '@config/site.config';
-import { getFriends } from '@/services/friends';
+import { getFriends, getInitialFriends } from '@/services/friends';
 import { Seo } from '../components/Seo';
 import { Friend } from '../types';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
@@ -24,13 +24,17 @@ const EMPTY_APPLICATION_VALUES: FriendLinkApplicationValues = {
   reciprocalLinkConfirmed: false,
 };
 
+// 构建期 SSG：friends.json 已通过 eager glob 内联，SSR 阶段即可同步渲染友链列表，
+// 客户端水合首帧与 SSR 输出一致；异步重取仅用于“重新加载”。
+const initialFriends = getInitialFriends();
+
 export const Friends = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentApplicationStep, setCurrentApplicationStep] = useState(1);
-  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friends, setFriends] = useState<Friend[]>(initialFriends);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialFriends.length === 0);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [applicationValues, setApplicationValues] = useState<FriendLinkApplicationValues>(EMPTY_APPLICATION_VALUES);
   const [applicationFilename, setApplicationFilename] = useState('');
@@ -40,6 +44,14 @@ export const Friends = () => {
 
   useEffect(() => {
     let cancelled = false;
+    // 首次加载数据已由 eager glob 同步提供；仅“重新加载”（loadAttempt > 0）
+    // 或初始数据缺失时才有必要走异步重取。
+    if (loadAttempt === 0 && initialFriends.length > 0) {
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
     setLoading(true);
     getFriends()
       .then((data) => {

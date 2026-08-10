@@ -12,17 +12,26 @@ on:
         required: true
         type: string
 
+concurrency:
+  # 连续 push 只保留最新一次：防止快速连续提交产生重复通知评论。
+  group: notify-post-update
+  cancel-in-progress: true
+
 jobs:
   notify:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       issues: write
+      contents: read
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          # push 事件下默认 HEAD 可能缺 refs，显式取完整历史以支持 diff 计算。
+          ref: ${{ github.event_name == 'push' && github.sha || '' }}
 
       - name: Post article notification
         env:
@@ -33,9 +42,15 @@ jobs:
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          # API 瞬时故障重试 3 次（github-script v8 原生支持），
+          # 避免偶发 5xx / 网络抖动直接导致通知丢失。
+          retries: 3
           script: |
             const childProcess = require('child_process');
             const fs = require('fs');
+
+            // GitHub Issue 评论 body 硬上限 65536 字符；预留尾部标记后使用安全预算。
+            const MAX_COMMENT_BODY_CHARS = 60000;
 
             function getChangedFiles() {
               if (context.eventName === 'workflow_dispatch') {
@@ -44,11 +59,20 @@ jobs:
 
               const beforeSha = process.env.BEFORE_SHA;
               const afterSha = process.env.AFTER_SHA;
-              const args = beforeSha === '0000000000000000000000000000000000000000'
-                ? ['show', '--pretty=', '--name-only', afterSha, '--', 'posts/*.md']
-                : ['diff', '--name-only', '--diff-filter=AM', beforeSha, afterSha, '--', 'posts/*.md'];
 
-              return childProcess.execFileSync('git', args, { encoding: 'utf8' }).split(/\r?\n/).map((file) => file.trim()).filter(Boolean);
+              // 首次推送（before 为全零）：取该 commit 新增的文章文件。
+              if (beforeSha === '0000000000000000000000000000000000000000') {
+                return childProcess.execFileSync('git', ['show', '--pretty=', '--name-only', afterSha, '--', 'posts/*.md'], { encoding: 'utf8' }).split(/\r?\n/).map((file) => file.trim()).filter(Boolean);
+              }
+
+              // 常规 diff；force-push 等场景下 before 可能不在本地历史中，
+              // diff 失败时回退为"该 commit 新增的文章文件"，保证通知不丢失。
+              try {
+                return childProcess.execFileSync('git', ['diff', '--name-only', '--diff-filter=AM', beforeSha, afterSha, '--', 'posts/*.md'], { encoding: 'utf8' }).split(/\r?\n/).map((file) => file.trim()).filter(Boolean);
+              } catch (error) {
+                core.warning(`git diff failed (${error.message}); falling back to commit file list.`);
+                return childProcess.execFileSync('git', ['show', '--pretty=', '--name-only', afterSha, '--', 'posts/*.md'], { encoding: 'utf8' }).split(/\r?\n/).map((file) => file.trim()).filter(Boolean);
+              }
             }
 
             function getFrontmatter(content) {
@@ -66,7 +90,25 @@ jobs:
               );
             }
 
-            const changedFiles = getChangedFiles();
+            // 评论 body 截断辅助：超限时截断并追加提示，避免 GitHub 422 拒绝整个通知。
+            function truncateBody(body) {
+              if (body.length <= MAX_COMMENT_BODY_CHARS) {
+                return body;
+              }
+              const cutMark = '\n\n---\n*通知过长，其余内容省略。*';
+              const budget = MAX_COMMENT_BODY_CHARS - cutMark.length;
+              return `${body.slice(0, budget)}${cutMark}`;
+            }
+
+            let changedFiles = [];
+            try {
+              changedFiles = getChangedFiles();
+            } catch (error) {
+              // git 命令本身失败（如仓库状态异常）：记录后放弃，而非以裸堆栈失败。
+              core.error(`Failed to resolve changed files: ${error.message}`);
+              core.setFailed('Failed to resolve changed post files.');
+              return;
+            }
             core.info(`Changed post files: ${changedFiles.join(', ') || 'none'}`);
 
             const posts = changedFiles.flatMap((file) => {
@@ -75,7 +117,13 @@ jobs:
                 return [];
               }
 
-              const content = fs.readFileSync(file, 'utf8');
+              let content;
+              try {
+                content = fs.readFileSync(file, 'utf8');
+              } catch (error) {
+                core.warning(`Skipping ${file}: failed to read (${error.message}).`);
+                return [];
+              }
               const frontmatter = getFrontmatter(content);
 
               if (frontmatter.draft === 'true') {
@@ -98,7 +146,9 @@ jobs:
             });
 
             if (posts.length === 0) {
-              core.setFailed(`No published posts to notify. Changed files: ${changedFiles.join(', ') || 'none'}.`);
+              // 无已发布文章可通知（全部为草稿/删除/不存在）：
+              // 以 warning 而非 setFailed 结束，避免"例行 push 也红叉"的噪音。
+              core.warning(`No published posts to notify. Changed files: ${changedFiles.join(', ') || 'none'}.`);
               return;
             }
 
@@ -116,11 +166,16 @@ jobs:
             }
             body += '---\n*This notification was posted automatically by GitHub Actions.*\n';
 
-            const result = await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: Number(process.env.ISSUE_NUMBER),
-              body,
-            });
-
-            core.info(`Notification posted: ${result.data.html_url}`);
+            try {
+              const result = await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: Number(process.env.ISSUE_NUMBER),
+                body: truncateBody(body),
+              });
+              core.info(`Notification posted: ${result.data.html_url}`);
+            } catch (error) {
+              // 评论创建失败（422 长度 / 权限 / Issue 不存在）：完整上下文后失败。
+              core.error(`Failed to post notification: ${error.message}`);
+              core.setFailed('Failed to post article update notification.');
+            }

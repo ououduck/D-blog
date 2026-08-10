@@ -14,7 +14,7 @@ import { Post as PostType, PostAuthor, PostMetadata } from '../types';
 import { useOfflinePosts } from '@/hooks/useOfflinePosts';
 import { assetUrl, absoluteSiteUrl, routeUrl } from '@/utils/siteUrl';
 import { siteConfig } from '@config/site.config';
-import { Seo } from '../components/Seo';
+import { Seo, buildSiteSchemas } from '../components/Seo';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { NotFoundState } from '@/components/NotFoundState';
 import { IssueSubscriptionCard } from '@/components/IssueSubscriptionCard';
@@ -22,6 +22,7 @@ import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { extractMarkdownHeadings, extractTextFromReactNode, slugifyHeading } from '@/utils/headings';
 import type { MarkdownHeading } from '@/utils/headings';
 import { formatDate } from '@/utils/date';
+import { stripMarkdown } from '@/utils/markdownText';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 import { useReadingMode } from '@/components/ReadingModeContext';
@@ -890,6 +891,22 @@ export const Post = () => {
       };
     }
 
+    // SSG 场景：当前 id 与构建期注入的路由数据一致（首屏水合 / 从其他文章返回），
+    // 直接同步使用 routeData 填充各状态。若此处也走异步重取，水合后会把已渲染的
+    // 正文换成骨架屏、并清空相邻/系列/相关文章，造成可见闪烁与布局跳变。
+    // 仅当 loadAttempt > 0（用户点击“重新加载”）时才允许绕过 SSG 数据强制重取。
+    if (hasSsgPost && loadAttempt === 0) {
+      setPost(ssgPost);
+      setLoading(false);
+      setLoadError(null);
+      setAdjacentPosts(ssgRouteData?.adjacentPosts ?? { prev: null, next: null });
+      setSeriesNavigation(ssgRouteData?.seriesNavigation ?? null);
+      setRelatedPosts(ssgRouteData?.relatedPosts ?? []);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     setLoading(true);
     setPost(null);
     setLoadError(null);
@@ -925,7 +942,7 @@ export const Post = () => {
     return () => {
       cancelled = true;
     };
-  }, [id, loadAttempt]);
+  }, [hasSsgPost, id, loadAttempt, ssgPost, ssgRouteData]);
 
   useEffect(() => {
     if (!post?.content) {
@@ -1121,6 +1138,11 @@ export const Post = () => {
     let programmaticScroll = false;
     let resetProgrammaticFrame = 0;
     let restoreDelay = 0;
+    // 结尾哨兵（readingEndRef）只在非专注阅读模式渲染。进入专注阅读后该节点
+    // 会从 DOM 移除，若此时恢复流程仍未结束，restore() 将无限重排（100% CPU）。
+    // 连续多次找不到结尾哨兵即放弃恢复，避免死循环。
+    let missingEndRefCount = 0;
+    const MAX_MISSING_END_REF = 8;
     const restoreGraceUntil = performance.now() + 500;
 
     const stopRestore = () => {
@@ -1160,9 +1182,15 @@ export const Post = () => {
       const endTarget = readingEndRef.current;
       const endRect = endTarget?.getBoundingClientRect();
       if (!endTarget || !endRect) {
+        missingEndRefCount += 1;
+        // 结尾哨兵持续缺失（如已进入专注阅读模式）：放弃恢复，避免无限重排。
+        if (missingEndRefCount >= MAX_MISSING_END_REF) {
+          return;
+        }
         scheduleLayoutRestore();
         return;
       }
+      missingEndRefCount = 0;
       const top = getScrollTopForReadingProgress({
         rect,
         endRect,
@@ -1353,11 +1381,16 @@ export const Post = () => {
 
   if (!post) {
     return (
-      <NotFoundState
-        title="未找到这篇文章"
-        description="这篇文章可能还在草稿中、已经被删除，或者链接地址已经发生变化。"
-        debugLabel={`Post ID: ${id || 'unknown'}`}
-      />
+      <>
+        {/* 文章不存在：SPA 内以 200 响应返回该内容，必须 noindex，
+            避免爬虫把已删除文章的 URL 视为可索引页面收录。 */}
+        <Seo title="未找到这篇文章" description="你访问的文章不存在，可能已经删除或链接失效。" noindex />
+        <NotFoundState
+          title="未找到这篇文章"
+          description="这篇文章可能还在草稿中、已经被删除，或者链接地址已经发生变化。"
+          debugLabel={`Post ID: ${id || 'unknown'}`}
+        />
+      </>
     );
   }
 
@@ -1365,7 +1398,8 @@ export const Post = () => {
   const authorsLabel = authors.map((author) => author.name).join('\u3001');
   const postStructuredData = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    // BlogPosting 是 Article 的子类型，Google 对博客文章富结果更认可该类型。
+    '@type': 'BlogPosting',
     headline: post.title,
     description: post.excerpt,
     image: post.coverImage ? [absoluteSiteUrl(post.coverImage, siteConfig.url)] : [absoluteSiteUrl(siteConfig.seoImage, siteConfig.url)],
@@ -1387,7 +1421,7 @@ export const Post = () => {
           : {})
       };
     }),
-    articleBody: post.content,
+    articleBody: stripMarkdown(post.content),
     wordCount: post.wordCount,
     inLanguage: 'zh-CN',
     articleSection: post.category,
@@ -1440,7 +1474,7 @@ export const Post = () => {
           <button
             type="button"
             onClick={exitReadingMode}
-            className="reading-mode-exit print-hidden fixed right-4 top-4 z-floating inline-flex min-h-11 items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 sm:right-6 sm:top-6"
+            className="reading-mode-exit print-hidden fixed right-4 top-[calc(1rem+env(safe-area-inset-top,0px))] z-floating inline-flex min-h-11 items-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 sm:right-6 sm:top-[calc(1.5rem+env(safe-area-inset-top,0px))]"
             aria-label="退出专注阅读"
           >
             <EyeOff size={16} />
@@ -1452,6 +1486,8 @@ export const Post = () => {
           title={post.title}
           description={post.excerpt}
           image={post.coverImage}
+          imageWidth={post.coverWidth}
+          imageHeight={post.coverHeight}
           url={`/post/${post.id}`}
           type="article"
           publishedTime={post.date}
@@ -1460,7 +1496,9 @@ export const Post = () => {
           section={post.category}
           tags={post.tags}
           keywords={post.tags?.join(', ')}
-          structuredData={[postStructuredData, breadcrumbData]}
+          // 站点级 WebSite + Organization schema 与文章级 BlogPosting 一并输出，
+          // 保证全站各页 schema 一致（publisher 的 Organization 与站点级互不影响）。
+          structuredData={[...buildSiteSchemas(post.excerpt), postStructuredData, breadcrumbData]}
         />
 
         <header className="post-header mx-auto mb-8 max-w-3xl px-3 pt-4 text-center md:mb-12 md:pt-8">
@@ -1671,7 +1709,7 @@ export const Post = () => {
                     <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
                       {relatedPosts.map((relatedPost) => (
                         <Link key={relatedPost.id} to={`/post/${relatedPost.id}`} className="group flex h-24 overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-500 focus-visible:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-visible:border-zinc-500 sm:block sm:h-auto">
-                          {relatedPost.coverImage ? <ProgressiveImage src={resolveBrowserAsset(relatedPost.coverImage)} alt="" wrapperClassName="aspect-video h-24 w-auto flex-none bg-zinc-100 dark:bg-zinc-800 sm:h-auto sm:w-full sm:aspect-[16/10]" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <div className="flex aspect-video h-24 w-auto flex-none items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500 sm:h-auto sm:w-full sm:aspect-[16/10]">无封面</div>}
+                          {relatedPost.coverImage ? <ProgressiveImage {...getResponsiveImageProps(relatedPost.coverImage, '(max-width: 767px) 50vw, 33vw')} src={resolveBrowserAsset(relatedPost.coverImage)} alt="" loading="lazy" width={relatedPost.coverWidth} height={relatedPost.coverHeight} wrapperClassName="aspect-video h-24 w-auto flex-none bg-zinc-100 dark:bg-zinc-800 sm:h-auto sm:w-full sm:aspect-[16/10]" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <div className="flex aspect-video h-24 w-auto flex-none items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500 sm:h-auto sm:w-full sm:aspect-[16/10]">无封面</div>}
                           <div className="min-w-0 flex-1 overflow-hidden p-2 sm:p-3.5">
                             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500">
                               <span className="truncate">{relatedPost.category}</span>

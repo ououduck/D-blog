@@ -40,7 +40,10 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(({
   const inputSpacing = endAction
     ? showClear ? 'pr-24' : 'pr-14'
     : showClear ? 'pr-11' : 'pr-4';
-  const sizeClass = size === 'large' ? 'h-14 text-base sm:text-lg' : 'h-11 text-sm';
+  // iOS Safari 会对聚焦时字号 < 16px 的输入框自动放大页面（导致布局跳动、固定
+  // 导航/弹窗错位）。移动端基础字号保持 16px，桌面端（sm 起）再缩回 14px，
+  // 桌面浏览器不受此限制。真正决定缩放的是 font-size 而非控件高度。
+  const sizeClass = size === 'large' ? 'h-14 text-base sm:text-lg' : 'h-11 text-[16px] sm:text-sm';
   const clearButtonSizeClass = size === 'large' ? 'h-14' : 'h-11';
 
   return (

@@ -14,7 +14,11 @@ import {
 import { Seo } from '../components/Seo';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { Surface } from '@/components/ui/Surface';
-import { getSiteStats, SiteStats } from '../services/siteStats';
+import { getSiteStats, getInitialSiteStats, SiteStats } from '../services/siteStats';
+
+// 构建期 SSG：site-stats.json 已通过 eager glob 内联，SSR 阶段即可同步渲染全部统计卡片，
+// 客户端水合首帧与 SSR 输出一致；异步重取仅用于“重新加载”。
+const initialSiteStats = getInitialSiteStats();
 
 const EMPTY_SITE_STATS: SiteStats = {
   totalPosts: 0,
@@ -124,8 +128,8 @@ const ExternalStatsCard = ({
 export const Stats = () => {
   const siteStatsLoadedRef = useRef(false);
   const isMountedRef = useRef(true);
-  const [siteStats, setSiteStats] = useState<SiteStats>(EMPTY_SITE_STATS);
-  const [siteStatsLoading, setSiteStatsLoading] = useState(true);
+  const [siteStats, setSiteStats] = useState<SiteStats>(initialSiteStats ?? EMPTY_SITE_STATS);
+  const [siteStatsLoading, setSiteStatsLoading] = useState(initialSiteStats === null);
   const [siteStatsError, setSiteStatsError] = useState(false);
 
   const loadSiteStats = async () => {
@@ -153,6 +157,15 @@ export const Stats = () => {
 
   useEffect(() => {
     isMountedRef.current = true;
+    // 首次数据已由 eager glob 同步提供，跳过异步重取（避免水合后多余加载态闪烁）；
+    // 仅在初始数据缺失时走异步加载，“重新加载”按钮仍会强制重取。
+    if (initialSiteStats) {
+      siteStatsLoadedRef.current = true;
+      setSiteStatsLoading(false);
+      return () => {
+        isMountedRef.current = false;
+      };
+    }
     void loadSiteStats();
     return () => {
       isMountedRef.current = false;

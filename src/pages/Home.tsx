@@ -349,11 +349,17 @@ export const Home = () => {
   useEffect(() => {
     let cancelled = false;
 
-    const loadHomeData = async () => {
-      if (loadAttempt > 0 || allPosts.length === 0) {
-        setLoading(true);
-      }
+    // 首帧数据已由 getInitialPosts() 同步提供，水合后无需重复异步重取
+    // （避免多余的一次全列表重渲染与 loading 态闪烁）；仅“重新加载”
+    // （loadAttempt > 0）或初始数据缺失时才走异步加载。
+    if (loadAttempt === 0 && allPosts.length > 0) {
+      return () => {
+        cancelled = true;
+      };
+    }
 
+    const loadHomeData = async () => {
+      setLoading(true);
       try {
         const posts = await getPosts();
         if (cancelled) {
@@ -380,7 +386,7 @@ export const Home = () => {
     return () => {
       cancelled = true;
     };
-  }, [loadAttempt]);
+  }, [allPosts.length, loadAttempt]);
 
   useEffect(() => {
     const canonicalParams = canonicalizeHomeQuery(searchParams);
@@ -576,12 +582,13 @@ export const Home = () => {
 
   return (
       <div className="pb-8 md:pb-12">
-      {/* 搜索意图：有结果的可抓取搜索页（?q=xxx）保留索引并展示搜索主题；
-          无结果的空结果页 noindex，避免内容贫瘠页进索引。 */}
+      {/* 站内搜索页（?q=xxx）统一 noindex：搜索过滤在客户端执行，静态 HTML 无法
+          反映搜索意图；且搜索 URL 空间无限，收录会造成软重复与爬虫资源浪费
+          （Google 官方对站内搜索结果页的建议即是不索引）。该 noindex 由 Seo 组件
+          根据 URL 中的 q 参数自动输出，无需在此显式传入。 */}
       <Seo
         title={hasSearchQuery && results.length > 0 ? `搜索：${searchQuery}` : siteConfig.title}
         description={siteConfig.description}
-        noindex={hasSearchQuery && results.length === 0}
       />
       <Hero />
 

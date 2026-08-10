@@ -25,9 +25,23 @@ const getTouchDistance = (touches: React.TouchList) => {
   return Math.hypot(dx, dy);
 };
 
+const clampToRange = (value: number, bound: number) => Math.min(bound, Math.max(-bound, value));
+
+/**
+ * 计算缩放后图片相对视口的可平移范围。
+ * img.offsetWidth/Height 返回的是不含 transform 的布局尺寸；
+ * 缩放后显示尺寸 = 布局尺寸 × scale，超出视口的部分除以 2 即为
+ * 各轴向允许拖动的最大距离，防止图片被拖出屏幕后无法找回。
+ */
+const computePanBounds = (img: HTMLImageElement, scale: number) => ({
+  maxX: Math.max(0, (img.offsetWidth * scale - window.innerWidth) / 2),
+  maxY: Math.max(0, (img.offsetHeight * scale - window.innerHeight) / 2)
+});
+
 export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) => {
   const viewerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -135,6 +149,16 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
     if (!isDragging) return;
     const dx = event.clientX - dragStartRef.current.x;
     const dy = event.clientY - dragStartRef.current.y;
+    // 拖拽时按视口边界钳制，避免缩放后的图片被拖出屏幕无法找回。
+    const img = imgRef.current;
+    if (img) {
+      const { maxX, maxY } = computePanBounds(img, scale);
+      setPosition({
+        x: clampToRange(dragStartRef.current.posX + dx, maxX),
+        y: clampToRange(dragStartRef.current.posY + dy, maxY)
+      });
+      return;
+    }
     setPosition({ x: dragStartRef.current.posX + dx, y: dragStartRef.current.posY + dy });
   };
 
@@ -175,6 +199,16 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
       event.preventDefault();
       const dx = event.touches[0].clientX - touchStartRef.current.x;
       const dy = event.touches[0].clientY - touchStartRef.current.y;
+      // 触屏拖动同样按视口边界钳制。
+      const img = imgRef.current;
+      if (img) {
+        const { maxX, maxY } = computePanBounds(img, scale);
+        setPosition({
+          x: clampToRange(touchStartRef.current.posX + dx, maxX),
+          y: clampToRange(touchStartRef.current.posY + dy, maxY)
+        });
+        return;
+      }
       setPosition({ x: touchStartRef.current.posX + dx, y: touchStartRef.current.posY + dy });
     }
   };
@@ -249,6 +283,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
               </div>
             )}
             <img
+              ref={imgRef}
               src={displaySrc}
               alt={alt || ''}
               draggable={false}

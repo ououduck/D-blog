@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
-import { getPosts } from '@/services/posts';
+import { getInitialPosts, getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
@@ -37,10 +37,14 @@ const buildTagList = (posts: PostMetadata[]) => {
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'));
 };
 
+// 构建期 SSG：posts.json 已通过 eager glob 内联，SSR 阶段即可同步渲染标签云，
+// 客户端水合首帧一致，爬虫无需执行 JS 即可读取全部标签与文章数。
+const initialPosts = getInitialPosts();
+
 export const Tags = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [allPosts, setAllPosts] = useState<PostMetadata[]>(initialPosts);
+  const [loading, setLoading] = useState(initialPosts.length === 0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const shouldReduceMotion = useReducedMotion();
@@ -53,6 +57,15 @@ export const Tags = () => {
 
   useEffect(() => {
     let cancelled = false;
+
+    // 首次加载数据已由 eager glob 同步提供；仅“重新加载”（loadAttempt > 0）
+    // 或初始数据缺失时才有必要走异步重取。
+    if (loadAttempt === 0 && initialPosts.length > 0) {
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
 
     setLoading(true);
     getPosts()

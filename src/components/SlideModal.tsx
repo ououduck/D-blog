@@ -129,6 +129,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
 
           {isMobile ? (
             <motion.div
+              // 面板 padding 承担 safe-area：底部 + 左右（横屏 iPhone 刘海在左右两侧）
               className={`
                 relative z-10
                 w-full
@@ -144,7 +145,7 @@ export const SlideModal: React.FC<SlideModalProps> = ({
                 dark:bg-zinc-900
                 ${className}
               `}
-              style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+              style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)' }}
               variants={mobileVariants}
               initial="hidden"
               animate="visible"

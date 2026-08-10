@@ -125,7 +125,9 @@ html.theme-switching .editorial-input {
   }
 
   .editorial-input {
-    @apply min-h-11 w-full rounded-control border border-zinc-300 bg-paper px-4 py-3 text-sm text-ink shadow-none outline-none transition-[background-color,border-color,color,box-shadow] duration-150 placeholder:text-zinc-400 hover:border-zinc-400 focus:border-zinc-600 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500 disabled:opacity-70 aria-[invalid=true]:border-red-600 aria-[invalid=true]:focus:border-red-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-400 dark:aria-[invalid=true]:border-red-400 dark:aria-[invalid=true]:focus:border-red-400;
+    /* 基础字号 16px：iOS Safari 会对聚焦时字号 < 16px 的输入框自动缩放页面；
+       桌面端（sm 起）缩回 14px 保持紧凑观感，桌面浏览器不受此限制。 */
+    @apply min-h-11 w-full rounded-control border border-zinc-300 bg-paper px-4 py-3 text-[16px] sm:text-sm text-ink shadow-none outline-none transition-[background-color,border-color,color,box-shadow] duration-150 placeholder:text-zinc-400 hover:border-zinc-400 focus:border-zinc-600 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500 disabled:opacity-70 aria-[invalid=true]:border-red-600 aria-[invalid=true]:focus:border-red-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-400 dark:aria-[invalid=true]:border-red-400 dark:aria-[invalid=true]:focus:border-red-400;
   }
 
   .editorial-input:focus-visible,
@@ -288,6 +290,9 @@ html.theme-switching .editorial-input {
   min-height: 0;
   max-height: calc(100dvh - 2.5rem);
   overflow-y: auto;
+  /* 滚动到顶部/底部时阻止滚动继续传播到背后页面，避免下拉关闭手势时
+     背景内容一起滚动造成“双拖”感（与 JS 原生 touchmove 拦截互补）。 */
+  overscroll-behavior-y: contain;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -310,6 +315,20 @@ html.theme-switching .editorial-input {
   .animate-ping {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+/* 横屏/矮视口：右下角浮动控件（返回顶部、阅读进度、目录触发）垂直堆叠会占据
+   近一半屏高并遮挡正文。矮屏下收窄到只保留返回顶部，其余隐藏，点按顶部控件
+   也不会再被下方控件误触。 */
+@media (max-height: 480px) and (orientation: landscape) {
+  .reading-progress-badge {
+    display: none;
+  }
+
+  .toc-mobile-trigger,
+  .toc-desktop-trigger {
+    display: none;
   }
 }
 

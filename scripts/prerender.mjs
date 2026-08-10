@@ -1,3 +1,16 @@
+/**
+ * ⚠️ DEPRECATED — 本脚本已由 scripts/ssg.mjs 取代（build.mjs 阶段编排器不再调用）。
+ *
+ * 保留原因：可能与外部工具/文档存在引用；其 `injectSeoMeta` / `markRuntimeManagedHeadTags`
+ * 等纯函数仍被复用（import 场景）。
+ *
+ * 与 ssg.mjs 的差异提醒：
+ * - runPrerender 只做"SEO 元数据注入"，不渲染 React 组件树 —— 产出的是
+ *   空 root 的静态页（无正文，爬虫读不到正文），不要在生产构建中使用；
+ * - Phase 3 加固：runPrerender 内文章循环已做单篇 try/catch 隔离，
+ *   单篇文章元数据异常不再中断其余页面。
+ */
+
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
@@ -260,20 +273,23 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
 
   logger.start('Pre-render static routes');
 
-  // 1. Process Blog Posts
+  // 1. Process Blog Posts（Phase 3 加固：单篇 try/catch 隔离 + 失败计数，
+  //    单篇文章的元数据异常不再中断整站预渲染）。
+  const postFailures = [];
   posts.forEach((post) => {
-    // URL structure: /post/:id
-    const title = `${post.title} - ${SITE_SUFFIX}`;
-    const description = post.excerpt || post.title;
-    const postUrl = siteAbsoluteUrl(`/post/${post.id}`);
-    const coverImage = post.coverImage
-      ? toAbsoluteUrl(post.coverImage, SITE_URL, BASE_PATH)
-      : toAbsoluteUrl(siteConfig.seoImage || siteConfig.logo || '/logo.png', SITE_URL, BASE_PATH);
-    const publishDate = post.date;
-    const modifiedDate = post.updatedAt || post.date;
+    try {
+      // URL structure: /post/:id
+      const title = `${post.title} - ${SITE_SUFFIX}`;
+      const description = post.excerpt || post.title;
+      const postUrl = siteAbsoluteUrl(`/post/${post.id}`);
+      const coverImage = post.coverImage
+        ? toAbsoluteUrl(post.coverImage, SITE_URL, BASE_PATH)
+        : toAbsoluteUrl(siteConfig.seoImage || siteConfig.logo || '/logo.png', SITE_URL, BASE_PATH);
+      const publishDate = post.date;
+      const modifiedDate = post.updatedAt || post.date;
 
-    const postAuthors = post.authors?.length > 0 ? post.authors : [{ name: authorName }];
-    const ogMeta = `
+      const postAuthors = post.authors?.length > 0 ? post.authors : [{ name: authorName }];
+      const ogMeta = `
     <meta property="og:locale" content="zh_CN">
     <meta property="og:site_name" content="${escapeHtmlAttribute(siteTitle)}">
     <meta property="og:type" content="article">
@@ -294,50 +310,53 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
     <meta name="twitter:image:alt" content="${escapeHtmlAttribute(title)}">
     <meta name="twitter:url" content="${escapeHtmlAttribute(postUrl)}">`;
 
-    const structuredData = {
-      '@context': 'https://schema.org',
-      '@type': 'Article',
-      headline: post.title,
-      description,
-      image: coverImage,
-      datePublished: publishDate,
-      dateModified: modifiedDate,
-      author: postAuthors.map((author) => ({ '@type': 'Person', name: author.name, ...(author.url ? { url: author.url } : {}) })),
-      articleBody: post.content,
-      wordCount: post.wordCount,
-      keywords: (post.tags || []).join(', '),
-      inLanguage: 'zh-CN',
-      articleSection: post.category || undefined,
-      isPartOf: {
-        '@type': 'WebSite',
-        name: siteTitle,
-        url: siteAbsoluteUrl('/')
-      },
-      mainEntityOfPage: postUrl,
-      publisher: {
-        '@type': 'Organization',
-        name: siteTitle,
-        url: siteAbsoluteUrl('/'),
-        logo: { '@type': 'ImageObject', url: toAbsoluteUrl('/logo.png', SITE_URL, BASE_PATH) }
-      }
-    };
+      const structuredData = {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: post.title,
+        description,
+        image: coverImage,
+        datePublished: publishDate,
+        dateModified: modifiedDate,
+        author: postAuthors.map((author) => ({ '@type': 'Person', name: author.name, ...(author.url ? { url: author.url } : {}) })),
+        articleBody: post.content,
+        wordCount: post.wordCount,
+        keywords: (post.tags || []).join(', '),
+        inLanguage: 'zh-CN',
+        articleSection: post.category || undefined,
+        isPartOf: {
+          '@type': 'WebSite',
+          name: siteTitle,
+          url: siteAbsoluteUrl('/')
+        },
+        mainEntityOfPage: postUrl,
+        publisher: {
+          '@type': 'Organization',
+          name: siteTitle,
+          url: siteAbsoluteUrl('/'),
+          logo: { '@type': 'ImageObject', url: toAbsoluteUrl('/logo.png', SITE_URL, BASE_PATH) }
+        }
+      };
 
-    const breadcrumbData = {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: '首页', item: siteAbsoluteUrl('/') },
-        { '@type': 'ListItem', position: 2, name: post.category || '', item: `${siteAbsoluteUrl('/')}?category=${encodeURIComponent(post.category || '')}` },
-        { '@type': 'ListItem', position: 3, name: post.title, item: postUrl }
-      ]
-    };
+      const breadcrumbData = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: '首页', item: siteAbsoluteUrl('/') },
+          { '@type': 'ListItem', position: 2, name: post.category || '', item: `${siteAbsoluteUrl('/')}?category=${encodeURIComponent(post.category || '')}` },
+          { '@type': 'ListItem', position: 3, name: post.title, item: postUrl }
+        ]
+      };
 
-    const jsonLd = `\n    <script type="application/ld+json">${escapeJsonForHtml([structuredData, breadcrumbData])}</script>`;
+      const jsonLd = `\n    <script type="application/ld+json">${escapeJsonForHtml([structuredData, breadcrumbData])}</script>`;
 
-    const imagePreload = createImagePreload(coverImage, '(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1152px');
-    const extraMeta = `${imagePreload}${ogMeta}${jsonLd}`;
+      const imagePreload = createImagePreload(coverImage, '(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1152px');
+      const extraMeta = `${imagePreload}${ogMeta}${jsonLd}`;
 
-    writeHtml(distDir, template, `post/${post.id}`, title, description, extraMeta, { canonicalUrl: postUrl });
+      writeHtml(distDir, template, `post/${post.id}`, title, description, extraMeta, { canonicalUrl: postUrl });
+    } catch (error) {
+      postFailures.push(`post/${post.id}: ${error instanceof Error ? error.message : String(error)}`);
+    }
   });
 
   // 2. Process Static Pages
@@ -381,17 +400,24 @@ export const runPrerender = ({ distDir = DIST_DIR, postsFile = POSTS_FILE } = {}
     { canonicalUrl: null, robots: NOINDEX_ROBOTS }
   );
 
-  logger.step('Generated post pages', `count=${posts.length}`);
+  if (postFailures.length > 0) {
+    for (const failure of postFailures) {
+      logger.error('Post meta generation failed', failure);
+    }
+  }
+
+  logger.step('Generated post pages', `count=${posts.length} failed=${postFailures.length}`);
   logger.step('Generated static pages', `count=${staticPages.length + 1}`);
   logger.summary({
     pages: posts.length + staticPages.length + 1,
     posts: posts.length,
     static: staticPages.length,
     standalone: 1,
+    failed: postFailures.length,
     siteUrl: SITE_URL
   });
 
-  return true;
+  return postFailures.length === 0;
 };
 
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {

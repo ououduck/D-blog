@@ -15,6 +15,7 @@ const __dirname = path.dirname(__filename);
 const DIST_DIR = path.join(__dirname, '../dist');
 const DIST_SSR_DIR = path.join(__dirname, '../dist-ssr');
 const IMAGE_MANIFEST_FILE = path.join(__dirname, '../generated/image-assets.json');
+const POSTS_FILE = path.join(__dirname, '../generated/posts.json');
 
 const siteConfig = loadSiteConfig({ logger });
 const SITE_URL = siteConfig.url;
@@ -22,8 +23,23 @@ const BASE_PATH = getSiteBasePath();
 const sitePath = (value = '/') => withBasePath(value, BASE_PATH);
 const siteAbsoluteUrl = (value = '/') => new URL(sitePath(value), `${SITE_URL}/`).toString();
 
-const DEFAULT_ROBOTS = 'index,follow,max-image-preview:large';
-const NOINDEX_ROBOTS = 'noindex,nofollow';
+/**
+ * Suspense 边界展平的迭代上限（防御性保险）：
+ * 正常页面 $RC 调用数量与懒加载边界数量级相当（个位数到几十），
+ * 该上限用于防止极端畸形输出（如缺失 </script> 导致 $RC 匹配不消耗
+ * 字符串长度）造成理论上的死循环。超过上限即放弃剩余展平，
+ * 保留浏览器可水合的原始序列化标记 —— 内容正确性优先于展平完整性。
+ */
+const MAX_FLATTEN_ITERATIONS = 10000;
+
+/**
+ * SSG 全站渲染的总预算（毫秒）：10 分钟（可通过环境变量 SSG_TOTAL_BUDGET_MS 覆盖）。
+ * 防御性兜底：单页渲染超时为 30s（ssr-entry），若多页连续超时（如 SSR bundle 内
+ * 存在系统性死循环/巨型文章），总时长会逼近 build.mjs 的阶段超时（20 分钟），
+ * 此时 build.mjs 会 SIGKILL 整个阶段，failedPages 汇总永远打印不出来，排查线索丢失。
+ * 本预算保证 SSG 阶段始终能在预算内结束并打印完整汇总（failed + skipped）。
+ */
+const TOTAL_BUDGET_MS = Number(process.env.SSG_TOTAL_BUDGET_MS) || 10 * 60 * 1000;
 
 /**
  * framer-motion 等组件在 SSR 时会把 initial={{ opacity: 0 }} 写为内联样式。
@@ -53,42 +69,38 @@ const escapeJsonForHtml = (value) => JSON.stringify(value)
  *   并删除 <div hidden id="S:x">内容</div> 与 <script>$RC("B:x","S:x")</script>。
  * 展平后客户端水合时，React 会把已就绪的边界内容原位水合（lazy 模块加载完成后
  * 直接接管已渲染的 DOM，不再回退到 fallback），SSR 输出与客户端语义保持一致。
+ *
+ * 边界可能互相嵌套（例如懒加载的 BackToTop 位于路由级懒加载边界内部）：
+ * 外层 hidden div 里包含内层边界的完整序列化片段。若先统计全部替换区间再统一
+ * 应用，区间互相重叠会导致索引错位、$RC 脚本残留与内容重复。因此这里改为
+ * “最内层优先”的迭代算法：React 按文档序输出 $RC 调用（内层边界先出现），
+ * 每次处理当前字符串中第一个 $RC 边界，处理完后再扫描下一个（此时只剩外层）。
+ * 单个边界的三处编辑（script 最右 → hidden 居中 → fallback 最左）互不重叠，
+ * 从右往左执行可保证前序索引不失效。
+ *
+ * 防御路径（Phase 4 加固）：迭代次数上限 MAX_FLATTEN_ITERATIONS，防止
+ * 极端畸形输出导致死循环；单边界配对失败时只摘除 $RC 调用文本，避免
+ * 无限扫描同一位点，其余序列化标记原样保留（浏览器仍能按未展平方式水合）。
  */
 const flattenSuspenseBoundaries = (html) => {
   // React 19 把恢复函数与调用写在同一 <script> 里：`<script>...;$RC("B:x","S:x")</script>`。
-  const rcCallPattern = /\$RC\("([^"]+)","([^"]+)"\)/g;
-  const boundaries = [];
-  const scriptRanges = [];
-  let match;
-  while ((match = rcCallPattern.exec(html)) !== null) {
-    boundaries.push({ boundaryId: match[1], hiddenId: match[2] });
-    // 定位包裹 $RC 调用的完整 <script>…</script>，整体移除（同一 script 内多个调用只记录一次）。
-    const scriptStart = html.lastIndexOf('<script', match.index);
-    const scriptEnd = html.indexOf('</script>', match.index) + '</script>'.length;
-    if (scriptStart >= 0 && scriptEnd > scriptStart) {
-      const key = `${scriptStart}:${scriptEnd}`;
-      if (!scriptRanges.some(([s, e]) => s === scriptStart && e === scriptEnd)) {
-        scriptRanges.push([scriptStart, scriptEnd]);
-      }
-    }
-  }
-  if (boundaries.length === 0) {
-    return html;
-  }
+  const rcCallPattern = /\$RC\("([^"]+)","([^"]+)"\)/;
 
-  const findHiddenDivContent = (hiddenId) => {
-    const idIdx = html.indexOf(`id="${hiddenId}"`);
+  // 在给定字符串中定位 <div hidden id="hiddenId">…</div> 的起止与内容。
+  // 用 div 深度计数匹配闭合标签，内容中的嵌套 div 不会导致提前截断。
+  const findHiddenDivContent = (source, hiddenId) => {
+    const idIdx = source.indexOf(`id="${hiddenId}"`);
     if (idIdx < 0) {
       return null;
     }
-    const openTagStart = html.lastIndexOf('<div', idIdx);
-    const contentStart = html.indexOf('>', idIdx) + 1;
+    const openTagStart = source.lastIndexOf('<div', idIdx);
+    const contentStart = source.indexOf('>', idIdx) + 1;
     let depth = 1;
     let i = contentStart;
     let contentEnd = -1;
-    while (i < html.length) {
-      const open = html.indexOf('<div', i);
-      const close = html.indexOf('</div>', i);
+    while (i < source.length) {
+      const open = source.indexOf('<div', i);
+      const close = source.indexOf('</div>', i);
       const next = open !== -1 && (close === -1 || open < close) ? open : close;
       if (next === -1) {
         break;
@@ -108,41 +120,47 @@ const flattenSuspenseBoundaries = (html) => {
       return null;
     }
     return {
-      content: html.slice(contentStart, contentEnd),
+      content: source.slice(contentStart, contentEnd),
       start: openTagStart,
       end: contentEnd + '</div>'.length
     };
   };
 
-  const replacements = [];
-  for (const { boundaryId, hiddenId } of boundaries) {
-    const hidden = findHiddenDivContent(hiddenId);
-    const templateIdx = html.indexOf(`<template id="${boundaryId}">`);
-    if (!hidden || templateIdx < 0) {
-      continue;
-    }
-    const fallbackStart = html.lastIndexOf('<!--$?-->', templateIdx);
-    const fallbackEndIdx = html.indexOf('<!--/$-->', templateIdx);
-    if (fallbackStart < 0 || fallbackEndIdx < 0) {
-      continue;
-    }
-    const fallbackEnd = fallbackEndIdx + '<!--/$-->'.length;
-    replacements.push({
-      start: fallbackStart,
-      end: fallbackEnd,
-      text: `<!--$-->${hidden.content}<!--/$-->`
-    });
-    replacements.push({ start: hidden.start, end: hidden.end, text: '' });
-  }
-  for (const [scriptStart, scriptEnd] of scriptRanges) {
-    replacements.push({ start: scriptStart, end: scriptEnd, text: '' });
-  }
-
-  // 从后往前应用，保证先前记录的索引不因替换而偏移。
-  replacements.sort((a, b) => b.start - a.start);
   let result = html;
-  for (const { start, end, text } of replacements) {
-    result = result.slice(0, start) + text + result.slice(end);
+  let match;
+  let iterations = 0;
+  while ((match = rcCallPattern.exec(result)) !== null) {
+    iterations += 1;
+    // 防御：迭代次数超限立即停止，保留剩余原始标记（内容优先于展平）。
+    if (iterations > MAX_FLATTEN_ITERATIONS) {
+      logger.warn('Suspense flatten iteration limit reached; keeping remaining markers', `iterations=${iterations}`);
+      break;
+    }
+
+    const boundaryId = match[1];
+    const hiddenId = match[2];
+
+    const scriptStart = result.lastIndexOf('<script', match.index);
+    const scriptEnd = scriptStart >= 0
+      ? result.indexOf('</script>', match.index) + '</script>'.length
+      : -1;
+    const templateIdx = result.indexOf(`<template id="${boundaryId}">`);
+    const hidden = templateIdx >= 0 ? findHiddenDivContent(result, hiddenId) : null;
+    const fallbackStart = templateIdx >= 0 ? result.lastIndexOf('<!--$?-->', templateIdx) : -1;
+    const fallbackEndIdx = templateIdx >= 0 ? result.indexOf('<!--/$-->', templateIdx) : -1;
+
+    if (scriptStart < 0 || scriptEnd <= scriptStart || !hidden || fallbackStart < 0 || fallbackEndIdx < 0) {
+      // 防御路径：输出异常时该边界无法配对处理。只摘除调用文本避免死循环，
+      // 其余序列化标记原样保留，浏览器仍能按未展平的方式水合该边界。
+      result = result.slice(0, match.index) + result.slice(match.index + match[0].length);
+      continue;
+    }
+
+    const fallbackEnd = fallbackEndIdx + '<!--/$-->'.length;
+    // 三处区间互不重叠且从右往左排列，从后往前修改不影响前面区间的索引。
+    result = result.slice(0, scriptStart) + result.slice(scriptEnd);
+    result = result.slice(0, hidden.start) + result.slice(hidden.end);
+    result = result.slice(0, fallbackStart) + `<!--$-->${hidden.content}<!--/$-->` + result.slice(fallbackEnd);
   }
   return result;
 };
@@ -280,6 +298,19 @@ const mergeHead = (template, helmetHead, extraHead = '') => {
   return html;
 };
 
+/**
+ * 把异常规范化为单行可读信息（避免 Actions 日志堆栈刷屏）。
+ * @param {unknown} error
+ * @returns {string}
+ */
+const formatError = (error) => {
+  if (error instanceof Error) {
+    const firstStackLine = (error.stack || '').split('\n')[1]?.trim() || '';
+    return `${error.name}: ${error.message}${firstStackLine ? ` (${firstStackLine})` : ''}`;
+  }
+  return String(error);
+};
+
 export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, ssrDir = process.env.SSG_SSR_DIR || DIST_SSR_DIR } = {}) => {
   if (!fs.existsSync(distDir)) {
     logger.error('dist directory not found', 'Run "vite build" before SSG.');
@@ -287,6 +318,11 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   }
   if (!fs.existsSync(path.join(ssrDir, 'entry-server.js'))) {
     logger.error('SSR bundle not found', 'Run "vite build --ssr" before SSG.');
+    return false;
+  }
+  // 前置依赖检查：文章数据缺失时给出明确指引（原实现直接 JSON.parse 崩溃）。
+  if (!fs.existsSync(POSTS_FILE)) {
+    logger.error('generated/posts.json not found', 'Run "npm run gen:data" before SSG.');
     return false;
   }
 
@@ -379,6 +415,11 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
     { path: 'sponsor', title: `赞助 - ${siteConfig.title}`, description: '支持 D-blog 的多种方式：贡献代码、撰写文章或通过赞助商链接帮助博客持续成长。', schemaType: 'WebPage' }
   ];
 
+  /**
+   * 渲染并落盘单个页面。渲染失败时抛出异常，由调用方（页面循环）捕获隔离：
+   * 单页失败不中断整站生成，全部完成后汇总失败并返回 false（构建失败，
+   * 但已生成的页面保留，便于在部署前排查失败原因）。
+   */
   const writePage = async (url, relativePath, extraHead = '', options = {}) => {
     const { html, head, routeData } = await renderPage(url);
     let pageHtml = injectRootContent(template, html);
@@ -396,21 +437,48 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
     writeHtmlFile(relativePath, pageHtml);
   };
 
+  const failedPages = [];
+  const skippedPages = [];
+  const ssgStartedAt = Date.now();
+
+  // 总预算检查：超过预算后剩余的页面不再渲染（记入 skipped），
+  // 保证阶段在预算内结束、汇总始终可打印。
+  const budgetExceeded = () => Date.now() - ssgStartedAt > TOTAL_BUDGET_MS;
+
   // 1. 文章页：SSR 同步渲染完整正文（爬虫可直接读取）。
+  // 封面 preload 的 imagesizes 必须与 Post.tsx 中 <img sizes> 的断点上限一致
+  // （"(max-width: 1279px) 80vw, 1024px"），否则预取到的变体可能大于页面实际使用。
   for (const post of posts) {
+    if (budgetExceeded()) {
+      skippedPages.push(`/post/${post.id}`);
+      continue;
+    }
     const extraHead = post.coverImage
-      ? createImagePreload(toAbsoluteUrl(post.coverImage, SITE_URL, BASE_PATH), '(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1152px')
+      ? createImagePreload(toAbsoluteUrl(post.coverImage, SITE_URL, BASE_PATH), '(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px')
       : '';
-    await writePage(`/post/${post.id}`, `post/${post.id}`, extraHead);
+    try {
+      await writePage(`/post/${post.id}`, `post/${post.id}`, extraHead);
+    } catch (error) {
+      failedPages.push({ url: `/post/${post.id}`, error: formatError(error) });
+    }
   }
-  logger.step('Generated post pages', `count=${posts.length}`);
+  logger.step('Generated post pages', `count=${posts.length} failed=${failedPages.length} skipped=${skippedPages.length}`);
 
   // 2. 静态页面：SSR 渲染 + 附加结构化数据。
   for (const page of staticPages) {
+    if (budgetExceeded()) {
+      skippedPages.push(`/${page.path}`);
+      continue;
+    }
     const schema = createStaticPageSchema(page);
-    await writePage(`/${page.path}`, page.path, schema);
+    try {
+      await writePage(`/${page.path}`, page.path, schema);
+    } catch (error) {
+      failedPages.push({ url: `/${page.path}`, error: formatError(error) });
+    }
   }
-  logger.step('Generated static pages', `count=${staticPages.length}`);
+  const staticSkipped = staticPages.filter((page) => skippedPages.includes(`/${page.path}`)).length;
+  logger.step('Generated static pages', `count=${staticPages.length} failed=${failedPages.filter((item) => staticPages.some((page) => item.url === `/${page.path}`)).length} skipped=${staticSkipped}`);
 
   // 3. 首页。
   const homeHeroPost = (() => {
@@ -422,32 +490,77 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   const homeExtraHead = homeHeroPost?.coverImage
     ? createImagePreload(toAbsoluteUrl(homeHeroPost.coverImage, SITE_URL, BASE_PATH), '(max-width: 767px) 100vw, 60vw')
     : '';
-  const { html: homeHtml, head: homeHead, routeData: homeRouteData } = await renderPage('/');
-  const homeRouteDataScript = createRouteDataScript(homeRouteData);
-  let homePage = injectRootContent(template, homeHtml);
-  homePage = flattenSuspenseBoundaries(homePage);
-  if (homeRouteDataScript) {
-    homePage = homePage.replace(/<div\b[^>]*\bid=["']root["'][^>]*>/i, (match) => `${homeRouteDataScript}\n    ${match}`);
+  if (budgetExceeded()) {
+    skippedPages.push('/');
+  } else {
+    try {
+      const { html: homeHtml, head: homeHead, routeData: homeRouteData } = await renderPage('/');
+      const homeRouteDataScript = createRouteDataScript(homeRouteData);
+      let homePage = injectRootContent(template, homeHtml);
+      homePage = flattenSuspenseBoundaries(homePage);
+      if (homeRouteDataScript) {
+        homePage = homePage.replace(/<div\b[^>]*\bid=["']root["'][^>]*>/i, (match) => `${homeRouteDataScript}\n    ${match}`);
+      }
+      writeStandaloneHtml('index.html', mergeHead(homePage, homeHead, `${homeExtraHead}${NOSCRIPT_FALLBACK}`));
+      logger.step('Generated home page');
+    } catch (error) {
+      failedPages.push({ url: '/', error: formatError(error) });
+    }
   }
-  writeStandaloneHtml('index.html', mergeHead(homePage, homeHead, `${homeExtraHead}${NOSCRIPT_FALLBACK}`));
-  logger.step('Generated home page');
 
   // 4. 我的收藏（本地数据页，页面自身 Seo 已带 noindex）。
-  await writePage('/favorites', 'favorites');
+  if (budgetExceeded()) {
+    skippedPages.push('/favorites');
+  } else {
+    try {
+      await writePage('/favorites', 'favorites');
+    } catch (error) {
+      failedPages.push({ url: '/favorites', error: formatError(error) });
+    }
+  }
 
   // 5. 404 页（根级独立 HTML，Cloudflare Pages 以 404.html 作为 404 响应）。
   // 渲染路径 /__missing__ 是占位路由，不能出现在 canonical 中，mergeHead 之后显式剥离。
-  const { html: notFoundHtml, head: notFoundHead } = await renderPage('/__missing__');
-  const notFoundPage = injectRootContent(template, notFoundHtml);
-  const flattenedNotFoundPage = flattenSuspenseBoundaries(notFoundPage);
-  const mergedNotFoundPage = mergeHead(flattenedNotFoundPage, notFoundHead, NOSCRIPT_FALLBACK);
-  writeStandaloneHtml('404.html', mergedNotFoundPage.replace(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\/?\s*>/i, ''));
-  logger.step('Generated 404 page');
+  if (budgetExceeded()) {
+    skippedPages.push('/__missing__');
+  } else {
+    try {
+      const { html: notFoundHtml, head: notFoundHead } = await renderPage('/__missing__');
+      const notFoundPage = injectRootContent(template, notFoundHtml);
+      const flattenedNotFoundPage = flattenSuspenseBoundaries(notFoundPage);
+      const mergedNotFoundPage = mergeHead(flattenedNotFoundPage, notFoundHead, NOSCRIPT_FALLBACK);
+      writeStandaloneHtml('404.html', mergedNotFoundPage.replace(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\/?\s*>/i, ''));
+      logger.step('Generated 404 page');
+    } catch (error) {
+      failedPages.push({ url: '/__missing__', error: formatError(error) });
+    }
+  }
+
+  // 汇总：任何页面失败都视为构建失败（但已生成页面保留供排查）；
+  // skipped 仅因总预算截断，单独提示。
+  if (skippedPages.length > 0) {
+    logger.warn('Pages skipped due to total SSG budget', { count: skippedPages.length, firstFew: skippedPages.slice(0, 10) });
+  }
+  if (failedPages.length > 0) {
+    for (const failed of failedPages) {
+      logger.error('Page generation failed', `${failed.url}: ${failed.error}`);
+    }
+    logger.summary({
+      pages: posts.length + staticPages.length + 3,
+      posts: posts.length,
+      static: staticPages.length,
+      failed: failedPages.length,
+      skipped: skippedPages.length,
+      siteUrl: SITE_URL
+    });
+    return false;
+  }
 
   logger.summary({
     pages: posts.length + staticPages.length + 3,
     posts: posts.length,
     static: staticPages.length,
+    skipped: skippedPages.length,
     siteUrl: SITE_URL
   });
 
@@ -457,5 +570,10 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   runSsg().then((ok) => {
     if (!ok) process.exitCode = 1;
+  }).catch((error) => {
+    // 顶层兜底：runSsg 内部任何未捕获异常都结构化记录后以非零码退出，
+    // 避免未处理 rejection 以裸堆栈崩溃（原实现的隐患）。
+    logger.error('SSG generation failed', formatError(error));
+    process.exitCode = 1;
   });
 }

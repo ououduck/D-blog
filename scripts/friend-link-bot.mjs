@@ -1,57 +1,194 @@
+/**
+ * friend-link-bot.mjs — 友链申请自动审核 Bot（GitHub Actions 专用）。
+ *
+ * 运行模式（由 workflow 以 CLI 参数区分）：
+ *   node scripts/friend-link-bot.mjs opened   # issues 事件触发：回复"已收到"标记
+ *   node scripts/friend-link-bot.mjs review   # schedule 每 5 分钟：审核到期申请
+ *
+ * 本版本为深度 Code Audit + 防御性重构最终版（Phase 3 全量重写，Phase 4 红队修正），
+ * 在上一版基础上的关键修复：
+ *
+ * 1. 【DNS 超时】isSafePublicHttpUrl 改用 lookupWithTimeout —— DNS 服务器无响应
+ *    时 5s 内判定不可达（fail-closed），不再无限阻塞（上版完全不受超时控制）。
+ * 2. 【严格分页】listOpenIssues 开启 strictPagination=true：open issues 超过
+ *    1000 条（分页上限）时抛 PaginationLimitError 中止整批 —— 静默截断的
+ *    申请将永远无人处理，宁可报警也不丢单。
+ * 3. 【429 限流识别】依赖 http.mjs 的 isRateLimitResponse（403/429/remaining=0
+ *    统一识别）与 RateLimitError：二次限流时 `instanceof RateLimitError` 断点
+ *    生效，整批暂停机制不再失效（上版 429 走普通 Error，降级机制形同虚设）。
+ * 4. 【字段解析容错】parseApplication 允许 `- Site URL:`（冒号前无空格）、
+ *    值内换行续行折叠；avatar 字段降级为可选（缺省用默认头像占位）——
+ *    申请者微调模板或换行写值不再整单作废。
+ * 5. 【mailto 注入净化】buildManualReviewSection 的 mailto body 先 \r\n → 空格，
+ *    消除 mailto 头注入（上版把含换行的原正文直接塞进 mailto 链接）。
+ * 6. 【git 分支参数化】commitAndPushFriendFile 目标分支用
+ *    GITHUB_REF_NAME 覆盖（默认 main），不再硬编码。
+ * 7. 【Summary 面板】processReview 结束后输出 Job Summary 表格
+ *    （processed/skipped/rejected/accepted/exists/failed），运行结果在
+ *    Actions 页面顶部一眼可见。
+ *
+ * 运行环境要求：GITHUB_TOKEN / GITHUB_REPOSITORY / ISSUE_PAYLOAD（opened 模式）。
+ */
+
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
 import path from 'node:path';
-import dns from 'node:dns/promises';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  fetchGithubJson,
+  fetchWithRetry,
+  createTimeoutSignal,
+  lookupWithTimeout,
+  RateLimitError,
+  PaginationLimitError,
+  readResponseText
+} from './lib/http.mjs';
+import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
+
+/* ------------------------------------------------------------------ */
+/* 常量与可覆盖配置                                                     */
+/* ------------------------------------------------------------------ */
 
 export const ISSUE_PREFIX = '[Friend Link]';
-export const WAIT_MS = 10 * 60 * 1000;
+
+/** 申请提交后等待的冷却时长：10 分钟（可环境变量覆盖，方便测试缩短）。 */
+export const WAIT_MS = Number(process.env.FRIEND_LINK_WAIT_MS) || 10 * 60 * 1000;
+
 const INITIAL_MARKER = '<!-- d-blog-friend-bot:initial -->';
 const ACCEPTED_MARKER = '<!-- d-blog-friend-bot:accepted -->';
 const REJECTED_MARKER = '<!-- d-blog-friend-bot:rejected -->';
-const SITE_URL = 'https://blog.pldduck.com/';
-const SITE_NAME = 'D-blog';
-const SITE_DESCRIPTION = '跑路的duck的技术分享和生活随笔';
+
+/** 站点信息：反链检查目标。 */
+const SITE_URL = process.env.FRIEND_LINK_SITE_URL || 'https://blog.pldduck.com/';
+const SITE_NAME = process.env.FRIEND_LINK_SITE_NAME || 'D-blog';
+const SITE_DESCRIPTION = process.env.FRIEND_LINK_SITE_DESCRIPTION || '跑路的duck的技术分享和生活随笔';
+
+/** 友链页抓取的最大响应字节数（防超大附件拖垮内存/带宽）。 */
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+
+/** 页面抓取的整体超时（覆盖 DNS+TLS+响应头+body 全程）。 */
+const PAGE_FETCH_TIMEOUT_MS = 30000;
+
+/** 重定向最大跳数（防跳转环）。 */
+const MAX_REDIRECTS = 3;
+
+/** 评论内容安全上限：GitHub 评论 body 上限为 65536 字符，预留余量。 */
+const MAX_COMMENT_BODY_CHARS = 48000;
+
+/** mailto 预填正文截断：超长 mailto 链接会拖慢 Issue 页面渲染。 */
+const MAX_MAILTO_BODY_CHARS = 4000;
+
+/** 申请字段长度上限（输入 Schema 校验）。 */
+const FIELD_LIMITS = {
+  name: 100,
+  description: 500,
+  contact: 200
+};
+
+/** 申请字段总长度预算（name+description+contact），防字段合计超限。 */
+const MAX_TOTAL_FIELD_CHARS = 800;
+
+/** git 子命令超时（毫秒）。 */
+const GIT_TIMEOUT_MS = 60000;
+
+/** 单个 review 批次最多处理多少个 open issue（每批 schedule 只处理一批，避免超长运行）。 */
+const MAX_ISSUES_PER_BATCH = 50;
+
+/* ------------------------------------------------------------------ */
+/* 环境与日志器                                                         */
+/* ------------------------------------------------------------------ */
+
+const logger = createActionLogger('friend-link');
 
 const owner = process.env.GITHUB_REPOSITORY?.split('/')[0];
 const repo = process.env.GITHUB_REPOSITORY?.split('/')[1];
 const token = process.env.GITHUB_TOKEN;
-const apiBase = `https://api.github.com/repos/${owner}/${repo}`;
 
+/** git 推送目标分支：优先取 GITHUB_REF_NAME（workflow 可配置），默认 main。 */
+const TARGET_BRANCH = process.env.FRIEND_LINK_TARGET_BRANCH || process.env.GITHUB_REF_NAME || 'main';
+
+/** GitHub API 统一请求入口：注入环境校验、鉴权与分页。 */
 const api = async (endpoint, options = {}) => {
-  if (!token || !owner || !repo) throw new Error('GitHub Actions environment is incomplete.');
-  const response = await fetch(`${apiBase}${endpoint}`, {
+  const result = await fetchGithubJson(endpoint, {
+    token,
     ...options,
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${token}`,
-      'X-GitHub-Api-Version': '2022-11-28',
-      ...(options.headers || {}),
-    },
+    onRetry: (info) => logger.warn('Retrying GitHub API request', {
+      endpoint: endpoint.split('?')[0],
+      attempt: info.attempt,
+      status: info.status ?? 'network',
+      delayMs: info.delayMs
+    })
   });
-  if (!response.ok) throw new Error(`GitHub API ${response.status}: ${await response.text()}`);
-  return response.status === 204 ? null : response.json();
+  return result;
 };
 
-const field = (body, label) => {
-  const line = body.split(/\r?\n/).find((item) => item.toLowerCase().startsWith(`- ${label.toLowerCase()}:`));
-  return line ? line.slice(line.indexOf(':') + 1).trim() : '';
-};
+/* ------------------------------------------------------------------ */
+/* 纯函数：申请解析 / URL 规范化 / 私网校验 / 反链识别                  */
+/* ------------------------------------------------------------------ */
 
+/**
+ * 从 Issue 正文按 "- 标签: 值" 行格式解析申请字段（增强容错版）。
+ * 容错规则（Phase 3/4 修复）：
+ * - 标签冒号前允许无空格（`- Site URL:` 与 `-Site URL:` 均可识别）；
+ * - 值内换行续行折叠：GitHub 富文本渲染会把多行值压成一行但保留换行，
+ *   "值：\n  第二行" 时把后续缩进纯文本行拼进当前值；
+ * - 续行仅限"缩进 + 非列表/引用标记"的纯文本行（`  - xxx` 这类子列表项
+ *   不折叠，避免污染字段值 —— Phase 4 红队实测发现缩进列表项会被误拼入 URL）；
+ * - 重复标签：首次出现优先，后续同标签行忽略（防正文手滑重复行污染值）；
+ * - avatar 缺失不再导致整单作废（由调用方决定是否降级）。
+ * @param {string} [body=''] Issue 正文。
+ * @returns {object | null} 全部核心字段非空时返回对象，否则 null。
+ */
 export const parseApplication = (body = '') => {
-  const values = {
-    name: field(body, 'Site Name'),
-    url: field(body, 'Site URL'),
-    friendPageUrl: field(body, 'Friend Page URL'),
-    avatar: field(body, 'Avatar URL'),
-    description: field(body, 'Short Description'),
-    contact: field(body, 'Your Name / Contact'),
-    filename: field(body, 'Filename'),
+  const lines = String(body ?? '').split(/\r?\n/);
+  // 收集所有字段行（容忍无空格冒号），重复标签取首次出现的值。
+  const values = {};
+  let currentLabel = null;
+  for (const rawLine of lines) {
+    // 字段行模式：行首可带 1-3 个空格，`- 标签: 值` 或 `-标签: 值`。
+    const fieldMatch = rawLine.match(/^\s{0,3}-\s*([^:\n]+?)\s*:\s*(.*)$/);
+    if (fieldMatch) {
+      const label = fieldMatch[1].trim().toLowerCase();
+      const value = fieldMatch[2].trim();
+      currentLabel = label;
+      // 首次出现优先：已有值则忽略后续同标签行（防重复行污染）。
+      if (value && !values[label]) {
+        values[label] = value;
+      }
+      continue;
+    }
+    // 非字段行：仅当"缩进 ≥2 空格 + 非列表/引用标记（- * > # 等）"时视为续行，
+    // 折叠进当前字段值。子列表项（缩进 + 破折号）不折叠，且终结当前续行。
+    if (currentLabel && /^\s{2,}\S/.test(rawLine) && !/^\s{2,}[-*>\d.]\s/.test(rawLine) && !/^\s{2,}#/.test(rawLine)) {
+      const continuation = rawLine.trim();
+      if (values[currentLabel]) {
+        values[currentLabel] = `${values[currentLabel]} ${continuation}`.trim();
+      }
+    } else {
+      currentLabel = null;
+    }
+  }
+
+  const application = {
+    name: values['site name'] || '',
+    url: values['site url'] || '',
+    friendPageUrl: values['friend page url'] || '',
+    avatar: values['avatar url'] || '',
+    description: values['short description'] || '',
+    contact: values['your name / contact'] || '',
+    filename: values['filename'] || ''
   };
-  return Object.values(values).every(Boolean) ? values : null;
+  // 核心字段（除 avatar 外）必须全部非空，否则视为无效申请。
+  const { avatar: _avatar, ...coreFields } = application;
+  return Object.values(coreFields).every(Boolean) ? application : null;
 };
 
+/**
+ * URL 规范化：去掉 hash、尾斜杠、统一小写。用于反链包含判断与去重比较。
+ * @param {string} value
+ * @returns {string}
+ */
 export const normalizeUrl = (value) => {
   try {
     const url = new URL(value);
@@ -63,16 +200,41 @@ export const normalizeUrl = (value) => {
   }
 };
 
-const isPrivateAddress = (address) => {
+/**
+ * 判断 IP 是否为私网/保留地址（SSRF 防护：拒绝指向内网的目标）。
+ * 支持 IPv4 与常见 IPv6 形式。
+ * @param {string} address
+ * @returns {boolean} true 表示私网地址（不可访问）。
+ */
+export const isPrivateAddress = (address) => {
   const value = address.toLowerCase();
-  if (value.includes(':')) return value === '::1' || value.startsWith('fc') || value.startsWith('fd') || value.startsWith('fe80:');
+  if (value.includes(':')) {
+    // IPv6：仅放行全局单播常见形态（::1 回环、fc/fd ULA、fe80 链路本地均拒绝）。
+    return value === '::1' || value.startsWith('fc') || value.startsWith('fd') || value.startsWith('fe80:');
+  }
   const parts = value.split('.').map(Number);
-  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return true;
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+    return true;
+  }
   return (
-    parts[0] === 0 || parts[0] === 10 || parts[0] === 127 || (parts[0] === 169 && parts[1] === 254) || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || (parts[0] === 192 && parts[1] === 168)
+    parts[0] === 0
+    || parts[0] === 10
+    || parts[0] === 127
+    || (parts[0] === 169 && parts[1] === 254)
+    || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31)
+    || (parts[0] === 192 && parts[1] === 168)
   );
 };
 
+/**
+ * 校验 URL 是否为"安全的公开 HTTP(S) 地址"：
+ * 协议/主机名/凭据检查 + DNS 解析后逐 IP 校验非私网。
+ * 任何一步异常均返回 false（fail-closed，绝不误放行内网目标）。
+ * Phase 3 修复：DNS 解析使用 lookupWithTimeout（5s 超时），
+ * DNS 服务器无响应时快速判定不可达，不阻塞整个 job。
+ * @param {string} value
+ * @returns {Promise<boolean>}
+ */
 export const isSafePublicHttpUrl = async (value) => {
   let url;
   try {
@@ -80,54 +242,89 @@ export const isSafePublicHttpUrl = async (value) => {
   } catch {
     return false;
   }
-  if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password) return false;
-  if (url.hostname === 'localhost' || url.hostname.endsWith('.localhost')) return false;
-  try {
-    const addresses = await dns.lookup(url.hostname, {
-      all: true,
-      verbatim: true,
-    });
-    return addresses.length > 0 && addresses.every(({ address }) => !isPrivateAddress(address));
-  } catch {
+  if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password) {
     return false;
   }
+  if (url.hostname === 'localhost' || url.hostname.endsWith('.localhost')) {
+    return false;
+  }
+  // 带超时的 DNS 解析：返回 []（超时/失败）时 fail-closed 判定为不安全。
+  const addresses = await lookupWithTimeout(url.hostname);
+  return addresses.length > 0 && addresses.every(({ address }) => !isPrivateAddress(address));
 };
 
+/**
+ * 净化 mailto 预填正文：折叠换行与 CR，消除 mailto 头注入。
+ * @param {string} value
+ * @returns {string}
+ */
+export const sanitizeMailtoBody = (value) => String(value ?? '')
+  .replace(/\r\n?/g, ' ')
+  .replace(/\n/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+/**
+ * 抓取公开页面全文（带重定向链、整体超时、退避重试与体积上限）。
+ * 每跳重定向都重新做 DNS 私网校验（防 SSRF 跳转绕过）。
+ * @param {string} value 起始 URL。
+ * @returns {Promise<string | null>} 页面 HTML；任何失败返回 null。
+ */
 const fetchPublicPage = async (value) => {
   let current = value;
-  for (let redirects = 0; redirects <= 3; redirects += 1) {
-    if (!(await isSafePublicHttpUrl(current))) return null;
-    const response = await fetch(current, {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(15000),
-      headers: {
-        'User-Agent': 'D-blogFriendLinkBot/1.0',
-        Accept: 'text/html,application/xhtml+xml',
-      },
-    });
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get('location');
-      if (!location) return null;
-      current = new URL(location, current).toString();
-      continue;
+  for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
+    if (!(await isSafePublicHttpUrl(current))) {
+      logger.warn('Blocked unsafe redirect target', { url: current });
+      return null;
     }
-    if (!response.ok) return null;
-    const reader = response.body?.getReader();
-    if (!reader) return null;
-    const chunks = [];
-    let total = 0;
-    while (true) {
-      const { done, value: chunk } = await reader.read();
-      if (done) break;
-      total += chunk.byteLength;
-      if (total > MAX_RESPONSE_BYTES) return null;
-      chunks.push(chunk);
+
+    // 单一总超时信号覆盖 fetch 与 body 读取全程，防慢速连接无限挂起。
+    const { signal, cleanup } = createTimeoutSignal(PAGE_FETCH_TIMEOUT_MS);
+    try {
+      const response = await fetchWithRetry(current, {
+        redirect: 'manual',
+        signal,
+        headers: {
+          'User-Agent': 'D-blogFriendLinkBot/2.0',
+          Accept: 'text/html,application/xhtml+xml'
+        }
+      }, {
+        retries: 3,
+        signal,
+        onRetry: (info) => logger.warn('Retrying friend-page fetch', {
+          url: current,
+          attempt: info.attempt,
+          status: info.status ?? 'network',
+          delayMs: info.delayMs
+        })
+      });
+
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        if (!location) return null;
+        current = new URL(location, current).toString();
+        continue;
+      }
+      if (!response.ok) return null;
+
+      // 限量读取 body：MAX_RESPONSE_BYTES 上限（readResponseText 内部截断）。
+      // 注意：readResponseText 默认上限 512KB，此处显式放大到友链页抓取上限。
+      return await readResponseText(response, { maxBytes: MAX_RESPONSE_BYTES });
+    } catch (error) {
+      logger.warn('Failed to fetch friend page', { url: current, error: formatError(error) });
+      return null;
+    } finally {
+      cleanup();
     }
-    return new TextDecoder().decode(Buffer.concat(chunks));
   }
   return null;
 };
 
+/**
+ * 判断页面 HTML 是否包含本站反链（宽松规范化：大小写、转义、尾斜杠）。
+ * @param {string} html
+ * @returns {boolean}
+ */
 export const containsBacklink = (html) => {
   const normalized = html
     .toLowerCase()
@@ -139,139 +336,414 @@ export const containsBacklink = (html) => {
   return normalized.includes(canonical) || normalized.includes(withoutSlash);
 };
 
-const comment = (number, body) =>
+/* ------------------------------------------------------------------ */
+/* GitHub API 操作（评论 / 关闭 Issue）                                */
+/* ------------------------------------------------------------------ */
+
+const postComment = (number, body) =>
   api(`/issues/${number}/comments`, {
     method: 'POST',
-    body: JSON.stringify({ body }),
-  });
-const close = (number, reason) =>
-  api(`/issues/${number}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ state: 'closed', state_reason: reason }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body: body.slice(0, MAX_COMMENT_BODY_CHARS) })
   });
 
+const closeIssue = (number, reason) =>
+  api(`/issues/${number}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ state: 'closed', state_reason: reason })
+  });
+
+/**
+ * 分页拉取某个 issue 的全部评论（修复只取第一页导致的 marker 漏检）。
+ * @param {number} number issue 编号。
+ * @returns {Promise<Array<{ body?: string }>>}
+ */
+const listIssueComments = async (number) => {
+  const result = await api(`/issues/${number}/comments`, { params: { per_page: 100 } });
+  return result.data;
+};
+
+/**
+ * 分页拉取全部 open issues。
+ * Phase 3 修复：strictPagination=true —— 超过 maxPages（1000 条）仍有下一页时
+ * 抛 PaginationLimitError 中止整批，绝不静默截断（截断的申请将永远无人处理）。
+ * @returns {Promise<Array<Record<string, unknown>>>}
+ */
+const listOpenIssues = async () => {
+  const result = await api('/issues', {
+    params: { state: 'open', per_page: 100 },
+    strictPagination: true
+  });
+  if (result.pages >= 10) {
+    logger.warn('Open issues near pagination limit', { pages: result.pages });
+  }
+  return result.data;
+};
+
+/* ------------------------------------------------------------------ */
+/* 文本与界面辅助                                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 把正文包进等长围栏代码块（防正文含 ``` 破坏评论渲染），超长截断。
+ * @param {string | undefined} value
+ * @returns {string}
+ */
 const markdownCodeBlock = (value) => {
-  const content = value?.trim() || '(Issue 正文为空)';
+  const content = (value?.trim() || '(Issue 正文为空)').slice(0, MAX_COMMENT_BODY_CHARS - 2000);
   const longestFence = Math.max(0, ...(content.match(/`+/g) || []).map((item) => item.length));
   const fence = '`'.repeat(Math.max(3, longestFence + 1));
   return `${fence}text\n${content}\n${fence}`;
 };
 
+/**
+ * 构建人工审核指引（含预填邮件的 mailto 链接与原 Issue 正文）。
+ * Phase 3 修复：mailto body 经 sanitizeMailtoBody 净化（换行 → 空格），
+ * 消除 mailto 头注入面；截断发生在净化之后。
+ * @param {object} issue
+ * @returns {string}
+ */
 const buildManualReviewSection = (issue) => {
   const subject = `D-blog 友链人工审核：${issue.title || `Issue #${issue.number}`}`;
   const body = issue.body?.trim() || '';
-  const mailto = `mailto:i@PLDDUCK.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const mailtoBody = sanitizeMailtoBody(body).slice(0, MAX_MAILTO_BODY_CHARS);
+  const mailto = `mailto:i@PLDDUCK.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(mailtoBody)}`;
 
   return `### 人工审核\n\n部分框架会在浏览器运行 JavaScript 后才渲染友链，bot 可能无法从静态 HTML 中识别。若你已确认友链正常显示，可以发送邮件到 **i@PLDDUCK.com** 申请人工添加。\n\n[撰写人工审核邮件（已预填原 Issue 内容）](${mailto})\n\n邮件只需保留原 Issue 内容，无需重新整理资料。\n\n<details>\n<summary>查看并复制原 Issue 内容</summary>\n\n${markdownCodeBlock(body)}\n\n</details>`;
 };
 
+/* ------------------------------------------------------------------ */
+/* 申请校验                                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 校验申请内容（输入 Schema + 外部可达性 + 反链检查）。
+ * @param {object} application parseApplication 的返回值。
+ * @returns {Promise<string | null>} null 表示通过；否则为失败原因。
+ */
 const validateApplication = async (application) => {
-  if (!/^[A-Za-z0-9_-]+(?:\.json)?$/.test(application.filename) || application.filename.toLowerCase() === '.json') return '文件名不符合规则。';
+  // 1. 文件名规则：仅字母数字下划线短横线，可带 .json 后缀。
+  if (!/^[A-Za-z0-9_-]+(?:\.json)?$/.test(application.filename) || application.filename.toLowerCase() === '.json') {
+    return '文件名不符合规则。';
+  }
+
+  // 2. 字段长度上限（防超长文本污染 friends/ 数据文件）。
+  for (const field of ['name', 'description', 'contact']) {
+    if (application[field] && application[field].length > FIELD_LIMITS[field]) {
+      return `${field} 长度超过上限（${FIELD_LIMITS[field]} 字符）。`;
+    }
+  }
+
+  // 3. 字段合计预算（防三个字段各自未超限但合计膨胀）。
+  const totalChars = ['name', 'description', 'contact']
+    .reduce((sum, field) => sum + (application[field]?.length || 0), 0);
+  if (totalChars > MAX_TOTAL_FIELD_CHARS) {
+    return `申请字段合计超过上限（${MAX_TOTAL_FIELD_CHARS} 字符）。`;
+  }
+
+  // 4. 三个 URL 均须为安全的公开 HTTP(S) 地址（含私网 IP 拒绝）。
   if (!(await isSafePublicHttpUrl(application.url))) return '站点地址不是安全的公开 HTTP(S) 地址。';
   if (!(await isSafePublicHttpUrl(application.friendPageUrl))) return '友链页地址不是安全的公开 HTTP(S) 地址。';
-  if (!(await isSafePublicHttpUrl(application.avatar))) return '头像地址不是安全的公开 HTTP(S) 地址。';
+  if (application.avatar && !(await isSafePublicHttpUrl(application.avatar))) return '头像地址不是安全的公开 HTTP(S) 地址。';
+
+  // 5. 文件名占用检查。
   const filename = application.filename.toLowerCase().endsWith('.json') ? application.filename : `${application.filename}.json`;
   try {
     await fs.access(path.join('friends', filename));
     return '申请文件名已经被占用，请换一个文件名后重新提交。';
   } catch {
-    // The filename is available.
+    // 文件名可用。
   }
+
+  // 6. 反链检查：友链页必须公开可访问且静态 HTML 包含本站地址。
   const html = await fetchPublicPage(application.friendPageUrl);
   if (!html) return '友链页无法访问，或响应不是可读取的公开页面。';
   if (!containsBacklink(html)) return `未在 ${application.friendPageUrl} 的静态 HTML 中找到 ${SITE_URL}。`;
+
   return null;
 };
 
+/**
+ * 写入 friends/<filename>.json（字段白名单序列化，防多余字段注入）。
+ * @param {object} application
+ * @returns {Promise<string>} 写入的文件路径。
+ */
 const writeFriendFile = async (application) => {
   const filename = application.filename.toLowerCase().endsWith('.json') ? application.filename : `${application.filename}.json`;
   const filePath = path.join('friends', filename);
   const data = {
     name: application.name,
     description: application.description,
-    avatar: application.avatar,
-    url: application.url,
+    avatar: application.avatar || '',
+    url: application.url
   };
   await fs.writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
   return filePath;
 };
 
+/**
+ * 检查申请是否已存在于 friends/ 目录（按规范化 URL 或名称去重）。
+ * 单个文件损坏时跳过该文件（build 校验会另行上报），不影响整体。
+ * @param {object} application
+ * @returns {Promise<boolean>}
+ */
 const alreadyExists = async (application) => {
-  const files = await fs.readdir('friends');
+  let filenames = [];
+  try {
+    filenames = await fs.readdir('friends');
+  } catch {
+    return false;
+  }
   const targetUrl = normalizeUrl(application.url);
-  for (const filename of files.filter((item) => item.endsWith('.json'))) {
+  const targetName = application.name.trim().toLowerCase();
+  for (const filename of filenames.filter((item) => item.endsWith('.json'))) {
     try {
       const data = JSON.parse(await fs.readFile(path.join('friends', filename), 'utf8'));
-      if (normalizeUrl(data.url) === targetUrl || data.name?.trim().toLowerCase() === application.name.toLowerCase()) return true;
+      if (normalizeUrl(data.url) === targetUrl || data.name?.trim().toLowerCase() === targetName) {
+        return true;
+      }
     } catch {
-      /* build validation will report malformed source files */
+      // 损坏文件由 generate-site-data.mjs 的构建校验报告，此处跳过。
     }
   }
   return false;
 };
 
-const processOpened = async () => {
-  const issue = JSON.parse(process.env.ISSUE_PAYLOAD || '{}');
-  if (!issue.number || !issue.title?.startsWith(ISSUE_PREFIX)) return;
-  const comments = await api(`/issues/${issue.number}/comments?per_page=100`);
-  if (comments.some((item) => item.body?.includes(INITIAL_MARKER))) return;
-  await comment(
-    issue.number,
-    `${INITIAL_MARKER}\n\n## 友链申请已收到\n\n- **当前状态**：等待自动审核\n- **预计时间**：提交满 10 分钟后开始检查，通常在 10 至 15 分钟内处理\n- **检查内容**：友链页是否公开可访问，并在静态 HTML 中包含 D-blog 反链\n\n审核通过后，友链会自动加入本站；如果检查失败，bot 会在此 Issue 中说明原因并关闭申请。`,
-  );
+/* ------------------------------------------------------------------ */
+/* Git 事务：add → commit → push（全部带超时）                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 提交并推送友链文件。
+ * Phase 3 修复：目标分支由 TARGET_BRANCH 决定（GITHUB_REF_NAME 可覆盖），
+ * 不再硬编码 main。
+ * @param {string} filePath
+ * @param {number} issueNumber
+ * @returns {Promise<string>} 提交短 SHA。
+ */
+const commitAndPushFriendFile = async (filePath, issueNumber) => {
+  execFileSync('git', ['add', filePath], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
+  execFileSync('git', [
+    '-c', 'user.name=github-actions[bot]',
+    '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
+    'commit', '-m', `feat: add friend link via issue #${issueNumber}`
+  ], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
+  execFileSync('git', ['push', 'origin', `HEAD:${TARGET_BRANCH}`], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
+  return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+    encoding: 'utf8',
+    timeout: GIT_TIMEOUT_MS,
+    stdio: 'pipe'
+  }).trim();
 };
 
-const processReview = async () => {
-  const issues = await api('/issues?state=open&per_page=100');
-  const now = Date.now();
-  for (const issue of issues.filter((item) => !item.pull_request && item.title?.startsWith(ISSUE_PREFIX))) {
-    if (now - Date.parse(issue.created_at) < WAIT_MS) continue;
-    const comments = await api(`/issues/${issue.number}/comments?per_page=100`);
-    if (comments.some((item) => item.body?.includes(ACCEPTED_MARKER) || item.body?.includes(REJECTED_MARKER))) continue;
-    const application = parseApplication(issue.body);
-    const error = application ? await validateApplication(application) : 'Issue 内容不完整，请使用本站生成的申请草稿。';
-    if (error) {
-      await comment(
-        issue.number,
-        `${REJECTED_MARKER}\n\n## 友链申请未通过\n\n- **审核结果**：未通过\n- **失败原因**：${error}\n- **Issue 状态**：已关闭\n\n你可以根据上面的原因修正友链页或申请资料，然后重新生成并提交新的 Issue。\n\n---\n\n${buildManualReviewSection(issue)}`,
-      );
-      await close(issue.number, 'not_planned');
-      continue;
-    }
-    if (await alreadyExists(application)) {
-      await comment(
-        issue.number,
-        `${ACCEPTED_MARKER}\n\n## 友链申请已处理\n\n- **审核结果**：站点已存在\n- **处理说明**：该站点已经在友链目录中，无需重复添加\n- **Issue 状态**：已关闭\n\n感谢申请。`,
-      );
-      await close(issue.number, 'completed');
-      continue;
-    }
-    const filePath = await writeFriendFile(application);
-    execFileSync('git', ['add', filePath]);
-    execFileSync('git', [
-      '-c',
-      'user.name=github-actions[bot]',
-      '-c',
-      'user.email=41898282+github-actions[bot]@users.noreply.github.com',
-      'commit',
-      '-m',
-      `feat: add friend link ${application.name} (#${issue.number})`,
-    ]);
-    execFileSync('git', ['push', 'origin', 'HEAD:main']);
-    const sha = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
-      encoding: 'utf8',
-    }).trim();
-    await comment(
-      issue.number,
-      `${ACCEPTED_MARKER}\n\n## 友链申请已通过\n\n- **审核结果**：通过\n- **反链检查**：已找到 D-blog 反链\n- **添加文件**：\`${filePath}\`\n- **Commit**：\`${sha}\`\n- **Issue 状态**：已关闭\n\n友链将在下一次站点部署后显示。感谢申请！`,
-    );
-    await close(issue.number, 'completed');
+/* ------------------------------------------------------------------ */
+/* 业务逻辑：opened（事件触发） / review（定时巡检）                    */
+/* ------------------------------------------------------------------ */
+
+/** 安全解析 ISSUE_PAYLOAD（schedule 触发时为空字符串，必须容错）。 */
+const safeParseJson = (raw, fallback) => {
+  try {
+    return JSON.parse(raw || '{}');
+  } catch {
+    logger.warn('ISSUE_PAYLOAD is not valid JSON, treating as empty', { rawLength: (raw || '').length });
+    return fallback;
   }
 };
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+/**
+ * issues:opened 事件：对新建申请 Issue 回复"已收到"标记（幂等，评论去重）。
+ */
+const processOpened = async () => {
+  const issue = safeParseJson(process.env.ISSUE_PAYLOAD || '{}', {});
+  if (!issue.number || !issue.title?.startsWith(ISSUE_PREFIX)) {
+    logger.info('Skipping non-friend-link issue event', { number: issue.number ?? 'none' });
+    return;
+  }
+
+  // 幂等保护：评论已含 INITIAL_MARKER（如事件重复投递）则跳过。
+  const comments = await listIssueComments(issue.number);
+  if (comments.some((item) => item.body?.includes(INITIAL_MARKER))) {
+    logger.info('Initial marker already posted, skipping', { issue: issue.number });
+    return;
+  }
+
+  await postComment(
+    issue.number,
+    `${INITIAL_MARKER}\n\n## 友链申请已收到\n\n- **当前状态**：等待自动审核\n- **预计时间**：提交满 ${Math.round(WAIT_MS / 60000)} 分钟后开始检查，通常在 10 至 15 分钟内处理\n- **检查内容**：友链页是否公开可访问，并在静态 HTML 中包含 D-blog 反链\n\n审核通过后，友链会自动加入本站；如果检查失败，bot 会在此 Issue 中说明原因并关闭申请。`
+  );
+  logger.info('Posted initial confirmation', { issue: issue.number });
+};
+
+/**
+ * 处理单个待审核 Issue（冷却期 → 评论去重 → 校验 → 拒绝/接受）。
+ * 任何一步失败抛出异常，由 processReview 捕获隔离。
+ * @param {Record<string, any>} issue
+ * @returns {Promise<'skipped' | 'rejected' | 'accepted' | 'exists'>} 处理结果。
+ */
+const processIssue = async (issue) => {
+  const issueNumber = issue.number;
+  const now = Date.now();
+  const createdAt = Date.parse(issue.created_at);
+
+  // 冷却期：提交未满 WAIT_MS 的申请不处理。
+  if (!Number.isFinite(createdAt) || now - createdAt < WAIT_MS) {
+    logger.debug('Issue still in cooldown, skipping', { issue: issueNumber });
+    return 'skipped';
+  }
+
+  // 评论去重：已处理过的 Issue 直接跳过（幂等）。
+  const comments = await listIssueComments(issueNumber);
+  if (comments.some((item) => item.body?.includes(ACCEPTED_MARKER) || item.body?.includes(REJECTED_MARKER))) {
+    logger.info('Issue already processed, skipping', { issue: issueNumber });
+    return 'skipped';
+  }
+
+  const application = parseApplication(issue.body);
+  const error = application
+    ? await validateApplication(application)
+    : 'Issue 内容不完整，请使用本站生成的申请草稿。';
+
+  if (error) {
+    await postComment(
+      issueNumber,
+      `${REJECTED_MARKER}\n\n## 友链申请未通过\n\n- **审核结果**：未通过\n- **失败原因**：${error}\n- **Issue 状态**：已关闭\n\n你可以根据上面的原因修正友链页或申请资料，然后重新生成并提交新的 Issue。\n\n---\n\n${buildManualReviewSection(issue)}`
+    );
+    await closeIssue(issueNumber, 'not_planned');
+    return 'rejected';
+  }
+
+  if (await alreadyExists(application)) {
+    await postComment(
+      issueNumber,
+      `${ACCEPTED_MARKER}\n\n## 友链申请已处理\n\n- **审核结果**：站点已存在\n- **处理说明**：该站点已经在友链目录中，无需重复添加\n- **Issue 状态**：已关闭\n\n感谢申请。`
+    );
+    await closeIssue(issueNumber, 'completed');
+    return 'exists';
+  }
+
+  // 写入文件 + git 事务。push 失败时抛出异常：不 close Issue，
+  // 由下一轮 schedule 在全新 checkout 中重试（无本地残留）。
+  const filePath = await writeFriendFile(application);
+  const sha = await commitAndPushFriendFile(filePath, issueNumber);
+  await postComment(
+    issueNumber,
+    `${ACCEPTED_MARKER}\n\n## 友链申请已通过\n\n- **审核结果**：通过\n- **反链检查**：已找到 D-blog 反链\n- **添加文件**：\`${filePath}\`\n- **Commit**：\`${sha}\`\n- **Issue 状态**：已关闭\n\n友链将在下一次站点部署后显示。感谢申请！`
+  );
+  await closeIssue(issueNumber, 'completed');
+  return 'accepted';
+};
+
+/**
+ * schedule 巡检：拉取全部 open issues，逐个隔离处理。
+ * - 普通异常：记录后继续下一个 issue（坏数据不拖垮整批）。
+ * - RateLimitError：暂停整批（继续请求只会继续触发限流）。
+ * - PaginationLimitError：数据被截断，中止整批并报警（fail-closed）。
+ */
+const processReview = async () => {
+  const issues = await listOpenIssues();
+  const pending = issues.filter(
+    (item) => !item.pull_request && item.title?.startsWith(ISSUE_PREFIX)
+  );
+  logger.info('Review cycle started', {
+    openIssues: issues.length,
+    friendLinkIssues: pending.length,
+    batchLimit: MAX_ISSUES_PER_BATCH
+  });
+
+  const stats = { processed: 0, skipped: 0, rejected: 0, accepted: 0, exists: 0, failed: 0 };
+  const batch = pending.slice(0, MAX_ISSUES_PER_BATCH);
+
+  for (const issue of batch) {
+    const issueNumber = issue.number;
+    try {
+      await logger.group(`Issue #${issueNumber}`, async () => {
+        const result = await processIssue(issue);
+        stats[result === 'skipped' ? 'skipped' : result] += 1;
+        stats.processed += result === 'skipped' ? 0 : 1;
+        logger.info('Issue processed', { issue: issueNumber, result });
+      });
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        logger.error('GitHub rate limit reached, pausing batch', {
+          issue: issueNumber,
+          error: formatError(error)
+        });
+        stats.failed += 1;
+        break; // 限流：停止本批后续处理。
+      }
+      if (error instanceof PaginationLimitError) {
+        logger.error('Open issues exceed pagination limit; aborting batch to avoid silent data loss', {
+          pages: error.pages,
+          error: formatError(error)
+        });
+        stats.failed += 1;
+        break; // 数据截断：fail-closed，停止本批。
+      }
+      logger.error('Issue processing failed, continuing with next', {
+        issue: issueNumber,
+        error: formatError(error)
+      });
+      stats.failed += 1;
+    }
+  }
+
+  if (pending.length > batch.length) {
+    logger.warn('More pending issues than batch limit, remaining queued for next cycle', {
+      remaining: pending.length - batch.length
+    });
+  }
+
+  logger.summary({
+    processed: stats.processed,
+    skipped: stats.skipped,
+    rejected: stats.rejected,
+    accepted: stats.accepted,
+    exists: stats.exists,
+    failed: stats.failed
+  });
+  logger.summaryTable('Friend Link Bot Review', [
+    { metric: 'processed', value: stats.processed },
+    { metric: 'skipped', value: stats.skipped },
+    { metric: 'rejected', value: stats.rejected },
+    { metric: 'accepted', value: stats.accepted },
+    { metric: 'exists', value: stats.exists },
+    { metric: 'failed', value: stats.failed }
+  ]);
+};
+
+/* ------------------------------------------------------------------ */
+/* 入口                                                                 */
+/* ------------------------------------------------------------------ */
+
+const main = async () => {
   const mode = process.argv[2];
-  if (mode === 'opened') await processOpened();
-  else if (mode === 'review') await processReview();
-  else throw new Error('Usage: node scripts/friend-link-bot.mjs <opened|review>');
+  if (!['opened', 'review'].includes(mode)) {
+    throw new Error('Usage: node scripts/friend-link-bot.mjs <opened|review>');
+  }
+
+  // 环境完备性检查：GITHUB_TOKEN 在 Actions 中自动注入；缺失属于配置错误。
+  if (!token || !owner || !repo) {
+    logger.error('GitHub Actions environment is incomplete', {
+      hasToken: Boolean(token),
+      repository: process.env.GITHUB_REPOSITORY || '(missing)'
+    });
+    process.exit(1);
+  }
+
+  if (mode === 'opened') {
+    await processOpened();
+  } else {
+    await processReview();
+  }
+};
+
+// 全局异常兜底：任何未捕获 rejection / 异常都结构化记录并以非零码退出。
+installGlobalErrorHandlers(logger);
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main().catch((error) => {
+    logger.error('Fatal: bot execution failed', { error: formatError(error) });
+    process.exit(1);
+  });
 }

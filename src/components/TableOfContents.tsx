@@ -372,7 +372,10 @@ export const TableOfContents: React.FC<{
                     </span>
 
                     <span
-                      className={`block flex-1 truncate leading-6 ${isSubLevel ? 'text-[12.5px]' : 'text-[13px]'} ${
+                      // 移动端用 line-clamp-2 保留长标题可读性（触屏没有 title 悬浮提示，
+                      // truncate 会让长标题永久截断无法辨认）；桌面端先解除 line-clamp
+                      // 再恢复单行截断（line-clamp 的 -webkit-box 会与 truncate 冲突）。
+                      className={`block flex-1 leading-6 line-clamp-2 md:line-clamp-none md:truncate ${isSubLevel ? 'text-[12.5px]' : 'text-[13px]'} ${
                         isActive ? 'font-semibold' : isInActiveBranch ? 'font-medium' : ''
                       }`}
                       title={item.text}
@@ -628,7 +631,7 @@ export const TableOfContents: React.FC<{
             type="button"
             onClick={() => setIsOpen((value) => !value)}
             style={MOBILE_TOC_TRIGGER_STYLE}
-            className="fixed-control-position fixed z-floating inline-flex h-11 items-center justify-center gap-2 rounded-control border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 lg:hidden"
+            className="toc-mobile-trigger fixed-control-position fixed z-floating inline-flex h-11 items-center justify-center gap-2 rounded-control border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 lg:hidden"
             aria-label={isOpen ? '关闭目录' : '打开目录'}
             aria-expanded={isOpen}
           >
@@ -672,7 +675,7 @@ export const TableOfContents: React.FC<{
             type="button"
             onClick={() => setIsOpen((value) => !value)}
             style={DESKTOP_TOC_TRIGGER_STYLE}
-            className="fixed-control-position fixed z-floating hidden h-11 items-center justify-center gap-2 rounded-control border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 md:inline-flex"
+            className="toc-desktop-trigger fixed-control-position fixed z-floating hidden h-11 items-center justify-center gap-2 rounded-control border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 md:inline-flex"
             aria-label={isOpen ? '关闭目录' : '打开目录'}
             aria-expanded={isOpen}
           >

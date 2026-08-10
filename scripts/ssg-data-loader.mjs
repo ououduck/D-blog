@@ -19,14 +19,38 @@ const stripFrontmatter = (rawContent) => {
 /**
  * 读取 generated/posts.json，并把每篇文章的 markdown 正文（已剥离 frontmatter）
  * 挂到 content 字段上。数组顺序与客户端 getPosts() 一致（新 → 旧）。
+ *
+ * Phase 3 加固：
+ * - posts.json 缺失/损坏 → 抛带明确指引的错误（由 ssg.mjs 顶层兜底记录退出）；
+ * - 单篇文章源文件读取失败（被删除/权限）→ 跳过该文章的 content 注入而非抛错，
+ *   剩余文章正常渲染（与生成期的 fail-closed 校验互补：生成期已保证文件存在，
+ *   这里只是防御运行期间的极端竞态）。
  */
 export const loadPostsWithContent = () => {
-  const posts = JSON.parse(fs.readFileSync(POSTS_FILE, 'utf-8'));
+  let posts;
+  try {
+    posts = JSON.parse(fs.readFileSync(POSTS_FILE, 'utf-8'));
+  } catch (error) {
+    throw new Error(
+      `Failed to load generated/posts.json (${error instanceof Error ? error.message : String(error)}); run "npm run gen:data" before SSG.`
+    );
+  }
+  if (!Array.isArray(posts)) {
+    throw new Error('generated/posts.json is malformed: expected an array; run "npm run gen:data" to regenerate.');
+  }
+
   return posts.map((post) => {
-    if (!post.filePath) return post;
+    if (!post || typeof post !== 'object' || !post.filePath) {
+      return post;
+    }
     const sourcePath = path.join(__dirname, '..', post.filePath.replace(/^\//, ''));
     if (!fs.existsSync(sourcePath)) return post;
-    const raw = fs.readFileSync(sourcePath, 'utf-8');
-    return { ...post, content: stripFrontmatter(raw) };
+    try {
+      const raw = fs.readFileSync(sourcePath, 'utf-8');
+      return { ...post, content: stripFrontmatter(raw) };
+    } catch {
+      // 防御性：单篇读取失败跳过 content 注入，不中断整站渲染。
+      return post;
+    }
   });
 };

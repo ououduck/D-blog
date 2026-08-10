@@ -12,6 +12,9 @@ permissions:
   issues: write
 
 concurrency:
+  # issues:opened 与 schedule 共用同一 group：串行执行，防并发 push 与评论竞态。
+  # cancel-in-progress: false —— 绝不取消排队中的事件 job（opened 事件只投递一次，
+  # 取消即永久丢失"已收到"回复）。
   group: friend-link-bot
   cancel-in-progress: false
 
@@ -19,10 +22,16 @@ jobs:
   process:
     if: github.event_name != 'issues' || startsWith(github.event.issue.title, '[Friend Link]')
     runs-on: ubuntu-latest
+    # 显式 job 超时：脚本内部已有超时，但 execFileSync 等同步操作在极端环境下
+    # 可能叠加超时；15 分钟上限保证 schedule（每 5 分钟）不会因上一轮卡死而排队堆积。
+    # （无此字段时默认 6 小时，会与 */5 调度形成灾难性排队。）
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
+          # 完整历史：commitAndPushFriendFile 的 push 需要本地 HEAD 与远端一致，
+          # fetch-depth: 0 避免浅克隆 push 失败。
           fetch-depth: 0
 
       - name: Process friend-link applications
@@ -30,4 +39,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           ISSUE_PAYLOAD: ${{ toJson(github.event.issue) }}
+          # git push 目标分支：默认取当前事件分支（main），可显式覆盖。
+          FRIEND_LINK_TARGET_BRANCH: ${{ github.ref_name }}
         run: node scripts/friend-link-bot.mjs ${{ github.event_name == 'issues' && 'opened' || 'review' }}

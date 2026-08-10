@@ -106,8 +106,10 @@ if (localStylesheets.size === 0) {
   errors.push('no generated local stylesheet references found');
 } else {
   for (const stylesheetPath of localStylesheets) {
-    if (/-[A-Za-z0-9_-]+\.css$/.test(path.basename(stylesheetPath))) {
-      errors.push(`stable stylesheet has a content hash (${path.basename(stylesheetPath)})`);
+    // 入口 CSS 必须带内容哈希：稳定 URL（assets/index.css）会被服务工作者
+    // stale-while-revalidate 缓存命中，导致部署后“首次打开样式落后、刷新才正常”。
+    if (!/-[A-Za-z0-9_-]+\.css$/.test(path.basename(stylesheetPath))) {
+      errors.push(`stylesheet is not content-hashed (${path.basename(stylesheetPath)})`);
     }
   }
 }

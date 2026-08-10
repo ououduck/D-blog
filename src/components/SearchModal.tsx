@@ -159,7 +159,9 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       return;
     }
 
-    if (event.key === 'Enter' && visibleResults[activeResultIndex]) {
+    // Enter 时若搜索仍在防抖/进行中，visibleResults 仍是上一次查询的结果，
+    // 直接导航会跳到与当前输入无关的旧文章，因此先忽略直到本次搜索完成。
+    if (event.key === 'Enter' && visibleResults[activeResultIndex] && !isSearching) {
       handleSelect(visibleResults[activeResultIndex].id);
     }
   };
@@ -184,7 +186,9 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: prefersReducedMotion ? 0 : 0.16, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/55" aria-hidden="true" />
           <motion.div ref={modalRef} tabIndex={-1} initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }} transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: modalEase }} className="relative z-10 flex max-h-[100vh] w-full max-w-2xl flex-col overflow-hidden editorial-sheet border border-b-0 border-zinc-300 bg-paper pb-[env(safe-area-inset-bottom,0px)] shadow-none supports-[height:100dvh]:max-h-[100dvh] dark:border-zinc-700 dark:bg-void sm:max-h-[80vh] sm:rounded-overlay sm:border-b sm:pb-0 supports-[height:100dvh]:sm:max-h-[80dvh]" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
             <h2 id="site-search-title" className="sr-only">站内搜索</h2>
-            <div className="flex items-center border-b border-zinc-100 p-4 dark:border-zinc-800">
+            {/* 横屏 iPhone 刘海位于左右两侧：标题栏与滚动区都需避开 safe-area，
+                否则关闭按钮会被刘海遮挡 */}
+            <div className="flex items-center border-b border-zinc-100 p-4 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] dark:border-zinc-800">
               <SearchField
                 ref={inputRef}
                 size="large"
@@ -228,7 +232,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               <p className="mt-2 text-xs text-zinc-700 dark:text-zinc-300">{activeScopeHint}</p>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain sm:max-h-[60vh] supports-[height:100dvh]:sm:max-h-[60dvh]" aria-busy={isSearching}>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)] sm:max-h-[60vh] supports-[height:100dvh]:sm:max-h-[60dvh]" aria-busy={isSearching}>
               <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{searchResultStatus}</div>
               {isSearching ? (
                 <div className="p-12 text-center text-zinc-600 dark:text-zinc-300" role="status" aria-live="polite">
@@ -273,7 +277,8 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                         <h4 className="text-lg font-semibold text-ink transition-colors group-hover:text-zinc-700 dark:text-gray-100 dark:group-hover:text-zinc-300">
                           {post.title}
                         </h4>
-                        <p className="mt-1 line-clamp-1 text-sm text-zinc-600 dark:text-zinc-300">{post.excerpt}</p>
+                        {/* 移动端保留两行摘要：单行时常只露出分类标签，看不出正文内容 */}
+                        <p className="mt-1 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-300">{post.excerpt}</p>
                         {post.searchMatch && (
                           <p className="mt-2 line-clamp-2 bg-zinc-100 px-2.5 py-1.5 text-xs leading-5 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
                             {renderHighlightedText(post.searchMatch.snippet, post.searchMatch.terms)}

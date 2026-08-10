@@ -410,6 +410,34 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   }, [isMobileNavAnimating, location.pathname, navigate, requestCloseMobileNav]);
 
   // Swipe-to-close gesture handlers
+  // iOS 上 React 合成的 touchmove 监听是 passive 的，无法 preventDefault：
+  // 手势进行中如果不阻止原生滚动，菜单内的滚动容器会同时橡皮筋回弹/滚动，
+  // 与面板的 transform 位移叠加，造成“双拖”卡顿。因此在确认进入拖拽后，
+  // 临时挂一个非 passive 的原生 touchmove 监听来吞掉事件，拖拽结束即移除。
+  const nativeSwipeCaptureRef = useRef<{ element: HTMLElement; handler: (event: TouchEvent) => void } | null>(null);
+
+  const engageNativeSwipeCapture = useCallback((panel: HTMLElement) => {
+    if (nativeSwipeCaptureRef.current?.element === panel) {
+      return;
+    }
+    const detachPrevious = nativeSwipeCaptureRef.current;
+    if (detachPrevious) {
+      detachPrevious.element.removeEventListener('touchmove', detachPrevious.handler);
+      nativeSwipeCaptureRef.current = null;
+    }
+    const handler = (event: TouchEvent) => event.preventDefault();
+    panel.addEventListener('touchmove', handler, { passive: false });
+    nativeSwipeCaptureRef.current = { element: panel, handler };
+  }, []);
+
+  const detachNativeSwipeCapture = useCallback(() => {
+    const current = nativeSwipeCaptureRef.current;
+    if (current) {
+      current.element.removeEventListener('touchmove', current.handler);
+      nativeSwipeCaptureRef.current = null;
+    }
+  }, []);
+
   const resetMobileNavDragStyles = useCallback(() => {
     const panel = mobileNavPanelRef.current;
     const backdrop = panel?.parentElement?.querySelector('.mobile-nav-backdrop') as HTMLElement | null;
@@ -422,7 +450,8 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     if (backdrop) {
       backdrop.style.opacity = '';
     }
-  }, []);
+    detachNativeSwipeCapture();
+  }, [detachNativeSwipeCapture]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (mobileNavPhase !== 'open') {
@@ -462,6 +491,8 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     isSwipingRef.current = true;
     const panel = mobileNavPanelRef.current;
     if (panel) {
+      // 阻止原生滚动继续，避免面板位移与内部滚动叠加抖动。
+      engageNativeSwipeCapture(panel);
       panel.dataset.swiping = 'true';
       panel.style.transform = `translate3d(0, ${deltaY}px, 0)`;
       // Dim backdrop proportionally
@@ -610,13 +641,16 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   useEffect(() => () => {
     clearAnimationFrame();
     clearTransitionTimer();
-  }, [clearAnimationFrame, clearTransitionTimer]);
+    detachNativeSwipeCapture();
+  }, [clearAnimationFrame, clearTransitionTimer, detachNativeSwipeCapture]);
 
   const mobileNavStyle = {
     '--mobile-nav-duration': `${mobileNavDuration}ms`
   } as React.CSSProperties;
   const mobileNavPanelStyle = {
     ...mobileNavStyle,
+    // safe-area 内边距直接作用于面板本身；不再额外放置底部占位元素，
+    // 避免在 iPhone 上重复累加两次 inset 造成大面积空白。
     paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     paddingLeft: 'env(safe-area-inset-left, 0px)',
     paddingRight: 'env(safe-area-inset-right, 0px)'
@@ -625,9 +659,14 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   return (
     <>
       <nav className={`site-navbar fixed left-0 right-0 top-0 ${isMobileNavMounted ? 'z-nav-panel' : 'z-nav'} border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void`}>
-        <motion.div initial={false} className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:h-16 sm:px-6 md:h-16">
+        {/* 顶部导航：内联 paddingTop 承接刘海/灵动岛的 safe-area-inset-top
+            （viewport-fit=cover 下固定顶部元素会贴进屏幕缺口），高度由 min-h 兜底，
+            内容在可用区域内保持垂直居中。 */}
+        <motion.div initial={false} className="mx-auto flex min-h-14 max-w-7xl items-center justify-between px-3 sm:min-h-16 sm:px-6 md:min-h-16" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
           <Link to="/" className="group z-50 flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
-            <ProgressiveImage src={assetUrl(siteConfig.logoSmall)} alt={`${siteConfig.title} 站点标志`} fetchPriority="high" width={96} height={96} wrapperClassName="h-8 w-8 bg-white sm:h-9 sm:w-9" className="h-8 w-8 object-cover sm:h-9 sm:w-9" />
+            {/* 站标仅 96px，非 LCP 元素：显式 fetchPriority=auto，
+                避免与文章封面/首图竞争 high 优先级拖慢 LCP */}
+            <ProgressiveImage src={assetUrl(siteConfig.logoSmall)} alt={`${siteConfig.title} 站点标志`} fetchPriority="auto" width={96} height={96} wrapperClassName="h-8 w-8 bg-white sm:h-9 sm:w-9" className="h-8 w-8 object-cover sm:h-9 sm:w-9" />
             <span className="max-w-[calc(100vw-9.5rem)] truncate font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:max-w-none sm:text-2xl">{siteConfig.title}</span>
           </Link>
 
@@ -840,8 +879,6 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                   return <button key={action.key} type="button" onClick={action.onClick} className={className} disabled={isMobileNavAnimating}>{content}</button>;
                 })}
               </div>
-
-              <div className="h-[env(safe-area-inset-bottom,0px)]" />
             </div>
           </motion.aside>
         </div>
@@ -965,7 +1002,9 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
           <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
         </Suspense>
       )}
-      <main className={`relative min-w-0 w-full flex-grow px-3 sm:px-6 ${isReadingMode ? 'pt-6 sm:pt-8 md:pt-10' : 'pt-20 sm:pt-24 md:pt-24'}`}>
+      {/* 非阅读模式：main 顶部内边距 = 导航栏高度 + 呼吸间距，并补偿导航栏
+          因 safe-area-inset-top 增高的部分，避免内容被顶高的导航遮挡。 */}
+      <main className={`relative min-w-0 w-full flex-grow px-3 sm:px-6 ${isReadingMode ? 'pt-6 sm:pt-8 md:pt-10' : 'pt-[calc(5rem+env(safe-area-inset-top,0px))] sm:pt-[calc(6rem+env(safe-area-inset-top,0px))] md:pt-[calc(6rem+env(safe-area-inset-top,0px))]'}`}>
         {hasViewTransition ? (
           <div key={routeContentKey} style={{ viewTransitionName: 'route-content' }} className="mx-auto min-w-0 w-full max-w-7xl">
             {children}

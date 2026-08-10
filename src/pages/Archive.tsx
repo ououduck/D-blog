@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronDown, ChevronRight, ArrowUpRight } from 'lucide-react';
-import { getPosts } from '@/services/posts';
+import { getInitialPosts, getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
@@ -25,12 +25,17 @@ const formatDay = (dateText: string) => formatDate(dateText, 'zh-CN', {
   day: '2-digit'
 }).replace('/', '.');
 
+// 构建期 SSG：posts.json 已通过 eager glob 内联进产物，模块加载时同步可读，
+// 使 /archive 在 SSR 阶段即可渲染完整时间线（爬虫无需执行 JS 就能读到正文列表），
+// 客户端水合首帧与 SSR 输出一致；异步重取仅用于“重新加载”。
+const initialPosts = getInitialPosts();
+
 export const ArchivePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryFromUrl = searchParams.get('q') || '';
   const yearFromUrl = searchParams.get('year');
-  const [allPosts, setAllPosts] = useState<PostMetadata[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [allPosts, setAllPosts] = useState<PostMetadata[]>(initialPosts);
+  const [loading, setLoading] = useState(initialPosts.length === 0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
@@ -46,6 +51,15 @@ export const ArchivePage = () => {
 
   useEffect(() => {
     let cancelled = false;
+
+    // 首次加载数据已由 eager glob 同步提供；仅“重新加载”（loadAttempt > 0）
+    // 或初始数据缺失时才有必要走异步重取。
+    if (loadAttempt === 0 && initialPosts.length > 0) {
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
 
     setLoading(true);
     getPosts()

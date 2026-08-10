@@ -6,9 +6,10 @@
 /sw.js
   Cache-Control: public, max-age=0, must-revalidate
 
-# The stable CSS URL is intentionally revalidated on each deployment.
+# CSS 已内容寻址（构建时哈希文件名）：任何样式变更都会生成新 URL，
+# 服务工作者缓存按 URL 键控，新部署首开即命中新样式，可安全长期缓存。
 /assets/*.css
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: public, max-age=31536000, immutable
 
 # Hashed JavaScript and other generated assets can be cached for a long time.
 /assets/*.js

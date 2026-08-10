@@ -79,6 +79,62 @@ const offlinePostAssetsPlugin = (): Plugin => ({
   }
 });
 
+/**
+ * 构建时注入入口 CSS 的 <link rel="preload">。
+ *
+ * 入口样式表使用内容哈希文件名（assets/index-<hash>.css），名称只在构建完成
+ * 后可知，无法在 index.html 模板里硬编码。这里在 build 阶段的 transformIndexHtml
+ * 中读取输出 bundle：入口 chunk 的 viteMetadata.importedCss 即 Vite 即将注入的
+ * 入口样式表，返回带 crossorigin 的 preload tag，由 Vite 与正式 stylesheet link
+ * 一同渲染进产物 index.html：
+ * - preload 与正式请求共享同一 URL，跨域属性保持一致，避免被判定为两个请求而重复下载。
+ * - 模板快照（dist-ssr/index.template.html）取自构建后的 dist/index.html，
+ *   SSG 全量静态化时该 preload 会随模板保留到每个页面。
+ */
+const injectEntryCssPreload = (): Plugin => {
+  let base = '/';
+  return {
+    name: 'inject-entry-css-preload',
+    apply: 'build',
+    configResolved(config) {
+      base = config.base;
+    },
+    transformIndexHtml: {
+      order: 'post' as const,
+      handler(_html, ctx) {
+        if (ctx.server || !ctx.bundle) {
+          return;
+        }
+        const entryChunk = Object.values(ctx.bundle).find(
+          (output) => output.type === 'chunk' && output.isEntry
+        );
+        const importedCss = entryChunk?.type === 'chunk' ? entryChunk.viteMetadata?.importedCss : undefined;
+        if (!importedCss || importedCss.size === 0) {
+          return;
+        }
+        const cssFileName = [...importedCss][0];
+        const href = base === './'
+          ? cssFileName
+          : `${base.replace(/\/+$/, '')}/${cssFileName}`.replace(/\/+/g, '/');
+        // 直接返回 HtmlTagDescriptor[]：Vite 将其注入原始 HTML（head-prepend），
+        // 与返回 { html, tags } 的对象形式行为一致且满足 IndexHtmlTransformResult 类型。
+        return [
+          {
+            tag: 'link',
+            attrs: {
+              rel: 'preload',
+              as: 'style',
+              href,
+              crossorigin: true,
+            },
+            injectTo: 'head-prepend' as const,
+          },
+        ];
+      },
+    },
+  };
+};
+
 const postsImgPublicPlugin = (): Plugin => {
   let outDir = 'dist';
   let isBuild = false;
@@ -172,7 +228,7 @@ export default defineConfig(({ command, mode }) => {
   const appBase = normalizeBasePath(env.VITE_BASE_PATH);
 
   return {
-    plugins: [react(), offlinePostAssetsPlugin(), postsImgPublicPlugin()],
+    plugins: [react(), injectEntryCssPreload(), offlinePostAssetsPlugin(), postsImgPublicPlugin()],
     base: appBase,
     esbuild: command === 'build' ? {
       // BUILD_KEEP_CONSOLE=1 时保留 console（调试 hydration 警告等），默认构建仍移除。
@@ -202,9 +258,11 @@ export default defineConfig(({ command, mode }) => {
       },
       rollupOptions: {
         output: {
-          assetFileNames: (assetInfo) => assetInfo.name?.endsWith('.css')
-            ? 'assets/[name][extname]'
-            : 'assets/[name]-[hash][extname]',
+          // 所有资源（含 CSS）均带内容哈希：样式变更必然产生新 URL，
+          // 避免服务工作者 stale-while-revalidate 命中旧缓存导致“首次打开
+          // 样式落后、刷新才正常”（曾用稳定 assets/index.css + HTTP
+          // 强 revalidate 方案，被 SW 缓存绕过，见 public/_headers 注释）。
+          assetFileNames: 'assets/[name]-[hash][extname]',
           chunkFileNames: 'assets/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
         },

@@ -19,6 +19,22 @@ import { buildRssFeed } from './feed-generator.mjs';
 const logger = createBuildLogger('gen:data');
 logger.start('Generate site data');
 
+/**
+ * 全局异常兜底（Phase 1 审计项 9 修复）：
+ * 本脚本主体为顶层同步逻辑，任何校验/解析 throw（如 front matter 校验失败）
+ * 都会触发 uncaughtException。这里结构化记录错误并以非零码退出，
+ * 替代 Node 默认的裸堆栈打印，便于在 Actions 日志中快速定位失败原因。
+ * 注意：非零退出码由 build.mjs 阶段判定，行为不变（构建失败）。
+ */
+process.on('uncaughtException', (error) => {
+  logger.error('Site data generation failed', error instanceof Error ? error.stack : String(error));
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled promise rejection during site data generation', reason instanceof Error ? reason.stack : String(reason));
+  process.exit(1);
+});
+
 const siteConfig = loadSiteConfig({ logger });
 const SITE_URL = siteConfig.url;
 const BASE_PATH = getBasePath();
@@ -35,9 +51,46 @@ const FRIENDS_DIR = path.join(__dirname, '../friends');
 const OUTPUT_JSON_DIR = path.join(__dirname, '../generated');
 const PUBLIC_DIR = path.join(__dirname, '../public');
 const IMAGE_MANIFEST_FILE = path.join(OUTPUT_JSON_DIR, 'image-assets.json');
-const imageManifest = fs.existsSync(IMAGE_MANIFEST_FILE)
-  ? JSON.parse(fs.readFileSync(IMAGE_MANIFEST_FILE, 'utf-8'))
-  : { assets: {} };
+
+/**
+ * 读取并校验图片清单。Phase 3 加固：
+ * 文件缺失 → 空清单（兼容"未运行 gen:images"的增量场景）；
+ * 文件损坏（JSON 语法错误）或结构畸形（assets 非对象）→ 结构化 fatal：
+ * 后续所有依赖宽高的逻辑（CLS 防护、图片 sitemap）都会读错数据，宁可中断构建。
+ */
+let imageManifest;
+try {
+  imageManifest = fs.existsSync(IMAGE_MANIFEST_FILE)
+    ? JSON.parse(fs.readFileSync(IMAGE_MANIFEST_FILE, 'utf-8'))
+    : { assets: {} };
+  if (!imageManifest || typeof imageManifest !== 'object' || !imageManifest.assets || typeof imageManifest.assets !== 'object') {
+    throw new Error('image-assets.json is malformed: expected { assets: { ... } }');
+  }
+} catch (error) {
+  logger.error('Failed to load image manifest', error instanceof Error ? error.stack : String(error));
+  process.exit(1);
+}
+
+/**
+ * 单篇文章文件大小上限（字节）：5 MiB。
+ * Phase 3 加固：误提交超大文件（日志转储、二进制误入）会让 markdownToSearchText /
+ * countWords 的多次全量正则遍历 + posts-search.json 体积失控，构建内存峰值爆炸。
+ * 超限文章 fail-closed（构建失败）并给出明确指引。
+ */
+const MAX_POST_FILE_BYTES = 5 * 1024 * 1024;
+
+/**
+ * 允许透传进 posts.json 的未知 frontmatter 字段白名单。
+ * Phase 3/4 加固：此前 `...restData` 会把 frontmatter 中所有未知键
+ * （Obsidian 习惯的 aliases/cssclass 等）原样序列化进 generated/posts.json，
+ * 进而污染 ssg-route-data 内联 JSON 与客户端数据契约。白名单外的键全部剔除。
+ * 注意：title/excerpt 等核心业务字段在 buildPost 中显式传递（见下方），
+ * 此处只管辖"额外布尔/数字标志"的透传，避免核心字段被误过滤。
+ */
+const POST_FRONTMATTER_ALLOWLIST = new Set([
+  'featured',
+  'featured-top'
+]);
 
 if (!fs.existsSync(OUTPUT_JSON_DIR)) {
   fs.mkdirSync(OUTPUT_JSON_DIR, { recursive: true });
@@ -463,8 +516,36 @@ const files = fs.readdirSync(POSTS_DIR).filter((file) => {
   }
 });
 
+// Phase 3 加固：超限文件错误独立收集（validationErrors 在 map 之后才初始化，
+// 不能在 map 回调中直接引用它，否则触发 TDZ ReferenceError）。
+const oversizedFileErrors = [];
+
 const postRecords = files.map((filename) => {
   const filePath = path.join(POSTS_DIR, filename);
+  // Phase 3 加固：先校验文件大小（fail-closed），超限文件不读入内存。
+  try {
+    const stat = fs.statSync(filePath);
+    if (stat.size > MAX_POST_FILE_BYTES) {
+      oversizedFileErrors.push(`Post file ${filename} exceeds size limit (${stat.size} > ${MAX_POST_FILE_BYTES} bytes); likely a binary/attachment mis-committed as Markdown.`);
+      return {
+        filename,
+        filePath,
+        data: {},
+        content: '',
+        restData: {},
+        draft: false,
+        id: '',
+        formattedDate: undefined,
+        formattedUpdatedAt: undefined,
+        headingIds: [],
+        contentStartLine: 0,
+        errors: []
+      };
+    }
+  } catch {
+    // statSync 失败（文件在遍历后被删除等极端竞态）：跳过该文件，不中断构建。
+    return null;
+  }
   const fileContent = fs.readFileSync(filePath, 'utf-8');
   let data = {};
   let content = fileContent;
@@ -495,7 +576,10 @@ const postRecords = files.map((filename) => {
     filePath,
     data,
     content,
-    restData,
+    // Phase 3 加固：白名单过滤未知 frontmatter 键，杜绝污染产物数据契约。
+    restData: Object.fromEntries(
+      Object.entries(restData).filter(([key]) => POST_FRONTMATTER_ALLOWLIST.has(key))
+    ),
     draft: draft === true,
     id,
     formattedDate,
@@ -504,11 +588,15 @@ const postRecords = files.map((filename) => {
     contentStartLine,
     errors: frontMatterError ? [frontMatterError] : []
   };
-});
+}).filter(Boolean);
 
 const allPostIndex = new Map();
 const publishedPostIndex = new Map();
-const validationErrors = postRecords.flatMap((record) => record.errors);
+// Phase 3 加固：合并超限文件错误（它们在 map 阶段独立收集，避免 TDZ）。
+const validationErrors = [
+  ...oversizedFileErrors,
+  ...postRecords.flatMap((record) => record.errors)
+];
 findDuplicatePostIds(postRecords).forEach(({ id, filename }) => {
   validationErrors.push(`Duplicate post id "${id}" found in ${filename}.`);
 });
@@ -545,6 +633,11 @@ const buildPost = (record) => {
   }
   return draft ? null : {
     ...restData,
+    // 核心业务字段显式传递（Phase 4 修复）：title/excerpt 原本依赖 restData 透传，
+    // 白名单过滤后会被剔除导致下游 llms.txt/RSS 崩溃。这里显式取值，
+    // 且 validatePostFrontmatter 已保证二者为非空字符串。
+    title: data.title,
+    excerpt: data.excerpt,
     ...(isSeries ? { series: true, seriesName, seriesOrder } : {}),
     coverImage: normalizedCoverImage,
     coverWidth: coverDimensions?.width,
@@ -667,18 +760,22 @@ logger.step('Generated friends.json', `friends=${friends.length} sourceFiles=${f
 const siteAbsoluteUrl = (route = '/') => new URL(toPublicPath(route), `${SITE_URL}/`).toString();
 
 const generateSitemap = () => {
-  const today = new Date().toISOString().split('T')[0];
-
+  // 静态页面 lastmod 使用内容驱动的稳定值：取最新文章的更新时间，
+  // 而非“今天”。构建日期会随每次部署变化，导致 lastmod 频繁抖动、
+  // 搜索引擎反复重新抓取，而内容未变时 lastmod 变化毫无信息量。
+  const latestPostDate = posts.length > 0
+    ? new Date(Math.max(...posts.map((post) => new Date(post.updatedAt || post.date).getTime()))).toISOString().split('T')[0]
+    : new Date().toISOString().split('T')[0];
   const staticPages = [
-    { path: '', changefreq: 'daily', priority: '1.0', lastmod: today },
-    { path: 'archive', changefreq: 'daily', priority: '0.9', lastmod: today },
-    { path: 'tags', changefreq: 'weekly', priority: '0.8', lastmod: today },
-    { path: 'stats', changefreq: 'weekly', priority: '0.6', lastmod: today },
-    { path: 'friends', changefreq: 'weekly', priority: '0.7', lastmod: today },
-    { path: 'about', changefreq: 'monthly', priority: '0.7', lastmod: today },
-    { path: 'cover', changefreq: 'monthly', priority: '0.5', lastmod: today },
-    { path: 'watermark', changefreq: 'monthly', priority: '0.5', lastmod: today },
-    { path: 'sponsor', changefreq: 'monthly', priority: '0.5', lastmod: today }
+    { path: '', changefreq: 'daily', priority: '1.0', lastmod: latestPostDate },
+    { path: 'archive', changefreq: 'daily', priority: '0.9', lastmod: latestPostDate },
+    { path: 'tags', changefreq: 'weekly', priority: '0.8', lastmod: latestPostDate },
+    { path: 'stats', changefreq: 'weekly', priority: '0.6', lastmod: latestPostDate },
+    { path: 'friends', changefreq: 'weekly', priority: '0.7', lastmod: latestPostDate },
+    { path: 'about', changefreq: 'monthly', priority: '0.7', lastmod: latestPostDate },
+    { path: 'cover', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },
+    { path: 'watermark', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },
+    { path: 'sponsor', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate }
   ];
   const postUrl = (post) => siteAbsoluteUrl(`/post/${post.id}`);
   const postLastmod = (post) => new Date(post.updatedAt || post.date).toISOString().split('T')[0];
@@ -769,15 +866,15 @@ const generateSitemap = () => {
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
     <loc>${xmlEscape(siteAbsoluteUrl('/sitemap-pages.xml'))}</loc>
-    <lastmod>${today}</lastmod>
+    <lastmod>${latestPostDate}</lastmod>
   </sitemap>
   <sitemap>
     <loc>${xmlEscape(siteAbsoluteUrl('/sitemap-posts.xml'))}</loc>
-    <lastmod>${today}</lastmod>
+    <lastmod>${latestPostDate}</lastmod>
   </sitemap>
   <sitemap>
     <loc>${xmlEscape(siteAbsoluteUrl('/sitemap-images.xml'))}</loc>
-    <lastmod>${today}</lastmod>
+    <lastmod>${latestPostDate}</lastmod>
   </sitemap>
 </sitemapindex>`;
   fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap-index.xml'), sitemapIndexXml);
@@ -877,13 +974,24 @@ const generateLlmsTxt = () => {
   logger.step('Generated llms.txt', `posts=${posts.length}`);
 };
 
-generateSitemap();
-generateRss();
-generateLlmsTxt();
+try {
+  generateSitemap();
+  generateRss();
+  generateLlmsTxt();
+} catch (error) {
+  // 生成阶段的 I/O 或序列化失败（磁盘满、权限、畸形配置）：
+  // 结构化记录后以非零码退出，阻止带缺文件件的产物继续构建。
+  logger.error('Output generation failed', error instanceof Error ? error.stack : String(error));
+  process.exitCode = 1;
+}
 
-logger.summary({
-  posts: posts.length,
-  friends: friends.length,
-  outputs: 6,
-  siteUrl: SITE_URL
-});
+if (process.exitCode) {
+  logger.summary({ posts: posts.length, friends: friends.length, outputs: 6, siteUrl: SITE_URL, status: 'failed' });
+} else {
+  logger.summary({
+    posts: posts.length,
+    friends: friends.length,
+    outputs: 6,
+    siteUrl: SITE_URL
+  });
+}

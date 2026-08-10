@@ -10,6 +10,8 @@ interface SeoProps {
   title: string;
   description?: string;
   image?: string;
+  imageWidth?: number;
+  imageHeight?: number;
   url?: string;
   type?: 'website' | 'article';
   publishedTime?: string;
@@ -24,9 +26,13 @@ interface SeoProps {
 
 const toAbsoluteUrl = (value?: string) => absoluteSiteUrl(value, siteConfig.url, getSiteBasePath());
 
-// canonical 只保留影响页面内容的查询参数（如分类筛选），
-// 丢弃搜索/分页/排序等衍生 UI 状态，避免软重复内容与 canonical 抖动。
-const CANONICAL_QUERY_PARAMS = new Set(['category']);
+// canonical 只保留影响页面内容的查询参数，丢弃搜索/分页/排序等衍生 UI 状态。
+// 规则：
+// - category / tag / q：内容型筛选参数，保留其 canonical，让筛选页自指而非指向无参版，
+//   避免 Google 将真实内容页当作首页/列表页的软重复内容合并掉；
+// - page：非首页页码自指（同一内容在不同页），首页无参（避免 canonical 抖动）；
+// - sort / 其余：纯 UI 偏好，同一批内容，一律丢弃，统一归并。
+const CANONICAL_QUERY_PARAMS = new Set(['category', 'tag', 'q']);
 
 const buildCanonicalPath = (value: string) => {
   const withoutHash = value.split('#', 1)[0] || '/';
@@ -47,6 +53,11 @@ const buildCanonicalPath = (value: string) => {
       kept.push(`${key}=${encodeURIComponent(paramValue)}`);
     });
   });
+  // 页码大于 1 时保留 page 参数（首页第 1 页不带参，避免 canonical 在 / 与 /?page=1 间抖动）。
+  const pageValue = params.get('page');
+  if (pageValue && pageValue !== '1') {
+    kept.push(`page=${encodeURIComponent(pageValue)}`);
+  }
   return kept.length ? `${pathname}?${kept.join('&')}` : pathname;
 };
 
@@ -58,6 +69,45 @@ const hasSearchParam = (value: string) => {
   }
   return new URLSearchParams(withoutHash.slice(queryIndex + 1)).has('q');
 };
+
+/**
+ * 全站级 WebSite + Organization 结构化数据。
+ * Google 建议站点级 schema 在各页重复出现：文章页在传入自定义 structuredData
+ * 后仍需带上这两条（publisher 里的 Organization 是独立实体，互不影响）。
+ * 导出供文章页等自定义 schema 的页面合并使用。
+ */
+const buildSiteSchemas = (description: string): Array<Record<string, unknown>> => [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: siteConfig.title,
+    alternateName: siteConfig.subtitle,
+    description,
+    url: toAbsoluteUrl('/'),
+    inLanguage: 'zh-CN',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${toAbsoluteUrl('/')}?q={search_term_string}`
+      },
+      'query-input': 'required name=search_term_string'
+    }
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: siteConfig.title,
+    alternateName: siteConfig.subtitle,
+    url: toAbsoluteUrl('/'),
+    logo: {
+      '@type': 'ImageObject',
+      url: toAbsoluteUrl(siteConfig.logo)
+    },
+    email: siteConfig.social.rawEmail,
+    sameAs: [siteConfig.social.github]
+  }
+];
 
 const withBaseUrls = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -83,10 +133,13 @@ const stringifyJsonLd = (value: StructuredData | Record<string, unknown>) => JSO
   .replace(/\u2028/g, '\\u2028')
   .replace(/\u2029/g, '\\u2029');
 
+export { buildSiteSchemas };
 export const Seo: React.FC<SeoProps> = ({
   title,
   description = siteConfig.description,
   image = siteConfig.seoImage,
+  imageWidth = 1200,
+  imageHeight = 630,
   url,
   type = 'website',
   publishedTime,
@@ -106,39 +159,7 @@ export const Seo: React.FC<SeoProps> = ({
   const imageUrl = toAbsoluteUrl(image);
   const schema = structuredData
     ? (Array.isArray(structuredData) ? structuredData : [structuredData]).map(withBaseUrls) as Array<Record<string, unknown>>
-    : type === 'website'
-      ? [{
-          '@context': 'https://schema.org',
-          '@type': 'WebSite',
-          name: siteConfig.title,
-          alternateName: siteConfig.subtitle,
-          description,
-          url: toAbsoluteUrl('/'),
-          inLanguage: 'zh-CN',
-          potentialAction: {
-            '@type': 'SearchAction',
-            target: {
-              '@type': 'EntryPoint',
-              urlTemplate: `${toAbsoluteUrl('/')}?q={search_term_string}`
-            },
-            'query-input': 'required name=search_term_string'
-          }
-        }, {
-          // 全站 Organization 实体：Google 建议站点级 schema 在各页重复出现，
-          // 文章页的 publisher 是独立 Organization 实体，两者互不影响。
-          '@context': 'https://schema.org',
-          '@type': 'Organization',
-          name: siteConfig.title,
-          alternateName: siteConfig.subtitle,
-          url: toAbsoluteUrl('/'),
-          logo: {
-            '@type': 'ImageObject',
-            url: toAbsoluteUrl(siteConfig.logo)
-          },
-          email: siteConfig.social.rawEmail,
-          sameAs: [siteConfig.social.github]
-        }]
-      : [];
+    : buildSiteSchemas(description);
 
   return (
     <Helmet>
@@ -156,6 +177,9 @@ export const Seo: React.FC<SeoProps> = ({
       <meta property="og:description" content={description} />
       <meta property="og:image" content={imageUrl} />
       <meta property="og:image:alt" content={fullTitle} />
+      {/* 显式声明分享图尺寸：社交平台抓取时可立即按比例裁剪展示，避免二次探测请求 */}
+      <meta property="og:image:width" content={String(imageWidth)} />
+      <meta property="og:image:height" content={String(imageHeight)} />
       <meta property="og:url" content={canonicalUrl} />
       {type === 'article' && publishedTime && <meta property="article:published_time" content={publishedTime} />}
       {type === 'article' && modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
