@@ -242,11 +242,11 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
             )}
           </div>
           <Link to={`/post/${post.id}`} aria-label={`阅读文章：${post.title}`}>
-            <h3 className="mb-1.5 line-clamp-2 font-serif text-base font-bold leading-snug md:mb-2 text-ink hover:underline dark:text-zinc-100 md:text-lg">
+            <h3 className="mb-1.5 line-clamp-2 min-h-11 font-serif text-base font-bold leading-snug md:mb-2 md:min-h-0 text-ink hover:underline dark:text-zinc-100 md:text-lg">
               {post.title}
             </h3>
           </Link>
-          <p className="mb-2 line-clamp-2 text-sm leading-5 text-zinc-600 md:mb-3 md:leading-6 dark:text-zinc-300">{post.excerpt}</p>
+          <p className="mb-2 line-clamp-1 text-sm leading-5 text-zinc-600 md:mb-3 md:line-clamp-2 md:leading-6 dark:text-zinc-300">{post.excerpt}</p>
           <Tags />
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-[11px] md:mt-4 md:pt-3 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             <span className="flex items-center gap-1"><Calendar size={11} />{post.date}</span>

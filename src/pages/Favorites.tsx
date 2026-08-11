@@ -86,9 +86,9 @@ export const Favorites = () => {
                     <span className="normal-case tracking-normal">已收藏</span>
                   </div>
                   <Link to={`/post/${encodeURIComponent(post.id)}`} aria-label={`阅读文章：${post.title}`}>
-                    <h2 className="mb-1.5 line-clamp-2 md:mb-2 font-serif text-base font-bold leading-snug text-ink hover:underline dark:text-zinc-100 md:text-lg">{post.title}</h2>
+                    <h2 className="mb-1.5 line-clamp-2 min-h-11 md:min-h-0 md:mb-2 font-serif text-base font-bold leading-snug text-ink hover:underline dark:text-zinc-100 md:text-lg">{post.title}</h2>
                   </Link>
-                  <p className="mb-2 line-clamp-2 text-sm leading-5 md:mb-3 md:leading-6 text-zinc-600 dark:text-zinc-300">{post.excerpt}</p>
+                  <p className="mb-2 line-clamp-1 text-sm leading-5 md:mb-3 md:line-clamp-2 md:leading-6 text-zinc-600 dark:text-zinc-300">{post.excerpt}</p>
                   <div className="mt-auto flex items-center gap-3 border-t border-zinc-200 pt-2.5 text-[11px] md:pt-3 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
                     <span className="flex items-center gap-1"><Calendar size={11} />{formatDate(post.date, 'zh-CN', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                     <span className="flex items-center gap-1"><Clock size={11} />{post.readTime}</span>
