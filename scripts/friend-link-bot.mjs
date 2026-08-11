@@ -2,8 +2,12 @@
  * friend-link-bot.mjs — 友链申请自动审核 Bot（GitHub Actions 专用）。
  *
  * 运行模式（由 workflow 以 CLI 参数区分）：
- *   node scripts/friend-link-bot.mjs opened   # issues 事件触发：回复"已收到"标记
- *   node scripts/friend-link-bot.mjs review   # schedule 每 5 分钟：审核到期申请
+ *   node scripts/friend-link-bot.mjs opened   # issues:opened 事件：回复"已收到"标记
+ *   node scripts/friend-link-bot.mjs review   # 事件驱动审核：冷却等待后处理全部待审申请
+ *
+ * 事件驱动（无定时轮询）：workflow 仅在 issues:opened 或手动 workflow_dispatch 时运行。
+ * 新申请的 10 分钟冷却期由 review 模式在 run 内原地等待完成（无需 schedule 兜底）；
+ * git push 带内重试替代定时重试，避免单次网络抖动导致申请永久滞留。
  *
  * 本版本为深度 Code Audit + 防御性重构最终版（Phase 3 全量重写，Phase 4 红队修正），
  * 在上一版基础上的关键修复：
@@ -40,6 +44,8 @@ import {
   fetchWithRetry,
   createTimeoutSignal,
   lookupWithTimeout,
+  computeBackoffDelay,
+  sleep,
   RateLimitError,
   PaginationLimitError,
   readResponseText
@@ -54,6 +60,14 @@ export const ISSUE_PREFIX = '[Friend Link]';
 
 /** 申请提交后等待的冷却时长：10 分钟（可环境变量覆盖，方便测试缩短）。 */
 export const WAIT_MS = Number(process.env.FRIEND_LINK_WAIT_MS) || 10 * 60 * 1000;
+
+/** review 模式原地等待冷却的封顶（毫秒）：低于 workflow timeout-minutes(15 分钟)，
+ *  防止 FRIEND_LINK_WAIT_MS 被调大时 job 在等待期间被超时终止（白白占用队列）。 */
+const MAX_COOLDOWN_WAIT_MS = 12 * 60 * 1000;
+
+/** review 模式是否原地等待冷却：issues:opened 事件触发的 run 置 1（事件驱动下
+ *  新申请必在冷却期，等待后本 run 内完成审核）；手动 workflow_dispatch 不等待。 */
+const WAIT_COOLDOWN = ['1', 'true', 'yes'].includes(String(process.env.FRIEND_LINK_WAIT_COOLDOWN || '').toLowerCase());
 
 const INITIAL_MARKER = '<!-- d-blog-friend-bot:initial -->';
 const ACCEPTED_MARKER = '<!-- d-blog-friend-bot:accepted -->';
@@ -91,6 +105,9 @@ const MAX_TOTAL_FIELD_CHARS = 800;
 
 /** git 子命令超时（毫秒）。 */
 const GIT_TIMEOUT_MS = 60000;
+
+/** git push 带内重试次数（事件驱动下无定时轮询兜底，网络抖动靠本 run 内重试吸收）。 */
+const PUSH_RETRIES = 3;
 
 /** 单个 review 批次最多处理多少个 open issue（每批 schedule 只处理一批，避免超长运行）。 */
 const MAX_ISSUES_PER_BATCH = 50;
@@ -198,6 +215,25 @@ export const normalizeUrl = (value) => {
   } catch {
     return '';
   }
+};
+
+/**
+ * 计算 review 批次的冷却等待时长：全部待审申请中"剩余冷却时间"的最大值。
+ * 事件驱动（issues:opened）下必有刚提交的申请处于冷却期，此等待让 run 在
+ * 本 run 内完成"冷却 + 审核"全流程；无待审申请或均已过冷却期时返回 0。
+ * @param {Array<{ created_at?: string }>} issues 待审申请列表。
+ * @param {number} [now=Date.now()] 当前时间戳（可注入测试）。
+ * @returns {number} 应等待毫秒数（0 表示无需等待）。
+ */
+export const computeCooldownWaitMs = (issues, now = Date.now()) => {
+  let maxRemaining = 0;
+  for (const issue of issues) {
+    const createdAt = Date.parse(issue.created_at);
+    if (Number.isFinite(createdAt)) {
+      maxRemaining = Math.max(maxRemaining, WAIT_MS - (now - createdAt));
+    }
+  }
+  return Math.max(0, maxRemaining);
 };
 
 /**
@@ -515,26 +551,50 @@ const alreadyExists = async (application) => {
 /* ------------------------------------------------------------------ */
 
 /**
- * 提交并推送友链文件。
- * Phase 3 修复：目标分支由 TARGET_BRANCH 决定（GITHUB_REF_NAME 可覆盖），
- * 不再硬编码 main。
+ * 提交并推送友链文件（幂等 + push 带内重试）。
+ * - 幂等：先检查暂存区，无改动则跳过 commit（同一 checkout 内重试时首次
+ *   commit 已落库，避免"nothing to commit"误抛；跨 run 由全新 checkout 保证）。
+ * - push 重试：事件驱动下无定时轮询兜底，网络抖动导致的 push 失败在本 run 内
+ *   最多重试 PUSH_RETRIES 次（指数退避）；仍失败则抛出 —— Issue 保持打开、
+ *   不落 marker，由下一次提交事件或手动 workflow_dispatch 在全新 checkout 中重试。
  * @param {string} filePath
  * @param {number} issueNumber
  * @returns {Promise<string>} 提交短 SHA。
  */
-const commitAndPushFriendFile = async (filePath, issueNumber) => {
+export const commitAndPushFriendFile = async (filePath, issueNumber) => {
   execFileSync('git', ['add', filePath], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
-  execFileSync('git', [
-    '-c', 'user.name=github-actions[bot]',
-    '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
-    'commit', '-m', `feat: add friend link via issue #${issueNumber}`
-  ], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
-  execFileSync('git', ['push', 'origin', `HEAD:${TARGET_BRANCH}`], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
-  return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+  const staged = execFileSync('git', ['diff', '--cached', '--name-only'], {
     encoding: 'utf8',
     timeout: GIT_TIMEOUT_MS,
     stdio: 'pipe'
   }).trim();
+  if (staged) {
+    execFileSync('git', [
+      '-c', 'user.name=github-actions[bot]',
+      '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
+      'commit', '-m', `feat: add friend link via issue #${issueNumber}`
+    ], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
+  }
+
+  let lastError = null;
+  for (let attempt = 1; attempt <= PUSH_RETRIES; attempt += 1) {
+    try {
+      execFileSync('git', ['push', 'origin', `HEAD:${TARGET_BRANCH}`], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
+      return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+        encoding: 'utf8',
+        timeout: GIT_TIMEOUT_MS,
+        stdio: 'pipe'
+      }).trim();
+    } catch (error) {
+      lastError = error;
+      if (attempt < PUSH_RETRIES) {
+        const delayMs = computeBackoffDelay(attempt, 2000, 10000);
+        logger.warn('git push failed, retrying', { attempt, delayMs, error: formatError(error) });
+        await sleep(delayMs);
+      }
+    }
+  }
+  throw lastError;
 };
 
 /* ------------------------------------------------------------------ */
@@ -622,8 +682,8 @@ const processIssue = async (issue) => {
     return 'exists';
   }
 
-  // 写入文件 + git 事务。push 失败时抛出异常：不 close Issue，
-  // 由下一轮 schedule 在全新 checkout 中重试（无本地残留）。
+  // 写入文件 + git 事务。push 失败时抛出异常：不 close Issue、不落 marker，
+  // 由下一次提交事件或手动 workflow_dispatch 在全新 checkout 中重试（无本地残留）。
   const filePath = await writeFriendFile(application);
   const sha = await commitAndPushFriendFile(filePath, issueNumber);
   await postComment(
@@ -635,14 +695,19 @@ const processIssue = async (issue) => {
 };
 
 /**
- * schedule 巡检：拉取全部 open issues，逐个隔离处理。
+ * review 模式（事件驱动）：拉取全部 open issues，等待冷却后逐个隔离处理。
+ * 本函数只在"有提交申请"的 run 中执行（workflow 无定时轮询）：
+ * - 新提交的申请处于冷却期 → 原地等待至冷却完成（本 run 内完成"冷却+审核"
+ *   全流程，无需 schedule 兜底；仅 issues:opened 触发的 run 等待，
+ *   手动 workflow_dispatch 不等待，冷却中的申请留待下次事件）；
+ * - 已过冷却期的申请直接处理（含上一次运行失败遗留的未处理申请）；
  * - 普通异常：记录后继续下一个 issue（坏数据不拖垮整批）。
  * - RateLimitError：暂停整批（继续请求只会继续触发限流）。
  * - PaginationLimitError：数据被截断，中止整批并报警（fail-closed）。
  */
 const processReview = async () => {
-  const issues = await listOpenIssues();
-  const pending = issues.filter(
+  let issues = await listOpenIssues();
+  let pending = issues.filter(
     (item) => !item.pull_request && item.title?.startsWith(ISSUE_PREFIX)
   );
   logger.info('Review cycle started', {
@@ -650,6 +715,26 @@ const processReview = async () => {
     friendLinkIssues: pending.length,
     batchLimit: MAX_ISSUES_PER_BATCH
   });
+
+  // 事件驱动冷却等待：issues:opened 触发的 run 内，新申请提交未满 WAIT_MS 时
+  // 原地等待至冷却完成，等待结束后重新拉取（避免漏掉等待期间的新提交）。
+  // 等待封顶 MAX_COOLDOWN_WAIT_MS（低于 job timeout-minutes 15 分钟）；超封顶的
+  // 申请由 processIssue 的冷却检查跳过，留待下一次提交事件或手动重跑处理。
+  if (WAIT_COOLDOWN) {
+    const waitMs = Math.min(MAX_COOLDOWN_WAIT_MS, computeCooldownWaitMs(pending));
+    if (waitMs > 0) {
+      logger.info('Waiting for application cooldown before review', {
+        waitMs,
+        cooldownMs: WAIT_MS,
+        capped: waitMs === MAX_COOLDOWN_WAIT_MS
+      });
+      await sleep(waitMs);
+      issues = await listOpenIssues();
+      pending = issues.filter(
+        (item) => !item.pull_request && item.title?.startsWith(ISSUE_PREFIX)
+      );
+    }
+  }
 
   const stats = { processed: 0, skipped: 0, rejected: 0, accepted: 0, exists: 0, failed: 0 };
   const batch = pending.slice(0, MAX_ISSUES_PER_BATCH);

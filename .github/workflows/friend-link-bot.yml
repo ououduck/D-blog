@@ -3,8 +3,6 @@ name: Friend Link Bot
 on:
   issues:
     types: [opened]
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -12,9 +10,9 @@ permissions:
   issues: write
 
 concurrency:
-  # issues:opened 与 schedule 共用同一 group：串行执行，防并发 push 与评论竞态。
-  # cancel-in-progress: false —— 绝不取消排队中的事件 job（opened 事件只投递一次，
-  # 取消即永久丢失"已收到"回复）。
+  # 事件驱动（无定时轮询）：仅在有人提交友链申请（或手动 dispatch）时运行，
+  # 平时零运行。group 固定保证同时至多一个 job（issues:opened 只投递一次，
+  # 排队不取消，取消即永久丢失"已收到"回复）。
   group: friend-link-bot
   cancel-in-progress: false
 
@@ -22,9 +20,9 @@ jobs:
   process:
     if: github.event_name != 'issues' || startsWith(github.event.issue.title, '[Friend Link]')
     runs-on: ubuntu-latest
-    # 显式 job 超时：脚本内部已有超时，但 execFileSync 等同步操作在极端环境下
-    # 可能叠加超时；15 分钟上限保证 schedule（每 5 分钟）不会因上一轮卡死而排队堆积。
-    # （无此字段时默认 6 小时，会与 */5 调度形成灾难性排队。）
+    # 事件驱动下的长运行：issues:opened 触发的 run 内 review 模式会原地等待
+    # 冷却期（新申请提交满 10 分钟才审核，最多等 ~10 分钟）+ 审核处理，
+    # 15 分钟封顶保证长运行不失控。（无此字段时默认 6 小时。）
     timeout-minutes: 15
     steps:
       - name: Check out repository
@@ -34,11 +32,23 @@ jobs:
           # fetch-depth: 0 避免浅克隆 push 失败。
           fetch-depth: 0
 
-      - name: Process friend-link applications
+      - name: Confirm friend-link application received
+        if: github.event_name == 'issues'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           ISSUE_PAYLOAD: ${{ toJson(github.event.issue) }}
+        run: node scripts/friend-link-bot.mjs opened
+
+      - name: Review friend-link applications
+        # always()：即使上一步回执失败（如限流）也不阻断审核主流程。
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          # 事件驱动 + 原地冷却：issues:opened 触发的 run 置 1，review 模式
+          # 等待新申请冷却完成后本 run 内审核；手动 dispatch 留空不等待。
+          FRIEND_LINK_WAIT_COOLDOWN: ${{ github.event_name == 'issues' && '1' || '' }}
           # git push 目标分支：默认取当前事件分支（main），可显式覆盖。
           FRIEND_LINK_TARGET_BRANCH: ${{ github.ref_name }}
-        run: node scripts/friend-link-bot.mjs ${{ github.event_name == 'issues' && 'opened' || 'review' }}
+        run: node scripts/friend-link-bot.mjs review
