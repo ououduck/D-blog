@@ -59,7 +59,7 @@ const gridExitVariants = {
 const getCategories = (posts: PostMetadata[]) => Array.from(new Set(posts.map((post) => post.category)));
 
 const SkeletonBlock: React.FC<{ className?: string; shouldReduceMotion: boolean }> = ({ className, shouldReduceMotion }) => (
-  <div className={`${shouldReduceMotion ? '' : 'animate-pulse'} bg-zinc-200 dark:bg-zinc-800 ${className || ''}`} />
+  <div className={`${shouldReduceMotion ? '' : 'editorial-shimmer'} bg-zinc-200 dark:bg-zinc-800 ${className || ''}`} />
 );
 
 const FeaturedPostSkeleton: React.FC<{ shouldReduceMotion: boolean }> = ({ shouldReduceMotion }) => (
@@ -157,15 +157,15 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
   };
 
   const Tags = () => post.tags.length > 0 ? (
-    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+    <div className="flex flex-wrap gap-1.5">
       {post.tags.slice(0, 3).map((tag) => (
         <Link
           key={tag}
           to={`/tags?tag=${encodeURIComponent(tag)}`}
-          className="hover:text-ink hover:underline dark:hover:text-white"
+          className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-100/70 px-2 py-0.5 text-[11px] font-medium text-zinc-600 transition-colors hover:border-zinc-400 hover:bg-zinc-900 hover:text-white dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-100 dark:hover:text-zinc-950"
           onClick={(event) => event.stopPropagation()}
         >
-          #{tag}
+          {tag}
         </Link>
       ))}
     </div>
@@ -297,10 +297,28 @@ const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
           ))}
         </div>
       </div>
-      <button onClick={onToggleSort} aria-pressed={sortOrder === 'oldest'} aria-label={`当前排序：${sortOrder === 'newest' ? '最新优先' : '最早优先'}，点击切换`} className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-control border border-zinc-300 bg-paper px-3 py-2 text-sm font-semibold text-zinc-700 transition-[background-color,border-color,color,transform,box-shadow] duration-150 hover:border-ink hover:bg-zinc-100 hover:text-ink hover:shadow-[0_1px_2px_rgba(24,24,27,0.08)] active:scale-[.98] dark:border-zinc-700 dark:bg-void dark:text-zinc-300 dark:hover:border-white dark:hover:bg-zinc-900 dark:hover:text-white dark:hover:shadow-none">
-        {sortOrder === 'newest' ? <ArrowDownWideNarrow size={14} /> : <ArrowUpWideNarrow size={14} />}
-        <span>{sortOrder === 'newest' ? '最新' : '最早'}</span>
-      </button>
+      <div className="relative isolate grid grid-cols-2 shrink-0 items-center rounded-control border border-zinc-300 bg-paper p-0.5 dark:border-zinc-700 dark:bg-void" role="group" aria-label="文章排序">
+        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-control bg-ink shadow-[0_1px_3px_rgba(24,24,27,0.3)] transition-transform duration-200 ease-out dark:bg-white dark:shadow-none" style={{ transform: sortOrder === 'oldest' ? 'translateX(100%)' : 'translateX(0)' }} />
+        {[
+          { key: 'newest' as const, label: '最新', Icon: ArrowDownWideNarrow },
+          { key: 'oldest' as const, label: '最早', Icon: ArrowUpWideNarrow },
+        ].map(({ key, label, Icon }) => {
+          const active = sortOrder === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => { if (!active) onToggleSort(); }}
+              aria-pressed={active}
+              aria-label={`按${label}优先排序`}
+              className={`relative z-10 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control px-3 text-sm font-semibold transition-colors duration-150 active:scale-[.98] ${active ? 'text-white dark:text-zinc-950' : 'text-zinc-700 hover:text-ink dark:text-zinc-300 dark:hover:text-white'}`}
+            >
+              <Icon size={14} />
+              <span>{label}</span>
+            </button>
+          );
+        })}
+      </div>
     </motion.div>
   );
 };

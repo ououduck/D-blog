@@ -186,7 +186,7 @@ export const Stats = () => {
         <div className="grid min-w-0 gap-4 py-8 min-[400px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 md:py-10" aria-busy="true">
           <LoadingStatus label="正在加载站点统计" className="col-span-full" />
           {Array.from({ length: 5 }).map((_, index) => (
-            <Surface key={index} aria-hidden="true" className="min-w-0 min-h-52 animate-pulse p-5 sm:min-h-56 sm:p-6">
+            <Surface key={index} aria-hidden="true" className="min-w-0 min-h-52 editorial-shimmer p-5 sm:min-h-56 sm:p-6">
               <div className="mb-5 h-10 w-10 rounded-icon bg-zinc-200 dark:bg-zinc-800" />
               <div className="mb-3 h-3 w-20 bg-zinc-200 dark:bg-zinc-800" />
               <div className="mb-3 h-8 w-24 bg-zinc-200 dark:bg-zinc-800" />

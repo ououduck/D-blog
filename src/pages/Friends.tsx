@@ -457,7 +457,7 @@ export const Friends = () => {
               key={`skeleton-${index}`}
               aria-hidden="true"
               variants={itemVariants}
-              className={`${shouldReduceMotion ? '' : 'animate-pulse '}rounded-surface border border-zinc-200 bg-paper p-5 dark:border-zinc-800 dark:bg-zinc-900`}
+              className="editorial-shimmer rounded-surface border border-zinc-200 bg-paper p-5 dark:border-zinc-800 dark:bg-zinc-900"
             >
               <div className="flex items-start gap-4">
                 <div className="h-14 w-14 flex-shrink-0 rounded-full bg-zinc-100 dark:bg-zinc-800" />

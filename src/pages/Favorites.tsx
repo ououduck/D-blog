@@ -48,7 +48,7 @@ export const Favorites = () => {
           <div className="space-y-4" aria-busy="true">
             <LoadingStatus label="正在加载本地收藏" />
             {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} aria-hidden="true" className="h-32 animate-pulse rounded-surface border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-900" />
+              <div key={index} aria-hidden="true" className="h-32 editorial-shimmer rounded-surface border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-900" />
             ))}
           </div>
         ) : error ? (

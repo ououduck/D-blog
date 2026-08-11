@@ -109,7 +109,28 @@ html.theme-switching .editorial-input {
   }
 
   .editorial-button-primary {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-zinc-950 bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(24,24,27,0.18)] transition-[background-color,border-color,color,opacity,transform,box-shadow] duration-150 hover:bg-zinc-800 hover:shadow-[0_2px_4px_rgba(24,24,27,0.22)] active:scale-[.98] active:bg-black active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)] dark:hover:bg-zinc-300;
+    @apply inline-flex relative isolate overflow-hidden min-h-11 items-center justify-center gap-2 rounded-control border border-zinc-950 bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(24,24,27,0.18)] transition-[background-color,border-color,color,opacity,transform,box-shadow] duration-150 hover:bg-zinc-800 hover:shadow-[0_2px_4px_rgba(24,24,27,0.22)] active:scale-[.98] active:bg-black active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)] dark:hover:bg-zinc-300;
+  }
+
+  /* uiverse button shine：单色对角高光，hover 时从左扫到右。z-index:-1 使扫光
+     位于按钮底色之上、文字/图标之下；暗色模式下按钮为浅底，改用黑色高光。 */
+  .editorial-button-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    transform: translateX(-100%);
+    background-image: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
+    transition: transform 0.6s ease;
+    pointer-events: none;
+  }
+
+  .editorial-button-primary:not(:disabled):hover::before {
+    transform: translateX(100%);
+  }
+
+  .dark .editorial-button-primary::before {
+    background-image: linear-gradient(110deg, transparent 30%, rgba(0, 0, 0, 0.14) 50%, transparent 70%);
   }
 
   .editorial-icon-button {
@@ -214,6 +235,33 @@ html.theme-switching .editorial-input {
   }
 }
 
+/* 骨架屏 shimmer 扫光（Ant Design / Element / TDesign Skeleton 模式）：
+   单色高光带横向扫过，与元素既有 bg-* 底色叠加；不强制 background-color，
+   仅加定位上下文与 ::after 扫光层，便于复用在任意骨架块上。 */
+.editorial-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.editorial-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%);
+  animation: editorial-shimmer-sweep 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.dark .editorial-shimmer::after {
+  background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.14) 50%, transparent 100%);
+}
+
+@keyframes editorial-shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 .nav-more-menu-panel {
   opacity: 0;
   pointer-events: none;
@@ -315,6 +363,11 @@ html.theme-switching .editorial-input {
   .animate-ping {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
+  }
+
+  .editorial-shimmer::after,
+  .editorial-button-primary::before {
+    display: none;
   }
 }
 
