@@ -88,17 +88,30 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
   const handleZoomOut = () => zoomTo(scale - ZOOM_STEP);
   const handleToggleZoom = () => zoomTo(scale > 1 ? 1 : 2.4);
 
-  const handleDownload = () => {
+  const handleDownload = useCallback(async () => {
     if (!displaySrc) return;
-    const link = document.createElement('a');
-    link.href = displaySrc;
-    link.download = alt?.trim() || 'image';
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    const filename = alt?.trim() || 'image';
+    // 跨域图片的 a[download] 会被浏览器忽略而退化为导航打开：先尝试 fetch 成
+    // blob 再用 objectURL 触发下载；fetch 失败（CORS 不允许/网络错误）时降级
+    // 为新标签打开让用户手动保存，避免静默导航走当前标签。
+    try {
+      const response = await fetch(displaySrc, { mode: 'cors' });
+      if (!response.ok) {
+        throw new Error(`unexpected status ${response.status}`);
+      }
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      window.open(displaySrc, '_blank', 'noopener,noreferrer');
+    }
+  }, [displaySrc, alt]);
 
   const handleWheel = useCallback((event: WheelEvent) => {
     if (!isOpen) return;
@@ -284,7 +297,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
             )}
             <img
               ref={imgRef}
-              src={displaySrc}
+              src={displaySrc ?? undefined}
               alt={alt || ''}
               draggable={false}
               onLoad={() => { setIsLoaded(true); setHasError(false); }}

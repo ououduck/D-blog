@@ -90,7 +90,7 @@ export const getRootBranchId = (id: string | null, parentMap: Map<string, string
   let currentId: string | null = id;
 
   while (currentId) {
-    const parentId = parentMap.get(currentId) ?? null;
+    const parentId: string | null = parentMap.get(currentId) ?? null;
 
     if (!parentId) {
       return currentId;

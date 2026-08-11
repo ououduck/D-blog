@@ -83,7 +83,8 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
 
   const resolvedLoading = loadingProp || (props.fetchPriority === 'high' ? 'eager' : 'lazy');
   const prefersReducedMotion = useReducedMotion();
-  // src 缺失时既不触发 onLoad 也不触发 onError，占位层会一直转圈，直接整体隐藏。
+  // src 缺失时既不触发 onLoad 也不触发 onError：直接走错误分支显示 alt 提示，
+  // 避免渲染一个不可见的空 <picture>（无占位层、无错误态、无 alt 文本）。
   const hasUsableSrc = Boolean(src);
   const showBlurPlaceholder = effect === 'blur' && hasUsableSrc;
   const showPlaceholder = effect !== 'none' && hasUsableSrc;
@@ -132,7 +133,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(({
           <div className={mergeClassName('h-5 w-5 rounded-full border-2 border-zinc-300/80 border-t-ink dark:border-zinc-700/80 dark:border-t-white', prefersReducedMotion ? undefined : 'animate-spin')} />
         </div>
       )}
-      {hasError ? (
+      {hasError || !hasUsableSrc ? (
         <div className="relative flex min-h-[6rem] h-full w-full items-center justify-center rounded-[inherit] border border-dashed border-zinc-200 bg-zinc-100/90 px-4 py-6 text-center text-xs font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400">
           <span className="line-clamp-2">图片暂时无法加载{alt ? `：${alt}` : ''}</span>
         </div>

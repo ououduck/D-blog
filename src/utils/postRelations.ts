@@ -41,11 +41,11 @@ export interface RelatedPostsOptions {
   excludeIds?: Iterable<string>;
 }
 
-export const getRelatedPosts = (
-  posts: PostMetadata[],
+export const getRelatedPosts = <T extends PostMetadata>(
+  posts: T[],
   post: PostMetadata,
   options: RelatedPostsOptions = {}
-) => {
+): T[] => {
   const excluded = new Set([post.id, ...(options.excludeIds ?? [])]);
   const postTags = new Set(post.tags.map((tag) => tag.trim()).filter(Boolean));
   const limit = options.limit ?? 3;

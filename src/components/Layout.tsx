@@ -33,7 +33,12 @@ const TEXT = {
   rssFeed: 'RSS \u8ba2\u9605'
 };
 
-const navItems = [
+type NavIcon = typeof BookOpen;
+type NavPathItem = { path: string; label: string; hint: string; icon: NavIcon; key?: string };
+type NavHrefItem = { href: string; label: string; hint: string; icon: NavIcon; key?: string };
+type NavItem = NavPathItem | NavHrefItem;
+
+const navItems: NavPathItem[] = [
   { path: '/', label: TEXT.navPosts, hint: '\u6700\u65b0\u5185\u5bb9', icon: BookOpen },
   { path: '/archive', label: TEXT.navArchive, hint: '\u65f6\u95f4\u5f52\u6863', icon: Archive },
   { path: '/tags', label: TEXT.navTags, hint: '\u4e3b\u9898\u7b5b\u9009', icon: Tag },
@@ -43,7 +48,7 @@ const navItems = [
   { path: '/about', label: TEXT.navAbout, hint: '\u7ad9\u70b9\u4ecb\u7ecd', icon: Info }
 ];
 
-const moreNavItems = [
+const moreNavItems: NavItem[] = [
   { key: 'favorites', path: '/favorites', label: TEXT.navFavorites, hint: '\u672c\u5730\u79bb\u7ebf\u9605\u8bfb', icon: Bookmark },
   { key: 'cover', path: '/cover', label: '\u5c01\u9762\u751f\u6210\u5668', hint: '\u5236\u4f5c\u6587\u7ae0\u5c01\u9762', icon: ImageIcon },
   { key: 'watermark', path: '/watermark', label: '\u6c34\u5370\u5de5\u5177', hint: '\u7ed9\u56fe\u7247\u6dfb\u52a0\u6587\u5b57\u6c34\u5370', icon: ImageIcon },

@@ -30,4 +30,5 @@ jobs:
         # 不会让每次评论都触发红叉；配置 secret 后自动恢复防护。
         env:
           AKISMET_API_KEY: ${{ secrets.AKISMET_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/akismet-comment-check.mjs

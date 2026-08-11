@@ -123,22 +123,35 @@ export const renderApp = async (
     while (i < bodyHtml.length) {
       const open = bodyHtml.indexOf('<div', i);
       const close = bodyHtml.indexOf('</div>', i);
-      const next = open !== -1 && open < close ? open : close;
-      if (next === close) {
+      // 两者皆 -1：已无更多 div 标签，marker 闭合缺失，终止扫描。
+      if (open === -1 && close === -1) {
+        break;
+      }
+      // 优先取更靠前者；close 不存在或 open 在前时走 open 分支（depth++）。
+      const useClose = close !== -1 && (open === -1 || close < open);
+      const next = useClose ? close : open;
+      if (useClose) {
         depth -= 1;
         if (depth === 0) {
-          innerEnd = close;
+          innerEnd = next;
           break;
         }
       } else {
         depth += 1;
       }
-      i = next + 4;
+      // close 标签 "</div>" 长 6，open 标签 "<div" 长 4，按实际长度推进游标，
+      // 避免游标落在标签内部导致下一轮 indexOf 重复匹配或漏匹配。
+      i = next + (useClose ? 6 : 4);
     }
     if (innerEnd > 0) {
       const innerHtml = bodyHtml.slice(innerStart, innerEnd);
       const trailing = bodyHtml.slice(innerEnd + '</div>'.length);
       html = innerHtml + trailing;
+    } else {
+      // 找不到配对闭合：marker 外壳无法安全移除。保留 marker 会让客户端
+      // 水合时 root 多出该节点，产生 hydration mismatch（静默故障）。显式抛错
+      // 让 SSG 阶段失败并记录，便于定位渲染结构异常，而非上线后才暴露。
+      throw new Error('SSG marker close tag not found; cannot strip marker wrapper safely.');
     }
   }
 

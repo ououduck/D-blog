@@ -41,7 +41,7 @@ type MarkdownImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   node?: unknown;
 };
 
-type MarkdownPlugin = unknown;
+type MarkdownPlugin = import('unified').Pluggable;
 
 type MermaidRenderer = {
   initialize: (config: Record<string, unknown>) => void;
@@ -693,7 +693,7 @@ const createMarkdownComponents = (
 
   return {
     a: ({ href, children, node: _node, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }) => {
-      const hrefIsImage = Boolean(href) && isImageUrl(href);
+      const hrefIsImage = href ? isImageUrl(href) : false;
       const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? resolveBrowserAsset(href) : resolvePostsImgPath(href, postId)) : href;
       const safeHref = isSafeMarkdownHref(resolvedHref) ? resolvedHref : undefined;
       const normalizedHref = safeHref && safeHref.startsWith('/') ? routeUrl(safeHref) : safeHref;
@@ -1097,6 +1097,9 @@ export const Post = () => {
 
   useEffect(() => {
     if (!post) return;
+    // SSG 首帧已用 routeData 填充 adjacent/series/related，无需再异步重取；
+    // 跳过可避免冗余网络请求，并消除 SSG 数据被异步结果覆盖的时序窗口。
+    if (hasSsgPost && loadAttempt === 0) return;
     let cancelled = false;
 
     getPosts()
@@ -1119,7 +1122,7 @@ export const Post = () => {
       });
 
     return () => { cancelled = true; };
-  }, [post]);
+  }, [post, hasSsgPost, loadAttempt]);
 
   useEffect(() => {
     const target = articleBodyRef.current;
@@ -1574,7 +1577,7 @@ export const Post = () => {
         </header>
 
         {post.coverImage && (
-          <button type="button" className="post-cover print-hidden mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0" onClick={() => setPreviewImage({ src: resolveBrowserAsset(post.coverImage), alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
+          <button type="button" className="post-cover print-hidden mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0" onClick={() => setPreviewImage({ src: resolveBrowserAsset(post.coverImage!)!, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
             <div className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-media border border-zinc-300 bg-zinc-100 shadow-none dark:border-zinc-700 dark:bg-zinc-900 sm:aspect-[16/8] md:mb-14 lg:aspect-[21/9]">
               <ProgressiveImage {...getResponsiveImageProps(post.coverImage, "(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px")} src={resolveBrowserAsset(post.coverImage)} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
             </div>

@@ -17,6 +17,8 @@
  * 约定：不要直接 console.log 裸文本；所有输出经由本模块，保证格式统一。
  */
 
+import fs from 'node:fs';
+
 const IS_ACTIONS = process.env.GITHUB_ACTIONS === 'true';
 const USE_COLOR = process.stdout.isTTY && !process.env.NO_COLOR;
 
@@ -177,7 +179,6 @@ export const createActionLogger = (scope) => {
       )).join('\n');
       const markdown = `### ${sanitizeLogValue(title)}\n\n${header}\n${divider}\n${body}\n`;
       try {
-        const fs = require('node:fs');
         fs.appendFileSync(summaryPath, markdown, 'utf8');
       } catch (error) {
         // Summary 写入失败不影响主流程：回退为普通日志。

@@ -1,3 +1,14 @@
+# Security headers applied to all responses (CSP/HSTS/nosniff/Referrer-Policy/
+# frame-ancestors). CSP 放行站点实际使用的源：Clarity/Umami 分析、giscus
+# 评论 client.js 与 iframe、Google Fonts、外部图床/头像（https:）。
+/*
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.clarity.ms https://cloud.umami.is https://giscus.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://cloud.umami.is https://*.clarity.ms; frame-src https://giscus.app; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
+
 # HTML and the service worker must revalidate so deployments cannot mix versions.
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
@@ -44,7 +55,7 @@
 /logo.png
   Cache-Control: public, max-age=31536000, immutable
 /og-card.png
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=86400, must-revalidate
 /logo-96.png
   Cache-Control: public, max-age=31536000, immutable
 /pwa-192.png
