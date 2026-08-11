@@ -132,7 +132,7 @@ export const Friends = () => {
 
   return (
     <div className="pb-12 pt-8 md:pb-20 md:pt-12">
-      <Seo title="友链" description="D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎在线填写申请信息。" />
+      <Seo title="友链" description="D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链。" />
 
       <header className="mb-12 border-b border-zinc-200 pb-8 dark:border-zinc-800 md:pb-10">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Friends Directory</p>

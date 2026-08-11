@@ -85,6 +85,15 @@ const buildSiteSchemas = (description: string): Array<Record<string, unknown>> =
     description,
     url: toAbsoluteUrl('/'),
     inLanguage: 'zh-CN',
+    publisher: {
+      '@type': 'Organization',
+      name: siteConfig.title,
+      url: toAbsoluteUrl('/'),
+      logo: {
+        '@type': 'ImageObject',
+        url: toAbsoluteUrl(siteConfig.logo)
+      }
+    },
     potentialAction: {
       '@type': 'SearchAction',
       target: {
@@ -165,6 +174,7 @@ export const Seo: React.FC<SeoProps> = ({
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
+      <meta name="author" content={siteConfig.author.name} />
       <meta key="robots" name="robots" content={noindex || isSearchVariant ? 'noindex,follow' : 'index,follow,max-image-preview:large'} />
       {keywords && <meta name="keywords" content={keywords} />}
       <link key="canonical" rel="canonical" href={canonicalUrl} />
