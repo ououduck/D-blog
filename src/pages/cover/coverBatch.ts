@@ -1,7 +1,4 @@
 import JSZip from 'jszip';
-import { canvasToBlob } from './coverExport';
-import { getExportFilename } from './coverLayout';
-import type { ExportFormat } from './coverTypes';
 
 export interface BatchCoverItem {
   title: string;
@@ -67,7 +64,7 @@ function parseCsv(text: string): Record<string, string>[] {
   return rows.map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ''])));
 }
 
-export function parseMarkdownFrontmatter(text: string, sourceName?: string): BatchCoverItem | null {
+function parseMarkdownFrontmatter(text: string, sourceName?: string): BatchCoverItem | null {
   const match = text.match(/^\uFEFF?---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   if (!match) return null;
   const fields: Record<string, unknown> = {};
@@ -101,10 +98,18 @@ export function parseBatchText(text: string, filename = 'input'): BatchParseResu
     const item = parseMarkdownFrontmatter(text, filename);
     if (item) items.push(item); else issues.push({ line: 1, message: 'Markdown 缺少有效 frontmatter 或 title' });
   }
-  const seen = new Map<string, number>();
+  // 去重：对每个 slug 检查是否已使用，若冲突则追加 -2、-3… 后缀直到唯一。
+  // 此前仅检查原始 slug 的重复计数，修改后的 slug（foo-2）可能与另一条目的原始 slug 冲突。
+  const used = new Set<string>();
   for (const item of items) {
-    const count = (seen.get(item.slug) || 0) + 1; seen.set(item.slug, count);
-    if (count > 1) item.slug = `${item.slug}-${count}`;
+    if (!used.has(item.slug)) {
+      used.add(item.slug);
+      continue;
+    }
+    let suffix = 2;
+    while (used.has(`${item.slug}-${suffix}`)) suffix += 1;
+    item.slug = `${item.slug}-${suffix}`;
+    used.add(item.slug);
   }
   return { items, issues };
 }
@@ -121,27 +126,4 @@ export async function createBatchZip(
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }
   return zip.generateAsync({ type: 'blob' });
-}
-
-export async function canvasResults(
-  items: BatchCoverItem[],
-  render: (item: BatchCoverItem) => Promise<HTMLCanvasElement>,
-  format: ExportFormat,
-  scale: number,
-  quality: number,
-  onProgress?: (completed: number, total: number) => void,
-  signal?: AbortSignal,
-): Promise<Blob> {
-  const results = (async function* (): AsyncGenerator<BatchRenderResult> {
-    for (let index = 0; index < items.length; index += 1) {
-      if (signal?.aborted) throw new Error('批量生成已取消');
-      const canvas = await render(items[index]);
-      const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-      const blob = await canvasToBlob(canvas, mime, format === 'jpeg' ? quality : undefined);
-      const filename = getExportFilename(items[index].slug, format, scale);
-      yield { filename, blob };
-      onProgress?.(index + 1, items.length);
-    }
-  })();
-  return createBatchZip(results, undefined, signal);
 }

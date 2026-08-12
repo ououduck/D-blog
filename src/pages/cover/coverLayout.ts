@@ -1,5 +1,5 @@
 import { BASE_CANVAS_WIDTH, CANVAS_SAFE_MARGIN } from './coverConstants';
-import type { BackgroundFit, CanvasSize, CoverRatio, FittedText, LayoutMode, Point } from './coverTypes';
+import type { BackgroundFit, CanvasSize, CoverRatio, FittedText, LayoutMode } from './coverTypes';
 
 export type TextMeasure = (text: string, fontSize: number) => number;
 export interface FitTextOptions {
@@ -55,20 +55,11 @@ export function getEffectiveLayout(layout: LayoutMode, showIcon: boolean, hasIco
   return layout;
 }
 
-export function scalePoint(point: Point, from: CanvasSize, to: CanvasSize): Point {
-  if (from.width === 0 || from.height === 0) return { x: 0, y: 0 };
-  return { x: point.x * to.width / from.width, y: point.y * to.height / from.height };
-}
-
 export function getImageFitScale(image: CanvasSize, canvas: CanvasSize, fit: BackgroundFit = 'cover'): number {
   if (image.width <= 0 || image.height <= 0 || canvas.width <= 0 || canvas.height <= 0) return 1;
   return fit === 'contain'
     ? Math.min(canvas.width / image.width, canvas.height / image.height)
     : Math.max(canvas.width / image.width, canvas.height / image.height);
-}
-
-export function getCoverImageScale(image: CanvasSize, canvas: CanvasSize): number {
-  return getImageFitScale(image, canvas, 'cover');
 }
 
 export function normalizeFontWeight(weight: number): number {
@@ -192,10 +183,4 @@ export function calculateLayoutMetrics(options: LayoutMetricsOptions): LayoutMet
     subSpacing: options.subSpacing * safeScale,
     warnings,
   };
-}
-
-export function getTextAreaWidth(size: CanvasSize): number {
-  const canvasScale = size.width / BASE_CANVAS_WIDTH;
-  const safeMargin = CANVAS_SAFE_MARGIN * Math.max(0.1, canvasScale);
-  return Math.max(1, size.width - safeMargin * 2);
 }

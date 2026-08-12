@@ -88,7 +88,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
 
   const handleDownload = useCallback(async () => {
     if (!displaySrc) return;
-    const filename = alt?.trim() || 'image';
+    const baseName = alt?.trim() || 'image';
     // 跨域图片的 a[download] 会被浏览器忽略而退化为导航打开：先尝试 fetch 成
     // blob 再用 objectURL 触发下载；fetch 失败（CORS 不允许/网络错误）时降级
     // 为新标签打开让用户手动保存，避免静默导航走当前标签。
@@ -98,14 +98,22 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
         throw new Error(`unexpected status ${response.status}`);
       }
       const blob = await response.blob();
+      // 根据 MIME 类型追加文件扩展名，避免保存出无后缀文件。
+      const ext = blob.type === 'image/png' ? '.png'
+        : blob.type === 'image/jpeg' ? '.jpeg'
+        : blob.type === 'image/webp' ? '.webp'
+        : blob.type === 'image/gif' ? '.gif'
+        : blob.type === 'image/svg+xml' ? '.svg'
+        : '';
       const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = objectUrl;
-      link.download = filename;
+      link.download = `${baseName}${ext}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(objectUrl);
+      // 延迟释放：部分浏览器（如 Firefox）异步发起下载，同步 revoke 可能中止下载。
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     } catch {
       window.open(displaySrc, '_blank', 'noopener,noreferrer');
     }

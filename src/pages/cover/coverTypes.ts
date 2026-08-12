@@ -18,11 +18,6 @@ export interface CoverRatio {
   h: number;
 }
 
-export interface Point {
-  x: number;
-  y: number;
-}
-
 export interface ShadowConfig {
   x: number;
   y: number;

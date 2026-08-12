@@ -5,8 +5,8 @@ const imageCache = new Map<string, Promise<HTMLImageElement>>();
 export function loadCachedImage(source: string): Promise<HTMLImageElement> {
   const cached = imageCache.get(source);
   if (cached) return cached;
-  // Keep the rejected promise too: repeated preview renders should not start
-  // another request for the same broken resource until the caller clears it.
+  // 缓存 rejected promise：预览期间的重复渲染不会为同一失效资源反复发请求，
+  // 会话内一直使用占位图兜底（封面生成器每次打开即为新会话）。
   const promise = loadImage(source);
   imageCache.set(source, promise);
   return promise;
@@ -14,9 +14,4 @@ export function loadCachedImage(source: string): Promise<HTMLImageElement> {
 
 export function preloadImage(source: string): Promise<HTMLImageElement> {
   return loadCachedImage(source);
-}
-
-export function clearImageCache(source?: string): void {
-  if (source) imageCache.delete(source);
-  else imageCache.clear();
 }

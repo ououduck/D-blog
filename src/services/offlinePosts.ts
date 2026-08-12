@@ -176,7 +176,7 @@ const cloneImageDimensions = (value: unknown): PostMetadata['imageDimensions'] |
   return dimensions;
 };
 
-/** Validate and clone untrusted data from IndexedDB/localStorage. */
+/** 校验并克隆来自 IndexedDB/localStorage 的不可信数据。 */
 const validateOfflinePost = (value: unknown): OfflinePost | undefined => {
   if (!isRecord(value)) {
     return undefined;
@@ -355,12 +355,11 @@ const readIndexedDbPosts = async (): Promise<OfflinePost[]> => {
     }
   });
 
-  // Keep a complete last-known snapshot so a transient IndexedDB outage does not
-  // make the fallback journal look like the whole collection.
+  // 保留完整的最近已知快照：IndexedDB 短暂不可用时，降级日志不会被误当作完整集合。
   try {
     writeFallbackPosts(posts);
   } catch {
-    // IndexedDB remains authoritative when localStorage is unavailable.
+    // localStorage 不可用时 IndexedDB 仍是权威数据源。
   }
   return posts;
 };
@@ -534,33 +533,9 @@ const writeTombstones = (tombstones: OfflinePostTombstones): void => {
   localStorage.setItem(OFFLINE_POSTS_TOMBSTONES_KEY, JSON.stringify(tombstones));
 };
 
-export const mergeOfflinePostTombstones = (
-  ...sources: OfflinePostTombstones[]
-): OfflinePostTombstones => {
-  const merged: OfflinePostTombstones = {};
-  sources.forEach((source) => Object.entries(source).forEach(([id, timestamp]) => {
-    merged[id] = Math.max(merged[id] ?? 0, timestamp);
-  }));
-  return merged;
-};
-
 const applyTombstones = (posts: OfflinePost[], tombstones: OfflinePostTombstones): OfflinePost[] => (
   posts.filter((post) => tombstones[post.id] === undefined || post.savedAt > tombstones[post.id])
 );
-
-/** Merge stores deterministically, preferring the newest savedAt and honoring deletes. */
-export const reconcileOfflinePosts = (
-  indexedDbPosts: OfflinePost[],
-  fallbackPosts: OfflinePost[],
-  tombstones: OfflinePostTombstones = {},
-): OfflinePost[] => {
-  const merged = new Map<string, OfflinePost>();
-  [...indexedDbPosts, ...fallbackPosts].forEach((post) => {
-    const current = merged.get(post.id);
-    if (!current || post.savedAt > current.savedAt) merged.set(post.id, post);
-  });
-  return applyTombstones([...merged.values()], tombstones).sort((a, b) => b.savedAt - a.savedAt);
-};
 
 const reconcileStores = async (): Promise<void> => {
   if (reconciliationPromise) return reconciliationPromise;
@@ -613,15 +588,14 @@ const reconcileStores = async (): Promise<void> => {
     });
 
     try {
-      // Keep the fallback as a complete last-known mirror. It must remain
-      // readable if IndexedDB becomes temporarily unavailable later.
+      // 保持降级副本为完整的最近已知镜像：IndexedDB 后续临时不可用时仍可读取。
       const currentTombstones = readTombstones();
       Object.entries(localTombstones).forEach(([id, deletedAt]) => {
         if (currentTombstones[id] === deletedAt) delete currentTombstones[id];
       });
       writeTombstones(currentTombstones);
     } catch {
-      // IndexedDB remains authoritative while localStorage is unavailable.
+      // localStorage 不可用时 IndexedDB 仍是权威数据源。
     }
   })().finally(() => { reconciliationPromise = null; });
   return reconciliationPromise;
@@ -632,7 +606,7 @@ const notifyListeners = () => {
     try {
       listener();
     } catch {
-      // One subscriber must not prevent other tabs/components from syncing.
+      // 单个订阅者异常不得阻断其他标签页/组件的同步通知。
     }
   });
 };
@@ -652,7 +626,7 @@ const emitChange = (action: OfflinePostsChange['action'], id?: string) => {
       notifiedByEvent = true;
     }
   } catch {
-    // Fall through to the direct notification below.
+    // 降级：直接逐个通知下方订阅者。
   }
   if (!notifiedByEvent) {
     notifyListeners();
@@ -661,13 +635,13 @@ const emitChange = (action: OfflinePostsChange['action'], id?: string) => {
   try {
     window.localStorage.setItem(OFFLINE_POSTS_SYNC_KEY, JSON.stringify(detail));
   } catch {
-    // BroadcastChannel and the same-tab event are still useful when storage is blocked.
+    // 存储被禁用时 BroadcastChannel 与同标签页事件仍可通知订阅者。
   }
 
   try {
     broadcastChannel?.postMessage(detail);
   } catch {
-    // Synchronization is best effort; the write itself has completed.
+    // 同步通知为尽力而为；写入本身已完成。
   }
 };
 
@@ -730,7 +704,7 @@ export const saveOfflinePost = async (post: OfflinePostInput): Promise<OfflinePo
     savedToIndexedDb = await saveIndexedDbPostIfCurrent(offlinePost);
     rejectedByNewerDelete = !savedToIndexedDb;
   } catch {
-    // Retry IndexedDB on the next operation; localStorage remains available now.
+    // 下次操作时重试 IndexedDB；localStorage 当前仍可用。
   }
 
   let newerDeleteToPersist: number | undefined;
@@ -753,7 +727,7 @@ export const saveOfflinePost = async (post: OfflinePostInput): Promise<OfflinePo
     if (!savedToIndexedDb) throw error;
   }
   if (newerDeleteToPersist !== undefined) {
-    try { await persistIndexedDbDelete(offlinePost.id, newerDeleteToPersist); } catch { /* Fallback tombstone remains durable. */ }
+    try { await persistIndexedDbDelete(offlinePost.id, newerDeleteToPersist); } catch { /* 降级墓碑记录仍然持久。 */ }
   }
   if (rejectedByNewerDelete) {
     throw new Error('文章已在其他页面取消收藏，请重新操作。');
@@ -772,7 +746,7 @@ export const removeOfflinePost = async (id: string): Promise<void> => {
     writeTombstones(tombstones);
     savedFallbackTombstone = true;
   } catch {
-    // IndexedDB can still persist the deletion when localStorage is blocked.
+    // localStorage 被禁用时 IndexedDB 仍可持久化删除操作。
   }
 
   let deletedFromIndexedDb = false;

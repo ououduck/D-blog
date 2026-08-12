@@ -11,9 +11,9 @@ import {
 
 export interface UseOfflinePostsResult {
   posts: OfflinePost[];
-  /** True while the current post/list is being read from local storage. */
+  /** 正在从本地存储读取当前文章/列表时的加载态。 */
   loading: boolean;
-  /** True while a save/remove operation is in flight. */
+  /** 收藏/取消收藏操作进行中。 */
   isSaving: boolean;
   error: string | null;
   isSaved: boolean;

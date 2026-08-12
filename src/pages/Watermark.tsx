@@ -32,7 +32,8 @@ const positions: Array<{ value: WatermarkPosition; label: string }> = [
 const inputClass = 'editorial-input';
 const cardClass = 'editorial-surface p-4 min-[360px]:p-5 md:p-6';
 const MAX_IMAGE_FILE_BYTES = 25 * 1024 * 1024;
-const MAX_IMAGE_PIXELS = 40_000_000;
+// 加载限制与导出限制一致：避免加载后无法导出的死状态（此前 40MP > 24MP，25-40MP 图片能预览但导出报错且无缩小功能）。
+const MAX_IMAGE_PIXELS = 24_000_000;
 const MAX_EXPORT_PIXELS = 24_000_000;
 
 const loadImage = (file: File) => new Promise<HTMLImageElement>((resolve, reject) => {

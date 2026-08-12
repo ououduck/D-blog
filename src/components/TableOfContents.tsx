@@ -586,39 +586,45 @@ export const TableOfContents: React.FC<{
     </div>
   );
 
+  // AnimatePresence 始终挂载（条件在内部），关闭时子元素被移除但退出动画能正常播放。
+  // 此前 isOpen 条件在外部，关闭即卸载整个 portal（含 AnimatePresence），退出动画失效。
   const mobileSheet =
-    isClient && isOpen && isMobileViewport
+    isClient && isMobileViewport
       ? createPortal(
           <AnimatePresence>
-            <>
-              <motion.div
-                initial={shouldReduceMotion ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={shouldReduceMotion ? undefined : { opacity: 0 }}
-                transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
-                className="fixed inset-0 z-popover bg-black/40 lg:hidden"
-                onClick={() => setIsOpen(false)}
-              />
+            {isOpen ? (
+              <>
+                <motion.div
+                  key="mobile-toc-backdrop"
+                  initial={shouldReduceMotion ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={shouldReduceMotion ? undefined : { opacity: 0 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
+                  className="fixed inset-0 z-popover bg-black/40 lg:hidden"
+                  onClick={() => setIsOpen(false)}
+                />
 
-              <motion.aside
-                ref={mobileSheetRef}
-                tabIndex={-1}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="mobile-toc-title"
-                initial={shouldReduceMotion ? false : { opacity: 0, y: 28 }}
-                animate={{ opacity: 1, y: shouldReduceMotion ? 0 : dragOffsetY }}
-                exit={shouldReduceMotion ? undefined : { opacity: 0, y: 28 }}
-                transition={shouldReduceMotion || dragOffsetY > 0 ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }}
-                style={{
-                  ...MOBILE_TOC_SHEET_STYLE,
-                  touchAction: 'pan-y'
-                }}
-                className="fixed z-nav-panel h-[min(72vh,38rem)] supports-[height:100dvh]:h-[min(72dvh,38rem)] lg:hidden"
-              >
-                {panelContent}
-              </motion.aside>
-            </>
+                <motion.aside
+                  key="mobile-toc-sheet"
+                  ref={mobileSheetRef}
+                  tabIndex={-1}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="mobile-toc-title"
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 28 }}
+                  animate={{ opacity: 1, y: shouldReduceMotion ? 0 : dragOffsetY }}
+                  exit={shouldReduceMotion ? undefined : { opacity: 0, y: 28 }}
+                  transition={shouldReduceMotion || dragOffsetY > 0 ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }}
+                  style={{
+                    ...MOBILE_TOC_SHEET_STYLE,
+                    touchAction: 'pan-y'
+                  }}
+                  className="fixed z-nav-panel h-[min(72vh,38rem)] supports-[height:100dvh]:h-[min(72dvh,38rem)] lg:hidden"
+                >
+                  {panelContent}
+                </motion.aside>
+              </>
+            ) : null}
           </AnimatePresence>,
           document.body
         )

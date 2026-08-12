@@ -6,11 +6,6 @@ export const CANVAS_SAFE_MARGIN = 80;
 export const COVER_RATIOS: readonly CoverRatio[] = coverSizePresets.map(({ label, w, h }) => ({ label, w, h }));
 export const MIN_EXPORT_SCALE = 0.5;
 export const MAX_EXPORT_SCALE = 4;
-export const COVER_GUIDE_OPTIONS = [
-  { id: 'safe', label: '安全框' },
-  { id: 'center', label: '中心线' },
-  { id: 'grid', label: '网格' },
-] as const;
 export const MIN_BACKGROUND_SCALE = 0.1;
 export const MAX_BACKGROUND_SCALE = 10;
 export const DEFAULT_TEXT_SHADOW: Readonly<ShadowConfig> = {

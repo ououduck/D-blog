@@ -83,5 +83,3 @@ export const BatchCoverDialog: React.FC<BatchCoverDialogProps> = ({ isOpen, onCl
     </div>
   );
 };
-
-export default BatchCoverDialog;

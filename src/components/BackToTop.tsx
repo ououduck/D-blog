@@ -25,7 +25,9 @@ export const BackToTop = () => {
           btn.style.transform = 'translateY(0)';
         }
       },
-      { rootMargin: '-300px 0px 0px 0px' }
+      // 正值 top margin 向上扩展根矩形：哨兵（top:0）在前 300px 内与根相交
+      // → isIntersecting=true → 隐藏按钮；滚动超过 300px 后脱离相交 → 显示按钮。
+      { rootMargin: '300px 0px 0px 0px' }
     );
 
     observer.observe(sentinel);
