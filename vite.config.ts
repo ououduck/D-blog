@@ -174,6 +174,26 @@ export default defineConfig(({ command, mode }) => {
           assetFileNames: 'assets/[name]-[hash][extname]',
           chunkFileNames: 'assets/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
+          // 厂商分块：Layout（Navbar）与 Home 均 eager 引用 framer-motion /
+          // react-dom / react-router，不拆则三者全部塞进入口 chunk（~475KB），
+          // 移动端 4× CPU 节流下解析/编译成为 TBT 主因。拆分后：
+          // 1) HTTP/2 并行下载多个小 chunk（总字节不变但首字节更早到达）；
+          // 2) V8 对各 chunk 独立惰性编译，减少主线程长任务；
+          // 3) 厂商代码变更频率低于业务代码，长期缓存命中率更高。
+          // Vite 会自动为入口 chunk 的依赖生成 <link rel=modulepreload>，
+          // 浏览器在解析入口 script 前即开始拉取厂商 chunk。
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return;
+            if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils')) {
+              return 'motion';
+            }
+            if (id.includes('react-router')) {
+              return 'router';
+            }
+            if (id.includes('react-dom') || id.includes('scheduler') || /[\\/]node_modules[\\/]react[\\/]/.test(id)) {
+              return 'react-vendor';
+            }
+          },
         },
       },
       cssCodeSplit: true,
