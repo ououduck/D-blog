@@ -31,16 +31,15 @@ const isSafeUrl = (value) => {
 
 const stripMarkdownUrlDecorators = (value) => String(value).trim().replace(/\s+["'][^"']*["']$/, '');
 
-const toPostsImgPath = (value, postId) => {
+// 站内相对路径归一化为 / 开头的站点绝对路径（如 posts-img/x.png → /posts-img/x.png）。
+const toSitePath = (value) => {
   const clean = String(value)
     .replace(/\\/g, '/')
     .replace(/^\/+/, '')
     .replace(/^(\.\.\/)+/g, '')
     .replace(/^\.\/+/, '');
 
-  return clean.startsWith('posts-img/')
-    ? `/${clean}`
-    : `/posts-img/${postId ? `${postId}/` : ''}${clean}`;
+  return `/${clean}`;
 };
 
 const toAbsoluteSiteUrl = (value, siteUrl, basePath) => {
@@ -76,7 +75,7 @@ const resolveImageUrl = (value, { siteUrl, basePath, postId }) => {
   }
 
   return toAbsoluteSiteUrl(
-    rawUrl.startsWith('/') ? rawUrl : toPostsImgPath(rawUrl, postId),
+    rawUrl.startsWith('/') ? rawUrl : toSitePath(rawUrl),
     siteUrl,
     basePath
   );

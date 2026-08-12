@@ -9,7 +9,7 @@ tags:
   - 阿里云盘
   - 油猴脚本
   - 工具
-coverImage: /posts-img/youhou-alipan-cover.png
+coverImage: https://img.pldduck.com/D-blog/20260812115946789.png
 author: 跑路的duck
 featured: false
 featured-top: 0
@@ -23,11 +23,11 @@ draft: false
 ---
 
 ## 截图  
-[![截图1](/posts-img/youhou-alipan-1.png)](/posts-img/youhou-alipan-1.png "截图1") 
-[![截图 2](/posts-img/youhou-alipan-2.png)](/posts-img/youhou-alipan-2.png "截图 2") 
-[![截图 3](/posts-img/youhou-alipan-3.png)](/posts-img/youhou-alipan-3.png "截图 3") 
-[![截图 4](/posts-img/youhou-alipan-4.png)](/posts-img/youhou-alipan-4.png "截图 4") 
-[![截图 5](/posts-img/youhou-alipan-5.png)](/posts-img/youhou-alipan-5.png "截图 5") 
+[![截图1](https://img.pldduck.com/D-blog/20260812115946790.png)](https://img.pldduck.com/D-blog/20260812115946790.png "截图1") 
+[![截图 2](https://img.pldduck.com/D-blog/20260812115946791.png)](https://img.pldduck.com/D-blog/20260812115946791.png "截图 2") 
+[![截图 3](https://img.pldduck.com/D-blog/20260812115946792.png)](https://img.pldduck.com/D-blog/20260812115946792.png "截图 3") 
+[![截图 4](https://img.pldduck.com/D-blog/20260812115946793.png)](https://img.pldduck.com/D-blog/20260812115946793.png "截图 4") 
+[![截图 5](https://img.pldduck.com/D-blog/20260812115946794.png)](https://img.pldduck.com/D-blog/20260812115946794.png "截图 5") 
 
 ---
 

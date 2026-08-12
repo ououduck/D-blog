@@ -14,7 +14,6 @@ const __dirname = path.dirname(__filename);
 
 const DIST_DIR = path.join(__dirname, '../dist');
 const DIST_SSR_DIR = path.join(__dirname, '../dist-ssr');
-const IMAGE_MANIFEST_FILE = path.join(__dirname, '../generated/image-assets.json');
 const POSTS_FILE = path.join(__dirname, '../generated/posts.json');
 
 const siteConfig = loadSiteConfig({ logger });
@@ -165,41 +164,9 @@ const flattenSuspenseBoundaries = (html) => {
   return result;
 };
 
-const imageManifest = fs.existsSync(IMAGE_MANIFEST_FILE)
-  ? JSON.parse(fs.readFileSync(IMAGE_MANIFEST_FILE, 'utf-8'))
-  : { assets: {} };
-
-const getImageAsset = (imageUrl) => {
-  if (!imageUrl) return undefined;
-
-  let pathname = imageUrl;
-  try {
-    pathname = new URL(imageUrl, `${SITE_URL}/`).pathname;
-  } catch {
-    return undefined;
-  }
-
-  const normalized = pathname.split(/[?#]/, 1)[0].replace(/^\/+/, '').toLowerCase();
-  const key = Object.keys(imageManifest.assets || {}).find((candidate) => {
-    const normalizedCandidate = candidate.replace(/^\/+/, '').toLowerCase();
-    return normalizedCandidate === normalized || normalizedCandidate.endsWith(`/${normalized}`) || normalized.endsWith(`/${normalizedCandidate}`);
-  });
-  return key ? imageManifest.assets[key] : undefined;
-};
-
 const createImagePreload = (imageUrl, imagesizes) => {
   if (!imageUrl) return '';
-  const asset = getImageAsset(imageUrl);
   const sizesAttr = imagesizes ? ` imagesizes="${escapeHtmlAttribute(imagesizes)}"` : '';
-  const webpVariants = asset?.variants?.webp || [];
-  const fallbackVariants = asset?.variants?.fallback || [];
-  const toSrcSet = (variants) => variants.map((variant) => `${sitePath(variant.url)} ${variant.width}w`).join(', ');
-  if (webpVariants.length > 0) {
-    return `\n    <link rel="preload" as="image" href="${escapeHtmlAttribute(sitePath(webpVariants[webpVariants.length - 1].url))}" type="image/webp" fetchpriority="high" imagesrcset="${escapeHtmlAttribute(toSrcSet(webpVariants))}"${sizesAttr}>`;
-  }
-  if (fallbackVariants.length > 0) {
-    return `\n    <link rel="preload" as="image" href="${escapeHtmlAttribute(sitePath(fallbackVariants[fallbackVariants.length - 1].url))}" fetchpriority="high" imagesrcset="${escapeHtmlAttribute(toSrcSet(fallbackVariants))}"${sizesAttr}>`;
-  }
   return `\n    <link rel="preload" as="image" href="${escapeHtmlAttribute(imageUrl)}" fetchpriority="high"${sizesAttr}>`;
 };
 

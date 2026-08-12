@@ -1,30 +1,6 @@
-import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
-import fs from 'fs';
 import path from 'path';
-import type { IncomingMessage, ServerResponse } from 'http';
-
-/**
- * 文章配图位于仓库根目录 posts-img/（与 Markdown 中的 /posts-img/ 绝对链接对应，
- * 便于 Obsidian 以 vault 根为基准预览）。
- * 该插件保持 /posts-img/* 的公开访问路径不变：
- * - 开发服务器：将 /posts-img/* 请求转发到根目录 posts-img/*
- * - 生产构建：构建完成后把根目录 posts-img/* 拷贝到 dist/posts-img/*
- */
-const POSTS_IMG_SOURCE_DIR = path.resolve(__dirname, './posts-img');
-const POSTS_IMG_URL_PREFIX = '/posts-img';
-
-const POSTS_IMG_MIME_TYPES: Record<string, string> = {
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.avif': 'image/avif',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.bmp': 'image/bmp',
-};
 
 const offlinePostAssetsPlugin = (): Plugin => ({
   name: 'offline-post-assets',
@@ -135,73 +111,6 @@ const injectEntryCssPreload = (): Plugin => {
   };
 };
 
-const postsImgPublicPlugin = (): Plugin => {
-  let outDir = 'dist';
-  let isBuild = false;
-  let basePath = '/';
-
-  return {
-    name: 'posts-img-public-mapping',
-    configResolved(config) {
-      outDir = config.build.outDir;
-      isBuild = config.command === 'build';
-      basePath = config.base === './' ? '/' : config.base;
-    },
-    configureServer(server: ViteDevServer) {
-      server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
-        const url = req.url || '';
-        const requestPath = url.split('?')[0];
-        const publicPrefixes = basePath === '/'
-          ? [POSTS_IMG_URL_PREFIX]
-          : [POSTS_IMG_URL_PREFIX, `${basePath.replace(/\/$/, '')}${POSTS_IMG_URL_PREFIX}`];
-        const matchedPrefix = publicPrefixes.find((prefix) => requestPath.startsWith(`${prefix}/`));
-        if (!matchedPrefix) {
-          next();
-          return;
-        }
-
-        let relativePath;
-        try {
-          relativePath = decodeURIComponent(requestPath.slice(matchedPrefix.length));
-        } catch {
-          res.statusCode = 400;
-          res.end('Bad Request');
-          return;
-        }
-        const filePath = path.normalize(path.join(POSTS_IMG_SOURCE_DIR, relativePath));
-
-        // 防止路径穿越到目录之外
-        if (!filePath.startsWith(POSTS_IMG_SOURCE_DIR + path.sep)) {
-          res.statusCode = 403;
-          res.end('Forbidden');
-          return;
-        }
-
-        if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
-          res.statusCode = 404;
-          res.end('Not Found');
-          return;
-        }
-
-        const contentType = POSTS_IMG_MIME_TYPES[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
-        res.setHeader('Content-Type', contentType);
-        fs.createReadStream(filePath).pipe(res);
-      });
-    },
-    closeBundle() {
-      // 仅在真正的构建（vite build）时把配图拷贝进产物目录；
-      // vitest 会以 dev server 方式加载本插件，并把 build.outDir 覆盖为
-      // 占位符 "dummy-non-existing-folder"，此时必须跳过，避免生成垃圾目录。
-      if (!isBuild) {
-        return;
-      }
-      if (fs.existsSync(POSTS_IMG_SOURCE_DIR)) {
-        fs.cpSync(POSTS_IMG_SOURCE_DIR, path.join(outDir, 'posts-img'), { recursive: true });
-      }
-    },
-  };
-};
-
 // Use loadEnv inside defineConfig so .env values are available during Vite config evaluation.
 const normalizeBasePath = (value?: string) => {
   let trimmed = value?.trim().replace(/\\/g, '/');
@@ -228,7 +137,7 @@ export default defineConfig(({ command, mode }) => {
   const appBase = normalizeBasePath(env.VITE_BASE_PATH);
 
   return {
-    plugins: [react(), injectEntryCssPreload(), offlinePostAssetsPlugin(), postsImgPublicPlugin()],
+    plugins: [react(), injectEntryCssPreload(), offlinePostAssetsPlugin()],
     base: appBase,
     esbuild: command === 'build' ? {
       // BUILD_KEEP_CONSOLE=1 时保留 console（调试 hydration 警告等），默认构建仍移除。

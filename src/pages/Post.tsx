@@ -28,7 +28,6 @@ import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 import { useReadingMode } from '@/components/ReadingModeContext';
 import { ReadingModeToggle } from '@/components/ReadingModeToggle';
 import { GiscusComments } from '@/components/GiscusComments';
-import { getResponsiveImageProps } from '@/utils/imageAssets';
 import { useSsgRouteData } from '@/ssr/routeData';
 
 
@@ -572,14 +571,12 @@ const isSafeMarkdownHref = (href?: string) => {
   }
 };
 
-// 文章正文与封面均使用 /posts-img/... 绝对路径（以站点根为基准），
-// 渲染时仅对极少数未以 / 开头的相对路径做兜底归一化。
+// 文章图片均使用外链（图床 URL）；此处仅对极少数未以 / 开头的站内相对路径做兜底归一化。
 const isAbsoluteAssetPath = (value: string) => value.startsWith('/') || /^[a-z][a-z0-9+.-]*:/i.test(value);
 
-const resolvePostsImgPath = (value: string) => {
+const resolveSitePath = (value: string) => {
   const clean = value.replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/^(\.\.\/)+/g, '');
-  const normalized = clean.startsWith('posts-img/') ? `/${clean}` : `/posts-img/${clean}`;
-  return assetUrl(normalized);
+  return assetUrl(`/${clean}`);
 };
 
 const resolveBrowserAsset = (value?: string) => {
@@ -693,7 +690,7 @@ const createMarkdownComponents = (
   return {
     a: ({ href, children, node: _node, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }) => {
       const hrefIsImage = href ? isImageUrl(href) : false;
-      const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? resolveBrowserAsset(href) : resolvePostsImgPath(href)) : href;
+      const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? resolveBrowserAsset(href) : resolveSitePath(href)) : href;
       const safeHref = isSafeMarkdownHref(resolvedHref) ? resolvedHref : undefined;
       const normalizedHref = safeHref && safeHref.startsWith('/') ? routeUrl(safeHref) : safeHref;
 
@@ -763,7 +760,7 @@ const createMarkdownComponents = (
       );
     },
     img: ({ src, alt, title, previewSrc, node: _node, ...props }: MarkdownImageProps) => {
-      const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? resolveBrowserAsset(src) : resolvePostsImgPath(src)) : src;
+      const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? resolveBrowserAsset(src) : resolveSitePath(src)) : src;
       const previewTarget = previewSrc || resolvedSrc || '';
       const dimensions = resolvedSrc ? findImageDimensions(imageDimensions, resolvedSrc) : undefined;
       return (
@@ -775,7 +772,6 @@ const createMarkdownComponents = (
             aria-label={alt ? `预览图片：${alt}` : '预览图片'}
           >
             <ProgressiveImage
-              {...getResponsiveImageProps(resolvedSrc, "(max-width: 767px) 100vw, 46rem")}
               {...props}
               src={resolvedSrc}
               alt={alt}
@@ -1578,7 +1574,7 @@ export const Post = () => {
         {post.coverImage && (
           <button type="button" className="post-cover print-hidden mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0" onClick={() => setPreviewImage({ src: resolveBrowserAsset(post.coverImage!)!, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
             <div className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-media border border-zinc-300 bg-zinc-100 shadow-none dark:border-zinc-700 dark:bg-zinc-900 sm:aspect-[16/8] md:mb-14 lg:aspect-[21/9]">
-              <ProgressiveImage {...getResponsiveImageProps(post.coverImage, "(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px")} src={resolveBrowserAsset(post.coverImage)} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
+              <ProgressiveImage src={resolveBrowserAsset(post.coverImage)} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
             </div>
           </button>
         )}
@@ -1711,7 +1707,7 @@ export const Post = () => {
                     <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
                       {relatedPosts.map((relatedPost) => (
                         <Link key={relatedPost.id} to={`/post/${relatedPost.id}`} className="group flex h-24 overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-500 focus-visible:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-visible:border-zinc-500 sm:block sm:h-auto">
-                          {relatedPost.coverImage ? <ProgressiveImage {...getResponsiveImageProps(relatedPost.coverImage, '(max-width: 767px) 50vw, 33vw')} src={resolveBrowserAsset(relatedPost.coverImage)} alt="" loading="lazy" width={relatedPost.coverWidth} height={relatedPost.coverHeight} wrapperClassName="aspect-video h-24 w-auto flex-none bg-zinc-100 dark:bg-zinc-800 sm:h-auto sm:w-full sm:aspect-[16/10]" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <div className="flex aspect-video h-24 w-auto flex-none items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500 sm:h-auto sm:w-full sm:aspect-[16/10]">无封面</div>}
+                          {relatedPost.coverImage ? <ProgressiveImage src={resolveBrowserAsset(relatedPost.coverImage)} alt="" loading="lazy" width={relatedPost.coverWidth} height={relatedPost.coverHeight} wrapperClassName="aspect-video h-24 w-auto flex-none bg-zinc-100 dark:bg-zinc-800 sm:h-auto sm:w-full sm:aspect-[16/10]" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <div className="flex aspect-video h-24 w-auto flex-none items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500 sm:h-auto sm:w-full sm:aspect-[16/10]">无封面</div>}
                           <div className="min-w-0 flex-1 overflow-hidden p-2 sm:p-3.5">
                             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500">
                               <span className="truncate">{relatedPost.category}</span>

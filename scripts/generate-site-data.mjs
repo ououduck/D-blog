@@ -5,7 +5,6 @@ import matter from 'gray-matter';
 import { fileURLToPath } from 'url';
 import { loadSiteConfig } from './site-config-loader.mjs';
 import { createBuildLogger } from './build-logger.mjs';
-import { normalizeLocalImageUrl as resolveImageAsset } from './image-assets-utils.mjs';
 import { getBasePath, withBasePath } from './base-path.mjs';
 import {
   DEFAULT_STATIC_ROUTES,
@@ -46,30 +45,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const POSTS_DIR = path.join(__dirname, '../posts');
-const POSTS_IMG_DIR = path.join(__dirname, '../posts-img');
+const IMAGE_ROOT = path.join(__dirname, '../posts-img');
 const FRIENDS_DIR = path.join(__dirname, '../friends');
 const OUTPUT_JSON_DIR = path.join(__dirname, '../generated');
 const PUBLIC_DIR = path.join(__dirname, '../public');
-const IMAGE_MANIFEST_FILE = path.join(OUTPUT_JSON_DIR, 'image-assets.json');
-
-/**
- * 读取并校验图片清单。Phase 3 加固：
- * 文件缺失 → 空清单（兼容"未运行 gen:images"的增量场景）；
- * 文件损坏（JSON 语法错误）或结构畸形（assets 非对象）→ 结构化 fatal：
- * 后续所有依赖宽高的逻辑（CLS 防护、图片 sitemap）都会读错数据，宁可中断构建。
- */
-let imageManifest;
-try {
-  imageManifest = fs.existsSync(IMAGE_MANIFEST_FILE)
-    ? JSON.parse(fs.readFileSync(IMAGE_MANIFEST_FILE, 'utf-8'))
-    : { assets: {} };
-  if (!imageManifest || typeof imageManifest !== 'object' || !imageManifest.assets || typeof imageManifest.assets !== 'object') {
-    throw new Error('image-assets.json is malformed: expected { assets: { ... } }');
-  }
-} catch (error) {
-  logger.error('Failed to load image manifest', error instanceof Error ? error.stack : String(error));
-  process.exit(1);
-}
 
 /**
  * 单篇文章文件大小上限（字节）：5 MiB。
@@ -131,25 +110,14 @@ const assertValidUrl = (value, label, allowedProtocols = HTTP_URL_PROTOCOLS) => 
   }
 };
 
-// 文章正文与封面均使用 /posts-img/... 绝对路径（以站点根为基准）。
-const toPostsImgPath = (value) => {
-  const clean = String(value).replace(/\\/g, '/').replace(/^\/+/, '').replace(/^(\.\.\/)+/g, '').replace(/^\.\/+/, '');
-  return `/posts-img/${clean.startsWith('posts-img/') ? clean.slice('posts-img/'.length) : clean}`;
-};
-
 const toPublicPath = (value) => withBasePath(value, BASE_PATH);
 
-// coverImage 统一解析为站点可访问的 /posts-img/... 绝对路径
+// coverImage 保留外部协议字符串（图床链接）；本地路径（已废弃）原样透传供校验器拦截。
 const normalizeCoverImage = (value) => {
   if (!value) {
     return undefined;
   }
-  const raw = String(value);
-  // 保留外部协议字符串；封面校验阶段仅允许 HTTP(S) URL。
-  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) {
-    return raw;
-  }
-  return toPostsImgPath(raw);
+  return String(value);
 };
 
 assertValidUrl(SITE_URL, 'siteConfig.url');
@@ -260,13 +228,13 @@ const readImageDimensions = (filePath) => {
   return undefined;
 };
 
+// 外链图片无法在构建期读取尺寸，返回 undefined（下游 coverWidth/coverHeight 为空，
+// 由 CSS aspect-ratio 兜底）。本地路径（已废弃）同样返回 undefined。
 const normalizeLocalImageUrl = (value) => {
-  const resolved = resolveImageAsset(value, POSTS_IMG_DIR);
-  if (!resolved || resolved.external || resolved.error || !resolved.filePath) return undefined;
-  const dimensions = imageManifest.assets?.[resolved.url]?.width
-    ? { width: imageManifest.assets[resolved.url].width, height: imageManifest.assets[resolved.url].height }
-    : readImageDimensions(resolved.filePath);
-  return { url: resolved.url, dimensions };
+  if (!value) return undefined;
+  const raw = String(value).trim();
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return undefined;
+  return undefined;
 };
 
 const extractImageDimensions = (markdown) => {
@@ -661,7 +629,7 @@ const buildPost = (record) => {
 postRecords.forEach((record) => {
   validationErrors.push(...validatePostContent(record, {
     filename: record.filename,
-    imageRoot: POSTS_IMG_DIR,
+    imageRoot: IMAGE_ROOT,
     allPosts: allPostIndex,
     publishedPosts: publishedPostIndex,
     staticRoutes: DEFAULT_STATIC_ROUTES,
@@ -814,8 +782,8 @@ const generateSitemap = () => {
 </urlset>`;
   fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap-posts.xml'), postsXml);
 
-  // 3. 图片 sitemap：收录文章封面与正文图片，仅限本地资源（/posts-img、/generated-images）。
-  //    外部图床/URL 无法确认可抓取，不进入 image sitemap。
+  // 3. 图片 sitemap：仅收录本地静态资源（/posts-img、/generated-images）。
+  //    外部图床 URL 无法确认可抓取，不进入 image sitemap。
   const isLocalImage = (url) => /^\/?(?:posts-img|generated-images)\//.test(String(url));
   const normalizeImageUrl = (url) => {
     const clean = String(url).replace(/^\/+/, '');

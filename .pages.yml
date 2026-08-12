@@ -1,10 +1,6 @@
 # PagesCMS 配置 — D-blog 内容管理
 # 文档: https://pagescms.org/docs/configuration/
-
-media:
-  input: posts-img
-  output: /posts-img
-  rename: safe          # slugify 文件名，避免特殊字符
+# 注：图片统一通过图床（PicGo）管理，正文与封面均使用线上 URL，不再走 PagesCMS 上传。
 
 content:
   # ── 文章集合 ──
@@ -26,7 +22,7 @@ content:
         options:
           values: ["教程", "技术", "随笔", "分享", "其他"]
       - { name: tags, label: 标签, type: string, list: true }
-      - { name: coverImage, label: 封面图, type: image }
+      - { name: coverImage, label: 封面图链接, type: string }
       - { name: author, label: 作者, type: string }
       - { name: featured, label: 精选, type: boolean }
       - { name: featured-top, label: 精选置顶权重, type: number }

@@ -8,8 +8,8 @@
   },
   "type": "module",
   "scripts": {
-    "gen:images": "node scripts/generate-image-assets.mjs",
-    "gen:data": "npm run gen:images && node scripts/generate-site-data.mjs",
+    "gen:data": "node scripts/generate-site-data.mjs",
+    "migrate:images": "node scripts/migrate-images-picgo.mjs posts",
     "build:ssr": "vite build --config vite.ssr.config.ts",
     "ssg": "node scripts/ssg.mjs",
     "audit:build": "node scripts/audit-build.mjs",

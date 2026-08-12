@@ -10,7 +10,7 @@ tags:
   - 加密
   - 解密
   - 安全
-coverImage: /posts-img/localfileencrypt.png
+coverImage: https://img.pldduck.com/D-blog/20260812115940827.png
 author: 跑路的duck
 featured: false
 featured-top: 0
@@ -23,7 +23,7 @@ draft: false
 文件加密解密工具「LocalFileEncrypt」在本地加解密文本、文件或整个文件夹，只需要上传文件加密或者解密。据介绍使用标准密码学方法 AES 加密您的数据，只有掌握密钥的人才能正确解密。  
 
 # 网站展示  
-![localfileencrypt.com](../posts-img/file-20260803105341655.png)
+![localfileencrypt.com](https://img.pldduck.com/D-blog/20260812115940828.png)
 
 # 网站地址
 [Local File Encrypt | 在本地加解密文本、文件或整个文件夹](https://localfileencrypt.com/)

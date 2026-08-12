@@ -1,5 +1,4 @@
 import type { Post, PostMetadata } from '../types';
-import { getResponsiveImageUrls } from '@/utils/imageAssets';
 import { assetUrl, routeUrl } from '@/utils/siteUrl';
 
 export const OFFLINE_POSTS_DB_NAME = 'd-blog-offline-posts';
@@ -36,14 +35,7 @@ const toOfflineAssetUrl = (value: string): string | undefined => {
     return undefined;
   }
 
-  if (clean.startsWith('/posts-img/')) {
-    return assetUrl(clean);
-  }
-
-  if (clean.startsWith('posts-img/')) {
-    return assetUrl(`/${clean}`);
-  }
-
+  // 站内绝对路径（/ 开头）可离线缓存；外链图床 URL 不缓存。
   if (clean.startsWith('/')) {
     return assetUrl(clean);
   }
@@ -69,7 +61,7 @@ const collectOfflineAssetUrls = (post: OfflinePost): string[] => {
     .map((value) => toOfflineAssetUrl(value))
     .filter((value): value is string => Boolean(value));
 
-  return [...new Set(sourceUrls.flatMap((url) => [url, ...getResponsiveImageUrls(url)]))];
+  return [...new Set(sourceUrls)];
 };
 
 const prepareOfflineCache = async (post: OfflinePost): Promise<void> => {

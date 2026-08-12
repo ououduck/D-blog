@@ -9,7 +9,7 @@ tags:
   - 网络
   - Cloudflare
   - 内网穿透
-coverImage: /posts-img/cf-tunnel-cover.png
+coverImage: https://img.pldduck.com/D-blog/20260812115910247.png
 author: 跑路的duck
 featured: false
 featured-top: 0
@@ -52,21 +52,21 @@ Cloudflare Tunnel利用Cloudflare全球网络作为中介，通过运行在本�
 
 ### 步骤2：创建Tunnel
 
-![cf-tunnel-step-01](/posts-img/cf-tunnel-step-01.jpg)
+![cf-tunnel-step-01](https://img.pldduck.com/D-blog/20260812115910248.jpg)
 先设置团队名称 随便写
 
-![cf-tunnel-step-02](/posts-img/cf-tunnel-step-02.jpg)
+![cf-tunnel-step-02](https://img.pldduck.com/D-blog/20260812115910249.jpg)
 选择免费计划
 然后的添加付款方式这一步很重要，有卡的直接绑定即可，反正免费，没卡的有一个骚操作，在这个页面直接关闭 重新进入[Cloudflare Zero Trust](https://one.dash.cloudflare.com/)就可以跳过。
 
-![cf-tunnel-step-03](/posts-img/cf-tunnel-step-03.jpg)
+![cf-tunnel-step-03](https://img.pldduck.com/D-blog/20260812115910250.jpg)
 最后直接在Access Tunnels中，创建一个Tunnel
 
 这样创建Tunnel的步骤就完成了
 
 ### 步骤3：安装并配置`cloudflared`
 
-![cf-tunnel-step-04](/posts-img/cf-tunnel-step-04.jpg)
+![cf-tunnel-step-04](https://img.pldduck.com/D-blog/20260812115910251.jpg)
 根据官方指南，在您的本地服务器上安装`cloudflared`并配置Tunnel连接。以下是一个示例命令：
 
 ```bash
@@ -77,7 +77,7 @@ docker run --name cloudflared -d --restart unless-stop cloudflare/cloudflared:la
 
 ### 步骤4：配置域名和转发规则
 
-![cf-tunnel-step-05](/posts-img/cf-tunnel-step-05.jpg)
+![cf-tunnel-step-05](https://img.pldduck.com/D-blog/20260812115910252.jpg)
 为你的域名配置一个子域名（Subdomain），Path 留空，URL 处填写内网服务的IP加端口号。注意 Type 处建议使用 HTTP，因为 Cloudflare 会自动为你提供 HTTPS，因此此处的转发目标可以是 HTTP 服务端口。
 
 ### 现在，你就能通过刚刚设置的子域名直接在公网访问你的内网项目了

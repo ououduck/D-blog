@@ -7,7 +7,7 @@ updatedAt: 2026-08-12
 category: 随笔
 tags:
   - PagesCMS
-coverImage: /posts-img/pldduck.png
+coverImage: https://img.pldduck.com/D-blog/20260812115942694.png
 author: 跑路的duck
 featured: false
 series: false
@@ -57,7 +57,7 @@ graph TD
 
 点击下方图片可预览大图：
 
-[![测试图片](/posts-img/pldduck.png)](/posts-img/pldduck.png "测试图片")
+[![测试图片](https://img.pldduck.com/D-blog/20260812115942694.png)](https://img.pldduck.com/D-blog/20260812115942694.png "测试图片")
 
 ## 站内链接
 

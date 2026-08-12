@@ -111,26 +111,24 @@ npm run preview      # 预览构建产物
 
 ## 构建流程
 
-构建采用“图片处理 + 数据生成 + 客户端构建 + SSR 预渲染”流水线：
+构建采用“数据生成 + 客户端构建 + SSR 预渲染”流水线：
 
 ```mermaid
 graph LR
-  A[gen:images] --> B[gen:data]
-  B --> C[vite build]
-  C --> D[vite build --ssr]
-  D --> E[SSG 预渲染]
-  E --> F[产物审计]
-  F --> G[dist/]
+  A[gen:data] --> B[vite build]
+  B --> C[vite build --ssr]
+  C --> D[SSG 预渲染]
+  D --> E[产物审计]
+  E --> F[dist/]
 ```
 
-1. **图片资产生成**（`gen:images`）- 扫描 `posts-img/`，用 sharp 生成 WebP 与多宽度 fallback 变体，输出 `generated/image-assets.json` 与 `public/generated-images/`。
-2. **数据生成**（`gen:data`）- 校验 Front Matter、文章 ID、图片、锚点、站内/外链，生成 `generated/` 索引、`public/sitemap-*.xml`、`feed.xml`、`llms.txt`、`robots.txt`。
-3. **客户端构建**（`vite build`）- 编译 `src/` 到 `dist/`，复制配图与响应式图片。
-4. **SSR 构建**（`vite build --config vite.ssr.config.ts`）- 编译 `src/ssr-entry.tsx` 为 Node 可用的 SSR bundle（`dist-ssr/`）。
-5. **SSG 预渲染**（`ssg`）- 用 SSR bundle 按 URL 渲染全站静态 HTML：`renderToPipeableStream` + `onAllReady` 支持 React.lazy 路由；Suspense 边界就地展平；注入 SEO meta / JSON-LD 与封面图 preload；文章正文内联进 `#ssg-route-data` 供水合复用。
-6. **产物审计**（`audit:build`）- 校验 HTML 完整性、SEO 标签、静态正文与体积告警。
+1. **数据生成**（`gen:data`）- 校验 Front Matter、文章 ID、图片、锚点、站内/外链，生成 `generated/` 索引、`public/sitemap-*.xml`、`feed.xml`、`llms.txt`、`robots.txt`。
+2. **客户端构建**（`vite build`）- 编译 `src/` 到 `dist/`。
+3. **SSR 构建**（`vite build --config vite.ssr.config.ts`）- 编译 `src/ssr-entry.tsx` 为 Node 可用的 SSR bundle（`dist-ssr/`）。
+4. **SSG 预渲染**（`ssg`）- 用 SSR bundle 按 URL 渲染全站静态 HTML：`renderToPipeableStream` + `onAllReady` 支持 React.lazy 路由；Suspense 边界就地展平；注入 SEO meta / JSON-LD 与封面图 preload；文章正文内联进 `#ssg-route-data` 供水合复用。
+5. **产物审计**（`audit:build`）- 校验 HTML 完整性、SEO 标签、静态正文与体积告警。
 
-`generated/`、`public/generated-images/`、RSS 与 Sitemap 均为构建产物，不应手工编辑。
+`generated/`、RSS 与 Sitemap 均为构建产物，不应手工编辑。
 
 ## 项目结构
 
@@ -140,19 +138,18 @@ D-blog/
 ├── .env.example                 # 环境变量示例（站点 URL、子路径）
 ├── config/                      # 配置：site.config.ts / content.config.json / ads.config.ts / tailwind / postcss / tsconfig
 ├── posts/                       # Markdown 文章
-├── posts-img/                   # 文章配图（平铺存放，正文以 /posts-img/... 绝对链接引用）
 ├── friends/                     # 友链数据（JSON）
-├── .pages.yml                   # PagesCMS 配置（内容模型 + 媒体路径）
-├── generated/                   # 构建产物：posts.json / posts-search.json / image-assets.json / site-stats.json / friends.json
+├── .pages.yml                   # PagesCMS 配置（内容模型）
+├── generated/                   # 构建产物：posts.json / posts-search.json / site-stats.json / friends.json
 ├── public/                      # 静态资源：favicon、logo、PWA 图标、sw.js、offline.html、feed.xml、sitemap-*.xml、robots.txt
-├── scripts/                     # 构建脚本：generate-image-assets / generate-site-data / ssg / build / audit-build 等
+├── scripts/                     # 构建脚本：generate-site-data / ssg / build / audit-build / migrate-images-picgo 等
 ├── .github/workflows/           # 文章更新通知、友链自动审核等 Actions
 └── src/
     ├── components/              # Layout、Seo、TableOfContents、SearchModal、ImageViewer 等
     ├── pages/                   # 页面组件（懒加载）：Home / Post / Archive / Tags / Stats / Friends / About / Favorites 等
     ├── services/                # posts / friends / offlinePosts / readingHistory / siteStats
     ├── hooks/                   # useMediaQuery / useModalOverlay / usePostSearch 等
-    ├── utils/                   # 日期、排序、目录树、站点 URL、图片资源选择等
+    ├── utils/                   # 日期、排序、目录树、站点 URL 等
     ├── ssr/routeData.tsx        # SSG 路由数据构造与客户端读取
     ├── App.tsx                  # 路由 + 错误边界
     └── index.tsx                # 渲染入口（水合 / 客户端渲染）
@@ -183,7 +180,7 @@ category: 技术                    # 可选值：教程 / 技术 / 随笔 / 分
 tags:
   - React
   - Vite
-coverImage: /posts-img/example.png # 可选，封面图
+coverImage: https://cdn.example.com/example.png # 可选，封面图（图床链接）
 author: 跑路的duck                 # 可选，支持对象形式
 featured: false                   # 是否首页精选展示
 featured-top: 1                   # 精选置顶排序（仅 featured: true 时生效）
@@ -198,11 +195,13 @@ draft: false                      # 草稿不会发布
 正文支持标准 Markdown、GFM 表格、代码块、数学公式与 Mermaid 图表。
 ```
 
-字段规则：`id` 对应 `/post/:id`，不可含空白/斜杠等危险字符且全站唯一；`tags` 为非空去重数组；`category` 必须在 `config/content.config.json` 白名单内；正文图片必须有非空 `alt`，本地图片必须能解析到 `posts-img/` 内的实际文件。`npm run gen:data` 会在构建时校验以上全部规则，非法内容直接报错。
+字段规则：`id` 对应 `/post/:id`，不可含空白/斜杠等危险字符且全站唯一；`tags` 为非空去重数组；`category` 必须在 `config/content.config.json` 白名单内；正文图片必须有非空 `alt`，外链图片必须是合法 HTTP(S) URL。`npm run gen:data` 会在构建时校验以上全部规则，非法内容直接报错。
 
-### 图片上传
+### 图片管理
 
-PagesCMS 的图片媒体管理器上传的文件自动存入 `posts-img/` 目录，引用路径为 `/posts-img/<filename>.<ext>`。封面图通过 `coverImage` 字段的图片选择器上传或选取；正文图片在 rich-text 编辑器中拖放上传。
+文章封面与正文图片均通过图床（PicGo）托管，直接在 `coverImage` 字段粘贴图床链接，正文图片在 rich-text 编辑器的源码模式下以 `![alt](https://图床链接)` 形式插入。不再使用本地 `posts-img/` 目录。
+
+批量迁移本地图片至图床可运行 `npm run migrate:images`（支持 `--dry-run` 预览）。
 
 > **源码模式**：处理数学公式、Mermaid 图表、嵌套图片链接（`[![alt](img)](img)`）等复杂语法时，在 PagesCMS rich-text 编辑器中切换到源码模式直接编写 Markdown。
 
@@ -275,10 +274,10 @@ graph TD
 | 命令 | 功能 |
 | --- | --- |
 | `npm run dev` | 启动开发服务器（端口 3000），自动执行 `gen:data` |
-| `npm run build` | 生产构建：图片 → 数据 → 客户端 → SSR → SSG → 审计，默认输出阶段摘要 |
+| `npm run build` | 生产构建：数据 → 客户端 → SSR → SSG → 审计，默认输出阶段摘要 |
 | `npm run build:verbose` | 详细模式构建，保留 Vite 完整输出 |
 | `npm run preview` | 预览生产构建结果 |
-| `npm run gen:images` | 重建响应式图片输出与资产清单 |
+| `npm run migrate:images` | 批量迁移本地图片至 PicGo 图床（支持 `--dry-run`） |
 | `npm run gen:data` | 数据生成 + 全量校验（改写自动生成文件） |
 | `npm run ssg` | 仅执行 SSG 预渲染（需先完成两端构建） |
 | `npm run typecheck` / `check` | TypeScript 类型检查 / 类型检查 + 数据校验 |

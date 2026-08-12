@@ -49,7 +49,6 @@ const write = (status, message, detail = '') => {
 
 const viteCli = path.resolve('node_modules/vite/bin/vite.js');
 const stages = [
-  { name: 'Generate responsive images', command: process.execPath, args: ['scripts/generate-image-assets.mjs'] },
   { name: 'Generate site data', command: process.execPath, args: ['scripts/generate-site-data.mjs'] },
   { name: 'Generate social share card', command: process.execPath, args: ['scripts/generate-og-card.mjs'] },
   {
