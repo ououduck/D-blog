@@ -30,7 +30,7 @@ type OfflinePostTombstone = { id: string; deletedAt: number };
 
 const EXTERNAL_URL_PATTERN = /^(?:[a-z][a-z\d+.-]*:|\/\/)/i;
 
-const toOfflineAssetUrl = (value: string, postId: string): string | undefined => {
+const toOfflineAssetUrl = (value: string): string | undefined => {
   const clean = value.trim().replace(/^<|>$/g, '').replace(/[?#].*$/, '');
   if (!clean || EXTERNAL_URL_PATTERN.test(clean)) {
     return undefined;
@@ -48,7 +48,7 @@ const toOfflineAssetUrl = (value: string, postId: string): string | undefined =>
     return assetUrl(clean);
   }
 
-  return assetUrl(`/posts-img/${postId}/${clean.replace(/^\.\/?/, '')}`);
+  return undefined;
 };
 
 const collectOfflineAssetUrls = (post: OfflinePost): string[] => {
@@ -66,7 +66,7 @@ const collectOfflineAssetUrls = (post: OfflinePost): string[] => {
   }
 
   const sourceUrls = values
-    .map((value) => toOfflineAssetUrl(value, post.id))
+    .map((value) => toOfflineAssetUrl(value))
     .filter((value): value is string => Boolean(value));
 
   return [...new Set(sourceUrls.flatMap((url) => [url, ...getResponsiveImageUrls(url)]))];

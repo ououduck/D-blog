@@ -140,8 +140,9 @@ D-blog/
 ├── .env.example                 # 环境变量示例（站点 URL、子路径）
 ├── config/                      # 配置：site.config.ts / content.config.json / ads.config.ts / tailwind / postcss / tsconfig
 ├── posts/                       # Markdown 文章
-├── posts-img/                   # 文章配图（正文以 /posts-img/... 绝对链接引用）
+├── posts-img/                   # 文章配图（平铺存放，正文以 /posts-img/... 绝对链接引用）
 ├── friends/                     # 友链数据（JSON）
+├── .pages.yml                   # PagesCMS 配置（内容模型 + 媒体路径）
 ├── generated/                   # 构建产物：posts.json / posts-search.json / image-assets.json / site-stats.json / friends.json
 ├── public/                      # 静态资源：favicon、logo、PWA 图标、sw.js、offline.html、feed.xml、sitemap-*.xml、robots.txt
 ├── scripts/                     # 构建脚本：generate-image-assets / generate-site-data / ssg / build / audit-build 等
@@ -159,9 +160,17 @@ D-blog/
 
 ## 内容管理
 
+内容通过 [PagesCMS](https://pagescms.org/) 管理——一个基于 Git 的无后端 CMS，直接读写本仓库的 Markdown 文件，无需数据库。
+
+### 连接 PagesCMS
+
+1. 访问 [pagescms.org](https://pagescms.org/)，授权 GitHub 并选择 D-blog 仓库
+2. PagesCMS 读取根目录 `.pages.yml` 配置，自动生成文章和友链的编辑界面
+3. 编辑/新建内容后保存，PagesCMS 直接提交到 GitHub 仓库，CI 自动构建部署
+
 ### 新建文章
 
-在 `posts/` 下创建 Markdown 文件：
+在 PagesCMS 的「文章」集合中点击新建，填写 frontmatter 字段：
 
 ```yaml
 ---
@@ -190,6 +199,12 @@ draft: false                      # 草稿不会发布
 ```
 
 字段规则：`id` 对应 `/post/:id`，不可含空白/斜杠等危险字符且全站唯一；`tags` 为非空去重数组；`category` 必须在 `config/content.config.json` 白名单内；正文图片必须有非空 `alt`，本地图片必须能解析到 `posts-img/` 内的实际文件。`npm run gen:data` 会在构建时校验以上全部规则，非法内容直接报错。
+
+### 图片上传
+
+PagesCMS 的图片媒体管理器上传的文件自动存入 `posts-img/` 目录，引用路径为 `/posts-img/<filename>.<ext>`。封面图通过 `coverImage` 字段的图片选择器上传或选取；正文图片在 rich-text 编辑器中拖放上传。
+
+> **源码模式**：处理数学公式、Mermaid 图表、嵌套图片链接（`[![alt](img)](img)`）等复杂语法时，在 PagesCMS rich-text 编辑器中切换到源码模式直接编写 Markdown。
 
 ### 文章分类
 

@@ -1,0 +1,54 @@
+# PagesCMS 配置 — D-blog 内容管理
+# 文档: https://pagescms.org/docs/configuration/
+
+media:
+  input: posts-img
+  output: /posts-img
+  rename: safe          # slugify 文件名，避免特殊字符
+
+content:
+  # ── 文章集合 ──
+  - name: posts
+    label: 文章
+    type: collection
+    path: posts
+    format: yaml-frontmatter
+    filename: "{primary}.md"
+    fields:
+      - { name: id, label: URL标识, type: string }
+      - { name: title, label: 标题, type: string }
+      - { name: excerpt, label: 摘要, type: text }
+      - { name: date, label: 发布日期, type: date }
+      - { name: updatedAt, label: 更新日期, type: date }
+      - name: category
+        label: 分类
+        type: select
+        options:
+          values: ["教程", "技术", "随笔", "分享", "其他"]
+      - { name: tags, label: 标签, type: string, list: true }
+      - { name: coverImage, label: 封面图, type: image }
+      - { name: author, label: 作者, type: string }
+      - { name: featured, label: 精选, type: boolean }
+      - { name: featured-top, label: 精选置顶权重, type: number }
+      - { name: series, label: 系列文章, type: boolean }
+      - { name: series-name, label: 系列名, type: string }
+      - { name: series-order, label: 系列顺序, type: number }
+      - { name: draft, label: 草稿, type: boolean }
+      - name: body
+        label: 正文
+        type: rich-text
+        options:
+          format: markdown
+          switcher: true   # 允许切换源码模式编辑数学公式/Mermaid/嵌套图片链接
+
+  # ── 友链集合 ──
+  - name: friends
+    label: 友链
+    type: collection
+    path: friends
+    format: json
+    fields:
+      - { name: name, label: 名称, type: string }
+      - { name: description, label: 描述, type: text }
+      - { name: avatar, label: 头像URL, type: string }
+      - { name: url, label: 链接, type: string }

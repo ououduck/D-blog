@@ -145,13 +145,7 @@ export const validateExternalUrl = (value, { allowMailto = true } = {}) => {
   return undefined;
 };
 
-const removeLeadingRelativeSegments = (value) => {
-  let clean = value;
-  while (clean.startsWith('./')) clean = clean.slice(2);
-  return clean;
-};
-
-export const resolveLocalImageTarget = (value, { imageRoot, postId = '' }) => {
+export const resolveLocalImageTarget = (value, { imageRoot }) => {
   const raw = String(value ?? '');
   const target = stripMarkdownUrlDecorators(raw).replace(/\\/g, '/').trim();
   if (!target || URI_SCHEME_PATTERN.test(target)) return undefined;
@@ -166,11 +160,7 @@ export const resolveLocalImageTarget = (value, { imageRoot, postId = '' }) => {
     if (withoutParentPrefix.startsWith('posts-img/')) {
       relative = withoutParentPrefix.slice('posts-img/'.length);
     } else {
-      relative = removeLeadingRelativeSegments(target);
-      if (relative.startsWith('../') || relative === '..' || relative.includes('/../') || relative.includes('/..')) {
-        return undefined;
-      }
-      relative = path.posix.join(postId, relative);
+      return undefined;
     }
   }
 
@@ -284,7 +274,7 @@ export const validatePostContent = (post, context = {}) => {
         const reason = validateExternalUrl(coverTarget, { allowMailto: false });
         if (reason) addFieldError(`coverImage "${coverTarget}": ${reason}`);
       } else {
-        const resolved = resolveLocalImageTarget(coverTarget, { imageRoot, postId: id });
+        const resolved = resolveLocalImageTarget(coverTarget, { imageRoot });
         if (!resolved?.exists) {
           addFieldError(`coverImage "${coverTarget}" does not resolve to a file inside posts-img`);
         } else if (getImageDimensions && !getImageDimensions(resolved.url, resolved.filePath)) {
@@ -306,7 +296,7 @@ export const validatePostContent = (post, context = {}) => {
       const reason = validateExternalUrl(target, { allowMailto: false });
       if (reason) errors.push(lineError(filename, image.line + lineOffset, `image target "${image.rawTarget}": ${reason}`));
     } else {
-      const resolved = resolveLocalImageTarget(target, { imageRoot, postId: id });
+      const resolved = resolveLocalImageTarget(target, { imageRoot });
       if (!resolved?.exists) {
         errors.push(lineError(filename, image.line + lineOffset, `local image "${image.rawTarget}" does not resolve to a file inside posts-img`));
       } else if (getImageDimensions && !getImageDimensions(resolved.url, resolved.filePath)) {
@@ -338,7 +328,7 @@ export const validatePostContent = (post, context = {}) => {
     }
     const pathname = route.pathname || '/';
     if (pathname.startsWith('/posts-img/')) {
-      const resolved = resolveLocalImageTarget(pathname, { imageRoot, postId: id });
+      const resolved = resolveLocalImageTarget(pathname, { imageRoot });
       if (!resolved?.exists) errors.push(lineError(filename, link.line + lineOffset, `local link "${link.rawTarget}" does not resolve to a file inside posts-img`));
       return;
     }

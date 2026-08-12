@@ -576,9 +576,9 @@ const isSafeMarkdownHref = (href?: string) => {
 // 渲染时仅对极少数未以 / 开头的相对路径做兜底归一化。
 const isAbsoluteAssetPath = (value: string) => value.startsWith('/') || /^[a-z][a-z0-9+.-]*:/i.test(value);
 
-const resolvePostsImgPath = (value: string, postId?: string) => {
+const resolvePostsImgPath = (value: string) => {
   const clean = value.replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/^(\.\.\/)+/g, '');
-  const normalized = clean.startsWith('posts-img/') ? `/${clean}` : `/posts-img/${postId ? `${postId}/` : ''}${clean}`;
+  const normalized = clean.startsWith('posts-img/') ? `/${clean}` : `/posts-img/${clean}`;
   return assetUrl(normalized);
 };
 
@@ -622,7 +622,6 @@ const createMarkdownComponents = (
   mermaidTheme: 'light' | 'dark',
   imageDimensions: PostMetadata['imageDimensions'],
   headings: MarkdownHeading[],
-  postId?: string
 ): Components => {
   let headingCursor = 0;
   const fallbackHeadingIds = new Map<string, number>();
@@ -694,7 +693,7 @@ const createMarkdownComponents = (
   return {
     a: ({ href, children, node: _node, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }) => {
       const hrefIsImage = href ? isImageUrl(href) : false;
-      const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? resolveBrowserAsset(href) : resolvePostsImgPath(href, postId)) : href;
+      const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? resolveBrowserAsset(href) : resolvePostsImgPath(href)) : href;
       const safeHref = isSafeMarkdownHref(resolvedHref) ? resolvedHref : undefined;
       const normalizedHref = safeHref && safeHref.startsWith('/') ? routeUrl(safeHref) : safeHref;
 
@@ -764,7 +763,7 @@ const createMarkdownComponents = (
       );
     },
     img: ({ src, alt, title, previewSrc, node: _node, ...props }: MarkdownImageProps) => {
-      const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? resolveBrowserAsset(src) : resolvePostsImgPath(src, postId)) : src;
+      const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? resolveBrowserAsset(src) : resolvePostsImgPath(src)) : src;
       const previewTarget = previewSrc || resolvedSrc || '';
       const dimensions = resolvedSrc ? findImageDimensions(imageDimensions, resolvedSrc) : undefined;
       return (
@@ -1335,7 +1334,7 @@ export const Post = () => {
   }, [previewImage, shareModalOpen, adjacentPosts, navigate]);
 
   const markdownComponents = useMemo(
-    () => createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, mermaidTheme, post?.imageDimensions, headings, post?.id),
+    () => createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, mermaidTheme, post?.imageDimensions, headings),
     [mermaidRenderer, mermaidTheme, post?.id, post?.imageDimensions, headings]
   );
 

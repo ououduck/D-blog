@@ -260,8 +260,8 @@ const readImageDimensions = (filePath) => {
   return undefined;
 };
 
-const normalizeLocalImageUrl = (value, postId) => {
-  const resolved = resolveImageAsset(value, postId, POSTS_IMG_DIR);
+const normalizeLocalImageUrl = (value) => {
+  const resolved = resolveImageAsset(value, POSTS_IMG_DIR);
   if (!resolved || resolved.external || resolved.error || !resolved.filePath) return undefined;
   const dimensions = imageManifest.assets?.[resolved.url]?.width
     ? { width: imageManifest.assets[resolved.url].width, height: imageManifest.assets[resolved.url].height }
@@ -269,10 +269,10 @@ const normalizeLocalImageUrl = (value, postId) => {
   return { url: resolved.url, dimensions };
 };
 
-const extractImageDimensions = (markdown, postId) => {
+const extractImageDimensions = (markdown) => {
   const dimensions = {};
   parseMarkdownImages(markdown).forEach(({ target }) => {
-    const resolved = normalizeLocalImageUrl(target, postId);
+    const resolved = normalizeLocalImageUrl(target);
     if (resolved?.dimensions?.width && resolved.dimensions.height) {
       dimensions[resolved.url] = resolved.dimensions;
     }
@@ -621,9 +621,9 @@ const buildPost = (record) => {
   const tags = normalizeTagsStrict(data.tags);
   const normalizedCoverImage = normalizeCoverImage(data.coverImage);
   const coverDimensions = normalizedCoverImage && !/^[a-z][a-z0-9+.-]*:/i.test(normalizedCoverImage)
-    ? normalizeLocalImageUrl(normalizedCoverImage, id)?.dimensions
+    ? normalizeLocalImageUrl(normalizedCoverImage)?.dimensions
     : undefined;
-  const imageDimensions = extractImageDimensions(content, id);
+  const imageDimensions = extractImageDimensions(content);
   const isSeries = data.series === true;
   const seriesName = isSeries && typeof data['series-name'] === 'string' ? data['series-name'].trim() : undefined;
   const seriesOrder = isSeries && Number.isInteger(data['series-order']) ? data['series-order'] : undefined;

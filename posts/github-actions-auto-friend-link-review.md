@@ -11,7 +11,7 @@ tags:
   - 自动化
   - GitHub Issue
   - Node.js
-coverImage: /posts-img/github-actions-auto-friend-link-review/github-actions-auto-friend-link-review.png
+coverImage: /posts-img/github-actions-auto-friend-link-review.png
 author: 跑路的duck
 featured: false
 featured-top: 0

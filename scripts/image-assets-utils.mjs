@@ -10,7 +10,7 @@ export const stripImageUrlDecorations = (value) => {
 
 export const isExternalImageUrl = (value) => /^[a-z][a-z0-9+.-]*:/i.test(String(value ?? '').trim());
 
-const normalizeRelativeImagePath = (value, postId) => {
+const normalizeRelativeImagePath = (value) => {
   const raw = stripImageUrlDecorations(value).replace(/^\/+/, '');
   if (!raw) {
     return undefined;
@@ -24,22 +24,15 @@ const normalizeRelativeImagePath = (value, postId) => {
       : `/posts-img/${relativePath}`;
   }
 
-  if (raw.startsWith('../') || raw.startsWith('..\\')) {
-    return undefined;
-  }
-
-  const normalizedRaw = path.posix.normalize(raw.replace(/^\.\//, ''));
-  return normalizedRaw === '.' || normalizedRaw.startsWith('../') || normalizedRaw === '..'
-    ? undefined
-    : `/posts-img/${postId}/${normalizedRaw}`;
+  return undefined;
 };
 
-export const normalizeLocalImageUrl = (value, postId, postsImgDir) => {
+export const normalizeLocalImageUrl = (value, postsImgDir) => {
   if (!value || isExternalImageUrl(value)) {
     return { external: isExternalImageUrl(value) };
   }
 
-  const url = normalizeRelativeImagePath(value, postId);
+  const url = normalizeRelativeImagePath(value);
   if (!url || !url.startsWith('/posts-img/')) {
     return { error: '图片路径必须位于 posts-img/ 目录内' };
   }

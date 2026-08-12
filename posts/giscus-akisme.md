@@ -12,7 +12,7 @@ tags:
   - GitHub Actions
   - 静态博客
   - 评论系统
-coverImage: /posts-img/giscus-akisme/giscus-akisme.png
+coverImage: /posts-img/giscus-akisme.png
 author: 跑路的duck
 featured: false
 featured-top: 0
@@ -57,13 +57,13 @@ flowchart LR
 2. 在 `Features` 中启用 `Discussions`。
 3. 创建一个用于评论的分类，例如 `Announcements`。
 
-![开启 GitHub Discussions 功能](/posts-img/giscus-akisme/giscus-akismet-2025-08-04-12-16-36-image.webp)
+![开启 GitHub Discussions 功能](/posts-img/giscus-akismet-2025-08-04-12-16-36-image.webp)
 
 ### 2. 在 giscus 中生成配置
 
 打开 [giscus 中文配置页面](https://giscus.app/zh-CN)，填写仓库名称并完成检查。随后选择评论映射方式。
 
-![填写 giscus 仓库信息](/posts-img/giscus-akisme/giscus-akismet-2025-08-04-12-17-42-image.webp)
+![填写 giscus 仓库信息](/posts-img/giscus-akismet-2025-08-04-12-17-42-image.webp)
 
 最推荐使用 `pathname` 映射。假设文章地址是 `/post/hello-world`，只要这个路径保持不变，评论就会一直关联到同一个 Discussion。
 
@@ -75,11 +75,11 @@ flowchart LR
 | `url` | 完整 URL | 更换域名后可能无法命中原评论 |
 | `title` | 文章标题 | 修改标题后可能产生新的评论串 |
 
-![选择评论映射方式](/posts-img/giscus-akisme/giscus-akismet-2025-08-04-12-18-21-image.webp)
+![选择评论映射方式](/posts-img/giscus-akismet-2025-08-04-12-18-21-image.webp)
 
 建议同时开启严格匹配。严格匹配会为页面和 Discussion 建立额外的哈希标识，可以降低不同页面评论串台的概率。
 
-![开启严格标题匹配](/posts-img/giscus-akisme/giscus-akismet-giscus-akismet-1.png)
+![开启严格标题匹配](/posts-img/giscus-akismet-giscus-akismet-1.png)
 
 如果需要把页面重新映射到一个已经存在的 Discussion，可以根据 giscus 生成的页面标识计算 SHA-1，然后把对应标识写入目标 Discussion 的正文。一般情况下不需要手动处理，首次加载时让 giscus 自动创建即可。
 
@@ -87,11 +87,11 @@ flowchart LR
 
 评论分类可以选择 `Announcements`（公告）等适合公开讨论的分类。表情反应、输入框位置、语言和主题根据博客需要选择。
 
-![选择评论分类](/posts-img/giscus-akisme/giscus-akismet-2025-08-04-12-22-07-image.webp)
+![选择评论分类](/posts-img/giscus-akismet-2025-08-04-12-22-07-image.webp)
 
-![选择 giscus 功能](/posts-img/giscus-akisme/giscus-akismet-2025-08-04-12-22-25-image.webp)
+![选择 giscus 功能](/posts-img/giscus-akismet-2025-08-04-12-22-25-image.webp)
 
-![选择 giscus 主题](/posts-img/giscus-akisme/giscus-akismet-2025-08-04-12-22-57-image.webp)
+![选择 giscus 主题](/posts-img/giscus-akismet-2025-08-04-12-22-57-image.webp)
 
 生成的脚本大致如下：
 
@@ -118,7 +118,7 @@ flowchart LR
 
 对于 SPA，还要注意两个问题：切换文章时需要重新加载脚本，让 giscus 读取新的 `pathname`；站点切换深浅主题时，需要向 giscus iframe 发送主题更新消息，不能只在首次加载时设置主题。
 
-![将 giscus 脚本放入博客](/posts-img/giscus-akisme/giscus-akismet-2025-08-04-12-23-41-image.webp)
+![将 giscus 脚本放入博客](/posts-img/giscus-akismet-2025-08-04-12-23-41-image.webp)
 
 ## 配置 Akismet
 
@@ -126,7 +126,7 @@ flowchart LR
 
 打开 [Akismet 官网](https://akismet.com/) 注册账号，选择适合个人博客的订阅方案。个人方案可以将价格调整为 `$0`，完成注册后在账户页面获取 Akismet API Key。
 
-![注册 Akismet](/posts-img/giscus-akisme/giscus-akismet-2025-08-04-12-27-58-image.webp)
+![注册 Akismet](/posts-img/giscus-akismet-2025-08-04-12-27-58-image.webp)
 
 Akismet 的检测接口会接收评论作者、评论内容、来源页面等信息，并返回 `true` 或 `false`。`true` 表示 Akismet 认为评论是垃圾内容，`false` 表示评论可以保留。
 
@@ -141,7 +141,7 @@ Action 需要删除 Discussion 评论，因此默认的 `GITHUB_TOKEN` 可能不
 
 不要把这两个值直接写进 workflow 文件，也不要在日志中输出完整令牌。
 
-![配置 GitHub Actions Secret](/posts-img/giscus-akisme/giscus-akismet-2025-08-04-12-29-06-image.webp)
+![配置 GitHub Actions Secret](/posts-img/giscus-akismet-2025-08-04-12-29-06-image.webp)
 
 ## 创建垃圾评论检测 Action
 
@@ -222,7 +222,7 @@ jobs:
 2. 使用 `github-script` 直接读取事件对象，评论中的换行、引号和特殊字符不会破坏 shell 命令。
 3. 删除评论使用 GraphQL 的 `deleteDiscussionComment` mutation，因为 giscus 评论对应的是 Discussion comment，而不是普通 Issue comment。
 
-![Akismet 垃圾评论检测 Action](/posts-img/giscus-akisme/giscus-akismet-2025-08-04-12-30-37-image.webp)
+![Akismet 垃圾评论检测 Action](/posts-img/giscus-akismet-2025-08-04-12-30-37-image.webp)
 
 ## 测试垃圾评论检测
 
@@ -234,7 +234,7 @@ viagra-test-123
 
 这条评论应当被判定为垃圾评论。发布后进入仓库的 `Actions` 页面，检查 workflow 是否成功运行，并确认评论是否被删除。
 
-![查看 Action 检测结果](/posts-img/giscus-akisme/giscus-akismet-2025-08-04-20-43-06-image.webp)
+![查看 Action 检测结果](/posts-img/giscus-akismet-2025-08-04-20-43-06-image.webp)
 
 测试完成后不要继续保留测试评论，也不要在生产环境中把测试字符串当作普通内容使用。
 
