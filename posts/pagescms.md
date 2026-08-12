@@ -55,9 +55,9 @@ graph TD
 
 ## 嵌套图片链接
 
-点击图片可预览大图（使用 `[![alt](img)](img)` 嵌套语法）：
+点击下方图片可预览大图：
 
-![D.png · 519](https://img.cdn1.vip/i/6a7bcaed6c108_1786497773.webp)
+[![测试图片](/posts-img/pldduck.png)](/posts-img/pldduck.png "测试图片")
 
 ## 站内链接
 
