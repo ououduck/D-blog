@@ -9,9 +9,9 @@ content:
     type: collection
     path: posts
     format: yaml-frontmatter
-    filename: "{primary}.md"
+    filename: "{fields.id}.md"
     fields:
-      - { name: id, label: URL标识, type: string }
+      - { name: id, label: URL标识, type: string, required: true }
       - { name: title, label: 标题, type: string }
       - { name: excerpt, label: 摘要, type: text }
       - { name: date, label: 发布日期, type: date }
