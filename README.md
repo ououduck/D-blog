@@ -134,7 +134,7 @@ graph LR
 
 ```text
 D-blog/
-├── index.html                   # HTML 入口（字体、Clarity / Umami 分析注入）
+├── index.html                   # HTML 入口（字体、Clarity 注入与不蒜子预连接）
 ├── .env.example                 # 环境变量示例（站点 URL、子路径）
 ├── config/                      # 配置：site.config.ts / content.config.json / ads.config.ts / tailwind / postcss / tsconfig
 ├── posts/                       # Markdown 文章
@@ -147,7 +147,7 @@ D-blog/
 └── src/
     ├── components/              # Layout、Seo、TableOfContents、SearchModal、ImageViewer 等
     ├── pages/                   # 页面组件（懒加载）：Home / Post / Archive / Tags / Stats / Friends / About / Favorites 等
-    ├── services/                # posts / friends / offlinePosts / readingHistory / siteStats
+    ├── services/                # posts / friends / offlinePosts / readingHistory / siteStats / busuanzi
     ├── hooks/                   # useMediaQuery / useModalOverlay / usePostSearch 等
     ├── utils/                   # 日期、排序、目录树、站点 URL 等
     ├── ssr/routeData.tsx        # SSG 路由数据构造与客户端读取

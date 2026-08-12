@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { preloadPage } from '@/utils/preload';
 import { assetUrl } from '@/utils/siteUrl';
 import { siteConfig } from '@config/site.config';
+import { pingBusuanzi } from '@/services/busuanzi';
 
 import { ProgressiveImage } from './ProgressiveImage';
 import { ISSUE_SUBSCRIPTION_URL } from './IssueSubscriptionCard';
@@ -997,6 +998,14 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSearchOpen, openSearch]);
+
+  // 不蒜子统计：路由变化即上报当前页访问并回填计数 span（适配 SPA 客户端导航，
+  // 替代官方 <script> 仅首屏执行一次、无法为新路由上报/回填的局限）。
+  useEffect(() => {
+    const controller = new AbortController();
+    pingBusuanzi(controller.signal);
+    return () => controller.abort();
+  }, [location.pathname]);
 
   return (
     <div className={`relative flex min-h-screen flex-col ${isReadingMode ? 'reading-mode-shell' : ''}`} data-reading-mode={isReadingMode ? 'true' : undefined}>

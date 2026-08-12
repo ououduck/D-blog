@@ -5,7 +5,7 @@ import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import DOMPurify from 'dompurify';
 
-import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Download, ChevronDown, ChevronUp, Users, ExternalLink, EyeOff, BookOpen, Bookmark, Minus, Plus, RotateCcw, LoaderCircle, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Download, ChevronDown, ChevronUp, Users, ExternalLink, Eye, EyeOff, BookOpen, Bookmark, Minus, Plus, RotateCcw, LoaderCircle, TriangleAlert } from 'lucide-react';
 import { getPostById, getPosts } from '@/services/posts';
 import { getReadingHistoryEntry, saveReadingHistory } from '@/services/readingHistory';
 import { getRelatedPosts, getSeriesNavigation, type SeriesNavigation } from '@/utils/postRelations';
@@ -29,6 +29,7 @@ import { useReadingMode } from '@/components/ReadingModeContext';
 import { ReadingModeToggle } from '@/components/ReadingModeToggle';
 import { GiscusComments } from '@/components/GiscusComments';
 import { useSsgRouteData } from '@/ssr/routeData';
+import { fillBusuanziSpans } from '@/services/busuanzi';
 
 
 type BlockCodeProps = {
@@ -874,6 +875,12 @@ export const Post = () => {
     return () => observer.disconnect();
   }, []);
 
+  // 不蒜子阅读量 span 在阅读模式切换时才随 meta 行挂载/卸载；从缓存回填一次，
+  // 保证退出阅读模式后能即时显示（路由级 Ping 在 Layout 已完成上报）。
+  useEffect(() => {
+    fillBusuanziSpans();
+  }, [isReadingMode, post?.id]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -1544,6 +1551,10 @@ export const Post = () => {
                 <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
                   <Clock size={14} />
                   <span>{post.readTime}</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 tabular-nums dark:border-zinc-700 dark:bg-zinc-900/70" title="由不蒜子提供本页阅读量">
+                  <Eye size={14} />
+                  <span><span id="busuanzi_page_pv">加载中</span> 次阅读</span>
                 </span>
                 <button type="button" onClick={() => setShareModalOpen(true)} className="print-hidden inline-flex min-h-11 items-center gap-1.5 rounded-control border border-zinc-400 bg-zinc-100 px-3 py-2 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400" aria-label={`分享文章：${post.title}`}>
                   <Share2 size={14} />

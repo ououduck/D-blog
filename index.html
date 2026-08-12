@@ -41,6 +41,9 @@
          请求保持一致，确保连接可被复用而非重新握手。 -->
     <link rel="preconnect" href="https://img.pldduck.com" crossorigin>
     <link rel="dns-prefetch" href="https://img.pldduck.com">
+    <!-- 不蒜子访问统计 API：提前完成 DNS/TLS，路由级统计请求由应用代码发起。 -->
+    <link rel="preconnect" href="https://cdn.busuanzi.cc" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.busuanzi.cc">
 
     <!-- 字体加载优化：异步加载避免阻塞渲染，减少不常用权重。
          preload 与正式 stylesheet 的 crossorigin 必须一致：浏览器按
@@ -77,11 +80,6 @@
   <body class="bg-paper text-ink dark:bg-void dark:text-gray-200 overflow-x-hidden">
     <div id="root"></div>
   <script type="module" src="/src/index.tsx"></script>
-
-
-  <!-- Umami Analytics -->
-   <script defer src="https://cloud.umami.is/script.js" data-website-id="2bacf41e-ec6b-470c-9e91-44c78f392e56"></script>
-   <!-- End Umami Analytics -->
 
 </body>
 </html>

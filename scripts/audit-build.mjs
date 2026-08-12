@@ -120,14 +120,20 @@ if (!entryHtml.includes('https://www.clarity.ms/tag/')) {
 if (!entryHtml.includes("c.addEventListener('load', inject")) {
   errors.push('entry HTML does not attach delayed Clarity injection to window.load');
 }
+if (!entryHtml.includes('https://cdn.busuanzi.cc')) {
+  errors.push('entry HTML is missing the Busuanzi API preconnect');
+}
 
 const headersPath = path.join(DIST_DIR, '_headers');
 if (!fs.existsSync(headersPath)) {
   errors.push('build output is missing the security headers file');
 } else {
   const headers = fs.readFileSync(headersPath, 'utf8');
-  if (!headers.includes('https://scripts.clarity.ms')) {
-    errors.push('CSP script-src is missing the Clarity runtime origin');
+  if (!headers.includes('https://www.clarity.ms') || !headers.includes('https://scripts.clarity.ms')) {
+    errors.push('CSP script-src is missing a required Clarity origin');
+  }
+  if (!headers.includes("connect-src 'self' https://cdn.busuanzi.cc")) {
+    errors.push('CSP connect-src is missing the Busuanzi API origin');
   }
 }
 

@@ -76,13 +76,13 @@ export const CookieNotice: React.FC = () => {
                 <div className="flex-shrink-0">
                   <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Cookie 使用</span>
                 </div>
-                
+
                 <div className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
                   <p className="mb-1">
                     <span className="font-medium text-zinc-900 dark:text-zinc-100">我们尊重您的隐私。</span>
                   </p>
                   <p>
-                    如果您继续访问 D-blog，为了帮助我们更好地改进网站，我们会使用 Umami、MS Clarity 等项目对您在网站上的行为进行分析。如不同意，请您关闭 D-blog 以保护您的隐私。
+                    如果您继续访问 D-blog，为了帮助我们更好地改进网站，我们会使用 MS Clarity 与不蒜子统计对您在网站上的访问和使用情况进行分析。如不同意，请您关闭 D-blog 以保护您的隐私。
                   </p>
                 </div>
               </div>

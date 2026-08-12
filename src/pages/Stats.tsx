@@ -15,6 +15,8 @@ import { Seo } from '../components/Seo';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { Surface } from '@/components/ui/Surface';
 import { getSiteStats, getInitialSiteStats, SiteStats } from '../services/siteStats';
+import { fillBusuanziSpans } from '@/services/busuanzi';
+import { siteConfig } from '@config/site.config';
 
 // 构建期 SSG：site-stats.json 已通过 eager glob 内联，SSR 阶段即可同步渲染全部统计卡片，
 // 客户端水合首帧与 SSR 输出一致；异步重取仅用于“重新加载”。
@@ -124,6 +126,81 @@ const ExternalStatsCard = ({
     </a>
   </Surface>
 );
+
+const BusuanziMetric = ({
+  label,
+  spanId,
+  unit
+}: {
+  label: string;
+  spanId: string;
+  unit: string;
+}) => (
+  <div>
+    <dt className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 sm:text-[11px]">{label}</dt>
+    <dd className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100 sm:text-xl"><span id={spanId}>加载中</span> {unit}</dd>
+  </div>
+);
+
+// 不蒜子统计卡片：使用两列宽的大卡片，展示不蒜子实时返回的
+// 今日/总访问量与访客数。右上角使用不蒜子官方统计图标并链接至本站统计页。
+const BUSUANZI_SITE_ID = '102944';
+
+const BusuanziCard = ({ className = '' }: { className?: string }) => {
+  useEffect(() => {
+    // 路由切换时 Ping 通常先于此 span 挂载完成；挂载后从缓存补填一次即可即时显示。
+    fillBusuanziSpans();
+  }, []);
+
+  const siteDomain = (() => {
+    try {
+      return new URL(siteConfig.url).host;
+    } catch {
+      return siteConfig.url;
+    }
+  })();
+
+  return (
+    <Surface className={`relative flex h-full min-w-0 flex-col p-5 sm:p-6 ${className}`}>
+      <a
+        href="https://www.busuanzi.cc/count.php?search=blog.pldduck.com"
+        title="不蒜子统计"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute right-4 top-4 z-10 inline-flex h-[25px] w-[85px]"
+      >
+        <img
+          src="https://www.busuanzi.cc/static/images/bsz-tongji.png"
+          alt="不蒜子统计"
+          width="85"
+          height="25"
+          className="h-[25px] w-[85px]"
+        />
+      </a>
+      <div className="mb-5 flex items-center gap-2.5">
+        <div className="flex h-10 w-10 items-center justify-center rounded-icon bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+          <BarChart3 size={18} />
+        </div>
+        <h2 className="font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100">访问统计</h2>
+      </div>
+      <p className="mb-6 text-sm leading-6 text-zinc-600 dark:text-zinc-400 md:text-base md:leading-7">由不蒜子实时提供的站点访问数据，含今日与累计的访问量、访客数。</p>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-5">
+        <div>
+          <dt className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 sm:text-[11px]">站点统计 ID</dt>
+          <dd className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100 sm:text-xl">{BUSUANZI_SITE_ID}</dd>
+        </div>
+        <div>
+          <dt className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 sm:text-[11px]">站点统计域名</dt>
+          <dd className="break-all text-lg font-bold text-zinc-900 dark:text-zinc-100 sm:text-xl">{siteDomain}</dd>
+        </div>
+        <BusuanziMetric label="今日总访问量" spanId="busuanzi_today_pv" unit="次" />
+        <BusuanziMetric label="今日总访客数" spanId="busuanzi_today_uv" unit="人" />
+        <BusuanziMetric label="站点总访问量" spanId="busuanzi_site_pv" unit="次" />
+        <BusuanziMetric label="站点总访客数" spanId="busuanzi_site_uv" unit="人" />
+      </dl>
+    </Surface>
+  );
+};
 
 export const Stats = () => {
   const siteStatsLoadedRef = useRef(false);
@@ -244,14 +321,8 @@ export const Stats = () => {
             <RankingCard title="图片最多" valueSuffix="张" items={(siteStats.topImageCountPosts || []).map((post) => ({ name: post.title, count: post.imageCount || 0 }))} />
           </section>
 
-          <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-2">
-            <ExternalStatsCard
-              icon={BarChart3}
-              title="访问统计"
-              description="查看详细的访问统计数据，包括访客数、访问次数和浏览量。"
-              href="https://cloud.umami.is/share/lbt9NW1ZYgWpm1KO"
-              buttonLabel="查看 Umami 统计数据"
-            />
+          <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-3">
+            <BusuanziCard className="lg:col-span-2" />
             <ExternalStatsCard
               icon={Activity}
               title="运行状态"
