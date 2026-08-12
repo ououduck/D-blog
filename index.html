@@ -69,7 +69,7 @@
       if (l.readyState === 'complete' || l.readyState === 'interactive') {
         inject();
       } else {
-        l.addEventListener('load', inject);
+        c.addEventListener('load', inject, { once: true });
       }
     })(window, document, 'clarity', 'script', 'wloc3f723i');
     </script>

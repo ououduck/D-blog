@@ -117,6 +117,19 @@ if (localStylesheets.size === 0) {
 if (!entryHtml.includes('https://www.clarity.ms/tag/')) {
   errors.push('entry HTML is missing the Clarity script URL');
 }
+if (!entryHtml.includes("c.addEventListener('load', inject")) {
+  errors.push('entry HTML does not attach delayed Clarity injection to window.load');
+}
+
+const headersPath = path.join(DIST_DIR, '_headers');
+if (!fs.existsSync(headersPath)) {
+  errors.push('build output is missing the security headers file');
+} else {
+  const headers = fs.readFileSync(headersPath, 'utf8');
+  if (!headers.includes('https://scripts.clarity.ms')) {
+    errors.push('CSP script-src is missing the Clarity runtime origin');
+  }
+}
 
 const assetsDir = path.join(DIST_DIR, 'assets');
 let initialScriptBytes = 0;
