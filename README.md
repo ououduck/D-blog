@@ -165,7 +165,7 @@ D-blog/
 ### 连接 PagesCMS
 
 1. 访问 [pagescms.org](https://pagescms.org/)，授权 GitHub 并选择 D-blog 仓库
-2. PagesCMS 读取根目录 `.pages.yml` 配置，自动生成文章和友链的编辑界面
+2. PagesCMS 读取根目录 `.pages.yml` 配置，自动生成文章编辑界面
 3. 编辑/新建内容后保存，PagesCMS 直接提交到 GitHub 仓库，CI 自动构建部署
 
 ### 新建文章

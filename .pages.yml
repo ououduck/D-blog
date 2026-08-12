@@ -40,15 +40,3 @@ content:
         options:
           format: markdown
           switcher: true   # 允许切换源码模式编辑数学公式/Mermaid/嵌套图片链接
-
-  # ── 友链集合 ──
-  - name: friends
-    label: 友链
-    type: collection
-    path: friends
-    format: json
-    fields:
-      - { name: name, label: 名称, type: string }
-      - { name: description, label: 描述, type: text }
-      - { name: avatar, label: 头像URL, type: string }
-      - { name: url, label: 链接, type: string }
