@@ -1,9 +1,10 @@
-import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Calendar, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronRight, Share2, X } from 'lucide-react';
+import { Calendar, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronRight, Share2, Bookmark, X } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
 import { getInitialPosts, getPosts } from '@/services/posts';
+import { saveOfflinePost, removeOfflinePost } from '@/services/offlinePosts';
 import { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
@@ -16,6 +17,7 @@ import { easeOut, easeSmooth, fadeInUp, staggerContainer } from '@/utils/motion'
 import { preloadPage } from '@/utils/preload';
 import { getHeroPost, isPinnedFeaturedPost } from '@/utils/postSelection';
 import { useReadingHistory } from '@/hooks/useReadingHistory';
+import { useOfflinePosts } from '@/hooks/useOfflinePosts';
 import { removeReadingHistory } from '@/services/readingHistory';
 import { isReadingComplete } from '@/utils/readingProgress';
 import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';
@@ -124,7 +126,7 @@ const filterAndSortPosts = (
   return sortPosts(filteredPosts, sortOrder);
 };
 
-const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean; onShare: (post: PostMetadata) => void }> = ({ post, index, featured, onShare }) => {
+const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean; onShare: (post: PostMetadata) => void; isSaved: boolean; isSaving: boolean; onToggleSave: (post: PostMetadata) => void }> = ({ post, index, featured, onShare, isSaved, isSaving, onToggleSave }) => {
   const shouldReduceMotion = useReducedMotion();
   const cardVariants = {
     hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 8 },
@@ -143,6 +145,12 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
     event.preventDefault();
     event.stopPropagation();
     onShare(post);
+  };
+
+  const handleToggleSaveClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onToggleSave(post);
   };
 
   const Tags = () => post.tags.length > 0 ? (
@@ -201,9 +209,14 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
             <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-3 text-xs md:pt-4 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-auto">
               <span className="flex items-center gap-1.5"><Calendar size={12} />{post.date}</span>
               <span className="flex items-center gap-1.5"><Clock size={12} />{post.readTime}</span>
-              <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
-                <Share2 size={13} />
-              </button>
+              <div className="ml-auto flex items-center gap-0.5">
+                <button type="button" onClick={handleToggleSaveClick} disabled={isSaving} aria-pressed={isSaved} aria-label={isSaved ? `取消收藏：${post.title}` : `收藏文章：${post.title}`} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-colors hover:text-ink active:scale-[.98] disabled:opacity-50 dark:hover:text-white">
+                  <Bookmark size={13} fill={isSaved ? 'currentColor' : 'none'} />
+                </button>
+                <button type="button" onClick={handleShareClick} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
+                  <Share2 size={13} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -231,18 +244,23 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
             )}
           </div>
           <Link to={`/post/${post.id}`} aria-label={`阅读文章：${post.title}`}>
-            <h3 className="mb-1.5 line-clamp-2 min-h-11 font-serif text-base font-bold leading-snug md:mb-2 md:min-h-0 text-ink hover:underline dark:text-zinc-100 md:text-lg">
+            <h3 className="mb-1.5 line-clamp-2 min-h-11 font-serif text-base font-bold leading-snug md:mb-2 text-ink hover:underline dark:text-zinc-100 md:text-lg">
               {post.title}
             </h3>
           </Link>
-          <p className="mb-2 line-clamp-1 text-sm leading-5 text-zinc-600 md:mb-3 md:line-clamp-2 md:leading-6 dark:text-zinc-300">{post.excerpt}</p>
+          <p className="mb-2 line-clamp-1 text-sm leading-5 text-zinc-600 md:mb-3 dark:text-zinc-300">{post.excerpt}</p>
           <Tags />
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-[11px] md:mt-4 md:pt-3 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             <span className="flex items-center gap-1"><Calendar size={11} />{post.date}</span>
             <span className="flex items-center gap-1"><Clock size={11} />{post.readTime}</span>
-            <button type="button" onClick={handleShareClick} className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
-              <Share2 size={12} />
-            </button>
+            <div className="ml-auto flex items-center gap-0.5">
+              <button type="button" onClick={handleToggleSaveClick} disabled={isSaving} aria-pressed={isSaved} aria-label={isSaved ? `取消收藏：${post.title}` : `收藏文章：${post.title}`} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-colors hover:text-ink active:scale-[.98] disabled:opacity-50 dark:hover:text-white">
+                <Bookmark size={12} fill={isSaved ? 'currentColor' : 'none'} />
+              </button>
+              <button type="button" onClick={handleShareClick} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
+                <Share2 size={12} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -345,6 +363,23 @@ export const Home = () => {
   const [currentPage, setCurrentPage] = useState(homeQueryState.page);
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
   const { latest: latestReading, refresh: refreshReadingHistory } = useReadingHistory();
+  const { posts: savedPosts } = useOfflinePosts();
+  const savedIds = useMemo(() => new Set(savedPosts.map((savedPost) => savedPost.id)), [savedPosts]);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const handleToggleSave = useCallback(async (post: PostMetadata) => {
+    setSavingId(post.id);
+    try {
+      if (savedIds.has(post.id)) {
+        await removeOfflinePost(post.id);
+      } else {
+        await saveOfflinePost(post);
+      }
+    } catch {
+      // 收藏/取消收藏失败时静默：savedIds 不会更新，按钮自动恢复原样。
+    } finally {
+      setSavingId((current) => (current === post.id ? null : current));
+    }
+  }, [savedIds]);
   const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
     emptyResults: allPosts,
     initialQuery: queryFromUrl
@@ -669,9 +704,9 @@ export const Home = () => {
               animate="visible"
               transition={shouldReduceMotion ? { duration: 0 } : gridLayoutTransition}
             >
-              {featuredPost && <PostCard key={featuredPost.id} post={featuredPost} index={0} featured onShare={setSharePost} />}
+              {featuredPost && <PostCard key={featuredPost.id} post={featuredPost} index={0} featured onShare={setSharePost} isSaved={savedIds.has(featuredPost.id)} isSaving={savingId === featuredPost.id} onToggleSave={handleToggleSave} />}
               {remainingPosts.length > 0 ? (
-                remainingPosts.map((post, index) => <PostCard key={post.id} post={post} index={index + (featuredPost ? 1 : 0)} onShare={setSharePost} />)
+                remainingPosts.map((post, index) => <PostCard key={post.id} post={post} index={index + (featuredPost ? 1 : 0)} onShare={setSharePost} isSaved={savedIds.has(post.id)} isSaving={savingId === post.id} onToggleSave={handleToggleSave} />)
               ) : !featuredPost ? (
                 <motion.div layout variants={fadeInUp} className="col-span-full border-y border-zinc-200 py-14 text-center dark:border-zinc-800">
                   <p className="text-base text-zinc-500 dark:text-zinc-400">{hasSearchQuery ? '未找到匹配的文章' : '暂无相关文章'}</p>
