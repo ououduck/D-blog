@@ -17,12 +17,12 @@ series: false
 draft: false
 ---
 
-## 简介  
+# 简介  
 **对某个剧集里面的内容进行批量重命名，同时支持对搜索结果进行批量重命名，支持序号重命名、追加重命名、查找替换、正则替换四种模式**  
 
 ---
 
-## 截图  
+# 截图  
 [![截图1](https://img.pldduck.com/D-blog/20260812115946790.png)](https://img.pldduck.com/D-blog/20260812115946790.png "截图1") 
 [![截图 2](https://img.pldduck.com/D-blog/20260812115946791.png)](https://img.pldduck.com/D-blog/20260812115946791.png "截图 2") 
 [![截图 3](https://img.pldduck.com/D-blog/20260812115946792.png)](https://img.pldduck.com/D-blog/20260812115946792.png "截图 3") 
@@ -31,5 +31,5 @@ draft: false
 
 ---
 
-##  油猴下载链接  
+# 油猴下载链接  
 [油猴下载链接](https://greasyfork.org/zh-CN/scripts/472728-%E9%98%BF%E9%87%8C%E4%BA%91%E7%9B%98%E6%89%B9%E9%87%8F%E9%87%8D%E5%91%BD%E5%90%8D)

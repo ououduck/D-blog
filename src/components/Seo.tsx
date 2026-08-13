@@ -162,7 +162,11 @@ export const Seo: React.FC<SeoProps> = ({
 }) => {
   const location = useLocation();
   const resolvedUrl = url ?? location.pathname + location.search;
-  const fullTitle = title === siteConfig.title ? siteConfig.title : `${title} - ${siteConfig.title}`;
+  // 首页使用带关键词的站点级标题（大厂站标配：品牌 + 一句话定位），
+  // 其余页面统一为「页面名 - D-blog」格式。
+  const fullTitle = title === siteConfig.title
+    ? (siteConfig.seoHomeTitle || siteConfig.title)
+    : `${title} - ${siteConfig.title}`;
   const isSearchVariant = hasSearchParam(resolvedUrl);
   const canonicalUrl = toAbsoluteUrl(buildCanonicalPath(resolvedUrl || '/'));
   const imageUrl = toAbsoluteUrl(image);
@@ -178,6 +182,10 @@ export const Seo: React.FC<SeoProps> = ({
       <meta key="robots" name="robots" content={noindex || isSearchVariant ? 'noindex,follow' : 'index,follow,max-image-preview:large'} />
       {keywords && <meta name="keywords" content={keywords} />}
       <link key="canonical" rel="canonical" href={canonicalUrl} />
+      {/* hreflang 自引用：声明页面语言目标（zh-CN），谷歌据此处理语言与地区意图。
+          全站单语言站点按 Google 官方建议加 x-default 与语言自引用。 */}
+      <link rel="alternate" hrefLang="zh-CN" href={canonicalUrl} />
+      <link rel="alternate" hrefLang="x-default" href={canonicalUrl} />
       <link rel="alternate" type="application/rss+xml" title={`${siteConfig.title} RSS`} href={toAbsoluteUrl('/feed.xml')} />
 
       <meta property="og:locale" content="zh_CN" />

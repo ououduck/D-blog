@@ -153,7 +153,7 @@ export const Tags = () => {
 
   return (
     <div className="pb-8 md:pb-14">
-      <Seo title="标签" description="按标签浏览 D-blog 文章，通过标签快速筛选感兴趣的技术主题与内容。" />
+      <Seo title="标签" description="D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。" />
 
       <header className="mb-10 border-b border-zinc-200 pb-8 dark:border-zinc-800 md:pb-10">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Tags Collection</p>

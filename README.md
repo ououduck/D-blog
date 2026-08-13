@@ -25,8 +25,8 @@
 - **构建期 SSG** — 每篇文章与静态页面生成独立 HTML，注入精准 SEO meta 与 JSON-LD；Suspense 边界就地展平，爬虫可直接读取正文
 - **代码分割** — 页面路由与正文能力动态 import 懒加载；厂商代码分块（framer-motion / react-dom / react-router）
 - **PWA** — Service Worker 缓存策略 + manifest；收藏文章断网后可从 IndexedDB 离线阅读
-- **SEO 与订阅** — 自动生成 OG/Twitter Card、JSON-LD（WebSite + Organization + BlogPosting + BreadcrumbList）、RSS 2.0 Feed、`llms.txt`、Sitemap（页面/文章/图片）、`robots.txt`
-- **质量保障** — `npm run typecheck` 全量类型检查（含未使用声明检查）；`npm run gen:data` 构建时校验文章元数据与站内资源；`npm run audit:build` 产物完整性审计
+- **SEO 与订阅** — 自动生成 OG/Twitter Card、JSON-LD（WebSite + Organization + BlogPosting + BreadcrumbList + CollectionPage）、hreflang 语言自引用、RSS 2.0 Feed、`llms.txt`、Sitemap（页面/文章/图片含图床外链）、`robots.txt`
+- **质量保障** — `npm run typecheck` 全量类型检查（含未使用声明检查）；`npm run gen:data` 构建时校验文章元数据与站内资源；`npm run audit:build` 产物完整性审计；`npm run audit:seo` 大厂级 SEO 清单审计（已接入 `npm run build` 流水线）
 
 ## 技术栈
 
@@ -174,6 +174,8 @@ graph TD
 | `npm run migrate:images` | 批量迁移本地图片至图床（支持 `--dry-run`） |
 | `npm run gen:data` | 数据生成 + 全量校验 |
 | `npm run ssg` | 仅执行 SSG 预渲染（需先完成两端构建） |
+| `npm run audit:build` | 构建产物完整性审计（HTML / SEO 标签 / 体积） |
+| `npm run audit:seo` | 大厂级 SEO 清单审计（26 页 × 16 项检查，已接入 build） |
 | `npm run typecheck` / `check` | TypeScript 类型检查 / 类型检查 + 数据校验 |
 
 ## 部署

@@ -372,14 +372,14 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   };
 
   const staticPages = [
-    { path: 'archive', title: `归档 - ${siteConfig.title}`, description: '按年份归档 D-blog 全部历史文章，快速查看发布时间、分类与更新轨迹。', schemaType: 'CollectionPage' },
-    { path: 'tags', title: `标签 - ${siteConfig.title}`, description: '按标签浏览 D-blog 文章，通过标签快速筛选感兴趣的技术主题与内容。', schemaType: 'CollectionPage' },
-    { path: 'stats', title: `统计 - ${siteConfig.title}`, description: 'D-blog 站点统计概览：文章数、总字数、分类标签、图片数量等核心数据一目了然。', schemaType: 'WebPage' },
-    { path: 'about', title: `关于 - ${siteConfig.title}`, description: '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的用户界面。', schemaType: 'ProfilePage' },
-    { path: 'friends', title: `友链 - ${siteConfig.title}`, description: 'D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链。', schemaType: 'CollectionPage' },
-    { path: 'cover', title: `封面生成 - ${siteConfig.title}`, description: '在线生成精美博客文章封面图片，支持自定义文字、图标、渐变背景与多种导出比例。', schemaType: 'WebApplication' },
-    { path: 'watermark', title: `水印工具 - ${siteConfig.title}`, description: '在浏览器中为图片添加文字水印，支持实时预览与本地导出。', schemaType: 'WebApplication' },
-    { path: 'sponsor', title: `赞助 - ${siteConfig.title}`, description: '支持 D-blog 的多种方式：贡献代码、撰写文章或通过赞助商链接帮助博客持续成长。', schemaType: 'WebPage' }
+    { path: 'archive', title: `归档 - ${siteConfig.title}`, description: 'D-blog 全站文章时间线，按年与月份归档全部技术分享、工具测评和生活随笔，快速回顾历史内容与更新轨迹。', schemaType: 'CollectionPage' },
+    { path: 'tags', title: `标签 - ${siteConfig.title}`, description: 'D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。', schemaType: 'CollectionPage' },
+    { path: 'stats', title: `统计 - ${siteConfig.title}`, description: 'D-blog 站点数据统计面板，展示文章总数、累计字数、分类与标签分布、图片与代码规模等核心内容数据。', schemaType: 'WebPage' },
+    { path: 'about', title: `关于 - ${siteConfig.title}`, description: '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。', schemaType: 'ProfilePage' },
+    { path: 'friends', title: `友链 - ${siteConfig.title}`, description: 'D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链，一起分享交流与成长。', schemaType: 'CollectionPage' },
+    { path: 'cover', title: `封面生成 - ${siteConfig.title}`, description: '在线免费生成精美博客文章封面图片，支持自定义文字、图标与渐变背景，适配多种社交分享比例，开箱即用无需登录。', schemaType: 'WebApplication' },
+    { path: 'watermark', title: `水印工具 - ${siteConfig.title}`, description: '在浏览器中免费为图片添加文字水印，支持自定义文字样式、实时预览与本地导出，无需上传文件，保护图片版权。', schemaType: 'WebApplication' },
+    { path: 'sponsor', title: `赞助 - ${siteConfig.title}`, description: '支持 D-blog 的多种方式：贡献代码、投稿原创文章或通过赞助链接，帮助博客持续输出高质量内容，感谢每一位支持者。', schemaType: 'WebPage' }
   ];
 
   /**

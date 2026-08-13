@@ -251,7 +251,7 @@ export const Stats = () => {
 
   return (
     <div className="pb-10 md:pb-20">
-      <Seo title="统计" description="D-blog 站点统计概览：文章数、总字数、分类标签、图片数量等核心数据一目了然。" />
+      <Seo title="统计" description="D-blog 站点数据统计面板，展示文章总数、累计字数、分类与标签分布、图片与代码规模等核心内容数据。" />
 
       <header className="border-b border-zinc-200 pb-8 dark:border-zinc-800 md:pb-10">
         <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400"><Database size={15} />Site Statistics</p>

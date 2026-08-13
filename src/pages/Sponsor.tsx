@@ -50,7 +50,7 @@ const sponsorOptions: SponsorOption[] = [
 export const Sponsor: React.FC = () => {
   return (
     <div className="mx-auto max-w-5xl pb-12 pt-6 md:pb-20 md:pt-10">
-      <Seo title="赞助" description="支持 D-blog 的多种方式：贡献代码、撰写文章或通过赞助商链接帮助博客持续成长。" />
+      <Seo title="赞助" description="支持 D-blog 的多种方式：贡献代码、投稿原创文章或通过赞助链接，帮助博客持续输出高质量内容，感谢每一位支持者。" />
 
       <header className="mb-10 border-b border-zinc-200 pb-8 text-center dark:border-zinc-800 md:pb-10">
         <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.28em] text-zinc-500 dark:text-zinc-400">Support D-blog</p>

@@ -27,7 +27,7 @@ export const Favorites = () => {
 
   return (
     <div className="pb-8 md:pb-14">
-      <Seo title="我的收藏" description="查看保存在本地的 D-blog 离线收藏文章。" noindex />
+      <Seo title="我的收藏" description="查看你收藏并离线保存的 D-blog 文章列表，支持离线阅读，随时重温感兴趣的技术分享与生活随笔内容。" noindex />
 
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-zinc-200 pb-5 dark:border-zinc-800 md:pb-6">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">

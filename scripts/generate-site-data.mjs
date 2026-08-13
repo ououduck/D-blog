@@ -782,13 +782,17 @@ const generateSitemap = () => {
 </urlset>`;
   fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap-posts.xml'), postsXml);
 
-  // 3. 图片 sitemap：仅收录本地静态资源（/posts-img、/generated-images）。
-  //    外部图床 URL 无法确认可抓取，不进入 image sitemap。
-  const isLocalImage = (url) => /^\/?(?:posts-img|generated-images)\//.test(String(url));
-  const normalizeImageUrl = (url) => {
-    const clean = String(url).replace(/^\/+/, '');
-    return siteAbsoluteUrl(`/${clean.split(/[?#]/, 1)[0]}`);
+  // 3. 图片 sitemap：收录文章封面与正文图片（含 PicGo 图床外链）。
+  //    Google image sitemap 规范允许 image:loc 指向自有 CDN；img.pldduck.com
+  //    为站点自有图床域名，收录后可提升 Google Images 对文章图片的发现与索引。
+  //    动态数据（data:、blob:）与无法确认可抓取的 URL 一律剔除。
+  const isIndexableImage = (url) => {
+    const clean = String(url).split(/[?#]/, 1)[0].toLowerCase();
+    if (!/^https?:\/\//.test(clean)) return false;
+    if (clean.startsWith('data:') || clean.startsWith('blob:')) return false;
+    return /\.(?:jpe?g|png|gif|webp|avif)(?:\?.*)?$/i.test(clean);
   };
+  const normalizeImageUrl = (url) => String(url).split(/[?#]/, 1)[0];
   const imagesXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
@@ -800,7 +804,7 @@ const generateSitemap = () => {
       const images = [];
       const addImage = (imageUrl) => {
         const normalized = normalizeImageUrl(imageUrl);
-        if (isLocalImage(imageUrl) && !seen.has(normalized)) {
+        if (isIndexableImage(imageUrl) && !seen.has(normalized)) {
           seen.add(normalized);
           images.push({ loc: normalized, title: post.title });
         }
@@ -854,6 +858,7 @@ const generateSitemap = () => {
     'Disallow: /generated/',
     'Disallow: /sw.js',
     'Disallow: /workbox-*.js',
+    'Disallow: /offline.html',
     '',
     // AI 智能体（Agent browsing）：站点为静态 SSR 页面，正文可直接抓取，全部放行。
     'User-agent: GPTBot',

@@ -13,6 +13,7 @@
     "build:ssr": "vite build --config vite.ssr.config.ts",
     "ssg": "node scripts/ssg.mjs",
     "audit:build": "node scripts/audit-build.mjs",
+    "audit:seo": "node scripts/seo-audit.mjs",
     "typecheck": "tsc -p config/tsconfig.json --noEmit",
     "check": "npm run typecheck && npm run gen:data",
     "dev": "npm run gen:data && vite",

@@ -67,7 +67,8 @@ const stages = [
     args: ['-e', "const fs=require('fs');const s='dist/index.html',d='dist-ssr/index.template.html';fs.copyFileSync(s,d);console.log('[build] template snapshot saved')"]
   },
   { name: 'Generate static HTML (SSG)', command: process.execPath, args: ['scripts/ssg.mjs'] },
-  { name: 'Audit build output', command: process.execPath, args: ['scripts/audit-build.mjs'] }
+  { name: 'Audit build output', command: process.execPath, args: ['scripts/audit-build.mjs'] },
+  { name: 'Audit SEO output', command: process.execPath, args: ['scripts/seo-audit.mjs'] }
 ];
 
 /**

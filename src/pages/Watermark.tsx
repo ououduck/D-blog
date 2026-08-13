@@ -150,7 +150,7 @@ export const Watermark: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-7xl pb-12 pt-6 md:pb-20 md:pt-10">
-      <Seo title="水印工具" description="在浏览器中为图片添加文字水印，支持实时预览与本地导出。" />
+      <Seo title="水印工具" description="在浏览器中免费为图片添加文字水印，支持自定义文字样式、实时预览与本地导出，无需上传文件，保护图片版权。" />
       <header className="mb-8 border-b border-zinc-200 pb-8 dark:border-zinc-800 md:mb-10 md:pb-10">
         <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.28em] text-zinc-500 dark:text-zinc-400">Image Watermark</p>
         <h1 className="mb-4 font-serif text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">图片水印</h1>

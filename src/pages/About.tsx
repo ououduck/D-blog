@@ -34,7 +34,7 @@ export const About = () => {
     <div className="mx-auto max-w-4xl pb-10 pt-6 md:pb-16 md:pt-10">
       <Seo
         title="关于"
-        description="关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的用户界面。"
+        description="关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。"
         url="/about"
         image={siteConfig.author.avatar}
         structuredData={aboutPageSchema}

@@ -1,7 +1,10 @@
 export const siteConfig = {
   title: 'D-blog',
   subtitle: '跑路的duck',
-  description: '跑路的duck的技术分享和生活随笔',
+  // 站点头条：首页 <title> 与 og:title 使用（含关键词，利于首页排名），
+  // 其他页面统一为「页面名 - D-blog」格式。
+  seoHomeTitle: 'D-blog - 跑路的duck的技术分享与生活随笔博客',
+  description: '跑路的duck的技术分享与生活随笔博客，覆盖前端开发、后端运维、AI 工具与效率软件，坚持原创并追求极致的静态页面体验。',
   logo: 'https://blog.pldduck.com/logo.png',
   logoSmall: '/logo-96.png',
   // 社交分享卡片（1200×630，1.91:1），由 scripts/generate-og-card.mjs 在构建期生成。

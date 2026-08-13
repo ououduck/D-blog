@@ -1143,9 +1143,9 @@ export const Post = () => {
     let programmaticScroll = false;
     let resetProgrammaticFrame = 0;
     let restoreDelay = 0;
-    // 结尾哨兵（readingEndRef）只在非专注阅读模式渲染。进入专注阅读后该节点
-    // 会从 DOM 移除，若此时恢复流程仍未结束，restore() 将无限重排（100% CPU）。
-    // 连续多次找不到结尾哨兵即放弃恢复，避免死循环。
+    // 结尾哨兵（readingEndRef）紧跟在正文末尾，专注阅读模式下也保留渲染；
+    // 若因异常原因持续找不到该节点（如 DOM 尚未就绪），restore() 将无限重排
+    // （100% CPU）。连续多次找不到结尾哨兵即放弃恢复，避免死循环。
     let missingEndRefCount = 0;
     const MAX_MISSING_END_REF = 8;
     const restoreGraceUntil = performance.now() + 500;
@@ -1253,9 +1253,15 @@ export const Post = () => {
     let hasProgressSnapshot = false;
     let hasScrolledSinceMount = false;
     let completionSaved = false;
+    // 上次写入的整百分数。挂载时的基线测量（通常在滚动恢复前为 0）不允许直接写库，
+    // 否则会覆盖既有的继续阅读记录（如带 hash 打开文章、或用户在恢复窗口内滚动时）。
+    let lastWrittenProgress = Math.round((getReadingHistoryEntry(post.id)?.progress ?? 0) * 100);
     lastReadingSaveRef.current = 0;
     const saveLatestProgress = () => {
-      if (!hasProgressSnapshot || completionSaved || isReadingComplete(latestProgress)) return;
+      if (!hasProgressSnapshot || completionSaved || latestProgress <= 0 || isReadingComplete(latestProgress)) return;
+      const percent = Math.round(latestProgress * 100);
+      if (percent === lastWrittenProgress) return;
+      lastWrittenProgress = percent;
       lastReadingSaveRef.current = Date.now();
       saveReadingHistory({ postId: post.id, progress: latestProgress });
     };
@@ -1279,12 +1285,17 @@ export const Post = () => {
       if (hasScrolledSinceMount && isReadingComplete(progress)) {
         if (!completionSaved) {
           completionSaved = true;
+          lastWrittenProgress = 100;
           lastReadingSaveRef.current = now;
           saveReadingHistory({ postId: post.id, progress });
         }
         return;
       }
-      if (isReadingComplete(progress) || now - lastReadingSaveRef.current < 1000) return;
+      // 进度为 0（正文尚未进入阅读区，或滚回页面顶部）时不写入，避免覆盖既有记录。
+      if (progress <= 0 || isReadingComplete(progress) || now - lastReadingSaveRef.current < 1000) return;
+      const percent = Math.round(progress * 100);
+      if (percent === lastWrittenProgress) return;
+      lastWrittenProgress = percent;
       lastReadingSaveRef.current = now;
       saveReadingHistory({ postId: post.id, progress });
     };
@@ -1399,14 +1410,36 @@ export const Post = () => {
     );
   }
 
+  // 摘录过短时（<30 字）meta description 会显得贫瘠，搜索摘要也不完整。
+  // 此时从正文中取首个有实质内容的段落作为描述；摘录够长时仍以作者
+  // 撰写的摘录为准（语义更精准）。
+  const MAX_DESC_PARAGRAPH_CHARS = 110;
+  const buildMetaDescription = (currentPost: PostType): string => {
+    const excerpt = (currentPost.excerpt || '').trim();
+    if (excerpt.length >= 30) {
+      return excerpt;
+    }
+    const firstSubstantial = stripMarkdown(currentPost.content)
+      .split(/\n{2,}/)
+      .map((paragraph) => paragraph.replace(/\s+/g, ' ').trim())
+      .find((paragraph) => paragraph.length >= 20);
+    if (!firstSubstantial) {
+      return excerpt;
+    }
+    return firstSubstantial.length > MAX_DESC_PARAGRAPH_CHARS
+      ? `${firstSubstantial.slice(0, MAX_DESC_PARAGRAPH_CHARS).trimEnd()}…`
+      : firstSubstantial;
+  };
+
   const authors = getDisplayAuthors(post);
   const authorsLabel = authors.map((author) => author.name).join('\u3001');
+  const postDescription = buildMetaDescription(post);
   const postStructuredData = {
     '@context': 'https://schema.org',
     // BlogPosting 是 Article 的子类型，Google 对博客文章富结果更认可该类型。
     '@type': 'BlogPosting',
     headline: post.title,
-    description: post.excerpt,
+    description: postDescription,
     image: post.coverImage ? [absoluteSiteUrl(post.coverImage, siteConfig.url)] : [absoluteSiteUrl(siteConfig.seoImage, siteConfig.url)],
     datePublished: post.date,
     dateModified: post.updatedAt || post.date,
@@ -1489,7 +1522,7 @@ export const Post = () => {
 
         <Seo
           title={post.title}
-          description={post.excerpt}
+          description={postDescription}
           image={post.coverImage}
           imageWidth={post.coverWidth}
           imageHeight={post.coverHeight}
@@ -1602,6 +1635,11 @@ export const Post = () => {
               </ReactMarkdown>
             </div>
 
+            {/* 结尾哨兵紧跟正文末尾：正文最后一行进入视口中间即视为读完。
+                许可协议/作者/导航/推荐/评论等均不计入文章长度。此节点在专注阅读
+                模式下也保留渲染，保证两种模式下的进度口径完全一致。 */}
+            <div ref={readingEndRef} aria-hidden="true" className="h-0" />
+
             {!isReadingMode && (
               <aside className="post-license mt-14 border-l-2 border-zinc-200 pl-4 text-sm leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-16 md:pl-5" aria-labelledby="license-heading">
               <h2 id="license-heading" className="mb-1 font-semibold text-zinc-700 dark:text-zinc-200">CC BY-SA 4.0 许可协议</h2>
@@ -1706,8 +1744,6 @@ export const Post = () => {
                     </span>
                   </div>
                 </nav>
-
-                <div ref={readingEndRef} aria-hidden="true" className="h-0" />
 
                 {relatedPosts.length > 0 && (
                   <section className="post-related mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8" aria-labelledby="related-heading">
