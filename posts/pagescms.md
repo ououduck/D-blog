@@ -1,12 +1,11 @@
 ---
 id: pagescms
-title: D-blog 接入 PagesCMS
+title: 静态博客 接入 PagesCMS
 excerpt: 为静态博客新增一个文章管理/写作Web后台 - PagesCMS
 date: 2026-08-13
 updatedAt: 2026-08-13
 category: 技术
 tags:
-  - D-blog
   - PagesCMS
   - 静态博客
 coverImage: https://img.pldduck.com/D-blog/20260813145228756.png
@@ -16,6 +15,7 @@ series: false
 draft: false
 ---
 # D-blog 接入 PagesCMS
+
 当你看到这篇文章时，**D-blog** 已经接入了 **PagesCMS**  
 这篇文章也是通过 **PagesCMS** 发布的  
 ![PagesCMS - 首页](https://img.pldduck.com/D-blog/20260813145352156.png)
@@ -31,4 +31,52 @@ draft: false
 这样确实不错，甚至还能减少 **D-blog** 的项目文件  
 但是我又意识到问题了：之前图片存在本地的时候，构建时会自动压缩图片，给出一个压缩版，用于一些首页之类的，但是换了图床就不能了，除非愿意花钱去用 CDN 或者 OSS 的图片处理  
 这对电脑端的性能没什么影响(目前看来，Pagespeed insights的评分是 99 100 100 100)，但是对移动端性能可是毁灭性的打击  
-目前打算就这样，后面再找找办法吧
+目前打算就这样，后面再找找办法吧  
+
+# 接入教程
+很简单 其实只需要一个 *.pages.yml* 就行  
+什么？ 你说你不知道？  
+那也简单 直接让AI帮你写就行  
+注意：上面说的教程都是实话 实在没啥教程好写 直接交给AI就行  
+
+以下是 [D-blog](https://github.com/ououduck/D-blog "D-blog") 的 *.pages.yml* 文件 可供参考  
+````yaml
+# PagesCMS 配置 — D-blog 内容管理
+# 文档: https://pagescms.org/docs/configuration/
+
+content:
+  # ── 文章集合 ──
+  - name: posts
+    label: 文章
+    type: collection
+    path: posts
+    format: yaml-frontmatter
+    filename: "{fields.id}.md"
+    fields:
+      - { name: id, label: URL标识, type: string, required: true }
+      - { name: title, label: 标题, type: string }
+      - { name: excerpt, label: 摘要, type: text }
+      - { name: date, label: 发布日期, type: date }
+      - { name: updatedAt, label: 更新日期, type: date }
+      - name: category
+        label: 分类
+        type: select
+        options:
+          values: ["教程", "技术", "随笔", "分享", "其他"]
+      - { name: tags, label: 标签, type: string, list: true }
+      - { name: coverImage, label: 封面图链接, type: string }
+      - { name: author, label: 作者, type: string }
+      - { name: featured, label: 精选, type: boolean }
+      - { name: featured-top, label: 精选置顶权重, type: number }
+      - { name: series, label: 系列文章, type: boolean }
+      - { name: series-name, label: 系列名, type: string }
+      - { name: series-order, label: 系列顺序, type: number }
+      - { name: draft, label: 草稿, type: boolean }
+      - name: body
+        label: 正文
+        type: rich-text
+        options:
+          format: markdown
+          switcher: true   # 允许切换源码模式编辑数学公式/Mermaid/嵌套图片链接
+
+````
