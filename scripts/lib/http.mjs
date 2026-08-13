@@ -580,8 +580,31 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
   const fetchPage = async (page) => {
     const url = `${baseUrl}${buildUrl(page)}`;
 
+    // 429（二次限流）在 fetchWithRetry 内已做退避重试，耗尽后以
+    // RetryableHttpError(status=429) 抛出，不会作为响应返回 —— 因此下方
+    // isRateLimitResponse 分支永远看不到 429（Phase 4 红队遗留缺口）。
+    // 这里把 429 归一为 RateLimitError，让调用方（friend-link-bot）的
+    // “整批暂停”机制真正覆盖二次限流，而不是把每个请求的失败当成普通
+    // 错误记录后继续下一个请求（只会继续放大限流）。
+    const fetchPageRequest = async (retryBudget) => {
+      let response;
+      try {
+        response = await fetchWithRetry(url, baseRequest, { timeoutMs, retries: retryBudget, signal, onRetry });
+      } catch (error) {
+        if (error instanceof RetryableHttpError && error.status === 429) {
+          throw new RateLimitError(
+            `GitHub secondary rate limit exceeded after ${error.attempts} attempts: ${url}`,
+            60,
+            0
+          );
+        }
+        throw error;
+      }
+      return response;
+    };
+
     // 发起请求；429/5xx 由 fetchWithRetry 自动退避重试。
-    let response = await fetchWithRetry(url, baseRequest, { timeoutMs, retries, signal, onRetry });
+    let response = await fetchPageRequest(retries);
 
     // 限流保护：429/403/remaining=0 时休眠到 reset（或 Retry-After），
     // 有上限（maxRateLimitWaitMs），超限直接抛 RateLimitError，绝不无限等待。
@@ -597,7 +620,7 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
       if (Number.isFinite(boundedWaitMs) && boundedWaitMs > 0) {
         await sleep(boundedWaitMs, signal);
         // 等待补偿后重试一次；若仍被限流，走下方 isRateLimitResponse 抛错分支。
-        response = await fetchWithRetry(url, baseRequest, { timeoutMs, retries: 1, signal, onRetry });
+        response = await fetchPageRequest(1);
       }
     }
 

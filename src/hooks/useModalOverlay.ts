@@ -28,6 +28,28 @@ let scrollLockCount = 0;
 export const hasOpenOverlay = () => openOverlayStack.length > 0;
 let originalBodyOverflow = '';
 
+/**
+ * 共享的页面滚动锁（计数式）。多个弹层/抽屉叠加时只有第一个捕获原始值、
+ * 最后一个恢复，避免相互覆盖导致页面永久锁滚或弹层未关就恢复滚动。
+ * 移动端导航等非弹层入口也应复用本锁，不要单独操作 body.style.overflow。
+ */
+export const lockBodyScroll = () => {
+  if (scrollLockCount === 0) {
+    originalBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+
+  scrollLockCount += 1;
+};
+
+export const unlockBodyScroll = () => {
+  scrollLockCount = Math.max(0, scrollLockCount - 1);
+
+  if (scrollLockCount === 0) {
+    document.body.style.overflow = originalBodyOverflow;
+  }
+};
+
 const getFocusableElements = (container: HTMLElement) => (
   Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((element) => {
     if (element.getAttribute('aria-hidden') === 'true' || element.closest('[inert]')) {
@@ -38,23 +60,6 @@ const getFocusableElements = (container: HTMLElement) => (
     return style.visibility !== 'hidden' && style.display !== 'none';
   })
 );
-
-const lockBodyScroll = () => {
-  if (scrollLockCount === 0) {
-    originalBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-  }
-
-  scrollLockCount += 1;
-};
-
-const unlockBodyScroll = () => {
-  scrollLockCount = Math.max(0, scrollLockCount - 1);
-
-  if (scrollLockCount === 0) {
-    document.body.style.overflow = originalBodyOverflow;
-  }
-};
 
 export function useModalOverlay({
   isOpen,

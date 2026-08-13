@@ -860,6 +860,10 @@ export const Post = () => {
   const articleBodyRef = useRef<HTMLDivElement>(null);
   const readingEndRef = useRef<HTMLDivElement>(null);
   const lastReadingSaveRef = useRef(0);
+  // 阅读进度保存的会话状态。必须放在组件级 ref 中：relatedPosts 等异步数据加载会
+  // 触发保存 effect 重跑，若用 effect 内局部变量保存“已读完”等标记，重跑后会被重置，
+  // 导致读完后再滚回上方时重新写入部分进度、让主页“继续阅读”卡片复活。
+  const readingSessionRef = useRef<{ postId: string; hasScrolled: boolean; completed: boolean; lastWrittenPercent: number } | null>(null);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -1248,20 +1252,29 @@ export const Post = () => {
       return;
     }
 
+    // 同一篇文章的会话状态跨 effect 重跑复用；切换文章时重置。
+    const session = readingSessionRef.current;
+    if (!session || session.postId !== post.id) {
+      readingSessionRef.current = {
+        postId: post.id,
+        hasScrolled: false,
+        completed: false,
+        // 上次写入的整百分数。挂载时的基线测量（通常在滚动恢复前为 0）不允许直接写库，
+        // 否则会覆盖既有的继续阅读记录（如带 hash 打开文章、或用户在恢复窗口内滚动时）。
+        lastWrittenPercent: Math.round((getReadingHistoryEntry(post.id)?.progress ?? 0) * 100)
+      };
+    }
+    const state = readingSessionRef.current!;
+
     let animationFrame = 0;
     let latestProgress = 0;
     let hasProgressSnapshot = false;
-    let hasScrolledSinceMount = false;
-    let completionSaved = false;
-    // 上次写入的整百分数。挂载时的基线测量（通常在滚动恢复前为 0）不允许直接写库，
-    // 否则会覆盖既有的继续阅读记录（如带 hash 打开文章、或用户在恢复窗口内滚动时）。
-    let lastWrittenProgress = Math.round((getReadingHistoryEntry(post.id)?.progress ?? 0) * 100);
     lastReadingSaveRef.current = 0;
     const saveLatestProgress = () => {
-      if (!hasProgressSnapshot || completionSaved || latestProgress <= 0 || isReadingComplete(latestProgress)) return;
+      if (!hasProgressSnapshot || state.completed || latestProgress <= 0 || isReadingComplete(latestProgress)) return;
       const percent = Math.round(latestProgress * 100);
-      if (percent === lastWrittenProgress) return;
-      lastWrittenProgress = percent;
+      if (percent === state.lastWrittenPercent) return;
+      state.lastWrittenPercent = percent;
       lastReadingSaveRef.current = Date.now();
       saveReadingHistory({ postId: post.id, progress: latestProgress });
     };
@@ -1282,20 +1295,26 @@ export const Post = () => {
       // The first measurement is only a baseline. Reaching the end counts as
       // complete after a real scroll event, preventing short posts from being
       // completed merely because their initial page has no scroll range.
-      if (hasScrolledSinceMount && isReadingComplete(progress)) {
-        if (!completionSaved) {
-          completionSaved = true;
-          lastWrittenProgress = 100;
+      if (state.hasScrolled && isReadingComplete(progress)) {
+        if (!state.completed) {
+          // 读完即视为结束：删除“继续阅读”记录；本次会话内不再写任何部分进度，
+          // 避免滚回上方后把已完成的文章重新加回主页卡片。
+          state.completed = true;
+          state.lastWrittenPercent = 100;
           lastReadingSaveRef.current = now;
           saveReadingHistory({ postId: post.id, progress });
         }
         return;
       }
+      // 会话已完成：丢弃后续一切写入（含 effect 重跑后的首次测量）。
+      if (state.completed) {
+        return;
+      }
       // 进度为 0（正文尚未进入阅读区，或滚回页面顶部）时不写入，避免覆盖既有记录。
       if (progress <= 0 || isReadingComplete(progress) || now - lastReadingSaveRef.current < 1000) return;
       const percent = Math.round(progress * 100);
-      if (percent === lastWrittenProgress) return;
-      lastWrittenProgress = percent;
+      if (percent === state.lastWrittenPercent) return;
+      state.lastWrittenPercent = percent;
       lastReadingSaveRef.current = now;
       saveReadingHistory({ postId: post.id, progress });
     };
@@ -1303,7 +1322,7 @@ export const Post = () => {
       if (!animationFrame) animationFrame = window.requestAnimationFrame(updateReadingHistory);
     };
     const handleScroll = () => {
-      hasScrolledSinceMount = true;
+      state.hasScrolled = true;
       scheduleUpdate();
     };
 

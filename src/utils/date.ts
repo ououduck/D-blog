@@ -11,11 +11,20 @@ export const parseISODate = (dateText: string) => {
   const month = Number.parseInt(monthText, 10);
   const day = Number.parseInt(dayText, 10);
 
-  if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)
+    || month < 1 || month > 12 || day < 1 || day > 31) {
     return new Date(Number.NaN);
   }
 
-  return new Date(year, month - 1, day);
+  const date = new Date(year, month - 1, day);
+  // new Date() 会把越界日期静默滚期（如 2026-02-30 → 2026-03-02、2026-13-01 → 2027-01-01），
+  // 不会产生 Invalid Date，导致 formatDate 的兜底失效。构造后回查各字段确认输入
+  // 日历日真实存在，否则按无效日期处理。
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return new Date(Number.NaN);
+  }
+
+  return date;
 };
 
 export const getDateTimestamp = (dateText: string) => {

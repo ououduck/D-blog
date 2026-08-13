@@ -142,111 +142,9 @@ const countWords = (markdown) => {
 
 const countImages = (markdown) => parseMarkdownImages(markdown).length;
 
-const readImageDimensions = (filePath) => {
-  try {
-    const buffer = fs.readFileSync(filePath);
-    const extension = path.extname(filePath).toLowerCase();
-
-    if (extension === '.png' && buffer.length >= 24 && buffer.toString('ascii', 1, 4) === 'PNG') {
-      return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
-    }
-
-    if (extension === '.gif' && buffer.length >= 10 && buffer.toString('ascii', 0, 3) === 'GIF') {
-      return { width: buffer.readUInt16LE(6), height: buffer.readUInt16LE(8) };
-    }
-
-    if (extension === '.webp' && buffer.length >= 20 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') {
-      let chunkOffset = 12;
-
-      while (chunkOffset + 8 <= buffer.length) {
-        const chunk = buffer.toString('ascii', chunkOffset, chunkOffset + 4);
-        const chunkSize = buffer.readUInt32LE(chunkOffset + 4);
-        const dataOffset = chunkOffset + 8;
-        const dataEnd = dataOffset + chunkSize;
-
-        if (dataEnd > buffer.length) {
-          break;
-        }
-
-        if (chunk === 'VP8X' && chunkSize >= 10) {
-          return {
-            width: 1 + buffer.readUIntLE(dataOffset + 4, 3),
-            height: 1 + buffer.readUIntLE(dataOffset + 7, 3)
-          };
-        }
-
-        if (
-          chunk === 'VP8 '
-          && chunkSize >= 10
-          && buffer[dataOffset + 3] === 0x9d
-          && buffer[dataOffset + 4] === 0x01
-          && buffer[dataOffset + 5] === 0x2a
-        ) {
-          return {
-            width: buffer.readUInt16LE(dataOffset + 6) & 0x3fff,
-            height: buffer.readUInt16LE(dataOffset + 8) & 0x3fff
-          };
-        }
-
-        if (chunk === 'VP8L' && chunkSize >= 5 && buffer[dataOffset] === 0x2f) {
-          const bits = buffer.readUInt32LE(dataOffset + 1);
-          return { width: (bits & 0x3fff) + 1, height: ((bits >> 14) & 0x3fff) + 1 };
-        }
-
-        chunkOffset = dataEnd + (chunkSize % 2);
-      }
-    }
-
-    if (extension === '.jpg' || extension === '.jpeg') {
-      if (buffer.length < 4 || buffer.readUInt16BE(0) !== 0xffd8) return undefined;
-      let offset = 2;
-      while (offset + 9 < buffer.length) {
-        if (buffer[offset] !== 0xff) {
-          offset += 1;
-          continue;
-        }
-        const marker = buffer[offset + 1];
-        offset += 2;
-        if (marker === 0xd8 || marker === 0xd9) continue;
-        if (offset + 2 > buffer.length) break;
-        const segmentLength = buffer.readUInt16BE(offset);
-        if (segmentLength < 2 || offset + segmentLength > buffer.length) break;
-        const isStartOfFrame = marker >= 0xc0 && marker <= 0xc3
-          || marker >= 0xc5 && marker <= 0xc7
-          || marker >= 0xc9 && marker <= 0xcb
-          || marker >= 0xcd && marker <= 0xcf;
-        if (isStartOfFrame && segmentLength >= 7) {
-          return { width: buffer.readUInt16BE(offset + 5), height: buffer.readUInt16BE(offset + 3) };
-        }
-        offset += segmentLength;
-      }
-    }
-  } catch {
-    return undefined;
-  }
-
-  return undefined;
-};
-
-// 外链图片无法在构建期读取尺寸，返回 undefined（下游 coverWidth/coverHeight 为空，
-// 由 CSS aspect-ratio 兜底）。本地路径（已废弃）同样返回 undefined。
-const normalizeLocalImageUrl = (value) => {
-  if (!value) return undefined;
-  const raw = String(value).trim();
-  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return undefined;
-  return undefined;
-};
-
-const extractImageDimensions = (markdown) => {
-  const dimensions = {};
-  parseMarkdownImages(markdown).forEach(({ target }) => {
-    const resolved = normalizeLocalImageUrl(target);
-    if (resolved?.dimensions?.width && resolved.dimensions.height) {
-      dimensions[resolved.url] = resolved.dimensions;
-    }
-  });
-  return Object.keys(dimensions).length > 0 ? dimensions : undefined;
-};
+// 外链图片（图床）无法在构建期读取尺寸：coverWidth/coverHeight 恒为空，
+// 由前端 CSS aspect-ratio 兜底；正文图片维度（imageDimensions）也一并停用。
+// 本地图片路径已废弃，post-content-validator 会直接拒绝。
 
 const generateSiteStats = (postsWithSearch) => {
   const totalPosts = postsWithSearch.length;
@@ -371,9 +269,13 @@ const formatFrontmatterDate = (value) => {
   }
 
   if (value instanceof Date) {
-    const year = value.getFullYear();
-    const month = String(value.getMonth() + 1).padStart(2, '0');
-    const day = String(value.getDate()).padStart(2, '0');
+    // gray-matter（js-yaml timestamp）把 "2026-08-13" 解析为 UTC 午夜。
+    // 必须用 UTC 读取各字段：若用本地时区 getters，在 UTC-5/-8 等负偏移
+    // 机器上构建会把日期整体提前一天（如 2026-08-13 → 2026-08-12），
+    // 影响文章排序、RSS pubDate 与 sitemap lastmod。
+    const year = value.getUTCFullYear();
+    const month = String(value.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(value.getUTCDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 
@@ -588,10 +490,6 @@ const buildPost = (record) => {
   const category = normalizeCategory(data.category);
   const tags = normalizeTagsStrict(data.tags);
   const normalizedCoverImage = normalizeCoverImage(data.coverImage);
-  const coverDimensions = normalizedCoverImage && !/^[a-z][a-z0-9+.-]*:/i.test(normalizedCoverImage)
-    ? normalizeLocalImageUrl(normalizedCoverImage)?.dimensions
-    : undefined;
-  const imageDimensions = extractImageDimensions(content);
   const isSeries = data.series === true;
   const seriesName = isSeries && typeof data['series-name'] === 'string' ? data['series-name'].trim() : undefined;
   const seriesOrder = isSeries && Number.isInteger(data['series-order']) ? data['series-order'] : undefined;
@@ -608,9 +506,6 @@ const buildPost = (record) => {
     excerpt: data.excerpt,
     ...(isSeries ? { series: true, seriesName, seriesOrder } : {}),
     coverImage: normalizedCoverImage,
-    coverWidth: coverDimensions?.width,
-    coverHeight: coverDimensions?.height,
-    imageDimensions,
     category,
     tags,
     date: formattedDate,
@@ -634,14 +529,7 @@ postRecords.forEach((record) => {
     publishedPosts: publishedPostIndex,
     staticRoutes: DEFAULT_STATIC_ROUTES,
     skipFrontMatter: true,
-    lineOffset: record.contentStartLine,
-    getImageDimensions: (url, filePath) => {
-      const asset = imageManifest.assets?.[url];
-      if (asset?.width && asset?.height) {
-        return { width: asset.width, height: asset.height };
-      }
-      return readImageDimensions(filePath);
-    }
+    lineOffset: record.contentStartLine
   }));
 });
 
@@ -782,10 +670,10 @@ const generateSitemap = () => {
 </urlset>`;
   fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap-posts.xml'), postsXml);
 
-  // 3. 图片 sitemap：收录文章封面与正文图片（含 PicGo 图床外链）。
+  // 3. 图片 sitemap：收录文章封面。正文图片（PicGo 图床外链）不在此枚举：
+  //    其 URL 已出现在页面 <img> 与 og:image 中，Google 可据此索引。
   //    Google image sitemap 规范允许 image:loc 指向自有 CDN；img.pldduck.com
-  //    为站点自有图床域名，收录后可提升 Google Images 对文章图片的发现与索引。
-  //    动态数据（data:、blob:）与无法确认可抓取的 URL 一律剔除。
+  //    为站点自有图床域名。动态数据（data:、blob:）与无法确认可抓取的 URL 一律剔除。
   const isIndexableImage = (url) => {
     const clean = String(url).split(/[?#]/, 1)[0].toLowerCase();
     if (!/^https?:\/\//.test(clean)) return false;
@@ -798,21 +686,16 @@ const generateSitemap = () => {
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   ${posts
     .map((post) => {
-      // 封面与正文图按 URL 去重：部分文章正文会再次引用封面图，
-      // 避免 image sitemap 中出现重复条目。
-      const seen = new Set();
       const images = [];
       const addImage = (imageUrl) => {
         const normalized = normalizeImageUrl(imageUrl);
-        if (isIndexableImage(imageUrl) && !seen.has(normalized)) {
-          seen.add(normalized);
+        if (isIndexableImage(imageUrl) && !images.some((entry) => entry.loc === normalized)) {
           images.push({ loc: normalized, title: post.title });
         }
       };
       if (post.coverImage) {
         addImage(post.coverImage);
       }
-      Object.keys(post.imageDimensions || {}).forEach(addImage);
       if (images.length === 0) {
         return '';
       }

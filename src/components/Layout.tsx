@@ -10,7 +10,7 @@ import { pingBusuanzi } from '@/services/busuanzi';
 import { ProgressiveImage } from './ProgressiveImage';
 import { ISSUE_SUBSCRIPTION_URL } from './IssueSubscriptionCard';
 import { useReducedMotion as useSiteReducedMotion } from '@/hooks/useReducedMotion';
-import { hasOpenOverlay } from '@/hooks/useModalOverlay';
+import { hasOpenOverlay, lockBodyScroll, unlockBodyScroll } from '@/hooks/useModalOverlay';
 import { useReadingMode, ReadingModeProvider } from './ReadingModeContext';
 import { easeSmooth, routeTransition } from '@/utils/motion';
 
@@ -83,10 +83,13 @@ const ThemeToggle = () => {
     const systemQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
     // 水合后恢复用户保存的主题。SSR 首帧固定为 system，避免水合冲突。
+    // 该覆盖只在首次挂载（水合恢复）时生效：用户之后显式切到“跟随系统”必须
+    // 真正生效，不能被 localStorage 里旧的亮/暗选择反向覆盖（否则一旦选过
+    // 亮/暗，system 选项就永远无法通过按钮到达）。
     let effectiveTheme: Theme = theme;
     try {
       const saved = localStorage.getItem('theme') as Theme | null;
-      if (theme === 'system' && saved && saved !== 'system') {
+      if (!hasInitializedThemeRef.current && theme === 'system' && saved && saved !== 'system') {
         effectiveTheme = saved;
       }
     } catch {
@@ -541,17 +544,19 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     }
 
     const htmlOverflow = document.documentElement.style.overflow;
-    const bodyOverflow = document.body.style.overflow;
     const htmlOverscrollBehavior = document.documentElement.style.overscrollBehavior;
 
     document.documentElement.style.overflow = 'hidden';
     document.documentElement.style.overscrollBehavior = 'none';
-    document.body.style.overflow = 'hidden';
+    // body 滚动锁走共享计数锁：与弹层（搜索/分享等）叠加时按打开顺序计数、
+    // 关闭时逐个释放，避免“菜单先关、弹层后关”或同时关闭时恢复互相覆盖，
+    // 导致页面永久锁滚或弹层未关就恢复滚动。
+    lockBodyScroll();
 
     return () => {
       document.documentElement.style.overflow = htmlOverflow;
       document.documentElement.style.overscrollBehavior = htmlOverscrollBehavior;
-      document.body.style.overflow = bodyOverflow;
+      unlockBodyScroll();
     };
   }, [isMobileNavMounted]);
 

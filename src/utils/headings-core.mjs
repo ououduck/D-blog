@@ -34,7 +34,11 @@ const decodeHtmlEntities = (text) => text.replace(/&(#x[\da-f]+|#\d+|[a-z][a-z\d
 
 /** Mask fenced and indented code while preserving line breaks for diagnostics and heading parsing. */
 export const maskFencedCodeBlocks = (markdown) => {
-  const lines = markdown.split(/(?<=\n)/);
+  // HTML 多行注释内可能出现 # 开头的行（草稿/临时注释），会被误当成真实标题
+  // 提取进 TOC/锚点。先整体遮蔽注释区（保留换行与列位），再逐行处理代码块；
+  // 顺带避免注释内的 ``` 围栏干扰代码块遮蔽。
+  const withoutComments = markdown.replace(/<!--[\s\S]*?-->/g, (comment) => comment.replace(/[^\r\n]/g, ' '));
+  const lines = withoutComments.split(/(?<=\n)/);
   let fence = null;
   let indentedCode = false;
   return lines.map((line) => {

@@ -421,10 +421,15 @@ const persistIndexedDbDelete = async (id: string, deletedAt: number): Promise<vo
   });
 };
 
-const saveIndexedDbPostIfCurrent = async (post: OfflinePost): Promise<boolean> => {
+/**
+ * 尝试把文章写入 IndexedDB，但受墓碑保护：若存在不早于本次保存的新删除则拒绝。
+ * 返回被拒时用于降级镜像写前检查的墓碑时间（newerDelete）。
+ */
+const saveIndexedDbPostIfCurrent = async (post: OfflinePost): Promise<{ accepted: boolean; newerDelete?: number }> => {
   const database = await openDatabase();
-  return new Promise<boolean>((resolve, reject) => {
+  return new Promise<{ accepted: boolean; newerDelete?: number }>((resolve, reject) => {
     let accepted = false;
+    let newerDelete: number | undefined;
     let transaction: IDBTransaction;
     try {
       transaction = database.transaction(
@@ -442,7 +447,12 @@ const saveIndexedDbPostIfCurrent = async (post: OfflinePost): Promise<boolean> =
       const commit = () => {
         completedRequests += 1;
         if (completedRequests < 2) return;
-        if (deletedAt >= post.savedAt) return;
+        if (deletedAt >= post.savedAt) {
+          // 拒绝：存在不早于本次保存的删除。把墓碑时间带回调用方，
+          // 供降级镜像的写前检查使用（见 saveOfflinePost）。
+          newerDelete = deletedAt;
+          return;
+        }
 
         accepted = true;
         if (!currentPost || post.savedAt >= currentPost.savedAt) {
@@ -469,7 +479,7 @@ const saveIndexedDbPostIfCurrent = async (post: OfflinePost): Promise<boolean> =
       reject(error);
       return;
     }
-    transaction.oncomplete = () => resolve(accepted);
+    transaction.oncomplete = () => resolve({ accepted, ...(newerDelete !== undefined ? { newerDelete } : {}) });
     transaction.onerror = () => reject(transaction.error || new Error('离线文章事务失败。'));
     transaction.onabort = () => reject(transaction.error || new Error('离线文章事务已中止。'));
   });
@@ -699,10 +709,13 @@ export const saveOfflinePost = async (post: OfflinePostInput): Promise<OfflinePo
   await prepareOfflineCache(offlinePost);
   let savedToIndexedDb = false;
   let rejectedByNewerDelete = false;
+  let idbNewerDelete: number | undefined;
   try {
     await reconcileStores();
-    savedToIndexedDb = await saveIndexedDbPostIfCurrent(offlinePost);
-    rejectedByNewerDelete = !savedToIndexedDb;
+    const saveResult = await saveIndexedDbPostIfCurrent(offlinePost);
+    savedToIndexedDb = saveResult.accepted;
+    rejectedByNewerDelete = !saveResult.accepted;
+    idbNewerDelete = saveResult.newerDelete;
   } catch {
     // 下次操作时重试 IndexedDB；localStorage 当前仍可用。
   }
@@ -710,11 +723,17 @@ export const saveOfflinePost = async (post: OfflinePostInput): Promise<OfflinePo
   let newerDeleteToPersist: number | undefined;
   try {
     await withFallbackLock(() => {
+      // 写降级镜像前同时检查 localStorage 与 IndexedDB 两处墓碑并取较新者：
+      // reconcileStores 会把 localStorage 墓碑并入 IDB 后清掉本地副本，若只看
+      // localStorage，并发保存/删除窗口内的删除决策会在此丢失，已删除文章会被
+      // 重新写进降级镜像（跨标签页“复活”）。
       const tombstones = readTombstones();
-      const newerDelete = tombstones[offlinePost.id];
-      if ((newerDelete ?? -1) >= offlinePost.savedAt) {
+      const newerDelete = Math.max(tombstones[offlinePost.id] ?? -1, idbNewerDelete ?? -1);
+      if (newerDelete >= offlinePost.savedAt) {
         rejectedByNewerDelete = true;
         newerDeleteToPersist = newerDelete;
+        tombstones[offlinePost.id] = newerDelete;
+        writeTombstones(tombstones);
         return;
       }
       const fallbackPosts = readFallbackPosts()

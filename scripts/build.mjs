@@ -96,9 +96,11 @@ const run = ({ command, args }) => new Promise((resolve) => {
     timedOut = true;
     write('timeout', `Killing stage after ${Math.round(stageTimeoutMs / 1000)}s`, `pid=${child.pid}`);
     // 先 SIGTERM 给优雅退出机会，3s 后仍不退出再 SIGKILL。
+    // 注意不能靠 child.killed 判断存活：kill() 调用后该标志同步置 true，
+    // 无论进程是否真的退出。signalCode/exitCode 在 close 事件后才被填充。
     child.kill('SIGTERM');
     setTimeout(() => {
-      if (child.exitCode === null && !child.killed) {
+      if (child.exitCode === null && !child.signalCode) {
         child.kill('SIGKILL');
       }
     }, 3000).unref();

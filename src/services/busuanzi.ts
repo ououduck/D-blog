@@ -70,6 +70,10 @@ export const pingBusuanzi = (signal?: AbortSignal): void => {
     .then((response) => response.json())
     .then((data: BusuanziResponse) => {
       const response = { pageUrl, data };
+      // 旧路由的响应晚到（路由切换后返回，AbortController 只能中断未完成的
+      // fetch）时，不得用旧路由的计数覆盖当前路由缓存 —— 否则新页面计数会
+      // 停留在「加载中」直到下一次导航。
+      if (pageUrl !== getPageUrl()) return;
       lastResponse = response;
       let frames = 0;
       const step = () => {

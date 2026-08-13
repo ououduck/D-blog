@@ -37,6 +37,7 @@
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
+import net from 'node:net';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
@@ -237,29 +238,72 @@ export const computeCooldownWaitMs = (issues, now = Date.now()) => {
 };
 
 /**
- * 判断 IP 是否为私网/保留地址（SSRF 防护：拒绝指向内网的目标）。
- * 支持 IPv4 与常见 IPv6 形式。
+ * 私网地址判定（SSRF 防护）。使用 net.BlockList 按子网前缀匹配，覆盖：
+ * - IPv4：0/8、10/8、127/8、169.254/16、172.16/12、192.168/16（与旧实现一致）；
+ * - IPv6：::1 回环、:: 未指定、fc00::/7（ULA）、fe80::/10（链路本地）。
+ * IPv4-mapped/兼容 IPv6（如 ::ffff:127.0.0.1、::ffff:7f00:1、::127.0.0.1）
+ * 先解包成 IPv4 再走 IPv4 判定 —— 旧实现只做字符串前缀匹配，这类地址会漏判，
+ * 攻击者可借 [::ffff:127.0.0.1] 之类的字面地址打到 runner 本机回环/内网。
  * @param {string} address
  * @returns {boolean} true 表示私网地址（不可访问）。
  */
+const privateIpv4BlockList = new net.BlockList();
+[
+  ['0.0.0.0', 8],
+  ['10.0.0.0', 8],
+  ['127.0.0.0', 8],
+  ['169.254.0.0', 16],
+  ['172.16.0.0', 12],
+  ['192.168.0.0', 16]
+].forEach(([subnet, prefix]) => privateIpv4BlockList.addSubnet(subnet, prefix, 'ipv4'));
+
+const privateIpv6BlockList = new net.BlockList();
+[
+  ['::', 128],
+  ['::1', 128],
+  ['fc00::', 7],
+  ['fe80::', 10]
+].forEach(([subnet, prefix]) => privateIpv6BlockList.addSubnet(subnet, prefix, 'ipv6'));
+
+/** 把 IPv4-mapped/兼容的 IPv6 地址解包为点分 IPv4；非此类形式返回 undefined。 */
+const unmapIpv4InIpv6 = (value) => {
+  const toIpv4 = (high, low) => {
+    const words = (Number.parseInt(high, 16) << 16) | Number.parseInt(low, 16);
+    return [(words >>> 24) & 0xff, (words >>> 16) & 0xff, (words >>> 8) & 0xff, words & 0xff].join('.');
+  };
+  const mappedDotted = value.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+  if (mappedDotted) return mappedDotted[1];
+  const mappedHex = value.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (mappedHex) return toIpv4(mappedHex[1], mappedHex[2]);
+  const compatibleDotted = value.match(/^::(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+  if (compatibleDotted) return compatibleDotted[1];
+  const compatibleHex = value.match(/^::([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (compatibleHex) return toIpv4(compatibleHex[1], compatibleHex[2]);
+  return undefined;
+};
+
 export const isPrivateAddress = (address) => {
-  const value = address.toLowerCase();
-  if (value.includes(':')) {
-    // IPv6：仅放行全局单播常见形态（::1 回环、fc/fd ULA、fe80 链路本地均拒绝）。
-    return value === '::1' || value.startsWith('fc') || value.startsWith('fd') || value.startsWith('fe80:');
-  }
-  const parts = value.split('.').map(Number);
-  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+  const value = String(address).toLowerCase();
+  try {
+    if (value.includes(':')) {
+      const mappedIpv4 = unmapIpv4InIpv6(value);
+      if (mappedIpv4) {
+        // 解包出的八位组来自正则（\d{1,3}），可能为 999 这类非法值；BlockList
+        // 对畸形输入不抛错而是返回 false，需先校验再查询（fail-closed）。
+        if (net.isIP(mappedIpv4) !== 4) return true;
+        return privateIpv4BlockList.check(mappedIpv4, 'ipv4');
+      }
+      // net.BlockList 对畸形 IPv6 同样不抛错而是返回 false，需先按 net.isIP 校验。
+      if (net.isIP(value) !== 6) return true;
+      return privateIpv6BlockList.check(value, 'ipv6');
+    }
+    // 畸形 IPv4（net.BlockList 不会抛错而是返回 false）无法确认非私网 → fail-closed。
+    if (net.isIP(value) !== 4) return true;
+    return privateIpv4BlockList.check(value, 'ipv4');
+  } catch {
+    // 畸形地址 fail-closed：无法确认非私网即视为私网。
     return true;
   }
-  return (
-    parts[0] === 0
-    || parts[0] === 10
-    || parts[0] === 127
-    || (parts[0] === 169 && parts[1] === 254)
-    || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31)
-    || (parts[0] === 192 && parts[1] === 168)
-  );
 };
 
 /**
