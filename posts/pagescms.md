@@ -1,6 +1,6 @@
 ---
 id: pagescms
-title: 静态博客 接入 PagesCMS
+title: 静态博客接入 PagesCMS
 excerpt: 为静态博客新增一个文章管理/写作Web后台 - PagesCMS
 date: 2026-08-13
 updatedAt: 2026-08-13
