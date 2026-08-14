@@ -262,6 +262,16 @@ html.theme-switching .editorial-input {
   100% { transform: translateX(100%); }
 }
 
+/* 已失联友链头像右下角的红色闪烁小点（由 friend-link-check Action 标记） */
+.friend-dead-dot {
+  animation: friend-dead-dot-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes friend-dead-dot-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+
 .nav-more-menu-panel {
   opacity: 0;
   pointer-events: none;
@@ -360,7 +370,8 @@ html.theme-switching .editorial-input {
 
   .animate-spin,
   .animate-pulse,
-  .animate-ping {
+  .animate-ping,
+  .friend-dead-dot {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
   }
@@ -506,6 +517,16 @@ html.theme-switching .editorial-input {
   }
   .copy-pop {
     animation: copy-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* 说说定位高亮：通过 ?id= 参数定位到某条说说时，卡片短暂脉冲提示 */
+  @keyframes shuoshuo-highlight-pulse {
+    0% { box-shadow: 0 0 0 3px rgb(59 130 246 / 0.3); background-color: rgb(59 130 246 / 0.06); }
+    60% { box-shadow: 0 0 0 3px rgb(59 130 246 / 0.3); background-color: rgb(59 130 246 / 0.06); }
+    100% { box-shadow: 0 0 0 0 rgb(59 130 246 / 0); background-color: transparent; }
+  }
+  .shuoshuo-highlight {
+    animation: shuoshuo-highlight-pulse 2.4s ease-out 1;
   }
 
   .code-scroll {

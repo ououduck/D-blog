@@ -44,6 +44,8 @@ export interface Friend {
   description: string;
   avatar: string;
   url: string;
+  /** 已失联标记：由友链可用状态检查 Action 自动维护，true 时在友链页归入「已失联的博客」板块。 */
+  unavailable?: boolean;
 }
 
 /** 说说（短动态）：类似朋友圈的一句话内容，正文为 Markdown，images 为可选九宫格图片。 */

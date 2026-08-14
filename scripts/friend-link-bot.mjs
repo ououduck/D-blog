@@ -21,7 +21,7 @@
  *    统一识别）与 RateLimitError：二次限流时 `instanceof RateLimitError` 断点
  *    生效，整批暂停机制不再失效（上版 429 走普通 Error，降级机制形同虚设）。
  * 4. 【字段解析容错】parseApplication 允许 `- Site URL:`（冒号前无空格）、
- *    值内换行续行折叠；avatar 字段降级为可选（缺省用默认头像占位）——
+ *    值内换行续行折叠；avatar 字段降级为可选（缺省用站点 logo 占位）——
  *    申请者微调模板或换行写值不再整单作废。
  * 5. 【mailto 注入净化】buildManualReviewSection 的 mailto body 先 \r\n → 空格，
  *    消除 mailto 头注入（上版把含换行的原正文直接塞进 mailto 链接）。
@@ -30,6 +30,13 @@
  * 7. 【Summary 面板】processReview 结束后输出 Job Summary 表格
  *    （processed/skipped/rejected/accepted/exists/failed），运行结果在
  *    Actions 页面顶部一眼可见。
+ * 8. 【审核通过自动上线】accept 提交推送成功后显式 dispatch deploy.yml ——
+ *    GITHUB_TOKEN 的 git push 不会触发任何 workflow（GitHub 明确排除），
+ *    必须显式触发 workflow_dispatch 才能自动构建部署；dispatch 失败仅告警，
+ *    友链文件已入库，由手动部署兜底（workflow 需配 actions: write 权限）。
+ * 9. 【缺省头像落地】avatar 缺失时写入站点 logo 占位 —— 修复"注释声称占位
+ *    但未实现"的问题：原实现写空字符串，构建端因 avatar 必填而静默丢弃
+ *    已被接受的友链，导致"审核通过但永不显示"。
  *
  * 运行环境要求：GITHUB_TOKEN / GITHUB_REPOSITORY / ISSUE_PAYLOAD（opened 模式）。
  */
@@ -49,7 +56,8 @@ import {
   sleep,
   RateLimitError,
   PaginationLimitError,
-  readResponseText
+  readResponseText,
+  GITHUB_API_VERSION
 } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
@@ -78,6 +86,12 @@ const REJECTED_MARKER = '<!-- d-blog-friend-bot:rejected -->';
 const SITE_URL = process.env.FRIEND_LINK_SITE_URL || 'https://blog.pldduck.com/';
 const SITE_NAME = process.env.FRIEND_LINK_SITE_NAME || 'D-blog';
 const SITE_DESCRIPTION = process.env.FRIEND_LINK_SITE_DESCRIPTION || '跑路的duck的技术分享和生活随笔';
+
+/** 缺省头像：申请缺 avatar 时用站点 logo 占位（可 env 覆盖）。 */
+export const DEFAULT_AVATAR_URL = process.env.FRIEND_LINK_DEFAULT_AVATAR || new URL('logo.png', SITE_URL).toString();
+
+/** 审核通过后触发部署的工作流文件名（workflow_dispatch 的 workflow_id）。 */
+const DEPLOY_WORKFLOW = process.env.FRIEND_LINK_DEPLOY_WORKFLOW || 'deploy.yml';
 
 /** 友链页抓取的最大响应字节数（防超大附件拖垮内存/带宽）。 */
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
@@ -435,6 +449,55 @@ const closeIssue = (number, reason) =>
   });
 
 /**
+ * 触发部署工作流（deploy.yml，workflow_dispatch 手动部署），让审核通过的
+ * 友链真正上线：
+ * - bot 用 GITHUB_TOKEN 的 git push 不会触发任何 workflow（GitHub 明确排除
+ *   GITHUB_TOKEN 引发的事件），而 workflow_dispatch 是少数例外，可被
+ *   GITHUB_TOKEN 显式触发 —— 因此「写入 + 推送 + dispatch 部署」三步闭环。
+ * - dispatch 失败不抛错（友链文件已入库，站长手动部署仍可上线），只告警，
+ *   由下一次成功 dispatch 或手动部署兜底。
+ * - 注意：本端点响应为 204 No Content，不能走 fetchGithubJson（其会尝试
+ *   response.json()），故直接用 fetchWithRetry。
+ * @returns {Promise<boolean>} 是否成功触发部署。
+ */
+export const dispatchDeploy = async () => {
+  const payload = JSON.stringify({ repository: { ref: TARGET_BRANCH } });
+  const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(DEPLOY_WORKFLOW)}/dispatches`;
+  try {
+    const response = await fetchWithRetry(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${token}`,
+        'X-GitHub-Api-Version': GITHUB_API_VERSION,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ref: TARGET_BRANCH, inputs: { payload } })
+    }, {
+      retries: 2,
+      onRetry: (info) => logger.warn('Retrying deploy workflow dispatch', {
+        attempt: info.attempt,
+        status: info.status ?? 'network',
+        delayMs: info.delayMs
+      })
+    });
+    if (!response.ok) {
+      const bodyText = await readResponseText(response, { maxBytes: 4096 }).catch(() => '');
+      throw new Error(`deploy dispatch returned HTTP ${response.status}: ${bodyText.slice(0, 300)}`);
+    }
+    logger.info('Deploy workflow dispatched', { workflow: DEPLOY_WORKFLOW, ref: TARGET_BRANCH });
+    return true;
+  } catch (error) {
+    logger.warn('Failed to dispatch deploy workflow; friend file is committed and will appear on next manual deploy', {
+      workflow: DEPLOY_WORKFLOW,
+      ref: TARGET_BRANCH,
+      error: formatError(error)
+    });
+    return false;
+  }
+};
+
+/**
  * 分页拉取某个 issue 的全部评论（修复只取第一页导致的 marker 漏检）。
  * @param {number} number issue 编号。
  * @returns {Promise<Array<{ body?: string }>>}
@@ -555,7 +618,7 @@ const writeFriendFile = async (application) => {
   const data = {
     name: application.name,
     description: application.description,
-    avatar: application.avatar || '',
+    avatar: application.avatar || DEFAULT_AVATAR_URL,
     url: application.url
   };
   await fs.writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
@@ -732,7 +795,7 @@ const processIssue = async (issue) => {
   const sha = await commitAndPushFriendFile(filePath, issueNumber);
   await postComment(
     issueNumber,
-    `${ACCEPTED_MARKER}\n\n## 友链申请已通过\n\n- **审核结果**：通过\n- **反链检查**：已找到 D-blog 反链\n- **添加文件**：\`${filePath}\`\n- **Commit**：\`${sha}\`\n- **Issue 状态**：已关闭\n\n友链将在下一次站点部署后显示。感谢申请！`
+    `${ACCEPTED_MARKER}\n\n## 友链申请已通过\n\n- **审核结果**：通过\n- **反链检查**：已找到 D-blog 反链\n- **添加文件**：\`${filePath}\`\n- **Commit**：\`${sha}\`\n- **Issue 状态**：已关闭\n\n友链已写入仓库并自动触发部署，稍后即可在站点显示。感谢申请！`
   );
   await closeIssue(issueNumber, 'completed');
   return 'accepted';
@@ -815,6 +878,14 @@ const processReview = async () => {
       });
       stats.failed += 1;
     }
+  }
+
+  // 审核通过 ≥1 个：触发部署工作流，让新增友链真正上线。
+  // GITHUB_TOKEN 的 push 不会触发任何 workflow，必须显式 dispatch；
+  // 批次内多次通过共享一次部署（deploy-site 的 cancel-in-progress 会
+  // 自动合并连续触发，避免重复构建）。
+  if (stats.accepted > 0) {
+    await dispatchDeploy();
   }
 
   if (pending.length > batch.length) {

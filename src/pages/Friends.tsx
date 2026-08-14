@@ -24,12 +24,85 @@ const EMPTY_APPLICATION_VALUES: FriendLinkApplicationValues = {
   reciprocalLinkConfirmed: false,
 };
 
+const getFriendDomain = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+};
+
+interface FriendCardProps {
+  friend: Friend;
+  /** 已失联样式：头像右下角红色闪烁小点 + 「已失联」角标 + 弱化边框。 */
+  unavailable?: boolean;
+}
+
+/**
+ * 友链卡片：正常友链与已失联友链共用同一布局，保证两板块视觉一致。
+ * 已失联状态由 friend-link-check Action 在 friends/*.json 中写入
+ * `"unavailable": true` 标记（详见 scripts/friend-link-check.mjs）。
+ */
+const FriendCard = ({ friend, unavailable = false }: FriendCardProps) => {
+  const shouldReduceMotion = useReducedMotion();
+  return (
+    <motion.a
+      variants={shouldReduceMotion ? undefined : fadeInUp}
+      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.14, ease: easeOut }}
+      href={friend.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`group relative block h-full rounded-surface border bg-paper p-5 transition-colors duration-150 hover:border-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:bg-zinc-900 dark:focus-visible:outline-zinc-100 ${
+        unavailable
+          ? 'border-red-300/70 opacity-80 dark:border-red-900/60 dark:hover:border-red-500'
+          : 'border-zinc-300 hover:border-ink dark:border-zinc-700 dark:hover:border-white dark:focus-visible:border-white'
+      }`}
+    >
+      {unavailable && (
+        <span className="absolute left-0 top-0 z-10 rounded-br-lg border-b border-r border-red-300/70 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600 dark:border-red-900/60 dark:bg-red-950/60 dark:text-red-400">
+          已失联
+        </span>
+      )}
+      <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 group-focus-visible:opacity-100 dark:text-zinc-500">
+        <ExternalLink size={16} />
+      </div>
+      <div className="flex items-start gap-4 pr-5">
+        <div className="relative h-14 w-14 flex-shrink-0">
+          <div className="h-14 w-14 overflow-hidden rounded-full border border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900">
+            <ProgressiveImage src={friend.avatar} alt={friend.name} wrapperClassName="h-full w-full" className="h-full w-full object-cover object-center" effect="fade" />
+          </div>
+          {unavailable && (
+            <span aria-hidden="true" className="friend-dead-dot absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-paper bg-red-500 dark:border-zinc-900" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className={`mb-1 truncate font-serif text-lg font-bold transition-colors group-hover:text-zinc-700 dark:group-hover:text-zinc-300 ${
+            unavailable ? 'text-zinc-700 dark:text-zinc-300' : 'text-zinc-900 dark:text-zinc-100'
+          }`}>
+            {friend.name}
+          </h2>
+          <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{friend.description}</p>
+          <div className={`mt-3 inline-flex max-w-full items-center gap-1.5 border-b py-1 text-xs font-medium ${
+            unavailable
+              ? 'border-red-300/60 text-red-500/90 dark:border-red-900/50 dark:text-red-400/90'
+              : 'border-zinc-300 text-zinc-500 dark:border-zinc-700 dark:text-zinc-400'
+          }`}>
+            <Globe2 size={12} />
+            <span className="truncate">{getFriendDomain(friend.url)}</span>
+          </div>
+        </div>
+      </div>
+    </motion.a>
+  );
+};
+
 // 构建期 SSG：friends.json 已通过 eager glob 内联，SSR 阶段即可同步渲染友链列表，
 // 客户端水合首帧与 SSR 输出一致；异步重取仅用于“重新加载”。
 const initialFriends = getInitialFriends();
 
 export const Friends = () => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDeadExpanded, setIsDeadExpanded] = useState(false);
   const [currentApplicationStep, setCurrentApplicationStep] = useState(1);
   const [friends, setFriends] = useState<Friend[]>(initialFriends);
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,13 +184,6 @@ export const Friends = () => {
     setCurrentApplicationStep((current) => Math.max(current, step));
   };
 
-  const getFriendDomain = (url: string) => {
-    try {
-      return new URL(url).hostname.replace(/^www\./, '');
-    } catch {
-      return url;
-    }
-  };
   const filteredFriends = useMemo(() => {
     const keyword = searchQuery.trim().toLocaleLowerCase();
     if (!keyword) {
@@ -129,6 +195,17 @@ export const Friends = () => {
       return [friend.name, friend.description, domain].some((value) => value.toLocaleLowerCase().includes(keyword));
     });
   }, [friends, searchQuery]);
+
+  // 已失联友链（friend.unavailable === true，由检查 Action 维护）与正常友链分开渲染：
+  // 正常友链留在主列表，失联友链全部归入下方「已失联的博客」折叠板块。
+  const activeFriends = useMemo(
+    () => filteredFriends.filter((friend) => friend.unavailable !== true),
+    [filteredFriends]
+  );
+  const unavailableFriends = useMemo(
+    () => filteredFriends.filter((friend) => friend.unavailable === true),
+    [filteredFriends]
+  );
 
   return (
     <div className="pb-12 pt-8 md:pb-20 md:pt-12">
@@ -418,36 +495,9 @@ export const Friends = () => {
       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" aria-busy={loading}>
         {!loading &&
           !loadError &&
-          filteredFriends.length > 0 &&
-          filteredFriends.map((friend, index) => (
-            <motion.a
-              key={`${friend.url}-${index}`}
-              variants={itemVariants}
-              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.14, ease: easeOut }}
-              href={friend.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative block h-full rounded-surface border border-zinc-300 bg-paper p-5 transition-colors duration-150 hover:border-ink focus-visible:border-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-white dark:focus-visible:border-white dark:focus-visible:outline-zinc-100"
-            >
-              <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 group-focus-visible:opacity-100 dark:text-zinc-500">
-                <ExternalLink size={16} />
-              </div>
-              <div className="flex items-start gap-4 pr-5">
-                <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-full border border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900">
-                  <ProgressiveImage src={friend.avatar} alt={friend.name} wrapperClassName="h-full w-full" className="h-full w-full object-cover object-center" effect="fade" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="mb-1 truncate font-serif text-lg font-bold text-zinc-900 transition-colors group-hover:text-zinc-700 dark:text-zinc-100 dark:group-hover:text-zinc-300">
-                    {friend.name}
-                  </h2>
-                  <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{friend.description}</p>
-                  <div className="mt-3 inline-flex max-w-full items-center gap-1.5 border-b border-zinc-300 py-1 text-xs font-medium text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
-                    <Globe2 size={12} />
-                    <span className="truncate">{getFriendDomain(friend.url)}</span>
-                  </div>
-                </div>
-              </div>
-            </motion.a>
+          activeFriends.length > 0 &&
+          activeFriends.map((friend, index) => (
+            <FriendCard key={`${friend.url}-${index}`} friend={friend} />
           ))}
 
         {loading && <LoadingStatus label="正在加载友情链接" className="col-span-full" />}
@@ -470,12 +520,98 @@ export const Friends = () => {
             </motion.div>
           ))}
 
+        {!loading && !loadError && filteredFriends.length > 0 && activeFriends.length === 0 && (
+          <div className="col-span-full border-y border-dashed border-red-300 py-10 text-center text-sm text-zinc-500 dark:border-red-900/50 dark:text-zinc-400">
+            匹配的友链均位于下方「已失联的博客」板块中。
+          </div>
+        )}
+
         {!loading && !loadError && filteredFriends.length === 0 && (
           <div className="col-span-full border-y border-dashed border-zinc-300 py-10 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
             没有找到匹配的友链，试试更短的关键词。
           </div>
         )}
       </motion.div>
+
+      {/* 已失联的博客：由友链可用状态检查 Action（scripts/friend-link-check.mjs）维护，
+          每次运行后失联/恢复状态会随 friends/*.json 更新并在此处体现。 */}
+      <div className="mb-3 border-y border-zinc-200 dark:border-zinc-800">
+        <button
+          type="button"
+          onClick={() => setIsDeadExpanded(!isDeadExpanded)}
+          className="flex w-full items-center justify-between gap-4 py-4 text-left transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
+          aria-expanded={isDeadExpanded}
+          aria-controls="dead-friend-link-panel"
+        >
+          <div className="min-w-0 flex-1">
+            <span className="flex items-center gap-2 text-base font-semibold text-zinc-950 dark:text-white">
+              已失联的博客
+              <span
+                className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+                  unavailableFriends.length > 0
+                    ? 'bg-red-100 text-red-600 dark:bg-red-950/70 dark:text-red-400'
+                    : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
+                }`}
+              >
+                {unavailableFriends.length}
+              </span>
+            </span>
+            <p className="mt-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+              以下友链暂时无法正常访问，恢复上线后将自动回到上方列表
+            </p>
+          </div>
+          <motion.div
+            animate={{ rotate: isDeadExpanded ? 180 : 0 }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: easeOut }}
+            className="flex-shrink-0"
+          >
+            <ChevronDown size={18} className="text-zinc-500 dark:text-zinc-400" />
+          </motion.div>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {isDeadExpanded && (
+            <motion.div
+              id="dead-friend-link-panel"
+              key="dead-friend-link-content"
+              initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.28, ease: easeOut }}
+              className="overflow-hidden"
+            >
+              <div className="border-t border-zinc-200 pb-5 pt-5 dark:border-zinc-800 sm:pb-6 sm:pt-6">
+                {unavailableFriends.length > 0 ? (
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+                  >
+                    {unavailableFriends.map((friend, index) => (
+                      <FriendCard key={`${friend.url}-${index}`} friend={friend} unavailable />
+                    ))}
+                  </motion.div>
+                ) : (
+                  <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                    目前没有失联的友链，所有友链均可正常访问 🎉
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <p className="mb-12 text-sm text-zinc-500 dark:text-zinc-400">
+        如果有任何疑问，请联系邮箱{' '}
+        <a
+          href="mailto:i@pldduck.com"
+          className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition-colors hover:text-zinc-950 hover:decoration-zinc-500 dark:text-zinc-300 dark:decoration-zinc-700 dark:hover:text-white dark:hover:decoration-zinc-400"
+        >
+          i@pldduck.com
+        </a>
+      </p>
 
       <SlideModal
         isOpen={Boolean(applicationResult)}
@@ -531,3 +667,7 @@ export const Friends = () => {
     </div>
   );
 };
+
+
+
+

@@ -661,7 +661,10 @@ const friends = friendFiles.flatMap((filename) => {
         name: data.name.trim(),
         description: data.description.trim(),
         avatar: friendAvatar,
-        url: friendUrl
+        url: friendUrl,
+        // 已失联标记透传（由 friend-link-check Action 维护）：仅 true 时输出，
+        // 保持产物精简；false/缺失视为正常状态。
+        ...(data.unavailable === true ? { unavailable: true } : {})
       }
     ];
   } catch (error) {

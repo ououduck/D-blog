@@ -1,0 +1,57 @@
+# friend-link-check.yml — 友链可用状态检查（手动触发）。
+#
+# 每次执行都会逐个访问 friends/ 目录下所有友链的站点地址：
+# - 无法访问的友链写入 `"unavailable": true`（友链页归入「已失联的博客」板块）；
+# - 之前已失联、本次重新可以访问的友链自动删除标记恢复为正常状态；
+# - 结果以单个 commit 推送回仓库（不部署站点，部署仍走「🚀 部署」按钮）。
+#
+# 触发方式（仅 workflow_dispatch）：
+#   1. Pages CMS 侧边栏「🩺 检查友链可用状态」按钮（见 .pages.yml 的 actions 段），
+#   2. GitHub Actions 页面手动 Run workflow（payload 最小可用 {"repository":{"ref":"main"}}）。
+#
+# Pages CMS 会以 JSON 字符串填充 inputs.payload（含 repository.ref / sha、触发人等），
+# 协议见 https://pagescms.org/docs/configuration/actions/
+name: Friend Link Health Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: 'Pages CMS payload as JSON，手动触发可用 {"repository":{"ref":"main"}}'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  # 连续触发串行执行，避免两次检查同时 push 相互冲突。
+  group: friend-link-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # 逐个访问全部友链（并发 4、每站点最多 3 次尝试 × 20s 超时），
+    # 几十个友链的量级下几分钟内可完成，15 分钟上限留足余量。
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # 完整历史：脚本 push 需要本地 HEAD 与远端一致，fetch-depth: 0 避免浅克隆 push 失败。
+          fetch-depth: 0
+          # Pages CMS 触发时按 CMS 当前打开的分支（main）检出，
+          # 保证脚本读取到最新保存的友链数据；手动触发时回退到触发分支。
+          ref: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || '' }}
+
+      - name: Show dispatch context
+        run: |
+          echo "Ref: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || github.ref }}"
+          echo "Triggered by: ${{ inputs.payload != '' && fromJSON(inputs.payload).triggeredBy.githubUsername || 'manual' }}"
+
+      - name: Check friend link availability
+        # git push 由 actions/checkout 配置的仓库凭据完成，脚本无需 GITHUB_TOKEN。
+        env:
+          FRIEND_LINK_TARGET_BRANCH: ${{ github.ref_name }}
+        run: node scripts/friend-link-check.mjs

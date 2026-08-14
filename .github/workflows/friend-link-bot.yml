@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
   issues: write
+  # 审核通过后需显式 dispatch deploy.yml 触发构建部署（GITHUB_TOKEN 的
+  # push 不会触发任何 workflow，workflow_dispatch 是少数可由 GITHUB_TOKEN
+  # 触发的例外），因此需要 actions: write。
+  actions: write
 
 concurrency:
   # 事件驱动（无定时轮询）：仅在有人提交友链申请（或手动 dispatch）时运行，
