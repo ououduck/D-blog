@@ -65,10 +65,6 @@ const moreNavItems: NavItem[] = [
   { key: 'issue-subscription', label: '\u8ba2\u9605', hint: '\u63a5\u6536\u6587\u7ae0\u63d0\u9192', icon: Bell, href: ISSUE_SUBSCRIPTION_URL }
 ];
 
-// 底部导航（Footer）：与顶部导航共用同一份顺序（说说位于「文章」与「归档」之间），
-// 仅追加「更多」菜单项。
-const footerNavItems: NavItem[] = [...navItems, ...moreNavItems];
-
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -906,55 +902,6 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   );
 };
 
-const Footer = () => {
-  return (
-    // 移动端隐藏底部导航（内容过多），仅桌面端（lg 及以上）展示
-    <footer className="site-footer mt-8 hidden border-t border-zinc-200/90 dark:border-zinc-800/90 md:mt-12 lg:block">
-      <div className="mx-auto max-w-7xl px-3 py-8 sm:px-6 md:py-10">
-        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-          <div className="max-w-xl">
-            <Link to="/" className="font-serif text-lg font-bold tracking-tight text-ink transition-colors hover:text-zinc-600 dark:text-white dark:hover:text-zinc-300">
-              {siteConfig.title}
-            </Link>
-            <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{siteConfig.description}</p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium text-zinc-600 dark:text-zinc-400 sm:gap-x-5 sm:gap-y-3">
-            {footerNavItems.map((item) => {
-              if ('path' in item) {
-                return (
-                  <Link key={item.path} to={item.path} className="inline-flex min-h-11 items-center transition-colors hover:text-ink dark:hover:text-white">
-                    {item.label}
-                  </Link>
-                );
-              }
-
-              return (
-                <a
-                  key={item.key}
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center transition-colors hover:text-ink dark:hover:text-white"
-                >
-                  {item.label}
-                </a>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="mt-7 flex flex-col gap-2 border-t border-zinc-200/70 pt-5 text-xs text-zinc-600 dark:border-zinc-800/70 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>{siteConfig.footerText} · {siteConfig.author.name}</p>
-          <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center transition-colors hover:text-ink dark:hover:text-white">
-            {siteConfig.beian.text}
-          </a>
-        </div>
-      </div>
-    </footer>
-  );
-};
-
 const Background = () => {
   return (
     <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden bg-paper dark:bg-void" />
@@ -1054,7 +1001,6 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
           <BackToTop />
         </Suspense>
       )}
-      {!isReadingMode && <Footer />}
     </div>
   );
 };

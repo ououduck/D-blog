@@ -106,16 +106,15 @@ export const matchContent = (config, text) => {
 };
 
 /**
- * 判断作者是否应豁免审核：仓库主本人 / 配置名单 / 机器人账号。
+ * 判断作者是否应豁免审核：仅配置名单（config/comment-keywords.json 的 exemptUsers）
+ * 与机器人账号。仓库主不再自动豁免，如需豁免请在配置中显式列出。
  * @param {string} author 评论作者 login。
- * @param {string} owner 仓库属主 login（小写）。
  * @param {Set<string>} exemptUsers 配置的豁免用户（小写）。
  * @returns {boolean}
  */
-export const isExemptAuthor = (author, owner, exemptUsers) => {
+export const isExemptAuthor = (author, exemptUsers) => {
   const authorLower = String(author ?? '').toLowerCase();
   if (!authorLower) return false;
-  if (owner && authorLower === owner.toLowerCase()) return true;
   if (exemptUsers.has(authorLower)) return true;
   return ALWAYS_EXEMPT_USERS.has(authorLower);
 };
