@@ -56,7 +56,7 @@ export const Guestbook = () => {
       </Surface>
 
       {siteConfig.giscusEnabled ? (
-        <GiscusComments mapping="specific" term={siteConfig.guestbook.discussionId} />
+        <GiscusComments mapping="number" term={siteConfig.guestbook.discussionId} />
       ) : (
         <Surface className="flex flex-col items-center gap-3 p-8 text-center sm:p-10">
           <MessageSquareText size={24} className="text-zinc-400 dark:text-zinc-500" aria-hidden="true" />

@@ -9,11 +9,14 @@ const getGiscusTheme = () => document.documentElement.classList.contains('dark')
 const NEAR_VIEWPORT_MARGIN_PX = 600;
 
 interface GiscusCommentsProps {
-  /** 文章 ID：pathname 映射下作为 effect 依赖；specific 映射下可不传。 */
+  /** 文章 ID：pathname 映射下作为 effect 依赖；specific/number 映射下可不传。 */
   postId?: string;
-  /** 评论归属方式：文章评论按路径自动建 discussion；留言板固定指向一个 discussion。 */
-  mapping?: 'pathname' | 'specific';
-  /** mapping=specific 时的固定 Discussion 编号。 */
+  /**
+   * 评论归属方式：文章评论按路径自动建 discussion；留言板固定指向一个 discussion。
+   * 注意：specific 是按 term 文本搜索（搜不到会自动建讨论），number 才是按编号精确锁定、绝不自动创建。
+   */
+  mapping?: 'pathname' | 'specific' | 'number';
+  /** mapping=specific/number 时的固定 Discussion 编号。 */
   term?: string | number;
 }
 
@@ -85,7 +88,7 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
     script.dataset.theme = getGiscusTheme();
     script.dataset.lang = 'zh-CN';
     script.dataset.loading = 'lazy';
-    if (mapping === 'specific' && term !== undefined) {
+    if ((mapping === 'specific' || mapping === 'number') && term !== undefined) {
       script.dataset.term = String(term);
     }
     const handleScriptError = () => setLoadFailed(true);
