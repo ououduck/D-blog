@@ -46,3 +46,12 @@ export interface Friend {
   url: string;
 }
 
+/** 说说（短动态）：类似朋友圈的一句话内容，正文为 Markdown，images 为可选九宫格图片。 */
+export interface ShuoShuo {
+  id: string;
+  date: string;
+  images?: string[];
+  content: string;
+  filePath: string;
+}
+

@@ -15,6 +15,7 @@ const About = lazy(pageLoaders['/about']);
 const ArchivePage = lazy(pageLoaders['/archive']);
 const Stats = lazy(pageLoaders['/stats']);
 const Friends = lazy(pageLoaders['/friends']);
+const ShuoShuoPage = lazy(pageLoaders['/shuoshuo']);
 const GuestbookPage = lazy(pageLoaders['/guestbook']);
 const Tags = lazy(pageLoaders['/tags']);
 const CoverGenerator = lazy(pageLoaders['/cover']);
@@ -112,6 +113,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/tags" element={<Tags />} />
           <Route path="/stats" element={<Stats />} />
           <Route path="/friends" element={<Friends />} />
+          <Route path="/shuoshuo" element={<ShuoShuoPage />} />
           <Route path="/guestbook" element={<GuestbookPage />} />
           <Route path="/about" element={<About />} />
           <Route path="/cover" element={<CoverGenerator />} />

@@ -83,16 +83,17 @@ D-blog/
 ├── .env.example             # 环境变量示例
 ├── config/                  # site.config.ts / content.config.json / ads.config.ts / tsconfig
 ├── posts/                   # Markdown 文章
-├── friends/                # 友链数据（JSON）
+├── friends/                # 友链数据（JSON，由 PagesCMS「友链」集合直接读写）
+├── shuoshuo/               # 说说（短动态）Markdown 内容
 ├── .pages.yml               # PagesCMS 配置
-├── generated/               # 构建产物：posts.json / posts-search.json / site-stats.json / friends.json
+├── generated/               # 构建产物：posts.json / posts-search.json / site-stats.json / friends.json / shuoshuo.json
 ├── public/                  # 静态资源：favicon、PWA 图标、sw.js、offline.html、feed.xml、sitemap
 ├── scripts/                 # 构建脚本：generate-site-data / ssg / build / audit-build 等
 ├── .github/workflows/       # 文章更新通知、友链自动审核、评论检查
 └── src/
     ├── components/          # Layout、Seo、TableOfContents、SearchModal、ImageViewer 等
     ├── pages/               # 页面组件（懒加载）
-    ├── services/            # posts / friends / offlinePosts / readingHistory / siteStats / busuanzi
+    ├── services/            # posts / friends / shuoshuo / offlinePosts / readingHistory / siteStats / busuanzi
     ├── hooks/               # useMediaQuery / useModalOverlay / usePostSearch 等
     ├── utils/               # 日期、排序、目录树、站点 URL、动画等
     ├── ssr/routeData.tsx    # SSG 路由数据构造与客户端读取
@@ -173,6 +174,20 @@ export const format = (value: string) => value.trim();
 ### 友链申请
 
 在友链页面展开「申请友链」，按步骤完成 GitHub Issue 申请：先在自己友链页添加 D-blog 链接 → 登录 GitHub → 填写站点资料 → 提交 Issue → Actions 自动校验反链后写入 `friends/` 并关闭 Issue。
+
+### 说说
+
+`/shuoshuo` 是类似朋友圈的短动态页。内容存放在 `shuoshuo/*.md`，在 PagesCMS「说说」集合中像写文章一样用 Markdown 书写即可（无需标题，一句话即可发布）；可选 `images` frontmatter 字段（图片链接数组）以九宫格展示配图：
+
+```yaml
+---
+id: my-first-shuoshuo        # 全站唯一
+date: 2026-08-14
+images:
+  - https://cdn.example.com/photo-1.png
+---
+今天也是元气满满的一天 🎉
+```
 
 ### 留言板
 

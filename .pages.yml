@@ -35,6 +35,46 @@ content:
           format: markdown
           switcher: true   # 允许切换源码模式编辑数学公式/Mermaid/嵌套图片链接
 
+  # ── 说说（短动态）集合：类似朋友圈的一句话动态，MD 格式书写 ──
+  - name: shuoshuo
+    label: 说说
+    type: collection
+    path: shuoshuo
+    format: yaml-frontmatter
+    filename: "{fields.id}.md"
+    view:
+      primary: date
+      sort: date
+      order: desc
+    fields:
+      - { name: id, label: URL标识, type: string, required: true }
+      - { name: date, label: 发布时间, type: date, required: true }
+      - name: images
+        label: 图片链接（可选，九宫格展示）
+        type: string
+        list: true
+      - name: body
+        label: 内容
+        type: rich-text
+        options:
+          format: markdown
+          switcher: true
+
+  # ── 友链集合：直接读写 friends/ 目录下的 JSON 文件，不改动既有文件结构 ──
+  - name: friends
+    label: 友链
+    type: collection
+    path: friends
+    format: json
+    filename: "{fields.name}.json"
+    view:
+      primary: name
+    fields:
+      - { name: name, label: 站点名称, type: string, required: true }
+      - { name: description, label: 站点简介, type: text, required: true }
+      - { name: avatar, label: 头像地址, type: string, required: true }
+      - { name: url, label: 站点地址, type: string, required: true }
+
 # ── 部署动作：CMS 侧边栏按钮，触发 .github/workflows/deploy.yml ──
 # 文档: https://pagescms.org/docs/configuration/actions/
 actions:

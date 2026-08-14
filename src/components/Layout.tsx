@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Sun, Moon, Github, Menu, X, Search, Heart, Monitor, Rss, BookOpen, Archive, Tag, BarChart3, Users, Info, Bookmark, Bell, ChevronDown, Mail, ExternalLink, Image as ImageIcon, MessageSquareText } from 'lucide-react';
+import { Sun, Moon, Github, Menu, X, Search, Heart, Monitor, Rss, BookOpen, Archive, Tag, BarChart3, Users, Info, Bookmark, Bell, ChevronDown, Mail, ExternalLink, Image as ImageIcon, MessageSquareText, MessageCircle } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { preloadPage } from '@/utils/preload';
 import { assetUrl } from '@/utils/siteUrl';
@@ -29,6 +29,7 @@ const TEXT = {
   navStats: '\u7edf\u8ba1',
   navFriends: '\u53cb\u94fe',
   navGuestbook: '\u7559\u8a00',
+  navShuoShuo: '\u8bf4\u8bf4',
   navSponsor: '\u8d5e\u52a9',
   navAbout: '\u5173\u4e8e',
   navFavorites: '\u6211\u7684\u6536\u85cf',
@@ -40,6 +41,8 @@ type NavPathItem = { path: string; label: string; hint: string; icon: NavIcon; k
 type NavHrefItem = { href: string; label: string; hint: string; icon: NavIcon; key?: string };
 type NavItem = NavPathItem | NavHrefItem;
 
+const shuoshuoNavItem: NavPathItem = { path: '/shuoshuo', label: TEXT.navShuoShuo, hint: '\u670b\u53cb\u5708\u5f0f\u52a8\u6001', icon: MessageCircle };
+
 const navItems: NavPathItem[] = [
   { path: '/', label: TEXT.navPosts, hint: '\u6700\u65b0\u5185\u5bb9', icon: BookOpen },
   { path: '/archive', label: TEXT.navArchive, hint: '\u65f6\u95f4\u5f52\u6863', icon: Archive },
@@ -47,6 +50,7 @@ const navItems: NavPathItem[] = [
   { path: '/stats', label: TEXT.navStats, hint: '\u7ad9\u70b9\u6570\u636e', icon: BarChart3 },
   { path: '/friends', label: TEXT.navFriends, hint: '\u53cb\u60c5\u94fe\u63a5', icon: Users },
   { path: '/guestbook', label: TEXT.navGuestbook, hint: '\u7559\u8a00\u4e92\u52a8', icon: MessageSquareText },
+  shuoshuoNavItem,
   { path: '/sponsor', label: TEXT.navSponsor, hint: '\u8d5e\u52a9\u652f\u6301', icon: Heart },
   { path: '/about', label: TEXT.navAbout, hint: '\u7ad9\u70b9\u4ecb\u7ecd', icon: Info }
 ];
@@ -61,7 +65,16 @@ const moreNavItems: NavItem[] = [
   { key: 'issue-subscription', label: '\u8ba2\u9605', hint: '\u63a5\u6536\u6587\u7ae0\u63d0\u9192', icon: Bell, href: ISSUE_SUBSCRIPTION_URL }
 ];
 
-const allNavItems = [...navItems, ...moreNavItems];
+// 底部导航（Footer）顺序：文章、说说、归档，其余与顶部导航一致。
+// 说说在底部导航位于「文章」与「归档」之间，顶部导航则位于「留言」之后；
+// 因此从 navItems 展开剩余项时需剔除已显式插入的说说项，避免重复。
+const footerNavItems: NavItem[] = [
+  navItems[0],
+  shuoshuoNavItem,
+  navItems[1],
+  ...navItems.slice(2).filter((item) => item !== shuoshuoNavItem),
+  ...moreNavItems
+];
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) {
@@ -902,7 +915,8 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
 const Footer = () => {
   return (
-    <footer className="site-footer mt-8 border-t border-zinc-200/90 dark:border-zinc-800/90 md:mt-12">
+    // 移动端隐藏底部导航（内容过多），仅桌面端（lg 及以上）展示
+    <footer className="site-footer mt-8 hidden border-t border-zinc-200/90 dark:border-zinc-800/90 md:mt-12 lg:block">
       <div className="mx-auto max-w-7xl px-3 py-8 sm:px-6 md:py-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="max-w-xl">
@@ -913,7 +927,7 @@ const Footer = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium text-zinc-600 dark:text-zinc-400 sm:gap-x-5 sm:gap-y-3">
-            {allNavItems.map((item) => {
+            {footerNavItems.map((item) => {
               if ('path' in item) {
                 return (
                   <Link key={item.path} to={item.path} className="inline-flex min-h-11 items-center transition-colors hover:text-ink dark:hover:text-white">

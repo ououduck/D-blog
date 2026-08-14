@@ -47,6 +47,7 @@ const __dirname = path.dirname(__filename);
 const POSTS_DIR = path.join(__dirname, '../posts');
 const IMAGE_ROOT = path.join(__dirname, '../posts-img');
 const FRIENDS_DIR = path.join(__dirname, '../friends');
+const SHUOSHUO_DIR = path.join(__dirname, '../shuoshuo');
 const OUTPUT_JSON_DIR = path.join(__dirname, '../generated');
 const PUBLIC_DIR = path.join(__dirname, '../public');
 
@@ -551,6 +552,65 @@ postRecords.forEach((record) => {
   }
 });
 
+// ── 说说（短动态）解析：shuoshuo/*.md，frontmatter 提供 id/date/images，正文即动态内容 ──
+// 与文章同级的质量门槛：id/date 缺失或重复直接 fail-closed，避免脏数据进入产物。
+const shuoshuoFiles = fs.existsSync(SHUOSHUO_DIR)
+  ? fs.readdirSync(SHUOSHUO_DIR).filter((file) => file.endsWith('.md'))
+  : [];
+
+const shuoshuoRecords = shuoshuoFiles.map((filename) => {
+  const filePath = path.join(SHUOSHUO_DIR, filename);
+  let data = {};
+  let content = '';
+
+  try {
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    ({ data, content } = matter(fileContent));
+  } catch (error) {
+    validationErrors.push(`Invalid front matter in shuoshuo/${filename}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  const id = typeof data.id === 'string' ? data.id.trim() : '';
+  const formattedDate = formatFrontmatterDate(data.date);
+  const images = Array.isArray(data.images)
+    ? data.images.map((value) => String(value).trim()).filter(Boolean)
+    : [];
+
+  if (!id) {
+    validationErrors.push(`Invalid front matter in shuoshuo/${filename}: id must be a non-empty string`);
+  } else if (/\s|[\\/?#%"'<>]/.test(id) || id === '.' || id === '..') {
+    validationErrors.push(`Invalid front matter in shuoshuo/${filename}: id "${id}" contains characters that are unsafe in a URL`);
+  }
+  if (!formattedDate || !validateDateString(formattedDate)) {
+    validationErrors.push(`Invalid front matter in shuoshuo/${filename}: date must use YYYY-MM-DD format`);
+  }
+
+  return {
+    filename,
+    id,
+    date: formattedDate,
+    images,
+    content: content.trim(),
+    filePath: `/shuoshuo/${filename}`
+  };
+});
+
+const seenShuoShuoIds = new Map();
+shuoshuoRecords.forEach((record) => {
+  if (!record.id) return;
+  const previous = seenShuoShuoIds.get(record.id);
+  if (previous) {
+    validationErrors.push(`Duplicate shuoshuo id "${record.id}" found in shuoshuo/${record.filename} and shuoshuo/${previous}.`);
+  } else {
+    seenShuoShuoIds.set(record.id, record.filename);
+  }
+});
+
+const shuoshuo = shuoshuoRecords
+  .filter((record) => record.id && record.date)
+  .sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id))
+  .map(({ filename: _filename, ...record }) => record);
+
 if (validationErrors.length > 0) {
   throw new Error(validationErrors.join('\n'));
 }
@@ -613,6 +673,9 @@ const friends = friendFiles.flatMap((filename) => {
 fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'friends.json'), JSON.stringify(friends, null, 2));
 logger.step('Generated friends.json', `friends=${friends.length} sourceFiles=${friendFiles.length}`);
 
+fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'shuoshuo.json'), JSON.stringify(shuoshuo, null, 2));
+logger.step('Generated shuoshuo.json', `shuoshuo=${shuoshuo.length} sourceFiles=${shuoshuoFiles.length}`);
+
 const siteAbsoluteUrl = (route = '/') => new URL(toPublicPath(route), `${SITE_URL}/`).toString();
 
 const generateSitemap = () => {
@@ -628,6 +691,7 @@ const generateSitemap = () => {
     { path: 'tags', changefreq: 'weekly', priority: '0.8', lastmod: latestPostDate },
     { path: 'stats', changefreq: 'weekly', priority: '0.6', lastmod: latestPostDate },
     { path: 'friends', changefreq: 'weekly', priority: '0.7', lastmod: latestPostDate },
+    { path: 'shuoshuo', changefreq: 'weekly', priority: '0.6', lastmod: latestPostDate },
     { path: 'guestbook', changefreq: 'weekly', priority: '0.5', lastmod: latestPostDate },
     { path: 'about', changefreq: 'monthly', priority: '0.7', lastmod: latestPostDate },
     { path: 'cover', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },
@@ -817,6 +881,7 @@ const generateLlmsTxt = () => {
     `- [标签](${siteAbsoluteUrl('/tags')})`,
     `- [统计](${siteAbsoluteUrl('/stats')})`,
     `- [友链](${siteAbsoluteUrl('/friends')})`,
+    `- [说说](${siteAbsoluteUrl('/shuoshuo')})`,
     `- [关于](${siteAbsoluteUrl('/about')})`,
     `- [赞助](${siteAbsoluteUrl('/sponsor')})`,
     `- [RSS 订阅](${siteAbsoluteUrl('/feed.xml')})`,
@@ -843,12 +908,13 @@ try {
 }
 
 if (process.exitCode) {
-  logger.summary({ posts: posts.length, friends: friends.length, outputs: 6, siteUrl: SITE_URL, status: 'failed' });
+  logger.summary({ posts: posts.length, friends: friends.length, shuoshuo: shuoshuo.length, outputs: 7, siteUrl: SITE_URL, status: 'failed' });
 } else {
   logger.summary({
     posts: posts.length,
     friends: friends.length,
-    outputs: 6,
+    shuoshuo: shuoshuo.length,
+    outputs: 7,
     siteUrl: SITE_URL
   });
 }
