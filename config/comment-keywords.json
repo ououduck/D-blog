@@ -1,6 +1,6 @@
 {
   "description": "评论/讨论关键词过滤配置。命中任一 keywords（子串匹配，忽略大小写）或 patterns（正则）即按 action 处理。修改此文件并推送到 main 即生效。",
-  "action": "minimize",
+  "action": "delete",
   "discussionAction": "delete",
   "keywords": [
     "代开发票",
