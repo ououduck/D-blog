@@ -28,12 +28,12 @@ export const siteConfig = {
   comments: {
     repo: 'ououduck/D-blog',
     repoId: 'R_kgDORApwuA',
-    category: 'Announcements',
+    category: '文章评论',
     categoryId: 'DIC_kwDORApwuM4DCztq',
   },
   guestbook: {
     // 留言板固定 Discussion（Giscus mapping=specific 指向它），
-    // 位于 General 分类：https://github.com/ououduck/D-blog/discussions/9
+    // 位于「留言板」分类：https://github.com/ououduck/D-blog/discussions/9
     discussionId: 9,
   },
   friendsPage: {
