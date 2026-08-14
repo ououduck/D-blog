@@ -45,12 +45,12 @@ const shuoshuoNavItem: NavPathItem = { path: '/shuoshuo', label: TEXT.navShuoShu
 
 const navItems: NavPathItem[] = [
   { path: '/', label: TEXT.navPosts, hint: '\u6700\u65b0\u5185\u5bb9', icon: BookOpen },
+  shuoshuoNavItem,
   { path: '/archive', label: TEXT.navArchive, hint: '\u65f6\u95f4\u5f52\u6863', icon: Archive },
   { path: '/tags', label: TEXT.navTags, hint: '\u4e3b\u9898\u7b5b\u9009', icon: Tag },
   { path: '/stats', label: TEXT.navStats, hint: '\u7ad9\u70b9\u6570\u636e', icon: BarChart3 },
   { path: '/friends', label: TEXT.navFriends, hint: '\u53cb\u60c5\u94fe\u63a5', icon: Users },
   { path: '/guestbook', label: TEXT.navGuestbook, hint: '\u7559\u8a00\u4e92\u52a8', icon: MessageSquareText },
-  shuoshuoNavItem,
   { path: '/sponsor', label: TEXT.navSponsor, hint: '\u8d5e\u52a9\u652f\u6301', icon: Heart },
   { path: '/about', label: TEXT.navAbout, hint: '\u7ad9\u70b9\u4ecb\u7ecd', icon: Info }
 ];
@@ -65,16 +65,9 @@ const moreNavItems: NavItem[] = [
   { key: 'issue-subscription', label: '\u8ba2\u9605', hint: '\u63a5\u6536\u6587\u7ae0\u63d0\u9192', icon: Bell, href: ISSUE_SUBSCRIPTION_URL }
 ];
 
-// 底部导航（Footer）顺序：文章、说说、归档，其余与顶部导航一致。
-// 说说在底部导航位于「文章」与「归档」之间，顶部导航则位于「留言」之后；
-// 因此从 navItems 展开剩余项时需剔除已显式插入的说说项，避免重复。
-const footerNavItems: NavItem[] = [
-  navItems[0],
-  shuoshuoNavItem,
-  navItems[1],
-  ...navItems.slice(2).filter((item) => item !== shuoshuoNavItem),
-  ...moreNavItems
-];
+// 底部导航（Footer）：与顶部导航共用同一份顺序（说说位于「文章」与「归档」之间），
+// 仅追加「更多」菜单项。
+const footerNavItems: NavItem[] = [...navItems, ...moreNavItems];
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) {

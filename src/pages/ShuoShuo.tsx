@@ -127,7 +127,7 @@ export const ShuoShuo = () => {
         </p>
         <h1 className="font-serif text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">说说</h1>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400 md:text-base">
-          类似朋友圈的短动态：一句话、一个想法、一张照片都可以在这里分享，使用 Markdown 书写即可。
+          这里是一块类似PLDDUCK朋友圈的短动态小天地
         </p>
         {items.length > 0 && (
           <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">共 {items.length} 条 · 内容通过 PagesCMS 发布</p>
