@@ -2,15 +2,19 @@
   "description": "评论/讨论关键词过滤配置。命中任一 keywords（子串匹配，忽略大小写）或 patterns（正则）即按 action 处理。修改此文件并推送到 main 即生效。",
   "action": "minimize",
   "discussionAction": "delete",
-  "exemptUsers": [
-    "ououduck"
-  ],
   "keywords": [
     "代开发票",
     "专业刷单",
     "博彩",
     "兼职赚钱",
-    "联系客服"
+    "联系客服",
+    "毒品",
+    "习近平",
+    "国家",
+    "中国",
+    "操",
+    "草",
+    "妈"
   ],
   "patterns": [
     "(?:vx|wx|wechat|qq|tg)\\s*[:：]?\\s*[a-zA-Z0-9_-]{5,}",
