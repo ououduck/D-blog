@@ -31,6 +31,11 @@ export const siteConfig = {
     category: 'Announcements',
     categoryId: 'DIC_kwDORApwuM4DCztq',
   },
+  guestbook: {
+    // 留言板固定 Discussion（Giscus mapping=specific 指向它），
+    // 位于 General 分类：https://github.com/ououduck/D-blog/discussions/9
+    discussionId: 9,
+  },
   friendsPage: {
     repoUrl: 'https://github.com/ououduck/D-blog',
     repoFriendsUrl: 'https://github.com/ououduck/D-blog/tree/main/friends',

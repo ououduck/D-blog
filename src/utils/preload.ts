@@ -25,6 +25,7 @@ const pageLoaders: Record<string, ModuleLoader> = {
   '/tags': () => import('../pages/Tags').then((m) => ({ default: m.Tags })),
   '/stats': () => import('../pages/Stats').then((m) => ({ default: m.Stats })),
   '/friends': () => import('../pages/Friends').then((m) => ({ default: m.Friends })),
+  '/guestbook': () => import('../pages/Guestbook').then((m) => ({ default: m.Guestbook })),
   '/about': () => import('../pages/About').then((m) => ({ default: m.About })),
   '/sponsor': () => import('../pages/Sponsor').then((m) => ({ default: m.Sponsor })),
   '/cover': () => import('../pages/CoverGenerator').then((m) => ({ default: m.CoverGenerator })),

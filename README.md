@@ -19,7 +19,7 @@
 - **增强渲染** — 代码高亮（diff 块 `+`/`-`/`@@` 整行高亮）、代码块文件名（```` ```ts title="app.ts" ````）、长代码自动折叠、行号点击复制单行、长行自动换行开关；KaTeX 数学公式、Mermaid 图表、GFM 表格、图片预览、DOMPurify 净化；高亮/公式/Mermaid 按正文内容按需懒加载
 - **全文搜索** — 构建时生成搜索索引，多维度权重评分，支持范围筛选与搜索历史
 - **阅读体验** — 目录导航（自动折叠非活跃分支）、阅读进度恢复、专注阅读模式、深色模式图片自动柔和降亮（可单图豁免）、CC BY-SA 4.0 声明、标题锚点复制链接
-- **分享与互动** — 分享弹窗支持一键复制文案/链接，并可生成含封面、标题与二维码的竖版分享海报（Canvas 本地绘制，无外链依赖）；Giscus 评论区懒加载（滚动到评论区附近才注入，不拖慢正文阅读）
+- **分享与互动** — 分享弹窗支持一键复制文案/链接，并可生成含封面、标题与二维码的竖版分享海报（Canvas 本地绘制，无外链依赖）；Giscus 评论区懒加载（滚动到评论区附近才注入，不拖慢正文阅读）；独立留言板页（`/guestbook`）绑定仓库固定 Discussion，与文章评论共用 Akismet 反垃圾
 - **文章导航** — 上一篇/下一篇（`Alt + ←/→`）、系列文章、面包屑、相关文章推荐
 - **主题系统** — 浅色/深色/跟随系统三态切换，支持 CSS View Transitions 过渡
 - **首页信息流** — 精选大图卡片与置顶、分类筛选、排序、分页与内联搜索；筛选与页码同步到 URL
@@ -173,6 +173,10 @@ export const format = (value: string) => value.trim();
 ### 友链申请
 
 在友链页面展开「申请友链」，按步骤完成 GitHub Issue 申请：先在自己友链页添加 D-blog 链接 → 登录 GitHub → 填写站点资料 → 提交 Issue → Actions 自动校验反链后写入 `friends/` 并关闭 Issue。
+
+### 留言板
+
+`/guestbook` 留言板页通过 Giscus `mapping=specific` 固定指向仓库的「D-blog 留言板」Discussion（[discussions/9](https://github.com/ououduck/D-blog/discussions/9)，General 分类），所有留言汇聚到同一线程；配置位于 `config/site.config.ts` 的 `guestbook.discussionId`。留言数据存于本仓库 Discussions，与文章评论共用 Akismet 反垃圾（`akismet-discussion-comment-check.yml`）。
 
 ### 订阅更新
 

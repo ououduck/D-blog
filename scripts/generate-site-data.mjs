@@ -628,6 +628,7 @@ const generateSitemap = () => {
     { path: 'tags', changefreq: 'weekly', priority: '0.8', lastmod: latestPostDate },
     { path: 'stats', changefreq: 'weekly', priority: '0.6', lastmod: latestPostDate },
     { path: 'friends', changefreq: 'weekly', priority: '0.7', lastmod: latestPostDate },
+    { path: 'guestbook', changefreq: 'weekly', priority: '0.5', lastmod: latestPostDate },
     { path: 'about', changefreq: 'monthly', priority: '0.7', lastmod: latestPostDate },
     { path: 'cover', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },
     { path: 'watermark', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },

@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Sun, Moon, Github, Menu, X, Search, Heart, Monitor, Rss, BookOpen, Archive, Tag, BarChart3, Users, Info, Bookmark, Bell, ChevronDown, Mail, ExternalLink, Image as ImageIcon } from 'lucide-react';
+import { Sun, Moon, Github, Menu, X, Search, Heart, Monitor, Rss, BookOpen, Archive, Tag, BarChart3, Users, Info, Bookmark, Bell, ChevronDown, Mail, ExternalLink, Image as ImageIcon, MessageSquareText } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { preloadPage } from '@/utils/preload';
 import { assetUrl } from '@/utils/siteUrl';
@@ -28,6 +28,7 @@ const TEXT = {
   navTags: '\u6807\u7b7e',
   navStats: '\u7edf\u8ba1',
   navFriends: '\u53cb\u94fe',
+  navGuestbook: '\u7559\u8a00',
   navSponsor: '\u8d5e\u52a9',
   navAbout: '\u5173\u4e8e',
   navFavorites: '\u6211\u7684\u6536\u85cf',
@@ -45,6 +46,7 @@ const navItems: NavPathItem[] = [
   { path: '/tags', label: TEXT.navTags, hint: '\u4e3b\u9898\u7b5b\u9009', icon: Tag },
   { path: '/stats', label: TEXT.navStats, hint: '\u7ad9\u70b9\u6570\u636e', icon: BarChart3 },
   { path: '/friends', label: TEXT.navFriends, hint: '\u53cb\u60c5\u94fe\u63a5', icon: Users },
+  { path: '/guestbook', label: TEXT.navGuestbook, hint: '\u7559\u8a00\u4e92\u52a8', icon: MessageSquareText },
   { path: '/sponsor', label: TEXT.navSponsor, hint: '\u8d5e\u52a9\u652f\u6301', icon: Heart },
   { path: '/about', label: TEXT.navAbout, hint: '\u7ad9\u70b9\u4ecb\u7ecd', icon: Info }
 ];

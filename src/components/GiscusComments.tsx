@@ -8,7 +8,16 @@ const getGiscusTheme = () => document.documentElement.classList.contains('dark')
 /** 距视口底部多少像素内开始预加载评论区脚本（过早加载没有意义，过晚则白屏等待）。 */
 const NEAR_VIEWPORT_MARGIN_PX = 600;
 
-export const GiscusComments = ({ postId }: { postId: string }) => {
+interface GiscusCommentsProps {
+  /** 文章 ID：pathname 映射下作为 effect 依赖；specific 映射下可不传。 */
+  postId?: string;
+  /** 评论归属方式：文章评论按路径自动建 discussion；留言板固定指向一个 discussion。 */
+  mapping?: 'pathname' | 'specific';
+  /** mapping=specific 时的固定 Discussion 编号。 */
+  term?: string | number;
+}
+
+export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCommentsProps) => {
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -68,7 +77,7 @@ export const GiscusComments = ({ postId }: { postId: string }) => {
     script.dataset.repoId = siteConfig.comments.repoId;
     script.dataset.category = siteConfig.comments.category;
     script.dataset.categoryId = siteConfig.comments.categoryId;
-    script.dataset.mapping = 'pathname';
+    script.dataset.mapping = mapping;
     script.dataset.strict = '1';
     script.dataset.reactionsEnabled = '1';
     script.dataset.emitMetadata = '0';
@@ -76,6 +85,9 @@ export const GiscusComments = ({ postId }: { postId: string }) => {
     script.dataset.theme = getGiscusTheme();
     script.dataset.lang = 'zh-CN';
     script.dataset.loading = 'lazy';
+    if (mapping === 'specific' && term !== undefined) {
+      script.dataset.term = String(term);
+    }
     const handleScriptError = () => setLoadFailed(true);
     script.addEventListener('error', handleScriptError, { once: true });
     container.replaceChildren(script);
@@ -116,7 +128,7 @@ export const GiscusComments = ({ postId }: { postId: string }) => {
       window.removeEventListener('message', handleGiscusMessage);
       container.replaceChildren();
     };
-  }, [isOffline, isNearViewport, loadAttempt, postId]);
+  }, [isOffline, isNearViewport, loadAttempt, postId, mapping, term]);
 
   return (
     <section ref={sectionRef} className="giscus-comments mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800 md:mt-16 md:pt-10" aria-labelledby="comments-heading">
