@@ -130,6 +130,12 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
     };
   }, [isOffline, isNearViewport, loadAttempt, postId, mapping, term]);
 
+  // 全局开关（site.config.ts giscusEnabled）：关闭时不渲染评论区块。
+  // 放在所有 hooks 之后，保证 hooks 调用顺序稳定，所有调用点自动受控。
+  if (!siteConfig.giscusEnabled) {
+    return null;
+  }
+
   return (
     <section ref={sectionRef} className="giscus-comments mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800 md:mt-16 md:pt-10" aria-labelledby="comments-heading">
       <div className="mb-6 flex items-center gap-2">

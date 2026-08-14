@@ -25,6 +25,9 @@ export const siteConfig = {
   toc: {
     collapseInactiveRootBranches: true,
   },
+  // 是否启用 Giscus（文章评论区 + 留言板统一开关）。
+  // 设为 false 时：文章页不再渲染评论区，/guestbook 留言板不再渲染评论区块。
+  giscusEnabled: true,
   comments: {
     repo: 'ououduck/D-blog',
     repoId: 'R_kgDORApwuA',

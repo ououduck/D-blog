@@ -55,7 +55,14 @@ export const Guestbook = () => {
         </ul>
       </Surface>
 
-      <GiscusComments mapping="specific" term={siteConfig.guestbook.discussionId} />
+      {siteConfig.giscusEnabled ? (
+        <GiscusComments mapping="specific" term={siteConfig.guestbook.discussionId} />
+      ) : (
+        <Surface className="flex flex-col items-center gap-3 p-8 text-center sm:p-10">
+          <MessageSquareText size={24} className="text-zinc-400 dark:text-zinc-500" aria-hidden="true" />
+          <p className="text-sm leading-6 text-zinc-500 dark:text-zinc-400">留言功能暂未开启，敬请期待。</p>
+        </Surface>
+      )}
     </div>
   );
 };
