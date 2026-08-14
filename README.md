@@ -193,6 +193,17 @@ images:
 
 `/guestbook` 留言板页通过 Giscus `mapping=number` 固定指向仓库的「D-blog 留言板」Discussion（[discussions/9](https://github.com/ououduck/D-blog/discussions/9)，「留言板」分类），所有留言汇聚到同一线程；配置位于 `config/site.config.ts` 的 `guestbook.discussionId`。留言数据存于本仓库 Discussions，与文章评论共用 Akismet 反垃圾（`akismet-discussion-comment-check.yml`），并叠加自建关键词过滤（`comment-keyword-filter.yml`，关键词配置见 `config/comment-keywords.json`）作为审核层。
 
+### 评论关键词过滤
+
+`config/comment-keywords.json` 是自建审核层的关键词配置，可直接在 PagesCMS「评论关键词」中编辑（保存即推送到仓库生效），无需改代码：
+
+- `keywords`：子串匹配（忽略大小写）；`patterns`：正则匹配
+- `action`：评论命中后的处理（`minimize` 折叠可撤销 / `delete` 删除 / `none` 仅记录）
+- `discussionAction`：新建讨论命中后的处理（`delete` / `none`）
+- `exemptUsers`：豁免用户（仓库主与 giscus[bot] 等机器人自动豁免）
+
+事件触发链路 `comment-keyword-filter.yml` 只检查**新增**评论/讨论。如需清理历史评论，可在 PagesCMS 侧边栏点击「🔍 重新审查全部评论」——每次执行都会遍历仓库内**所有**评论，用当前配置重新匹配并执行处理动作（`comment-keyword-recheck.yml` → `scripts/comment-keyword-recheck.mjs`）。
+
 ### 订阅更新
 
 仓库内置 `notify-post-update.yml`：`posts/**/*.md` 新增或修改时自动在指定 Issue 发布通知（仓库变量 `BLOG_NOTIFY_ISSUE_NUMBER`，默认 `6`）。

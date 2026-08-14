@@ -1,0 +1,57 @@
+# comment-keyword-recheck.yml — 全量评论关键词复查（手动触发）。
+#
+# 与 comment-keyword-filter.yml（事件触发，只检查新增评论）互补：
+# 每次执行都会重新审查一次仓库内「所有」评论 —— 遍历全部讨论的评论，
+# 使用当前 config/comment-keywords.json 的关键词/正则重新匹配并执行处理动作。
+# 适合在修改关键词配置后清理历史评论中遗漏的广告/引流内容。
+#
+# 触发方式（仅 workflow_dispatch）：
+#   1. Pages CMS 侧边栏「🔍 重新审查全部评论」按钮（见 .pages.yml 的 actions 段），
+#   2. GitHub Actions 页面手动 Run workflow（payload 最小可用 {"repository":{"ref":"main"}}）。
+#
+# Pages CMS 会以 JSON 字符串填充 inputs.payload（含 repository.ref / sha、触发人等），
+# 协议见 https://pagescms.org/docs/configuration/actions/
+name: Comment Keyword Recheck
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: 'Pages CMS payload as JSON，手动触发可用 {"repository":{"ref":"main"}}'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  discussions: write
+
+concurrency:
+  # 连续触发串行执行（防止两次全量复查同时跑，重复处理同一批评论）。
+  group: comment-keyword-recheck
+  cancel-in-progress: false
+
+jobs:
+  recheck:
+    runs-on: ubuntu-latest
+    # 全量遍历 + 逐条处理：几百条评论的量级下几分钟内可完成，15 分钟上限留足余量。
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # Pages CMS 触发时按 CMS 当前打开的分支（main）检出，
+          # 保证脚本读取到最新保存的关键词配置；手动触发时回退到触发分支。
+          ref: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || '' }}
+
+      - name: Show dispatch context
+        run: |
+          echo "Ref: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || github.ref }}"
+          echo "Triggered by: ${{ inputs.payload != '' && fromJSON(inputs.payload).triggeredBy.githubUsername || 'manual' }}"
+
+      - name: Run full comment keyword recheck
+        # 使用自动注入的 GITHUB_TOKEN（与 akismet / keyword filter workflow 相同方案）；
+        # PAGES_CMS_PAYLOAD 供脚本在 GITHUB_REPOSITORY 缺失时解析 owner/repo（兜底）。
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAGES_CMS_PAYLOAD: ${{ inputs.payload }}
+        run: node scripts/comment-keyword-recheck.mjs

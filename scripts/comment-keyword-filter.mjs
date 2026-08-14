@@ -31,6 +31,11 @@ import {
   readResponseText
 } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
+import {
+  loadConfig,
+  matchContent,
+  isExemptAuthor
+} from './lib/keyword-filter-core.mjs';
 
 const logger = createActionLogger('keyword');
 
@@ -42,80 +47,6 @@ const GRAPHQL_TIMEOUT_MS = 20000;
 const GRAPHQL_RETRIES = 2;
 
 const GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql';
-const CONFIG_PATH = 'config/comment-keywords.json';
-
-/** 自动豁免的机器人账号（giscus 公告类讨论/评论不应被关键词审核）。 */
-const ALWAYS_EXEMPT_USERS = new Set(['giscus[bot]', 'github-actions[bot]']);
-
-/* ------------------------------------------------------------------ */
-/* 配置加载                                                             */
-/* ------------------------------------------------------------------ */
-
-/**
- * 文本规范化：小写 + 去除零宽字符（防绕过） + 连续空白折叠为单空格。
- * @param {string | null | undefined} text
- * @returns {string}
- */
-const normalizeText = (text) => String(text ?? '')
-  .toLowerCase()
-  .replace(/[\u200b-\u200f\ufeff]/g, '')
-  .replace(/\s+/g, ' ')
-  .trim();
-
-/**
- * 加载并校验关键词配置。
- * @returns {null | { action: string, discussionAction: string, exemptUsers: Set<string>, keywords: string[], patterns: RegExp[] }}
- *          配置缺失/为空/解析失败时返回 null（调用方优雅跳过）。
- */
-const loadConfig = () => {
-  if (!fs.existsSync(CONFIG_PATH)) {
-    logger.warn('Keyword config file not found; filter skipped', { path: CONFIG_PATH });
-    return null;
-  }
-
-  let raw;
-  try {
-    raw = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-  } catch (error) {
-    logger.warn('Failed to parse keyword config; filter skipped', { path: CONFIG_PATH, error: formatError(error) });
-    return null;
-  }
-
-  const keywords = (Array.isArray(raw.keywords) ? raw.keywords : [])
-    .filter((item) => typeof item === 'string' && item.trim())
-    .map((item) => item.trim());
-
-  const patterns = [];
-  for (const item of Array.isArray(raw.patterns) ? raw.patterns : []) {
-    if (typeof item !== 'string' || !item.trim()) continue;
-    try {
-      patterns.push(new RegExp(item, 'i'));
-    } catch (error) {
-      // 单条正则非法只跳过该条，不拖垮整份配置。
-      logger.warn('Invalid keyword regex pattern skipped', { pattern: item, error: formatError(error) });
-    }
-  }
-
-  if (keywords.length === 0 && patterns.length === 0) {
-    logger.warn('No keywords or patterns configured; filter skipped', { path: CONFIG_PATH });
-    return null;
-  }
-
-  const exemptUsers = new Set(
-    (Array.isArray(raw.exemptUsers) ? raw.exemptUsers : [])
-      .filter((item) => typeof item === 'string')
-      .map((item) => item.toLowerCase())
-  );
-
-  return {
-    // 非法 action 值一律回退到安全默认（minimize 可撤销，杜绝误删）。
-    action: raw.action === 'delete' ? 'delete' : raw.action === 'none' ? 'none' : 'minimize',
-    discussionAction: raw.discussionAction === 'none' ? 'none' : 'delete',
-    exemptUsers,
-    keywords,
-    patterns
-  };
-};
 
 /* ------------------------------------------------------------------ */
 /* 事件载荷读取                                                         */
@@ -171,31 +102,6 @@ const loadEventPayload = () => {
     subject,
     owner: repository?.owner?.login?.toLowerCase() || ''
   };
-};
-
-/* ------------------------------------------------------------------ */
-/* 关键词匹配                                                           */
-/* ------------------------------------------------------------------ */
-
-/**
- * 对正文执行关键词/正则匹配。
- * @param {{ keywords: string[], patterns: RegExp[] }} config
- * @param {string} text 原始正文。
- * @returns {null | { type: 'keyword' | 'pattern', value: string }}
- */
-const matchContent = (config, text) => {
-  const normalized = normalizeText(text);
-  for (const keyword of config.keywords) {
-    if (normalized.includes(keyword.toLowerCase())) {
-      return { type: 'keyword', value: keyword };
-    }
-  }
-  for (const pattern of config.patterns) {
-    if (pattern.test(normalized)) {
-      return { type: 'pattern', value: pattern.source };
-    }
-  }
-  return null;
 };
 
 /* ------------------------------------------------------------------ */
@@ -293,7 +199,7 @@ const runGraphQL = async (query, variables) => {
 /* ------------------------------------------------------------------ */
 
 const main = async () => {
-  const config = loadConfig();
+  const config = loadConfig(logger);
   if (!config) return;
 
   const event = loadEventPayload();
@@ -305,8 +211,7 @@ const main = async () => {
   const { subject, owner } = event;
 
   // 豁免：仓库主（本人评论无论如何不审核）+ 配置名单 + 机器人账号。
-  const authorLower = subject.author.toLowerCase();
-  if ((owner && authorLower === owner) || config.exemptUsers.has(authorLower) || ALWAYS_EXEMPT_USERS.has(authorLower)) {
+  if (isExemptAuthor(subject.author, owner, config.exemptUsers)) {
     logger.info('Skipped: exempt user', { author: subject.author, kind: subject.kind });
     return;
   }

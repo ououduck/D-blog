@@ -75,6 +75,28 @@ content:
       - { name: avatar, label: 头像地址, type: string, required: true }
       - { name: url, label: 站点地址, type: string, required: true }
 
+  # ── 评论关键词配置（单文件，CMS 中直接编辑，保存即推送到仓库生效）──
+  - name: commentKeywords
+    label: 评论关键词
+    type: file
+    path: config/comment-keywords.json
+    format: json
+    fields:
+      - { name: description, label: 配置说明, type: text, hidden: true }
+      - name: action
+        label: 评论命中动作
+        type: select
+        options:
+          values: ["minimize", "delete", "none"]
+      - name: discussionAction
+        label: 新建讨论命中动作
+        type: select
+        options:
+          values: ["delete", "none"]
+      - { name: exemptUsers, label: 豁免用户（不审核）, type: string, list: true }
+      - { name: keywords, label: 关键词（子串匹配）, type: string, list: true }
+      - { name: patterns, label: 正则表达式（忽略大小写）, type: string, list: true }
+
 # ── 部署动作：CMS 侧边栏按钮，触发 .github/workflows/deploy.yml ──
 # 文档: https://pagescms.org/docs/configuration/actions/
 actions:
@@ -86,3 +108,13 @@ actions:
       title: 确认部署？
       message: 将在 GitHub Actions 中构建全站，并直传部署到 Cloudflare Pages 与 EdgeOne Pages
       button: 开始部署
+
+  # ── 评论关键词全量复查：每次执行都会重新审查一次所有评论 ──
+  - name: recheck-comments
+    label: 🔍 重新审查全部评论
+    workflow: comment-keyword-recheck.yml
+    ref: current
+    confirm:
+      title: 确认重新审查全部评论？
+      message: 将遍历仓库内全部评论，使用当前「评论关键词」配置重新匹配并执行处理动作（minimize 折叠 / delete 删除 / none 仅记录）。已放行的评论不会被反向恢复。
+      button: 开始审查
