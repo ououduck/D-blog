@@ -97,6 +97,70 @@ content:
       - { name: keywords, label: 关键词（子串匹配）, type: string, list: true }
       - { name: patterns, label: 正则表达式（忽略大小写）, type: string, list: true }
 
+  # ── 站点配置（单文件：config/site.config.json，CMS 中直接编辑，保存即推送生效）──
+  - name: siteConfig
+    label: 站点配置
+    type: file
+    path: config/site.config.json
+    format: json
+    fields:
+      - { name: title, label: 站点标题, type: string, required: true }
+      - { name: subtitle, label: 站点副标题, type: string }
+      - { name: seoHomeTitle, label: 首页 SEO 标题, type: string }
+      - { name: description, label: 站点描述, type: text, required: true }
+      - { name: logo, label: Logo 链接, type: string }
+      - { name: logoSmall, label: 小 Logo 路径, type: string }
+      - { name: seoImage, label: 分享图链接, type: string }
+      - { name: footerText, label: 页脚版权文字, type: string }
+      - { name: url, label: 站点 URL, type: string, required: true }
+      - name: social
+        label: 社交链接
+        type: object
+        fields:
+          - { name: github, label: GitHub, type: string }
+          - { name: email, label: 邮箱（mailto:）, type: string }
+          - { name: rawEmail, label: 邮箱地址, type: string }
+      - name: author
+        label: 作者信息
+        type: object
+        fields:
+          - { name: name, label: 昵称, type: string, required: true }
+          - { name: avatar, label: 头像链接, type: string }
+          - { name: role, label: 身份/角色, type: string }
+          - { name: bio, label: 简介, type: text }
+      - name: toc
+        label: 目录设置
+        type: object
+        fields:
+          - { name: collapseInactiveRootBranches, label: 折叠非激活分支, type: boolean }
+      - { name: giscusEnabled, label: 启用 Giscus 评论, type: boolean }
+      - name: comments
+        label: Giscus 评论配置（改动需与 GitHub 实际值一致，否则评论区失效）
+        type: object
+        fields:
+          - { name: repo, label: 仓库, type: string }
+          - { name: repoId, label: 仓库 ID, type: string }
+          - { name: category, label: 分类名, type: string }
+          - { name: categoryId, label: 分类 ID, type: string }
+      - name: guestbook
+        label: 留言板
+        type: object
+        fields:
+          - { name: discussionId, label: Discussion ID, type: number }
+      - name: friendsPage
+        label: 友链页
+        type: object
+        fields:
+          - { name: repoUrl, label: 仓库地址, type: string }
+          - { name: repoFriendsUrl, label: 友链目录地址, type: string }
+          - { name: repoFriendsDir, label: 友链目录名, type: string }
+      - name: beian
+        label: 备案信息
+        type: object
+        fields:
+          - { name: text, label: 备案号, type: string }
+          - { name: url, label: 备案链接, type: string }
+
 # ── 部署动作：CMS 侧边栏按钮，触发 .github/workflows/deploy.yml ──
 # 文档: https://pagescms.org/docs/configuration/actions/
 actions:

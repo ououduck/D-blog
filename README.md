@@ -210,7 +210,7 @@ images:
 
 ## 配置
 
-- **站点配置**：`config/site.config.ts` — 标题、描述、URL、社交链接、作者信息、备案号等
+- **站点配置**：`config/site.config.json` — 标题、描述、URL、社交链接、作者信息、备案号等。数据源为 JSON，客户端 `config/site.config.ts`（类型化包装）与构建脚本 `scripts/site-config-loader.mjs` 读取同一份；可直接在 PagesCMS「站点配置」中编辑，保存即推送仓库生效，无需改代码
 - **赞助与广告**：赞助方式定义于 `src/pages/Sponsor.tsx`；广告横幅在 `config/ads.config.ts` 配置（图片放 `public/ads-img/`）
 - **文章分类白名单**：`config/content.config.json` 的 `postCategories` 数组
 

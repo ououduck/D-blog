@@ -1,0 +1,44 @@
+{
+  "title": "D-blog",
+  "subtitle": "跑路的duck",
+  "seoHomeTitle": "D-blog - 跑路的duck的技术分享与生活随笔",
+  "description": "跑路的duck的技术分享与生活随笔 追求极致的静态页面体验。",
+  "logo": "https://blog.pldduck.com/logo.png",
+  "logoSmall": "/logo-96.png",
+  "seoImage": "https://blog.pldduck.com/og-card.png",
+  "footerText": "©2026 PLDDUCK",
+  "url": "https://blog.pldduck.com",
+  "social": {
+    "github": "https://github.com/ououduck/",
+    "email": "mailto:i@pldduck.com",
+    "rawEmail": "i@pldduck.com"
+  },
+  "author": {
+    "name": "跑路的duck",
+    "avatar": "https://q1.qlogo.cn/g?b=qq&nk=2472652060&s=100",
+    "role": "前端菜鸟",
+    "bio": "你好！我是跑路的duck，感谢你能来光临 D-blog。这个博客完全构建于 React 生态之上，旨在探索极致的静态页面体验。"
+  },
+  "toc": {
+    "collapseInactiveRootBranches": true
+  },
+  "giscusEnabled": true,
+  "comments": {
+    "repo": "ououduck/D-blog",
+    "repoId": "R_kgDORApwuA",
+    "category": "文章评论",
+    "categoryId": "DIC_kwDORApwuM4DCztq"
+  },
+  "guestbook": {
+    "discussionId": 9
+  },
+  "friendsPage": {
+    "repoUrl": "https://github.com/ououduck/D-blog",
+    "repoFriendsUrl": "https://github.com/ououduck/D-blog/tree/main/friends",
+    "repoFriendsDir": "friends"
+  },
+  "beian": {
+    "text": "湘ICP备2025101669号",
+    "url": "https://beian.miit.gov.cn"
+  }
+}
