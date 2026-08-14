@@ -4,7 +4,7 @@ title: D-blog 最佳 Pagespeed Insights 结果
 excerpt: D-blog 最佳 Pagespeed Insights 结果
 date: 2026-08-05
 updatedAt: 2026-08-09
-category: 随笔
+category: 分享
 tags:
   - D-blog
   - PageSpeed Insights

@@ -4,7 +4,7 @@ title: Deepseek V4众望所归
 excerpt: 时隔一年半 Deepseek V4 众望所归
 date: 2026-04-24
 updatedAt: 2026-08-03
-category: 随笔
+category: 分享
 tags:
   - AI
   - 人工智能

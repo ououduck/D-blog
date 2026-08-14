@@ -18,7 +18,7 @@ content:
         label: 分类
         type: select
         options:
-          values: ["教程", "技术", "随笔", "分享", "其他"]
+          values: ["教程", "技术", "分享", "其他"]
       - { name: tags, label: 标签, type: string, list: true }
       - { name: coverImage, label: 封面图链接, type: string }
       - { name: author, label: 作者, type: string }

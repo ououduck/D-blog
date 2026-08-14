@@ -4,7 +4,7 @@ title: 捡漏 JBL REFLECT AWARE C
 excerpt: 小黄鱼25元捡漏当年千元级运动降噪耳机
 date: 2026-08-04
 updatedAt: 2026-08-04
-category: 随笔
+category: 分享
 tags:
   - 耳机
   - 音乐

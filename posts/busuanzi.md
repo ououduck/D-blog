@@ -4,7 +4,7 @@ title: 接入不蒜子统计
 excerpt: D-blog接入不蒜子统计-静态博客的福音
 date: 2026-08-12
 updatedAt: 2026-08-12
-category: 随笔
+category: 分享
 tags:
   - D-blog
   - 不蒜子统计

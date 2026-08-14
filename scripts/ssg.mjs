@@ -372,7 +372,7 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   };
 
   const staticPages = [
-    { path: 'archive', title: `归档 - ${siteConfig.title}`, description: 'D-blog 全站文章时间线，按年与月份归档全部技术分享、工具测评和生活随笔，快速回顾历史内容与更新轨迹。', schemaType: 'CollectionPage' },
+    { path: 'archive', title: `归档 - ${siteConfig.title}`, description: 'D-blog 全站文章时间线，按年与月份归档全部技术分享、工具测评，快速回顾历史内容与更新轨迹。', schemaType: 'CollectionPage' },
     { path: 'tags', title: `标签 - ${siteConfig.title}`, description: 'D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。', schemaType: 'CollectionPage' },
     { path: 'stats', title: `统计 - ${siteConfig.title}`, description: 'D-blog 站点数据统计面板，展示文章总数、累计字数、分类与标签分布、图片与代码规模等核心内容数据。', schemaType: 'WebPage' },
     { path: 'about', title: `关于 - ${siteConfig.title}`, description: '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。', schemaType: 'ProfilePage' },
