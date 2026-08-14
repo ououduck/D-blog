@@ -4,8 +4,9 @@ import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import DOMPurify from 'dompurify';
+import { remarkCodeMeta } from '@/utils/remarkCodeMeta';
 
-import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Download, ChevronDown, ChevronUp, Users, ExternalLink, Eye, EyeOff, BookOpen, Bookmark, Minus, Plus, RotateCcw, LoaderCircle, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Download, FileCode, WrapText, ChevronDown, ChevronUp, Users, ExternalLink, Eye, EyeOff, BookOpen, Bookmark, Minus, Plus, RotateCcw, LoaderCircle, TriangleAlert } from 'lucide-react';
 import { getPostById, getPosts } from '@/services/posts';
 import { getReadingHistoryEntry, saveReadingHistory } from '@/services/readingHistory';
 import { getRelatedPosts, getSeriesNavigation, type SeriesNavigation } from '@/utils/postRelations';
@@ -234,12 +235,29 @@ const getCodeText = (children: React.ReactNode) => extractTextFromReactNode(chil
   .replace(/\r\n?/g, '\n')
   .replace(/\n$/, '');
 
+/**
+ * 从 code 子元素读取围栏代码块的 info 字符串（由 remarkCodeMeta 插件透传到
+ * data-meta），解析出文件名等展示信息。写法：```ts title="app.ts"。
+ */
+const extractCodeMeta = (children: React.ReactNode): { filename?: string } => {
+  const codeChild = React.Children.toArray(children).find(
+    (child) => React.isValidElement(child) && typeof (child.props as Record<string, unknown>).className === 'string'
+  ) as React.ReactElement | undefined;
+  const meta = codeChild ? (codeChild.props as Record<string, unknown>)['data-meta'] : undefined;
+  if (typeof meta !== 'string' || !meta.trim()) return {};
+  const filenameMatch = meta.match(/title\s*=\s*["']([^"']+)["']/);
+  return filenameMatch && filenameMatch[1].trim() ? { filename: filenameMatch[1].trim() } : {};
+};
+
 const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement> & { node?: unknown }) => {
   const [copied, setCopied] = useState(false);
+  const [copiedLine, setCopiedLine] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpand, setNeedsExpand] = useState(false);
+  const [isWrapped, setIsWrapped] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
   const lang = extractLangFromChildren(children);
+  const { filename } = extractCodeMeta(children);
   const isMermaidBlock = React.Children.toArray(children).some(
     (child) => React.isValidElement(child) && child.type === MermaidBlock
   );
@@ -257,34 +275,64 @@ const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<R
     };
   }, [lineCount]);
 
-  const markCopied = () => {
+  const clearCopyFeedback = () => {
     if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
+    resetTimerRef.current = window.setTimeout(() => {
+      setCopied(false);
+      setCopiedLine(null);
+    }, 2200);
+  };
+
+  const markCopied = () => {
     setCopied(true);
-    resetTimerRef.current = window.setTimeout(() => setCopied(false), 2200);
+    setCopiedLine(null);
+    clearCopyFeedback();
+  };
+
+  const markLineCopied = (line: number) => {
+    setCopied(false);
+    setCopiedLine(line);
+    clearCopyFeedback();
+  };
+
+  const copyText = async (text: string) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.setAttribute('readonly', '');
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      return document.execCommand('copy');
+    } finally {
+      textArea.remove();
+    }
   };
 
   const handleCopy = async () => {
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(code);
-        markCopied();
-        return;
-      }
-      throw new Error('Clipboard API not available');
+      const copiedOk = await copyText(code);
+      if (copiedOk) markCopied();
     } catch {
-      const textArea = document.createElement('textarea');
-      textArea.value = code;
-      textArea.setAttribute('readonly', '');
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-9999px';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      try {
-        if (document.execCommand('copy')) markCopied();
-      } finally {
-        textArea.remove();
-      }
+      // Clipboard API 拒绝时静默失败，不打断阅读。
+    }
+  };
+
+  const handleCopyLine = async (line: number) => {
+    const lines = code.split('\n');
+    const lineText = lines[line - 1];
+    if (lineText === undefined) return;
+    try {
+      const copiedOk = await copyText(lineText);
+      if (copiedOk) markLineCopied(line);
+    } catch {
+      // 同上，静默失败。
     }
   };
 
@@ -292,7 +340,7 @@ const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<R
     const objectUrl = URL.createObjectURL(new Blob([code], { type: 'text/plain;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = objectUrl;
-    link.download = `code-snippet.${getCodeFileExtension(lang)}`;
+    link.download = `${filename || 'code-snippet'}.${getCodeFileExtension(lang)}`;
     link.rel = 'noopener';
     document.body.appendChild(link);
     link.click();
@@ -312,16 +360,35 @@ const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<R
   }
 
   return (
-    <div className="code-block group relative my-5 md:my-7">
+    <div
+      className="code-block group relative my-5 md:my-7"
+      data-lang={lang ? lang.toLowerCase() : undefined}
+      data-wrapped={isWrapped ? 'true' : undefined}
+    >
       <div className="code-toolbar">
-        <span className="code-language" aria-label={`代码语言：${lang ? getLangDisplayName(lang) : '纯文本'}`}>
-          {lang ? getLangDisplayName(lang) : '纯文本'}
-        </span>
+        <div className="code-toolbar-info">
+          {filename && (
+            <span className="code-filename" title={filename}>
+              <FileCode size={13} aria-hidden="true" />
+              <span className="truncate">{filename}</span>
+            </span>
+          )}
+          <span className="code-language" aria-label={`代码语言：${lang ? getLangDisplayName(lang) : '纯文本'}`}>
+            {lang ? getLangDisplayName(lang) : '纯文本'}
+          </span>
+        </div>
         <div className="code-toolbar-actions">
-          {copied && <span className="code-copy-feedback" role="status" aria-live="polite">代码已复制</span>}
-          <button type="button" onClick={handleCopy} className={`code-action-btn ${copied ? 'code-action-btn-success' : ''}`} title={copied ? '已复制' : '复制代码'} aria-label={copied ? '已复制' : '复制代码'}>
-            {copied ? <span className="copy-pop"><Check size={15} aria-hidden="true" /></span> : <Copy size={15} aria-hidden="true" />}
-            <span>{copied ? '已复制' : '复制'}</span>
+          {copiedLine !== null ? (
+            <span className="code-copy-feedback" role="status" aria-live="polite">已复制第 {copiedLine} 行</span>
+          ) : copied ? (
+            <span className="code-copy-feedback" role="status" aria-live="polite">代码已复制</span>
+          ) : null}
+          <button type="button" onClick={() => setIsWrapped((wrapped) => !wrapped)} className={`code-action-btn ${isWrapped ? 'code-action-btn-active' : ''}`} title={isWrapped ? '关闭自动换行' : '开启自动换行'} aria-label={isWrapped ? '关闭自动换行' : '开启自动换行'} aria-pressed={isWrapped}>
+            <WrapText size={15} aria-hidden="true" />
+          </button>
+          <button type="button" onClick={handleCopy} className={`code-action-btn ${copied || copiedLine !== null ? 'code-action-btn-success' : ''}`} title={copied || copiedLine !== null ? '已复制' : '复制代码'} aria-label={copied || copiedLine !== null ? '已复制' : '复制代码'}>
+            {copied || copiedLine !== null ? <span className="copy-pop"><Check size={15} aria-hidden="true" /></span> : <Copy size={15} aria-hidden="true" />}
+            <span>{copied || copiedLine !== null ? '已复制' : '复制'}</span>
           </button>
           <button type="button" onClick={handleDownload} className="code-action-btn" title="下载代码" aria-label="下载代码">
             <Download size={15} aria-hidden="true" />
@@ -333,7 +400,9 @@ const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<R
       <div className={`code-scroll ${needsExpand && !isExpanded ? 'code-block-collapsed' : 'code-block-expanded'}`}>
         <div className="code-content">
           <div className="code-line-numbers" aria-hidden="true">
-            {lineNumbers.map((number) => <span key={number}>{number}</span>)}
+            {lineNumbers.map((number) => (
+              <span key={number} data-line={number} title={`复制第 ${number} 行`} onClick={() => { void handleCopyLine(number); }}>{number}</span>
+            ))}
           </div>
           <pre {...props} className={`${props.className || ''} !my-0 !min-w-max !bg-transparent !p-3.5 !leading-6 md:!p-5`}>
             {childrenWithProps}
@@ -764,6 +833,10 @@ const createMarkdownComponents = (
       const resolvedSrc = src ? (isAbsoluteAssetPath(src) ? resolveBrowserAsset(src) : resolveSitePath(src)) : src;
       const previewTarget = previewSrc || resolvedSrc || '';
       const dimensions = resolvedSrc ? findImageDimensions(imageDimensions, resolvedSrc) : undefined;
+      // 深色模式图片适配的豁免约定：![alt](url "no-dark") 表示保持原亮度
+      // （如深色截图/图表），其余正文图片在暗色下自动柔和降亮。
+      const isNoDarkAdapt = title === 'no-dark';
+      const captionText = isNoDarkAdapt ? alt : (alt || title);
       return (
         <figure data-role="markdown-figure" className="group/myimage my-7 md:my-10">
           <button
@@ -781,15 +854,15 @@ const createMarkdownComponents = (
               width={dimensions?.width ?? props.width}
               height={dimensions?.height ?? props.height}
               wrapperClassName="w-full rounded-media"
-              className="h-auto w-full cursor-zoom-in rounded-media object-contain transition-opacity duration-200 group-hover/myimage:opacity-95"
+              className={`h-auto w-full cursor-zoom-in rounded-media object-contain transition-opacity duration-200 group-hover/myimage:opacity-95 ${isNoDarkAdapt ? 'no-dark-adapt' : ''}`}
             />
             <span className="pointer-events-none absolute right-3 top-3 rounded-micro border border-white/20 bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 opacity-0 transition-opacity duration-200 group-hover/myimage:opacity-100 group-focus-visible/myimage:opacity-100">
               预览
             </span>
           </button>
-          {(alt || title) && (
+          {(captionText) && (
             <figcaption className="mt-2.5 text-center text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-              {alt || title}
+              {captionText}
             </figcaption>
           )}
         </figure>
@@ -845,7 +918,7 @@ export const Post = () => {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt?: string } | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [remarkPlugins, setRemarkPlugins] = useState<MarkdownPlugin[]>([remarkGfm]);
+  const [remarkPlugins, setRemarkPlugins] = useState<MarkdownPlugin[]>([remarkGfm, remarkCodeMeta]);
   const [rehypePlugins, setRehypePlugins] = useState<MarkdownPlugin[]>([]);
   const [mermaidRenderer, setMermaidRenderer] = useState<MermaidRenderer | null>(null);
   const [mermaidTheme, setMermaidTheme] = useState<'light' | 'dark'>('light');
@@ -1804,6 +1877,13 @@ export const Post = () => {
             title={post.title}
             excerpt={post.excerpt}
             url={absoluteSiteUrl(`/post/${post.id}`, typeof window !== 'undefined' ? window.location.origin : siteConfig.url)}
+            category={post.category}
+            date={post.date}
+            coverImage={post.coverImage}
+            siteName={siteConfig.title}
+            siteSubtitle={siteConfig.subtitle}
+            siteUrl={siteConfig.url}
+            logo={assetUrl('/logo.png')}
           />
         )}
       </Suspense>

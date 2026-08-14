@@ -584,6 +584,94 @@ html.theme-switching .editorial-input {
     @apply absolute bottom-2 left-1/2 -translate-x-1/2;
   }
 
+  /* ===== 代码块增强 ===== */
+
+  .code-toolbar-info {
+    @apply flex min-w-0 flex-1 items-center gap-2;
+  }
+
+  .code-filename {
+    @apply inline-flex max-w-[45%] shrink-0 items-center gap-1.5 font-mono text-[11px] font-medium text-slate-500 dark:text-slate-400;
+  }
+
+  .code-filename span {
+    @apply truncate;
+  }
+
+  .code-action-btn-active {
+    @apply border-blue-500 bg-blue-50 text-blue-800 dark:border-blue-400 dark:bg-blue-500/15 dark:text-blue-100;
+  }
+
+  /* 换行模式：行号与折行后的视觉行不再一一对应，隐藏行号列；
+     代码按容器宽度折行（覆盖 pre 的 min-w-max）。 */
+  .code-block[data-wrapped='true'] .code-line-numbers {
+    display: none;
+  }
+
+  .code-block[data-wrapped='true'] .code-content,
+  .code-block[data-wrapped='true'] .code-content > pre {
+    min-width: 0 !important;
+  }
+
+  .code-block[data-wrapped='true'] .code-content > pre {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+
+  /* 行号悬停提示可点击（点击复制该行） */
+  .code-line-numbers span {
+    @apply cursor-pointer transition-colors hover:text-blue-600 dark:hover:text-blue-300;
+  }
+
+  /* diff 代码块整行高亮：rehype-highlight 输出 hljs-addition/deletion/meta，
+     pre 内边距为 0.875rem（md: 1.25rem），用负 margin 把高亮延伸到整行宽度。 */
+  .code-block[data-lang='diff'] .hljs-addition,
+  .code-block[data-lang='diff'] .hljs-deletion,
+  .code-block[data-lang='diff'] .hljs-meta {
+    display: block;
+    margin: 0 -0.875rem;
+    padding: 0 0.875rem;
+  }
+
+  @media (min-width: 768px) {
+    .code-block[data-lang='diff'] .hljs-addition,
+    .code-block[data-lang='diff'] .hljs-deletion,
+    .code-block[data-lang='diff'] .hljs-meta {
+      margin: 0 -1.25rem;
+      padding: 0 1.25rem;
+    }
+  }
+
+  .code-block[data-lang='diff'] .hljs-addition {
+    background: rgba(16, 185, 129, 0.12);
+    color: #047857;
+  }
+
+  .code-block[data-lang='diff'] .hljs-deletion {
+    background: rgba(239, 68, 68, 0.10);
+    color: #b91c1c;
+  }
+
+  .code-block[data-lang='diff'] .hljs-meta {
+    background: rgba(59, 130, 246, 0.10);
+    color: #1d4ed8;
+  }
+
+  .dark .code-block[data-lang='diff'] .hljs-addition {
+    background: rgba(16, 185, 129, 0.16);
+    color: #6ee7b7;
+  }
+
+  .dark .code-block[data-lang='diff'] .hljs-deletion {
+    background: rgba(239, 68, 68, 0.14);
+    color: #fca5a5;
+  }
+
+  .dark .code-block[data-lang='diff'] .hljs-meta {
+    background: rgba(59, 130, 246, 0.13);
+    color: #93c5fd;
+  }
+
   .prose figcaption {
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -914,6 +1002,27 @@ html.dark .mermaid-diagram > svg {
 
 .dark .prose img:not(.no-dark-border) {
   @apply ring-1 ring-white/10;
+}
+
+/* ===== 深色模式图片适配 =====
+   暗色下正文图片整体柔和降亮、压对比，避免高亮图片刺眼；悬停时恢复原始
+   亮度方便查看细节。单张图片豁免有两种方式：
+     1. Markdown 标题约定：![alt](url "no-dark")
+     2. 给图片加 no-dark-adapt 类（如原图本身为深色截图）
+   transition 同时声明 opacity，避免覆盖 ProgressiveImage 的淡入过渡。 */
+.dark .post-prose img:not(.no-dark-adapt) {
+  filter: brightness(0.9) contrast(0.97) saturate(0.96);
+  transition: filter 0.3s ease, opacity 0.25s ease;
+}
+
+.dark .post-prose img:not(.no-dark-adapt):hover {
+  filter: brightness(1.04) contrast(1) saturate(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dark .post-prose img:not(.no-dark-adapt) {
+    transition: none;
+  }
 }
 
 .kbd {

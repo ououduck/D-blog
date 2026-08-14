@@ -1,6 +1,7 @@
 import React, { useId, useRef, useState } from 'react';
-import { X, Copy, Check, Link as LinkIcon } from 'lucide-react';
+import { X, Copy, Check, Link as LinkIcon, Image as ImageIcon, Download, LoaderCircle, RefreshCw } from 'lucide-react';
 import { SlideModal } from './SlideModal';
+import { generateSharePoster } from '@/utils/sharePoster';
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -9,6 +10,13 @@ interface ShareModalProps {
   title: string;
   excerpt: string;
   url: string;
+  category?: string;
+  date?: string;
+  coverImage?: string;
+  siteName?: string;
+  siteSubtitle?: string;
+  siteUrl?: string;
+  logo?: string;
 }
 
 export const ShareModal: React.FC<ShareModalProps> = ({
@@ -17,10 +25,20 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   onCloseCallback,
   title,
   excerpt,
-  url
+  url,
+  category,
+  date,
+  coverImage,
+  siteName,
+  siteSubtitle,
+  siteUrl,
+  logo
 }) => {
   const [copiedType, setCopiedType] = useState<'all' | 'link' | null>(null);
   const [copyError, setCopyError] = useState<string | null>(null);
+  const [posterDataUrl, setPosterDataUrl] = useState<string | null>(null);
+  const [isGeneratingPoster, setIsGeneratingPoster] = useState(false);
+  const [posterError, setPosterError] = useState<string | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const resetTimerRef = useRef<number | null>(null);
   const titleId = useId();
@@ -46,6 +64,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       clearResetTimer();
       setCopiedType(null);
       setCopyError(null);
+      setPosterDataUrl(null);
+      setPosterError(null);
+      setIsGeneratingPoster(false);
     }
   }, [isOpen]);
 
@@ -99,6 +120,43 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     }
   };
 
+  const handleGeneratePoster = async () => {
+    if (isGeneratingPoster) return;
+    setIsGeneratingPoster(true);
+    setPosterError(null);
+    try {
+      const dataUrl = await generateSharePoster({
+        title,
+        excerpt,
+        url,
+        category,
+        date,
+        coverImage,
+        siteName,
+        siteSubtitle,
+        siteUrl,
+        logo,
+      });
+      setPosterDataUrl(dataUrl);
+    } catch (error) {
+      console.error('Poster generation failed:', error);
+      setPosterError('海报生成失败，请重试。');
+    } finally {
+      setIsGeneratingPoster(false);
+    }
+  };
+
+  const handleDownloadPoster = () => {
+    if (!posterDataUrl) return;
+    const safeTitle = title.replace(/[\\/:*?"<>|\s]+/g, '-').slice(0, 30) || 'post';
+    const link = document.createElement('a');
+    link.href = posterDataUrl;
+    link.download = `share-poster-${safeTitle}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <SlideModal
       isOpen={isOpen}
@@ -124,7 +182,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
       <div className="p-5 sm:p-6">
         <p className="mb-5 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-          复制完整分享文案，或者只带走这篇文章的链接。
+          复制完整分享文案、生成分享海报，或者只带走这篇文章的链接。
         </p>
 
         <div className="mb-5 border-y border-zinc-200 py-4 dark:border-zinc-800">
@@ -158,8 +216,79 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           </button>
         </div>
 
+        <div className="my-5 flex items-center gap-3" aria-hidden="true">
+          <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">分享海报</span>
+          <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+        </div>
+
+        {posterDataUrl ? (
+          <div>
+            <div className="mx-auto max-h-[420px] w-fit max-w-full overflow-hidden rounded-surface border border-zinc-200 shadow-sm dark:border-zinc-800">
+              <img
+                src={posterDataUrl}
+                alt={`分享海报：${title}`}
+                className="mx-auto block h-auto max-h-[420px] w-auto max-w-full"
+              />
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={handleDownloadPoster}
+                className="editorial-button-primary rounded-control active:scale-[0.98]"
+                aria-label="下载分享海报"
+              >
+                <Download size={16} />
+                下载海报
+              </button>
+              <button
+                type="button"
+                onClick={() => { setPosterDataUrl(null); setPosterError(null); }}
+                className="editorial-button rounded-control active:scale-[0.98]"
+                aria-label="重新生成分享海报"
+              >
+                <RefreshCw size={16} />
+                重新生成
+              </button>
+            </div>
+            <p className="mt-3 text-center text-xs text-zinc-500 dark:text-zinc-400">
+              移动端可长按海报图片保存到相册。
+            </p>
+          </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => { void handleGeneratePoster(); }}
+              disabled={isGeneratingPoster}
+              className="editorial-button w-full rounded-control active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label="生成文章分享海报"
+            >
+              {isGeneratingPoster ? (
+                <>
+                  <LoaderCircle size={16} className={isGeneratingPoster ? 'animate-spin' : undefined} aria-hidden="true" />
+                  正在生成海报…
+                </>
+              ) : (
+                <>
+                  <ImageIcon size={16} />
+                  生成分享海报
+                </>
+              )}
+            </button>
+            {posterError && (
+              <p className="mt-3 text-center text-xs text-red-600 dark:text-red-400" role="alert">
+                {posterError}
+              </p>
+            )}
+            <p className="mt-3 text-center text-xs text-zinc-500 dark:text-zinc-400">
+              自动排版标题、摘要、封面与二维码，适合分享到社交平台。
+            </p>
+          </>
+        )}
+
         <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-400" aria-live="polite">
-          {copyError ?? (copiedType ? '复制成功' : '选择复制方式')}
+          {copyError ?? (copiedType ? '复制成功' : '选择一种分享方式')}
         </p>
       </div>
     </SlideModal>

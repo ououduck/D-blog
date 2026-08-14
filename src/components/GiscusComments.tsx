@@ -5,12 +5,19 @@ import { siteConfig } from '@config/site.config';
 
 const getGiscusTheme = () => document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 
+/** 距视口底部多少像素内开始预加载评论区脚本（过早加载没有意义，过晚则白屏等待）。 */
+const NEAR_VIEWPORT_MARGIN_PX = 600;
+
 export const GiscusComments = ({ postId }: { postId: string }) => {
+  const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [isOffline, setIsOffline] = useState(false);
+  // 评论区是否已进入"即将可见"范围：未触发前不注入 giscus 脚本，也不加载 iframe，
+  // 避免首屏/文章阅读主流程被评论相关资源拖慢。
+  const [isNearViewport, setIsNearViewport] = useState(false);
 
   useEffect(() => {
     // 水合后同步真实网络状态（SSR 首帧固定为在线，避免水合冲突）。
@@ -24,9 +31,32 @@ export const GiscusComments = ({ postId }: { postId: string }) => {
     };
   }, []);
 
+  // 懒加载触发：观察评论区块（含标题与占位，始终有高度；容器 div 本身高度为 0，
+  // 零面积目标不会被 IntersectionObserver 判定为相交）。
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || typeof IntersectionObserver === 'undefined') {
+      // 不支持 IntersectionObserver 的旧环境直接加载，保证功能可用。
+      setIsNearViewport(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsNearViewport(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: `${NEAR_VIEWPORT_MARGIN_PX}px 0px` }
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || isOffline) return;
+    if (!container || isOffline || !isNearViewport) return;
 
     setIsLoaded(false);
     setLoadFailed(false);
@@ -86,10 +116,10 @@ export const GiscusComments = ({ postId }: { postId: string }) => {
       window.removeEventListener('message', handleGiscusMessage);
       container.replaceChildren();
     };
-  }, [isOffline, loadAttempt, postId]);
+  }, [isOffline, isNearViewport, loadAttempt, postId]);
 
   return (
-    <section className="giscus-comments mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800 md:mt-16 md:pt-10" aria-labelledby="comments-heading">
+    <section ref={sectionRef} className="giscus-comments mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800 md:mt-16 md:pt-10" aria-labelledby="comments-heading">
       <div className="mb-6 flex items-center gap-2">
         <MessageSquareText size={18} className="text-zinc-400" aria-hidden="true" />
         <h2 id="comments-heading" className="font-serif text-xl font-bold text-ink dark:text-white">评论</h2>
@@ -103,12 +133,15 @@ export const GiscusComments = ({ postId }: { postId: string }) => {
           <p>评论区加载失败，请检查网络连接后重试。</p>
           <button type="button" onClick={() => setLoadAttempt((attempt) => attempt + 1)} className="editorial-button mt-4">重新加载评论</button>
         </div>
-      ) : !isLoaded ? (
+      ) : isLoaded ? (
+        <div aria-hidden="true" className="hidden" />
+      ) : (
+        // 未加载完成前的占位：保持区块高度，避免加载开始/结束时布局跳动。
         <div role="status" aria-live="polite" className="border-y border-zinc-200 px-4 py-6 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-          正在加载评论区…
+          {isNearViewport ? '正在加载评论区…' : '评论将在滚动到此处时自动加载。'}
         </div>
-      ) : null}
-      <div ref={containerRef} className={isOffline ? 'hidden' : undefined} />
+      )}
+      <div ref={containerRef} className={isOffline || !isNearViewport ? 'hidden' : undefined} />
     </section>
   );
 };
