@@ -8,7 +8,7 @@ export interface ColorDecision {
 
 const clampChannel = (value: number) => Math.max(0, Math.min(255, Math.round(value)));
 
-export function parseColor(value: string): RgbColor | null {
+function parseColor(value: string): RgbColor | null {
   const input = value.trim().toLowerCase();
   const hex = input.match(/^#([\da-f]{3,8})$/i);
   if (hex) {
@@ -29,7 +29,7 @@ export function parseColor(value: string): RgbColor | null {
   return named[input] ?? null;
 }
 
-export function relativeLuminance(color: RgbColor): number {
+function relativeLuminance(color: RgbColor): number {
   const linear = [color.r, color.g, color.b].map((channel) => {
     const value = channel / 255;
     return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
@@ -37,7 +37,7 @@ export function relativeLuminance(color: RgbColor): number {
   return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
 }
 
-export function contrastRatio(first: RgbColor, second: RgbColor): number {
+function contrastRatio(first: RgbColor, second: RgbColor): number {
   const light = Math.max(relativeLuminance(first), relativeLuminance(second));
   const dark = Math.min(relativeLuminance(first), relativeLuminance(second));
   return (light + 0.05) / (dark + 0.05);

@@ -1,6 +1,6 @@
-export const COVER_STORAGE_VERSION = 1;
-export const COVER_DRAFT_KEY = 'd-blog-cover-draft-v1';
-export const COVER_PRESETS_KEY = 'd-blog-cover-presets-v1';
+const COVER_STORAGE_VERSION = 1;
+const COVER_DRAFT_KEY = 'd-blog-cover-draft-v1';
+const COVER_PRESETS_KEY = 'd-blog-cover-presets-v1';
 
 export interface CoverDraft {
   version: number;

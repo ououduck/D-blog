@@ -23,7 +23,7 @@ export interface SiteStats {
   topImageCountPosts?: SiteStatsPostSummary[];
 }
 
-const EMPTY_SITE_STATS: SiteStats = {
+export const EMPTY_SITE_STATS: SiteStats = {
   totalPosts: 0,
   totalWords: 0,
   totalCategories: 0,

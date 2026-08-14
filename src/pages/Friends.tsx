@@ -113,6 +113,9 @@ export const Friends = () => {
   const [applicationFilename, setApplicationFilename] = useState('');
   const [applicationErrors, setApplicationErrors] = useState<ReturnType<typeof validateFriendLinkApplication>>({});
   const [applicationResult, setApplicationResult] = useState<ReturnType<typeof createFriendLinkApplication> | null>(null);
+  // 草稿弹窗的显隐与草稿结果分离：弹窗关闭后 applicationResult 仍保留，
+  // 表单区的「我已提交」按钮不随之消失（否则用户提交 Issue 返回后无路可走）。
+  const [isApplicationResultOpen, setIsApplicationResultOpen] = useState(false);
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -178,6 +181,7 @@ export const Friends = () => {
 
     const result = createFriendLinkApplication(applicationValues, applicationFilename, siteConfig.friendsPage.repoUrl);
     setApplicationResult(result);
+    setIsApplicationResultOpen(true);
   };
 
   const advanceApplicationStep = (step: number) => {
@@ -614,8 +618,8 @@ export const Friends = () => {
       </p>
 
       <SlideModal
-        isOpen={Boolean(applicationResult)}
-        onClose={() => setApplicationResult(null)}
+        isOpen={isApplicationResultOpen}
+        onClose={() => setIsApplicationResultOpen(false)}
         ariaLabelledby="friend-link-result-title"
         ariaDescribedby="friend-link-result-description"
         className="max-w-2xl"
@@ -633,7 +637,7 @@ export const Friends = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setApplicationResult(null)}
+                onClick={() => setIsApplicationResultOpen(false)}
                 className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-icon text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100"
                 aria-label="关闭 Issue 草稿弹窗"
               >
@@ -667,7 +671,4 @@ export const Friends = () => {
     </div>
   );
 };
-
-
-
 

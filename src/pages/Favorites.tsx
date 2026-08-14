@@ -110,5 +110,3 @@ export const Favorites = () => {
     </div>
   );
 };
-
-export default Favorites;

@@ -163,6 +163,24 @@ export const Tags = () => {
         </p>
       </header>
 
+      {/* 搜索框保持在条件渲染之外：搜索进行中（防抖/评分）输入框不随结果区一起卸载，
+          避免用户无法继续输入或修改关键词。 */}
+      <div className="mb-8">
+        <SearchField
+          value={searchQuery}
+          onValueChange={handleSearchChange}
+          onClear={handleClearSearch}
+          placeholder="搜索标签或文章..."
+          containerClassName="max-w-md"
+          aria-label="搜索标签或文章"
+        />
+        {hasSearchQuery && (
+          <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">
+            搜索 "<span className="font-bold text-zinc-900 dark:text-zinc-100">{searchQuery}</span>" 找到 {tags.length} 个标签
+          </div>
+        )}
+      </div>
+
       {loading || isSearching ? (
         <div className="flex items-center justify-center py-20" aria-busy="true">
           <LoadingStatus label={isSearching ? '正在搜索标签和文章' : '正在加载标签'} />
@@ -178,22 +196,6 @@ export const Tags = () => {
         />
       ) : (
         <>
-          <div className="mb-8">
-            <SearchField
-              value={searchQuery}
-              onValueChange={handleSearchChange}
-              onClear={handleClearSearch}
-              placeholder="搜索标签或文章..."
-              containerClassName="max-w-md"
-              aria-label="搜索标签或文章"
-            />
-            {hasSearchQuery && (
-              <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">
-                搜索 "<span className="font-bold text-zinc-900 dark:text-zinc-100">{searchQuery}</span>" 找到 {tags.length} 个标签
-              </div>
-            )}
-          </div>
-
           {!selectedTag ? (
             tags.length > 0 ? (
               <div className="mt-2 border-y border-zinc-200 py-8 dark:border-zinc-800 md:py-10">
@@ -290,8 +292,4 @@ export const Tags = () => {
     </div>
   );
 };
-
-
-
-
 

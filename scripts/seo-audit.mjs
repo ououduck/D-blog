@@ -3,7 +3,7 @@
  * 用法：node scripts/seo-audit.mjs [distDir]
  * 检查项覆盖：文档元数据、OG/Twitter、结构化数据、链接、标题层级、图片 alt 等。
  */
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadSiteConfig } from './site-config-loader.mjs';
@@ -165,9 +165,6 @@ for (const file of files) {
           if (type === 'WebSite') {
             if (!item.name) fail(relativePath, 'jsonld', 'WebSite 缺少 name');
             if (!item.url) fail(relativePath, 'jsonld', 'WebSite 缺少 url');
-          }
-          if (type === 'SearchAction' || type === 'ItemList' || type === 'CollectionPage') {
-            // noop
           }
         }
       } catch (err) {

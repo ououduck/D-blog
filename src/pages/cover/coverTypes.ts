@@ -1,7 +1,5 @@
 import type { CoverTemplate } from '../../config/coverTemplates';
 
-export type { CoverTemplate } from '../../config/coverTemplates';
-
 export type LayoutMode = 'icon-split' | 'stacked' | 'icon-only' | 'text-only';
 export type TextAlign = 'left' | 'center' | 'right';
 export type ExportFormat = 'png' | 'jpeg';

@@ -12,17 +12,17 @@
 import fs from 'node:fs';
 
 /** 关键词配置路径（相对仓库根目录）。 */
-export const CONFIG_PATH = 'config/comment-keywords.json';
+const CONFIG_PATH = 'config/comment-keywords.json';
 
 /** 自动豁免的机器人账号（giscus 公告类讨论/评论不应被关键词审核）。 */
-export const ALWAYS_EXEMPT_USERS = new Set(['giscus[bot]', 'github-actions[bot]']);
+const ALWAYS_EXEMPT_USERS = new Set(['giscus[bot]', 'github-actions[bot]']);
 
 /**
  * 文本规范化：小写 + 去除零宽字符（防绕过） + 连续空白折叠为单空格。
  * @param {string | null | undefined} text
  * @returns {string}
  */
-export const normalizeText = (text) => String(text ?? '')
+const normalizeText = (text) => String(text ?? '')
   .toLowerCase()
   .replace(/[\u200b-\u200f\ufeff]/g, '')
   .replace(/\s+/g, ' ')

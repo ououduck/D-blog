@@ -98,7 +98,7 @@ export const Watermark: React.FC = () => {
       if (generation !== imageLoadGenerationRef.current) return;
       const totalPixels = image.naturalWidth * image.naturalHeight;
       if (!image.naturalWidth || !image.naturalHeight || totalPixels > MAX_IMAGE_PIXELS) {
-        setFeedback({ kind: 'error', message: '图片总像素不能超过 4000 万像素，请缩小尺寸后重试。' });
+        setFeedback({ kind: 'error', message: '图片总像素不能超过 2400 万像素，请缩小尺寸后重试。' });
         return;
       }
       setImageState({ image, name: file.name });
@@ -166,7 +166,7 @@ export const Watermark: React.FC = () => {
             </div>
             <input ref={fileInputRef} className="hidden" type="file" accept="image/*" onChange={(event) => { void handleFile(event.target.files?.[0]); event.currentTarget.value = ''; }} />
             <button type="button" onClick={() => fileInputRef.current?.click()} className="editorial-button min-h-11 w-full"><Upload size={16} />{imageState ? '更换图片' : '选择图片'}</button>
-            <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">支持常见图片格式，最大 25MB、4000 万像素。</p>
+            <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">支持常见图片格式，最大 25MB、2400 万像素。</p>
             {imageState && <p className="mt-2 truncate text-xs text-zinc-500 dark:text-zinc-400" title={`${imageState.name} · ${imageState.image.naturalWidth} × ${imageState.image.naturalHeight}`}>{imageState.name} · {imageState.image.naturalWidth} × {imageState.image.naturalHeight}</p>}
           </section>
 

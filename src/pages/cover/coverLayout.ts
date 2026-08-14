@@ -106,7 +106,7 @@ function appendToken(lines: string[], token: string, maxWidth: number, fontSize:
   }
 }
 
-export function wrapText(text: string, maxWidth: number, fontSize: number, measure: TextMeasure): string[] {
+function wrapText(text: string, maxWidth: number, fontSize: number, measure: TextMeasure): string[] {
   if (!text.trim() || maxWidth <= 0 || fontSize <= 0) return [];
   const paragraphs = text.replace(/\r\n?/g, '\n').split('\n');
   const lines: string[] = [];

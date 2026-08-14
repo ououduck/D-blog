@@ -49,7 +49,7 @@ const GRAPHQL_RETRIES = 2;
 const GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql';
 
 /** Akismet 判定的三种结论。'undetermined' 表示服务错误/畸形响应（不误删）。 */
-export const AKISMET_VERDICTS = Object.freeze({
+const AKISMET_VERDICTS = Object.freeze({
   SPAM: 'spam',
   HAM: 'ham',
   UNDETERMINED: 'undetermined'

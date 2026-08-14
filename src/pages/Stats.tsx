@@ -14,26 +14,13 @@ import {
 import { Seo } from '../components/Seo';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { Surface } from '@/components/ui/Surface';
-import { getSiteStats, getInitialSiteStats, SiteStats } from '../services/siteStats';
+import { getSiteStats, getInitialSiteStats, EMPTY_SITE_STATS, SiteStats } from '../services/siteStats';
 import { fillBusuanziSpans } from '@/services/busuanzi';
 import { siteConfig } from '@config/site.config';
 
 // 构建期 SSG：site-stats.json 已通过 eager glob 内联，SSR 阶段即可同步渲染全部统计卡片，
 // 客户端水合首帧与 SSR 输出一致；异步重取仅用于“重新加载”。
 const initialSiteStats = getInitialSiteStats();
-
-const EMPTY_SITE_STATS: SiteStats = {
-  totalPosts: 0,
-  totalWords: 0,
-  totalCategories: 0,
-  totalTags: 0,
-  totalImages: 0,
-  categoryStats: [],
-  tagStats: [],
-  recentPosts: [],
-  topWordCountPosts: [],
-  topImageCountPosts: []
-};
 
 const formatValue = (value: number) => new Intl.NumberFormat('zh-CN').format(value);
 

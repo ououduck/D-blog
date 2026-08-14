@@ -36,7 +36,7 @@ const getAnchor = (position: WatermarkPosition) => {
   return { horizontal, vertical } as const;
 };
 
-export const getWatermarkPoint = (
+const getWatermarkPoint = (
   width: number,
   height: number,
   fontSize: number,
@@ -51,11 +51,13 @@ export const getWatermarkPoint = (
     : horizontal === 'right'
       ? width - safePadding
       : width / 2;
+  // 配合 renderWatermark 的 textBaseline='middle'：以 em 盒中心定位，
+  // top/bottom 的 padding 语义对称，且底部文字不会因 descender 越界被裁切。
   const y = vertical === 'top'
-    ? safePadding + fontSize
+    ? safePadding + halfHeight
     : vertical === 'bottom'
-      ? height - safePadding
-      : height / 2 + halfHeight / 2;
+      ? height - safePadding - halfHeight
+      : height / 2;
 
   return { x, y, textAlign: horizontal === 'left' ? 'left' : horizontal === 'right' ? 'right' : 'center' } as const;
 };
@@ -99,7 +101,7 @@ export const renderWatermark = (canvas: HTMLCanvasElement, image: CanvasImageSou
     ? Math.max(minimumFontSize, proportionalFontSize)
     : requestedFontSize;
   context.font = `600 ${fontSize}px ${fontFamily}`;
-  context.textBaseline = 'alphabetic';
+  context.textBaseline = 'middle';
   const point = getWatermarkPoint(width, height, fontSize, options.position, padding);
   context.textAlign = point.textAlign;
   context.globalAlpha = opacity;

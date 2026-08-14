@@ -14,11 +14,6 @@ export interface MarkdownHeading {
 
 export { extractMarkdownHeadings, slugifyHeading, stripInlineMarkdown };
 
-export const stripEmojiFromHeadingText = (text: string) => text
-  .replace(/[\p{Extended_Pictographic}\p{Emoji_Modifier}\uFE0F\u200D\u20E3]/gu, '')
-  .replace(/\s{2,}/g, ' ')
-  .trim();
-
 export const extractTextFromReactNode = (node: React.ReactNode): string => {
   if (typeof node === 'string' || typeof node === 'number') {
     return String(node);

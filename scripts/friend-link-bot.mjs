@@ -42,7 +42,6 @@
  */
 
 import fs from 'node:fs/promises';
-import fsSync from 'node:fs';
 import path from 'node:path';
 import net from 'node:net';
 import { execFileSync } from 'node:child_process';
@@ -55,7 +54,6 @@ import {
   computeBackoffDelay,
   sleep,
   RateLimitError,
-  PaginationLimitError,
   readResponseText,
   GITHUB_API_VERSION
 } from './lib/http.mjs';
@@ -65,10 +63,10 @@ import { createActionLogger, formatError, installGlobalErrorHandlers } from './l
 /* 常量与可覆盖配置                                                     */
 /* ------------------------------------------------------------------ */
 
-export const ISSUE_PREFIX = '[Friend Link]';
+const ISSUE_PREFIX = '[Friend Link]';
 
 /** 申请提交后等待的冷却时长：10 分钟（可环境变量覆盖，方便测试缩短）。 */
-export const WAIT_MS = Number(process.env.FRIEND_LINK_WAIT_MS) || 10 * 60 * 1000;
+const WAIT_MS = Number(process.env.FRIEND_LINK_WAIT_MS) || 10 * 60 * 1000;
 
 /** review 模式原地等待冷却的封顶（毫秒）：低于 workflow timeout-minutes(15 分钟)，
  *  防止 FRIEND_LINK_WAIT_MS 被调大时 job 在等待期间被超时终止（白白占用队列）。 */
@@ -84,11 +82,9 @@ const REJECTED_MARKER = '<!-- d-blog-friend-bot:rejected -->';
 
 /** 站点信息：反链检查目标。 */
 const SITE_URL = process.env.FRIEND_LINK_SITE_URL || 'https://blog.pldduck.com/';
-const SITE_NAME = process.env.FRIEND_LINK_SITE_NAME || 'D-blog';
-const SITE_DESCRIPTION = process.env.FRIEND_LINK_SITE_DESCRIPTION || '跑路的duck的技术分享和生活随笔';
 
 /** 缺省头像：申请缺 avatar 时用站点 logo 占位（可 env 覆盖）。 */
-export const DEFAULT_AVATAR_URL = process.env.FRIEND_LINK_DEFAULT_AVATAR || new URL('logo.png', SITE_URL).toString();
+const DEFAULT_AVATAR_URL = process.env.FRIEND_LINK_DEFAULT_AVATAR || new URL('logo.png', SITE_URL).toString();
 
 /** 审核通过后触发部署的工作流文件名（workflow_dispatch 的 workflow_id）。 */
 const DEPLOY_WORKFLOW = process.env.FRIEND_LINK_DEPLOY_WORKFLOW || 'deploy.yml';
@@ -172,7 +168,7 @@ const api = async (endpoint, options = {}) => {
  * @param {string} [body=''] Issue 正文。
  * @returns {object | null} 全部核心字段非空时返回对象，否则 null。
  */
-export const parseApplication = (body = '') => {
+const parseApplication = (body = '') => {
   const lines = String(body ?? '').split(/\r?\n/);
   // 收集所有字段行（容忍无空格冒号），重复标签取首次出现的值。
   const values = {};
@@ -221,7 +217,7 @@ export const parseApplication = (body = '') => {
  * @param {string} value
  * @returns {string}
  */
-export const normalizeUrl = (value) => {
+const normalizeUrl = (value) => {
   try {
     const url = new URL(value);
     url.hash = '';
@@ -240,7 +236,7 @@ export const normalizeUrl = (value) => {
  * @param {number} [now=Date.now()] 当前时间戳（可注入测试）。
  * @returns {number} 应等待毫秒数（0 表示无需等待）。
  */
-export const computeCooldownWaitMs = (issues, now = Date.now()) => {
+const computeCooldownWaitMs = (issues, now = Date.now()) => {
   let maxRemaining = 0;
   for (const issue of issues) {
     const createdAt = Date.parse(issue.created_at);
@@ -296,7 +292,7 @@ const unmapIpv4InIpv6 = (value) => {
   return undefined;
 };
 
-export const isPrivateAddress = (address) => {
+const isPrivateAddress = (address) => {
   const value = String(address).toLowerCase();
   try {
     if (value.includes(':')) {
@@ -329,7 +325,7 @@ export const isPrivateAddress = (address) => {
  * @param {string} value
  * @returns {Promise<boolean>}
  */
-export const isSafePublicHttpUrl = async (value) => {
+const isSafePublicHttpUrl = async (value) => {
   let url;
   try {
     url = new URL(value);
@@ -352,7 +348,7 @@ export const isSafePublicHttpUrl = async (value) => {
  * @param {string} value
  * @returns {string}
  */
-export const sanitizeMailtoBody = (value) => String(value ?? '')
+const sanitizeMailtoBody = (value) => String(value ?? '')
   .replace(/\r\n?/g, ' ')
   .replace(/\n/g, ' ')
   .replace(/\s+/g, ' ')
@@ -419,7 +415,7 @@ const fetchPublicPage = async (value) => {
  * @param {string} html
  * @returns {boolean}
  */
-export const containsBacklink = (html) => {
+const containsBacklink = (html) => {
   const normalized = html
     .toLowerCase()
     .replaceAll('\\/', '/')
@@ -460,7 +456,7 @@ const closeIssue = (number, reason) =>
  *   response.json()），故直接用 fetchWithRetry。
  * @returns {Promise<boolean>} 是否成功触发部署。
  */
-export const dispatchDeploy = async () => {
+const dispatchDeploy = async () => {
   const payload = JSON.stringify({ repository: { ref: TARGET_BRANCH } });
   const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(DEPLOY_WORKFLOW)}/dispatches`;
   try {
@@ -668,7 +664,7 @@ const alreadyExists = async (application) => {
  * @param {number} issueNumber
  * @returns {Promise<string>} 提交短 SHA。
  */
-export const commitAndPushFriendFile = async (filePath, issueNumber) => {
+const commitAndPushFriendFile = async (filePath, issueNumber) => {
   execFileSync('git', ['add', filePath], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
   const staged = execFileSync('git', ['diff', '--cached', '--name-only'], {
     encoding: 'utf8',
@@ -863,14 +859,6 @@ const processReview = async () => {
         });
         stats.failed += 1;
         break; // 限流：停止本批后续处理。
-      }
-      if (error instanceof PaginationLimitError) {
-        logger.error('Open issues exceed pagination limit; aborting batch to avoid silent data loss', {
-          pages: error.pages,
-          error: formatError(error)
-        });
-        stats.failed += 1;
-        break; // 数据截断：fail-closed，停止本批。
       }
       logger.error('Issue processing failed, continuing with next', {
         issue: issueNumber,

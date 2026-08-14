@@ -288,17 +288,24 @@ const main = async () => {
       continue;
     }
 
-    // 实际替换：对原文逐个替换路径字符串
-    // 去重同一路径字符串（同一文件内可能多处引用同一字符串）
+    // 实际替换：去重同一路径字符串（同一文件内可能多处引用同一字符串），
+    // 按长度降序构造单遍正则，只对原始文本扫描一次。
+    // 不要逐条 split/join 累积替换：PicGo URL 常包含原文件名，短路径会把
+    // 刚插入的 URL 内部再替换一遍（如 "a.png" → "https://…/a.png" 被二次破坏），
+    // 单遍替换中插入的 URL 不会参与后续匹配，可彻底避免该污染。
     const uniqueReplacements = [...new Map(
       replacements.map((item) => [item.raw, item.url])
-    ).entries()].map(([raw, url]) => ({ raw, url }));
-    uniqueReplacements.sort((a, b) => b.raw.length - a.raw.length);
+    ).entries()].map(([raw, url]) => ({ raw, url }))
+      .sort((a, b) => b.raw.length - a.raw.length);
 
-    let newContent = rawContent;
-    for (const { raw, url } of uniqueReplacements) {
-      newContent = newContent.split(raw).join(url);
-    }
+    const escapedPattern = new RegExp(
+      uniqueReplacements.map(({ raw }) => raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
+      'g'
+    );
+    const newContent = rawContent.replace(escapedPattern, (match) => {
+      const item = uniqueReplacements.find(({ raw }) => raw === match);
+      return item ? item.url : match;
+    });
 
     if (newContent !== rawContent) {
       fs.writeFileSync(mdFile, newContent, 'utf-8');

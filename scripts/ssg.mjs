@@ -389,7 +389,7 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
    * 单页失败不中断整站生成，全部完成后汇总失败并返回 false（构建失败，
    * 但已生成的页面保留，便于在部署前排查失败原因）。
    */
-  const writePage = async (url, relativePath, extraHead = '', options = {}) => {
+  const writePage = async (url, relativePath, extraHead = '') => {
     const { html, head, routeData } = await renderPage(url);
     let pageHtml = injectRootContent(template, html);
     // 展平 Suspense 边界：真实内容就地内联，爬虫/智能体可读，浏览器无需等水合。
@@ -399,9 +399,6 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
     const routeDataScript = createRouteDataScript(routeData);
     if (routeDataScript) {
       pageHtml = pageHtml.replace(/<div\b[^>]*\bid=["']root["'][^>]*>/i, (match) => `${routeDataScript}\n    ${match}`);
-    }
-    if (options.canonical === null) {
-      pageHtml = pageHtml.replace(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\/?\s*>/i, '');
     }
     writeHtmlFile(relativePath, pageHtml);
   };

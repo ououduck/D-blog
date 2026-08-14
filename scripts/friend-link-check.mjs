@@ -45,7 +45,7 @@ import { createActionLogger, formatError, installGlobalErrorHandlers } from './l
 /* ------------------------------------------------------------------ */
 
 /** 友链目录（可环境变量覆盖，便于本地对临时副本测试）。 */
-export const FRIENDS_DIR = process.env.FRIEND_LINK_CHECK_DIR || 'friends';
+const FRIENDS_DIR = process.env.FRIEND_LINK_CHECK_DIR || 'friends';
 
 /** 单次请求超时（毫秒），覆盖 DNS+TLS+响应头全程。 */
 const CHECK_TIMEOUT_MS = Number(process.env.FRIEND_LINK_CHECK_TIMEOUT_MS) || 20000;
@@ -84,7 +84,7 @@ const logger = createActionLogger('friend-link-check');
  * @param {string} rawUrl 友链 url 字段。
  * @returns {Promise<{ reachable: boolean, detail: string }>}
  */
-export const checkUrlReachable = async (rawUrl) => {
+const checkUrlReachable = async (rawUrl) => {
   let url;
   try {
     url = new URL(rawUrl);
@@ -136,7 +136,7 @@ export const checkUrlReachable = async (rawUrl) => {
  * @param {string} content
  * @returns {number}
  */
-export const detectIndent = (content) => (/^ {4}"/m.test(content) ? 4 : 2);
+const detectIndent = (content) => (/^ {4}"/m.test(content) ? 4 : 2);
 
 /**
  * 带并发上限的 map（友链多时避免串行等待拖长 job）。
@@ -169,7 +169,7 @@ const mapWithConcurrency = async (items, mapper, concurrency) => {
  * @param {string[]} changedFiles 实际发生变化的文件相对路径。
  * @returns {Promise<string | null>} 提交短 SHA；无改动时返回 null。
  */
-export const commitAndPush = async (changedFiles) => {
+const commitAndPush = async (changedFiles) => {
   execFileSync('git', ['add', ...changedFiles], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
   const staged = execFileSync('git', ['diff', '--cached', '--name-only'], {
     encoding: 'utf8',

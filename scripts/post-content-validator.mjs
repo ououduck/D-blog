@@ -114,8 +114,6 @@ const parseMarkdownTokens = (markdown) => {
 
 export const parseMarkdownImages = (markdown) => parseMarkdownTokens(markdown).images;
 
-export const parseMarkdownLinks = (markdown) => parseMarkdownTokens(markdown).links;
-
 export const stripMarkdownUrlDecorators = (value) => {
   const firstDecorator = String(value).search(/[?#]/);
   return firstDecorator < 0 ? String(value) : String(value).slice(0, firstDecorator);
@@ -365,4 +363,4 @@ export const validatePostContent = (post, context = {}) => {
   return errors;
 };
 
-export { DEFAULT_STATIC_ROUTES, maskFencedCode };
+export { DEFAULT_STATIC_ROUTES };

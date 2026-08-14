@@ -20,6 +20,7 @@
 - **全文搜索** — 构建时生成搜索索引，多维度权重评分，支持范围筛选与搜索历史
 - **阅读体验** — 目录导航（自动折叠非活跃分支）、阅读进度恢复、专注阅读模式、深色模式图片自动柔和降亮（可单图豁免）、CC BY-SA 4.0 声明、标题锚点复制链接
 - **分享与互动** — 分享弹窗支持一键复制文案/链接，并可生成含封面、标题与二维码的竖版分享海报（Canvas 本地绘制，无外链依赖）；Giscus 评论区懒加载（滚动到评论区附近才注入，不拖慢正文阅读）；独立留言板页（`/guestbook`）绑定仓库固定 Discussion，与文章评论共用 Akismet 反垃圾
+- **内置工具箱** — 封面生成器（`/cover`）：黑白模板 + 背景图拖动/缩放 + Iconify 图标检索 + 批量导入导出；水印工具（`/watermark`）：本地为图片添加文字水印并导出，图片不离开浏览器
 - **文章导航** — 上一篇/下一篇（`Alt + ←/→`）、系列文章、面包屑、相关文章推荐
 - **主题系统** — 浅色/深色/跟随系统三态切换，支持 CSS View Transitions 过渡
 - **首页信息流** — 精选大图卡片与置顶、分类筛选、排序、分页与内联搜索；筛选与页码同步到 URL
@@ -60,18 +61,22 @@ Node.js >= 20，npm >= 10。
 
 ```mermaid
 graph LR
-  A[gen:data] --> B[vite build]
-  B --> C[vite build --ssr]
-  C --> D[SSG 预渲染]
-  D --> E[产物审计]
-  E --> F[dist/]
+  A[gen:data] --> B[og-card 生成]
+  B --> C[vite build]
+  C --> D[vite build --ssr]
+  D --> E[SSG 预渲染]
+  E --> F[产物审计]
+  F --> G[SEO 审计]
+  G --> H[dist/]
 ```
 
 1. **数据生成**（`gen:data`）— 校验 Front Matter、文章 ID、图片、锚点与链接，生成 `generated/` 索引、Sitemap、RSS、`llms.txt`、`robots.txt`
-2. **客户端构建**（`vite build`）— 编译 `src/` 到 `dist/`
-3. **SSR 构建**（`vite build --ssr`）— 编译 SSR bundle 到 `dist-ssr/`
-4. **SSG 预渲染**（`ssg`）— 用 SSR bundle 按路由渲染全站静态 HTML：Suspense 展平、注入 SEO meta / JSON-LD 与封面 preload
-5. **产物审计**（`audit:build`）— 校验 HTML 完整性、SEO 标签、静态正文与体积
+2. **社交分享卡**（`generate-og-card`）— 用 sharp 生成 1200×630 的 `public/og-card.png`
+3. **客户端构建**（`vite build`）— 编译 `src/` 到 `dist/`
+4. **SSR 构建**（`vite build --ssr`）— 编译 SSR bundle 到 `dist-ssr/`，并快照干净 HTML 模板
+5. **SSG 预渲染**（`ssg`）— 用 SSR bundle 按路由渲染全站静态 HTML：Suspense 展平、注入 SEO meta / JSON-LD 与封面 preload
+6. **产物审计**（`audit:build`）— 校验 HTML 完整性、SEO 标签、静态正文与体积
+7. **SEO 审计**（`audit:seo`）— 对全部生成页面执行元数据 / OG / JSON-LD / 标题层级等清单检查
 
 `generated/`、RSS 与 Sitemap 均为构建产物，不应手工编辑。
 
@@ -81,21 +86,24 @@ graph LR
 D-blog/
 ├── index.html               # HTML 入口（字体、Clarity 注入与不蒜子预连接）
 ├── .env.example             # 环境变量示例
-├── config/                  # site.config.ts / content.config.json / ads.config.ts / tsconfig
+├── config/                  # site.config.json（站点配置）/ content.config.json / ads.config.ts / tsconfig / tailwind / postcss
 ├── posts/                   # Markdown 文章
 ├── friends/                # 友链数据（JSON，由 PagesCMS「友链」集合直接读写）
 ├── shuoshuo/               # 说说（短动态）Markdown 内容
 ├── .pages.yml               # PagesCMS 配置
 ├── generated/               # 构建产物：posts.json / posts-search.json / site-stats.json / friends.json / shuoshuo.json
 ├── public/                  # 静态资源：favicon、PWA 图标、sw.js、offline.html、feed.xml、sitemap
-├── scripts/                 # 构建脚本：generate-site-data / ssg / build / audit-build 等
+├── dist/                    # 客户端构建产物（构建后生成）
+├── dist-ssr/                # SSR bundle（构建后生成）
+├── scripts/                 # 构建/自动化脚本：generate-site-data / ssg / build / audit-build / 友链与评论检查等
 ├── .github/workflows/       # 文章更新通知、友链自动审核、评论检查
 └── src/
     ├── components/          # Layout、Seo、TableOfContents、SearchModal、ImageViewer 等
-    ├── pages/               # 页面组件（懒加载）
+    ├── pages/               # 页面组件（懒加载）；cover/、watermark/、archive/、friends/ 为对应页面的模块集
+    ├── config/              # 封面生成器配置：coverTemplates / coverPresets
     ├── services/            # posts / friends / shuoshuo / offlinePosts / readingHistory / siteStats / busuanzi
-    ├── hooks/               # useMediaQuery / useModalOverlay / usePostSearch 等
-    ├── utils/               # 日期、排序、目录树、站点 URL、动画等
+    ├── hooks/               # useMediaQuery / useModalOverlay / usePostSearch / useOfflinePosts 等
+    ├── utils/               # 日期、排序、目录树、站点 URL、动画、标题解析等
     ├── ssr/routeData.tsx    # SSG 路由数据构造与客户端读取
     ├── App.tsx              # 路由 + 错误边界
     └── index.tsx            # 渲染入口（水合 / 客户端渲染）
@@ -226,7 +234,7 @@ images:
 | `npm run gen:data` | 数据生成 + 全量校验 |
 | `npm run ssg` | 仅执行 SSG 预渲染（需先完成两端构建） |
 | `npm run audit:build` | 构建产物完整性审计（HTML / SEO 标签 / 体积） |
-| `npm run audit:seo` | 大厂级 SEO 清单审计（26 页 × 16 项检查，已接入 build） |
+| `npm run audit:seo` | 大厂级 SEO 清单审计（全站 28 页，已接入 build） |
 | `npm run typecheck` / `check` | TypeScript 类型检查 / 类型检查 + 数据校验 |
 
 ## 部署

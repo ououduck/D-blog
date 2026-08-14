@@ -9,7 +9,7 @@ function assertFile(file: File | null | undefined): asserts file is File {
   if (!file) throw new Error('请选择要上传的文件');
 }
 
-export function validateImageFile(file: File | null | undefined, kind: ImageUploadKind): File {
+function validateImageFile(file: File | null | undefined, kind: ImageUploadKind): File {
   assertFile(file);
   const label = kind === 'background' ? '背景图片' : '图标';
   const limit = kind === 'background' ? BACKGROUND_IMAGE_MAX_BYTES : ICON_IMAGE_MAX_BYTES;
@@ -20,7 +20,7 @@ export function validateImageFile(file: File | null | undefined, kind: ImageUplo
   return file;
 }
 
-export function validateFontFile(file: File | null | undefined): File {
+function validateFontFile(file: File | null | undefined): File {
   assertFile(file);
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
   const validMime = (FONT_MIME_TYPES as readonly string[]).includes(file.type.toLowerCase());
@@ -79,11 +79,11 @@ function readBlob<T extends string | ArrayBuffer>(
   });
 }
 
-export function readFileAsDataURL(file: Blob, options?: LoadResourceOptions): Promise<string> {
+function readFileAsDataURL(file: Blob, options?: LoadResourceOptions): Promise<string> {
   return readBlob<string>((reader) => reader.readAsDataURL(file), '读取文件', options);
 }
 
-export function readFileAsArrayBuffer(file: Blob, options?: LoadResourceOptions): Promise<ArrayBuffer> {
+function readFileAsArrayBuffer(file: Blob, options?: LoadResourceOptions): Promise<ArrayBuffer> {
   return readBlob<ArrayBuffer>((reader) => reader.readAsArrayBuffer(file), '读取字体文件', options)
     .then((result) => result instanceof ArrayBuffer ? result : Promise.reject(new Error('读取字体文件失败，请重试')));
 }

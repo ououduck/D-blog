@@ -13,19 +13,19 @@ export interface BatchParseIssue {
   message: string;
 }
 
-export interface BatchParseResult {
+interface BatchParseResult {
   items: BatchCoverItem[];
   issues: BatchParseIssue[];
 }
 
-export interface BatchRenderResult {
+interface BatchRenderResult {
   filename: string;
   blob: Blob;
 }
 
 const normalizeText = (value: unknown): string => typeof value === 'string' ? value.trim() : value == null ? '' : String(value).trim();
 
-export function sanitizeBatchSlug(value: string, fallback = 'cover'): string {
+function sanitizeBatchSlug(value: string, fallback = 'cover'): string {
   const slug = normalizeText(value)
     .toLowerCase()
     .replace(/[^\p{L}\p{N}_-]+/gu, '-')

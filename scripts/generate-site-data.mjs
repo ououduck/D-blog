@@ -429,7 +429,9 @@ const postRecords = files.map((filename) => {
     content = '';
   }
 
-  const { draft, readTime, author, authors, updatedAt, coverImage, top: _legacyTop, series: rawSeries, 'series-name': rawSeriesName, 'series-order': rawSeriesOrder, ...restData } = data;
+  // 仅解构实际使用的字段；其余未知键全部进入 restData，由下方白名单过滤剔除
+  // （frontmatter 中的 author/authors/coverImage 等经 data.* 显式读取）。
+  const { draft, updatedAt, ...restData } = data;
   const id = typeof data.id === 'string' ? data.id : '';
   const formattedDate = formatFrontmatterDate(data.date);
   const formattedUpdatedAt = formatFrontmatterDate(updatedAt);
@@ -741,12 +743,12 @@ const generateSitemap = () => {
   // 3. 图片 sitemap：收录文章封面。正文图片（PicGo 图床外链）不在此枚举：
   //    其 URL 已出现在页面 <img> 与 og:image 中，Google 可据此索引。
   //    Google image sitemap 规范允许 image:loc 指向自有 CDN；img.pldduck.com
-  //    为站点自有图床域名。动态数据（data:、blob:）与无法确认可抓取的 URL 一律剔除。
+  //    为站点自有图床域名。仅收录 http(s) 且带图片扩展名的 URL（data:/blob: 等
+  //    动态数据在协议检查处即被排除）。
   const isIndexableImage = (url) => {
     const clean = String(url).split(/[?#]/, 1)[0].toLowerCase();
     if (!/^https?:\/\//.test(clean)) return false;
-    if (clean.startsWith('data:') || clean.startsWith('blob:')) return false;
-    return /\.(?:jpe?g|png|gif|webp|avif)(?:\?.*)?$/i.test(clean);
+    return /\.(?:jpe?g|png|gif|webp|avif)$/i.test(clean);
   };
   const normalizeImageUrl = (url) => String(url).split(/[?#]/, 1)[0];
   const imagesXml = `<?xml version="1.0" encoding="UTF-8"?>

@@ -645,21 +645,31 @@ export const CoverGenerator: React.FC = () => {
     setIsDragging(false);
   }, []);
 
-  const handleCanvasWheel = useCallback((e: React.WheelEvent<HTMLCanvasElement>) => {
-    if (!bgImage) return;
-    e.preventDefault();
-    pendingWheelDeltaRef.current += e.deltaY > 0 ? -1 : 1;
-    if (wheelFrameRef.current !== null) return;
-    wheelFrameRef.current = window.requestAnimationFrame(() => {
-      wheelFrameRef.current = null;
-      const steps = pendingWheelDeltaRef.current;
-      pendingWheelDeltaRef.current = 0;
-      if (!steps) return;
-      setBgImageScale((current) => Math.max(
-        MIN_BACKGROUND_SCALE,
-        Math.min(current * Math.pow(steps > 0 ? 1.1 : 0.9, Math.abs(steps)), MAX_BACKGROUND_SCALE)
-      ));
-    });
+  // 滚轮缩放：React 合成事件在根节点上以 passive 注册，onWheel 里 preventDefault
+  // 无效（页面会随滚轮同步滚动）。改用原生非 passive 监听，阻止滚动并仅缩放。
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleCanvasWheel = (event: WheelEvent) => {
+      if (!bgImage) return;
+      event.preventDefault();
+      pendingWheelDeltaRef.current += event.deltaY > 0 ? -1 : 1;
+      if (wheelFrameRef.current !== null) return;
+      wheelFrameRef.current = window.requestAnimationFrame(() => {
+        wheelFrameRef.current = null;
+        const steps = pendingWheelDeltaRef.current;
+        pendingWheelDeltaRef.current = 0;
+        if (!steps) return;
+        setBgImageScale((current) => Math.max(
+          MIN_BACKGROUND_SCALE,
+          Math.min(current * Math.pow(steps > 0 ? 1.1 : 0.9, Math.abs(steps)), MAX_BACKGROUND_SCALE)
+        ));
+      });
+    };
+
+    canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', handleCanvasWheel);
   }, [bgImage]);
 
   const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLCanvasElement>) => {
@@ -736,6 +746,9 @@ export const CoverGenerator: React.FC = () => {
     const outputSize = { width: Math.round(canvasSize.width * exportScale), height: Math.round(canvasSize.height * exportScale) };
     const totalOutputPixels = outputSize.width * outputSize.height * items.length;
     if (items.length > MAX_BATCH_ITEMS || totalOutputPixels > MAX_BATCH_OUTPUT_PIXELS) {
+      // 先关闭批量弹窗再提示：错误横幅渲染在主页面层级，弹窗（z-modal 全屏遮罩）
+      // 不关闭时横幅被压在遮罩下层，用户看不到失败原因。
+      setShowBatchDialog(false);
       setFeedback({ kind: 'error', message: `批量导出最多支持 ${MAX_BATCH_ITEMS} 个封面和 ${Math.round(MAX_BATCH_OUTPUT_PIXELS / 1_000_000)}00 万总像素，请降低数量或导出倍数后重试。` });
       return;
     }
@@ -799,16 +812,14 @@ export const CoverGenerator: React.FC = () => {
       const size = { width: canvasSize.width * exportScale, height: canvasSize.height * exportScale };
       const outputCanvas = await renderCanvas(size);
       const filename = getExportFilename(exportFilename, exportFormat, exportScale);
-      if (exportFormat === 'jpeg' && transparentBackground) {
-        const context = outputCanvas.getContext('2d');
-        if (context) { context.globalCompositeOperation = 'destination-over'; context.fillStyle = selectedTemplate.id === 'white' ? '#ffffff' : '#000000'; context.fillRect(0, 0, outputCanvas.width, outputCanvas.height); }
-      }
+      // 说明：JPEG 导出时 buildRenderOptions 已强制 transparentBackground=false，
+      // 模板底色（纯黑/纯白）在 renderCover 内绘制为不透明，无需再补背景填充。
       await downloadCanvas(outputCanvas, filename, exportFormat, jpegQuality / 100);
       setFeedback({ kind: 'success', message: `高清封面已导出：${filename}（${outputCanvas.width} × ${outputCanvas.height}px）` });
     } catch (error) {
       setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '下载封面失败' });
     } finally { setIsExporting(false); }
-  }, [canvasSize, downloadCanvas, exportFilename, exportFormat, exportScale, isExporting, isGenerating, jpegQuality, renderCanvas, selectedTemplate.id, transparentBackground]);
+  }, [canvasSize, downloadCanvas, exportFilename, exportFormat, exportScale, isExporting, isGenerating, jpegQuality, renderCanvas]);
 
   const copyToClipboard = useCallback(async () => {
     if (isGenerating || isExporting) return;
@@ -1736,7 +1747,6 @@ export const CoverGenerator: React.FC = () => {
                     onPointerMove={handleCanvasPointerMove}
                     onPointerUp={handleCanvasPointerEnd}
                     onPointerCancel={handleCanvasPointerEnd}
-                    onWheel={handleCanvasWheel}
                     onKeyDown={handleCanvasKeyDown}
                   />
                   {showGuides && (

@@ -3,14 +3,14 @@ import { markdownToFeedHtml } from './feed-markdown.mjs';
 
 const DEFAULT_LANGUAGE = 'zh-CN';
 
-export const xmlEscape = (value) => String(value ?? '')
+const xmlEscape = (value) => String(value ?? '')
   .replace(/&/g, '&amp;')
   .replace(/</g, '&lt;')
   .replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&apos;');
 
-export const wrapCdata = (value) => `<![CDATA[${String(value ?? '').replace(/]]>/g, ']]]]><![CDATA[>')}]]>`;
+const wrapCdata = (value) => `<![CDATA[${String(value ?? '').replace(/]]>/g, ']]]]><![CDATA[>')}]]>`;
 
 const normalizeSiteUrl = (value) => String(value || '').replace(/\/+$/, '');
 

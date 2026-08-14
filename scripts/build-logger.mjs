@@ -1,4 +1,16 @@
-const formatDetail = (detail) => detail ? ` ${detail}` : '';
+// detail 按字符串设计，但调用方可能传入对象（如 { path, error }）。
+// 对象直接模板拼接会变成 "[object Object]" 丢失数据，这里统一序列化。
+const formatDetail = (detail) => {
+  if (detail === undefined || detail === null || detail === '') return '';
+  if (typeof detail === 'object') {
+    try {
+      return ` ${JSON.stringify(detail)}`;
+    } catch {
+      return ` ${String(detail)}`;
+    }
+  }
+  return ` ${detail}`;
+};
 
 export const createBuildLogger = (scope) => {
   const startedAt = Date.now();
