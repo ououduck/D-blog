@@ -224,7 +224,7 @@ export const format = (value: string) => value.trim();
 
 `deploy.yml`：按 CMS 当前分支检出 → `npm ci` 安装依赖 → `npm run build`（输出 `dist/`）→ wrangler 直传 Cloudflare Pages → EdgeOne CLI 直传 EdgeOne Pages。
 
-> 项目名在 workflow 中为占位符 `<CF_PROJECT_NAME>` / `<EO_PROJECT_NAME>`，替换为控制台中的实际项目名（直传类型）。
+> 两个平台的项目名均为 `d-blog`（直传类型），已在 `deploy.yml` 中配置；若平台项目名不同，修改 `--project-name` / `-n` 参数即可。
 
 环境变量：`VITE_SITE_URL`（站点公开访问地址）、`VITE_BASE_PATH`（子路径部署时使用，留空为根路径）。
 
