@@ -3,7 +3,7 @@ id: pagescms
 title: 静态博客接入 PagesCMS
 excerpt: 为静态博客新增一个文章管理/写作Web后台 - PagesCMS
 date: 2026-08-13
-updatedAt: 2026-08-13
+updatedAt: 2026-08-14
 category: 技术
 tags:
   - PagesCMS
@@ -26,21 +26,24 @@ draft: false
 在 **PagesCMS** 理论上配置好 *.pages.yml* ，也可以通过 media 文件夹对附件图片有一个较好的管理，但是因为 **PagesCMS** 原理是通过把 GitHub 仓库作为存储库，所以你的每一次上传，它都会进行一次 Git 提交并 Push 到仓库  
 这就出现了一个问题：**Cloudflare Pages** 还好，可以关闭自动部署，改为纯手动部署；但是 EdgeOne 配置时就不一样了，因为 **EdgeOne Makers(Pages)** 不允许把 main 生产分支设置为手动部署，自动部署必须开启  
 这就导致每次都会触发一次构建，浪费宝贵的构建额度  
-其实解决办法也有很多：比如单独开一个 posts 分支，到时把一切更改都完成了之后，再合并到 main 分支  
-但是我选择了一个最懒惰的办法，就是不直接把图片放在 **D-blog** 项目下，而是使用自建图床(参考 “Cloudflare 带宽联盟实现 OSS 免回源流量费”)  
-这样确实不错，甚至还能减少 **D-blog** 的项目文件  
+~~其实解决办法也有很多：比如单独开一个 posts 分支，到时把一切更改都完成了之后，再合并到 main 分支~~  
+~~但是我选择了一个最懒惰的办法，就是不直接把图片放在 **D-blog** 项目下，而是使用自建图床(参考 “Cloudflare 带宽联盟实现 OSS 免回源流量费”)~~  
+~~这样确实不错，甚至还能减少 **D-blog** 的项目文件~~  
+2026-8-14 **D-blog** 现在已经改成通过在Github Action部署然后推送到直传的EdgeOne和Cloudflare项目中  
 但是我又意识到问题了：之前图片存在本地的时候，构建时会自动压缩图片，给出一个压缩版，用于一些首页之类的，但是换了图床就不能了，除非愿意花钱去用 CDN 或者 OSS 的图片处理  
 这对电脑端的性能没什么影响(目前看来，Pagespeed insights的评分是 99 100 100 100)，但是对移动端性能可是毁灭性的打击  
 目前打算就这样，后面再找找办法吧  
 
 # 接入教程
+
 很简单 其实只需要一个 *.pages.yml* 就行  
 什么？ 你说你不知道？  
 那也简单 直接让AI帮你写就行  
 注意：上面说的教程都是实话 实在没啥教程好写 直接交给AI就行  
 
 以下是 [D-blog](https://github.com/ououduck/D-blog "D-blog") 的 *.pages.yml* 文件 可供参考  
-````yaml
+
+```yaml
 # PagesCMS 配置 — D-blog 内容管理
 # 文档: https://pagescms.org/docs/configuration/
 
@@ -79,4 +82,5 @@ content:
           format: markdown
           switcher: true   # 允许切换源码模式编辑数学公式/Mermaid/嵌套图片链接
 
-````
+```
+
