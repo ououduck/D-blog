@@ -200,7 +200,7 @@ images:
 - `keywords`：子串匹配（忽略大小写）；`patterns`：正则匹配
 - `action`：评论命中后的处理（`minimize` 折叠可撤销 / `delete` 删除 / `none` 仅记录）
 - `discussionAction`：新建讨论命中后的处理（`delete` / `none`）
-- `exemptUsers`：豁免用户（仓库主与 giscus[bot] 等机器人自动豁免）
+- `exemptUsers`：豁免用户（giscus[bot] 等机器人自动豁免；仓库主不自动豁免，如需豁免请在此列出）
 
 事件触发链路 `comment-keyword-filter.yml` 只检查**新增**评论/讨论。如需清理历史评论，可在 PagesCMS 侧边栏点击「🔍 重新审查全部评论」——每次执行都会遍历仓库内**所有**评论，用当前配置重新匹配并执行处理动作（`comment-keyword-recheck.yml` → `scripts/comment-keyword-recheck.mjs`）。
 

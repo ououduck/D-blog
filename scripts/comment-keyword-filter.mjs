@@ -13,7 +13,7 @@
  *   - patterns[]   正则匹配（大小写不敏感；非法正则跳过并告警）
  *   - action       评论命中后的处理：'minimize'（默认，折叠隐藏，可撤销）/ 'delete'（删除）/ 'none'（仅记录）
  *   - discussionAction  新建讨论命中后的处理：'delete'（默认）/ 'none'
- *   - exemptUsers  豁免用户（仓库主自动豁免，giscus[bot] 等机器人自动豁免）
+ *   - exemptUsers  豁免用户（giscus[bot] 等机器人自动豁免；仓库主如需豁免也在此列出）
  *
  * 设计原则（与 akismet-comment-check.mjs 一致）：
  *   1. 配置缺失/为空/解析失败 → 优雅跳过（::warning:: + 正常退出），不红叉；
@@ -54,7 +54,7 @@ const GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql';
 
 /**
  * 读取并校验 GitHub Actions 事件载荷。
- * @returns {{ eventName: string, subject: { kind: 'comment' | 'discussion', id: string, author: string, text: string, url: string }, owner: string } | null}
+ * @returns {{ eventName: string, subject: { kind: 'comment' | 'discussion', id: string, author: string, text: string, url: string } } | null}
  */
 const loadEventPayload = () => {
   const eventName = process.env.GITHUB_EVENT_NAME;
@@ -72,7 +72,6 @@ const loadEventPayload = () => {
     return null;
   }
 
-  const repository = payload.repository;
   let subject = null;
   if (eventName === 'discussion_comment' && payload.comment) {
     subject = {
@@ -99,8 +98,7 @@ const loadEventPayload = () => {
 
   return {
     eventName,
-    subject,
-    owner: repository?.owner?.login?.toLowerCase() || ''
+    subject
   };
 };
 
@@ -208,10 +206,10 @@ const main = async () => {
     process.exitCode = 1;
     return;
   }
-  const { subject, owner } = event;
+  const { subject } = event;
 
-  // 豁免：仓库主（本人评论无论如何不审核）+ 配置名单 + 机器人账号。
-  if (isExemptAuthor(subject.author, owner, config.exemptUsers)) {
+  // 豁免：配置名单 + 机器人账号（仓库主不再自动豁免，按配置执行）。
+  if (isExemptAuthor(subject.author, config.exemptUsers)) {
     logger.info('Skipped: exempt user', { author: subject.author, kind: subject.kind });
     return;
   }

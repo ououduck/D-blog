@@ -315,8 +315,8 @@ const main = async () => {
     for (const comment of comments) {
       scanned += 1;
 
-      // 豁免：仓库主本人 + 配置名单 + 机器人账号（giscus[bot] 公告等）。
-      if (isExemptAuthor(comment.author, owner, config.exemptUsers)) {
+      // 豁免：配置名单 + 机器人账号（giscus[bot] 公告等；仓库主不再自动豁免，按配置执行）。
+      if (isExemptAuthor(comment.author, config.exemptUsers)) {
         exemptCount += 1;
         continue;
       }
