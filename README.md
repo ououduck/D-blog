@@ -205,17 +205,28 @@ export const format = (value: string) => value.trim();
 
 ## 部署
 
-### Cloudflare Pages（推荐）
+采用 **GitHub Actions 构建 + 双平台直传**：构建在 GitHub 完成（公开仓库 Actions 免费无限额度），产物直传 Cloudflare Pages 与 EdgeOne Pages，两个平台均不消耗构建额度。日常 push 到 main 不会触发任何部署，只有手动触发才会构建。
 
-| 配置项 | 值 |
+### 触发方式
+
+1. **Pages CMS**：侧边栏「🚀 部署到 Cloudflare & EdgeOne」按钮（配置见 `.pages.yml` 的 `actions` 段），点击后自动触发 GitHub Actions 构建并部署；
+2. **GitHub Actions 页面**：手动 Run workflow（`deploy.yml`，payload 最小可用 `{"repository":{"ref":"main"}}`）。
+
+### 一次性前置配置
+
+| 项 | 说明 |
 | --- | --- |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Node version | 20 |
+| Cloudflare Pages | 项目类型为 **Direct Upload**（直传），自定义域名与缓存策略（`public/_headers`）已就位 |
+| EdgeOne Pages | 项目类型为 **直传（Direct Upload）**（EdgeOne CLI 仅支持直传类型项目），域名 CNAME 已切换，缓存规则需在控制台手动配置（EdgeOne 不读 `_headers`） |
+| 仓库 Secrets | `CLOUDFLARE_API_TOKEN`（Pages:Edit 权限）、`CLOUDFLARE_ACCOUNT_ID`、`EDGEONE_API_TOKEN` |
+
+### 构建与部署流程
+
+`deploy.yml`：按 CMS 当前分支检出 → `npm ci` 安装依赖 → `npm run build`（输出 `dist/`）→ wrangler 直传 Cloudflare Pages → EdgeOne CLI 直传 EdgeOne Pages。
+
+> 项目名在 workflow 中为占位符 `<CF_PROJECT_NAME>` / `<EO_PROJECT_NAME>`，替换为控制台中的实际项目名（直传类型）。
 
 环境变量：`VITE_SITE_URL`（站点公开访问地址）、`VITE_BASE_PATH`（子路径部署时使用，留空为根路径）。
-
-仓库通过 `public/_headers` 提供缓存策略（HTML/SW 必须 revalidate，带哈希的 JS/CSS/图片长期 immutable）。EdgeOne Pages 不读取 `_headers`，需在控制台手动配置相同策略。
 
 ### 其他平台
 

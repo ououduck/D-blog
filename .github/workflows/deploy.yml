@@ -1,0 +1,73 @@
+# deploy.yml — 手动触发的双平台部署流水线。
+#
+# 构建在 GitHub Actions 完成（公开仓库免费无限额度），产物通过直传（direct upload）
+# 推送到 Cloudflare Pages 与 EdgeOne Pages，两个平台均不消耗构建额度。
+#
+# 触发方式（仅 workflow_dispatch，日常 push 到 main 不会触发任何部署）：
+#   1. Pages CMS 侧边栏「🚀 部署到 Cloudflare & EdgeOne」按钮（见 .pages.yml 的 actions 段），
+#   2. GitHub Actions 页面手动 Run workflow（payload 最小可用 {"repository":{"ref":"main"}}）。
+#
+# Pages CMS 会以 JSON 字符串填充 inputs.payload（含 repository.ref / sha、触发人等），
+# 协议见 https://pagescms.org/docs/configuration/actions/
+name: Deploy to Cloudflare & EdgeOne
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: 'Pages CMS payload as JSON，手动触发可用 {"repository":{"ref":"main"}}'
+        required: true
+        type: string
+
+concurrency:
+  # 连续触发只保留最新一次：避免快速连点产生重复构建/部署。
+  group: deploy-site
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          # Pages CMS 触发时按 CMS 当前打开的分支（main）检出；手动触发时回退到触发分支。
+          ref: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || '' }}
+
+      - name: Show dispatch context
+        run: |
+          echo "Ref: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || github.ref }}"
+          echo "Triggered by: ${{ inputs.payload != '' && fromJSON(inputs.payload).triggeredBy.githubUsername || 'manual' }}"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build
+        env:
+          VITE_SITE_URL: https://blog.pldduck.com
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # 直传（direct upload）部署：平台不构建，不消耗构建额度。
+        # 项目名占位符：替换为 Cloudflare 控制台中的 Pages 项目名（直传类型）。
+        run: npx --yes wrangler@4 pages deploy dist --project-name=<CF_PROJECT_NAME> --branch=main --commit-dirty=true
+
+      - name: Deploy to EdgeOne Pages
+        env:
+          EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
+        # 直传部署（EdgeOne CLI 仅支持直传类型项目），-e production 为生产环境。
+        # 项目名占位符：替换为 EdgeOne 控制台中的 Pages 项目名（直传类型）。
+        run: npx --yes edgeone@1 makers deploy ./dist -n <EO_PROJECT_NAME> -e production -t "$EDGEONE_API_TOKEN"

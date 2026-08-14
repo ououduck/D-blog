@@ -34,3 +34,15 @@ content:
         options:
           format: markdown
           switcher: true   # 允许切换源码模式编辑数学公式/Mermaid/嵌套图片链接
+
+# ── 部署动作：CMS 侧边栏按钮，触发 .github/workflows/deploy.yml ──
+# 文档: https://pagescms.org/docs/configuration/actions/
+actions:
+  - name: deploy-site
+    label: 🚀 部署到 Cloudflare & EdgeOne
+    workflow: deploy.yml
+    ref: current
+    confirm:
+      title: 确认部署？
+      message: 将在 GitHub Actions 中构建全站，并直传部署到 Cloudflare Pages 与 EdgeOne Pages
+      button: 开始部署
