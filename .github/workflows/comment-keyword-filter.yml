@@ -1,0 +1,40 @@
+# comment-keyword-filter.yml — 评论/讨论关键词过滤（自建审核层，与 Akismet 互补）。
+#
+# 触发：
+#   - discussion_comment: created → 检查新评论（文章评论、留言板留言）；
+#   - discussion: created        → 检查新讨论（防直接在 Discussions 灌水）。
+# 命中 config/comment-keywords.json 中的关键词/正则后按配置处理：
+#   - 评论：minimize（默认，折叠隐藏、可撤销）/ delete / none（仅记录）
+#   - 讨论：delete（默认）/ none
+# 配置缺失或为空时优雅跳过（不红叉）；修改 config/comment-keywords.json 推送到 main 即生效。
+name: Comment Keyword Filter
+
+on:
+  discussion_comment:
+    types: [created]
+  discussion:
+    types: [created]
+
+permissions:
+  contents: read
+  discussions: write
+
+concurrency:
+  # 同一评论/讨论的并发触发串行处理（防同一内容被重复处理）。
+  group: keyword-filter-${{ github.event.comment.node_id || github.event.discussion.node_id }}
+  cancel-in-progress: false
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    # 脚本内已有超时（GraphQL 20s × 3 次尝试），5 分钟上限留足余量且保证事件级 job 快速释放。
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run keyword filter
+        # 使用自动注入的 GITHUB_TOKEN（与 akismet workflow 相同的修复方案）。
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/comment-keyword-filter.mjs

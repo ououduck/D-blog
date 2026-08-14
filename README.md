@@ -176,7 +176,7 @@ export const format = (value: string) => value.trim();
 
 ### 留言板
 
-`/guestbook` 留言板页通过 Giscus `mapping=number` 固定指向仓库的「D-blog 留言板」Discussion（[discussions/9](https://github.com/ououduck/D-blog/discussions/9)，「留言板」分类），所有留言汇聚到同一线程；配置位于 `config/site.config.ts` 的 `guestbook.discussionId`。留言数据存于本仓库 Discussions，与文章评论共用 Akismet 反垃圾（`akismet-discussion-comment-check.yml`）。
+`/guestbook` 留言板页通过 Giscus `mapping=number` 固定指向仓库的「D-blog 留言板」Discussion（[discussions/9](https://github.com/ououduck/D-blog/discussions/9)，「留言板」分类），所有留言汇聚到同一线程；配置位于 `config/site.config.ts` 的 `guestbook.discussionId`。留言数据存于本仓库 Discussions，与文章评论共用 Akismet 反垃圾（`akismet-discussion-comment-check.yml`），并叠加自建关键词过滤（`comment-keyword-filter.yml`，关键词配置见 `config/comment-keywords.json`）作为审核层。
 
 ### 订阅更新
 
