@@ -902,6 +902,28 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   );
 };
 
+const Footer = () => {
+  return (
+    <footer className="site-footer mt-8 hidden border-t border-zinc-200/90 dark:border-zinc-800/90 md:mt-12 lg:block">
+      <div className="mx-auto max-w-7xl px-3 py-8 sm:px-6 md:py-10">
+        <div className="max-w-xl">
+          <Link to="/" className="font-serif text-lg font-bold tracking-tight text-ink transition-colors hover:text-zinc-600 dark:text-white dark:hover:text-zinc-300">
+            {siteConfig.title}
+          </Link>
+          <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{siteConfig.description}</p>
+        </div>
+
+        <div className="mt-7 flex flex-col gap-2 border-t border-zinc-200/70 pt-5 text-xs text-zinc-600 dark:border-zinc-800/70 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
+          <p>{siteConfig.footerText} · {siteConfig.author.name}</p>
+          <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center transition-colors hover:text-ink dark:hover:text-white">
+            {siteConfig.beian.text}
+          </a>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
 const Background = () => {
   return (
     <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden bg-paper dark:bg-void" />
@@ -1001,6 +1023,7 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
           <BackToTop />
         </Suspense>
       )}
+      {!isReadingMode && <Footer />}
     </div>
   );
 };
