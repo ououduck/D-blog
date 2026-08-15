@@ -145,7 +145,7 @@ export const markdownToFeedHtml = (markdown, options = {}) => {
 
   const basePath = options.basePath || '/';
   const postUrl = options.postUrl || toAbsoluteSiteUrl('/', siteUrl, basePath);
-  const processor = createProcessor({ siteUrl, basePath, postUrl, postId: options.postId });
+  const processor = createProcessor({ siteUrl, basePath, postUrl });
   const tree = processor.parse(String(markdown || ''));
   const transformed = processor.runSync(tree);
   return processor.stringify(transformed);

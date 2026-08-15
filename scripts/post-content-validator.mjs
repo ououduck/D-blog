@@ -24,8 +24,6 @@ const DEFAULT_STATIC_ROUTES = new Set([
   '/favorites',
 ]);
 
-const maskFencedCode = maskFencedCodeBlocks;
-
 const isEscaped = (value, index) => {
   let slashCount = 0;
   for (let cursor = index - 1; cursor >= 0 && value[cursor] === '\\'; cursor -= 1) {
@@ -78,7 +76,7 @@ const parseDestination = (rawInner) => {
 };
 
 const parseMarkdownTokens = (markdown) => {
-  const masked = maskFencedCode(markdown);
+  const masked = maskFencedCodeBlocks(markdown);
   const images = [];
   const links = [];
 
