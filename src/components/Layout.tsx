@@ -135,6 +135,7 @@ const isEditableTarget = (target: EventTarget | null) => {
 const ThemeToggle = () => {
   type Theme = 'light' | 'dark' | 'system';
   const hasInitializedThemeRef = useRef(false);
+  const themeSwitchTimerRef = useRef<number | null>(null);
   const prefersReducedMotion = useSiteReducedMotion();
   const [theme, setTheme] = useState<Theme>('system');
 
@@ -157,22 +158,40 @@ const ThemeToggle = () => {
     }
 
     const applyTheme = (nextTheme: Theme) => {
+      const shouldBeDark = nextTheme === 'dark' || (nextTheme === 'system' && systemQuery.matches);
+      const isDarkApplied = root.classList.contains('dark');
+
       const applyChanges = () => {
-        if (nextTheme === 'dark' || (nextTheme === 'system' && systemQuery.matches)) {
+        if (shouldBeDark) {
           root.classList.add('dark');
         } else {
           root.classList.remove('dark');
         }
       };
 
-      if (hasInitializedThemeRef.current && !prefersReducedMotion && document.startViewTransition) {
+      // 仅当主题 class 实际需要变化时才播动画：水合恢复保存的主题后，setTheme
+      // 触发的 effect 重跑是幂等应用（class 已正确），不应再产生可见过渡；
+      // 首次恢复（hasInitializedThemeRef 尚为 false）也直接生效、跳过动画。
+      const themeActuallyChanges = shouldBeDark !== isDarkApplied;
+      if (
+        themeActuallyChanges &&
+        hasInitializedThemeRef.current &&
+        !prefersReducedMotion &&
+        document.startViewTransition
+      ) {
         document.startViewTransition(() => {
           applyChanges();
         });
       } else {
-        if (hasInitializedThemeRef.current && !prefersReducedMotion) {
+        if (themeActuallyChanges && hasInitializedThemeRef.current && !prefersReducedMotion) {
           root.classList.add('theme-switching');
-          window.setTimeout(() => root.classList.remove('theme-switching'), 260);
+          if (themeSwitchTimerRef.current !== null) {
+            window.clearTimeout(themeSwitchTimerRef.current);
+          }
+          themeSwitchTimerRef.current = window.setTimeout(() => {
+            themeSwitchTimerRef.current = null;
+            root.classList.remove('theme-switching');
+          }, 260);
         }
         applyChanges();
       }
@@ -196,7 +215,8 @@ const ThemeToggle = () => {
 
     if (effectiveTheme !== theme) {
       // 首次应用用户保存的主题：跳过过渡动画，直接生效。
-      hasInitializedThemeRef.current = true;
+      // hasInitializedThemeRef 保持 false 直到 applyTheme 完成，确保首次
+      // 恢复不会误走 startViewTransition / theme-switching 动画分支。
       setTheme(effectiveTheme);
     }
 
@@ -209,7 +229,13 @@ const ThemeToggle = () => {
     }
 
     const detachSystemListener = attachSystemListener();
-    return () => detachSystemListener();
+    return () => {
+      detachSystemListener();
+      if (themeSwitchTimerRef.current !== null) {
+        window.clearTimeout(themeSwitchTimerRef.current);
+        themeSwitchTimerRef.current = null;
+      }
+    };
   }, [prefersReducedMotion, theme]);
 
   const toggleTheme = () => {
@@ -1197,6 +1223,9 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
   const routeVariants = prefersReducedMotion
     ? { initial: { opacity: 1 }, animate: { opacity: 1 }, exit: { opacity: 1 } }
     : routeShellVariants;
+  // View Transitions 模式下视觉过渡由浏览器原生接管，framer 侧用恒等变体
+  // （无淡入淡出），避免双重动画。
+  const viewTransitionRouteVariants = { initial: { opacity: 1 }, animate: { opacity: 1 } } as const;
   // 仅 query 变化时保持组件挂载，避免搜索输入导致首页动画重启。
   const routeContentKey = location.pathname;
 
@@ -1252,32 +1281,31 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
       <main
         className={`relative min-w-0 w-full flex-grow px-3 sm:px-6 ${isReadingMode ? 'pt-6 sm:pt-8 md:pt-10' : 'pt-[calc(5rem+env(safe-area-inset-top,0px))] sm:pt-[calc(6rem+env(safe-area-inset-top,0px))] md:pt-[calc(6rem+env(safe-area-inset-top,0px))]'}`}
       >
-        {hasViewTransition ? (
-          <div
+        {/* 路由内容容器：统一使用 AnimatePresence + motion.div（无论是否启用
+            View Transitions）。曾按 hasViewTransition 分支渲染 div / motion.div 两种
+            容器，水合后 hasViewTransition 翻转会使父容器类型变化，导致整棵页面子树
+            卸载重挂（页面 state 丢失、图片重新加载、effect 重跑重复上报统计）。
+            现在容器类型恒定，仅按需切换：
+            - hasViewTransition：挂 viewTransitionName，exit 置空（退出动画交给
+              原生 View Transition，AppRoutes 负责 startViewTransition 包裹）；
+            - 否则：走 framer-motion 的退出/进入动画。 */}
+        <AnimatePresence
+          mode="wait"
+          initial={false}
+          onExitComplete={() => window.scrollTo({ top: 0, behavior: 'auto' as ScrollBehavior })}
+        >
+          <motion.div
             key={routeContentKey}
-            style={{ viewTransitionName: 'route-content' }}
+            variants={hasViewTransition ? viewTransitionRouteVariants : routeVariants}
+            initial="initial"
+            animate="animate"
+            exit={hasViewTransition ? undefined : 'exit'}
+            style={hasViewTransition ? { viewTransitionName: 'route-content' } : undefined}
             className="mx-auto min-w-0 w-full max-w-7xl"
           >
             {children}
-          </div>
-        ) : (
-          <AnimatePresence
-            mode="wait"
-            initial={false}
-            onExitComplete={() => window.scrollTo({ top: 0, behavior: 'auto' as ScrollBehavior })}
-          >
-            <motion.div
-              key={routeContentKey}
-              variants={routeVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="mx-auto min-w-0 w-full max-w-7xl"
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
-        )}
+          </motion.div>
+        </AnimatePresence>
       </main>
       {!isReadingMode && (
         <Suspense fallback={null}>

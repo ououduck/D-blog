@@ -160,6 +160,27 @@ interface PostCardProps {
   onToggleSave: (post: PostMetadata) => void;
 }
 
+/**
+ * 文章卡片的标签行（最多展示 3 个）。模块级组件而非 PostCard 内联定义：
+ * 内联组件每次渲染都会创建新的组件类型，导致标签子树（含 Link）被
+ * 卸载并重新挂载，浪费 DOM 重建且使 memo 失效。
+ */
+const PostCardTags: React.FC<{ tags: string[] }> = ({ tags }) =>
+  tags.length > 0 ? (
+    <div className="flex flex-wrap gap-1.5">
+      {tags.slice(0, 3).map((tag) => (
+        <Link
+          key={tag}
+          to={`/tags?tag=${encodeURIComponent(tag)}`}
+          className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-100/70 px-2 py-0.5 text-[11px] font-medium text-zinc-600 transition-colors hover:border-zinc-400 hover:bg-zinc-900 hover:text-white dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-100 dark:hover:text-zinc-950"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {tag}
+        </Link>
+      ))}
+    </div>
+  ) : null;
+
 export const PostCard: React.FC<PostCardProps> = ({
   post,
   index,
@@ -196,22 +217,6 @@ export const PostCard: React.FC<PostCardProps> = ({
     event.stopPropagation();
     onToggleSave(post);
   };
-
-  const Tags = () =>
-    post.tags.length > 0 ? (
-      <div className="flex flex-wrap gap-1.5">
-        {post.tags.slice(0, 3).map((tag) => (
-          <Link
-            key={tag}
-            to={`/tags?tag=${encodeURIComponent(tag)}`}
-            className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-100/70 px-2 py-0.5 text-[11px] font-medium text-zinc-600 transition-colors hover:border-zinc-400 hover:bg-zinc-900 hover:text-white dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-100 dark:hover:text-zinc-950"
-            onClick={(event) => event.stopPropagation()}
-          >
-            {tag}
-          </Link>
-        ))}
-      </div>
-    ) : null;
 
   if (featured) {
     return (
@@ -272,7 +277,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             <p className="mb-3 line-clamp-3 text-sm leading-5 md:mb-4 md:leading-6 text-zinc-600 dark:text-zinc-300">
               {post.excerpt}
             </p>
-            <Tags />
+            <PostCardTags tags={post.tags} />
             <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-3 text-xs md:pt-4 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-auto">
               <span className="flex items-center gap-1.5">
                 <Calendar size={12} />
@@ -369,7 +374,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             </h3>
           </Link>
           <p className="mb-2 line-clamp-1 text-sm leading-5 text-zinc-600 md:mb-3 dark:text-zinc-300">{post.excerpt}</p>
-          <Tags />
+          <PostCardTags tags={post.tags} />
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-[11px] md:mt-4 md:pt-3 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             <span className="flex items-center gap-1">
               <Calendar size={11} />
@@ -531,12 +536,15 @@ export const Home = () => {
   const homeQueryState = useMemo(() => getHomeQueryState(searchParams), [searchParams]);
   const [allPosts, setAllPosts] = useState<PostMetadata[]>(initialPosts);
   const [categories, setCategories] = useState<string[]>(() => getCategories(initialPosts));
-  const [selectedCategory, setSelectedCategory] = useState(() => categoryFromUrl || ALL_CATEGORY);
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>(() => homeQueryState.sortOrder);
+  // 分类/排序/页码一律以默认值作为初始 state（SSG 预渲染的是无参首页，
+  // 首帧用默认值可保证带参直访时客户端首帧与服务端 HTML 一致，水合无冲突）；
+  // URL 中的真实状态由下方 effect 在水合后同步（与 ?q= 搜索框的处理一致）。
+  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [loading, setLoading] = useState(initialPosts.length === 0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [currentPage, setCurrentPage] = useState(homeQueryState.page);
+  const [currentPage, setCurrentPage] = useState(1);
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
   const { latest: latestReading, refresh: refreshReadingHistory } = useReadingHistory();
   const { posts: savedPosts } = useOfflinePosts();
