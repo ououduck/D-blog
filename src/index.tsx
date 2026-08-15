@@ -6,7 +6,7 @@ import { registerServiceWorker } from './registerServiceWorker';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error('Could not find root element to mount to');
+  throw new Error('找不到挂载点 #root 元素');
 }
 
 document.head.querySelectorAll('[data-rh="true"]').forEach((element) => element.remove());

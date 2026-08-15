@@ -148,7 +148,7 @@ export const renderApp = async (
       // 找不到配对闭合：marker 外壳无法安全移除。保留 marker 会让客户端
       // 水合时 root 多出该节点，产生 hydration mismatch（静默故障）。显式抛错
       // 让 SSG 阶段失败并记录，便于定位渲染结构异常，而非上线后才暴露。
-      throw new Error('SSG marker close tag not found; cannot strip marker wrapper safely.');
+      throw new Error('SSG marker 闭合标签缺失，无法安全剥离 marker 包裹层。');
     }
   }
 

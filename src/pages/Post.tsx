@@ -661,7 +661,7 @@ function MermaidBlock({
         }
       } catch (error) {
         if (!cancelled) {
-          console.error('Mermaid render error:', error);
+          console.error('Mermaid 图表渲染失败:', error);
           setSvg('');
           setStatus('error');
         }
@@ -1607,7 +1607,7 @@ export const Post = () => {
       })
       .catch((error) => {
         if (!cancelled) {
-          console.error('Failed to load adjacent posts:', error);
+          console.error('相邻文章加载失败:', error);
         }
       });
 

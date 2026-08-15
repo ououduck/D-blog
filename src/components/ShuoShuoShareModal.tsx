@@ -83,7 +83,7 @@ export const ShuoShuoShareModal: React.FC<ShuoShuoShareModalProps> = ({
     try {
       const ok = await copyTextToClipboard(url);
       if (!ok) {
-        throw new Error('Copy command was rejected');
+        throw new Error('复制命令被浏览器拒绝');
       }
       setCopied(true);
       setCopyError(null);

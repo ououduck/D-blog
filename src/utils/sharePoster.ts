@@ -319,7 +319,7 @@ export const generateSharePoster = async (options: SharePosterOptions): Promise<
   canvas.height = POSTER_HEIGHT * PIXEL_RATIO;
   const ctx = canvas.getContext('2d');
   if (!ctx) {
-    throw new Error('Canvas 2D context unavailable');
+    throw new Error('Canvas 2D 上下文不可用');
   }
   ctx.scale(PIXEL_RATIO, PIXEL_RATIO);
 

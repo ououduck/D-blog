@@ -85,7 +85,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     try {
       const copied = await copyTextToClipboard(text);
       if (!copied) {
-        throw new Error('Copy command was rejected');
+        throw new Error('复制命令被浏览器拒绝');
       }
 
       setCopiedType(type);

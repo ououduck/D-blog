@@ -46,7 +46,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 
   componentDidCatch(error: Error) {
-    console.error('App Error:', error);
+    console.error('应用错误:', error);
   }
 
   render() {

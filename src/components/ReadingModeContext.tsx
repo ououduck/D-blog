@@ -81,7 +81,7 @@ export const ReadingModeProvider: React.FC<{ children: React.ReactNode }> = ({ c
 export const useReadingMode = () => {
   const context = useContext(ReadingModeContext);
   if (!context) {
-    throw new Error('useReadingMode must be used within ReadingModeProvider');
+    throw new Error('useReadingMode 必须在 ReadingModeProvider 内使用');
   }
   return context;
 };
