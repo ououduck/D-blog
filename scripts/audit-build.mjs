@@ -10,6 +10,11 @@ const DIST_DIR = path.resolve('dist');
 const strict = process.argv.includes('--strict');
 const verbose = process.env.BUILD_VERBOSE === '1';
 const logger = createBuildLogger('audit:build');
+// 初始体积硬预算（构建门禁，超限即失败）：
+// - 与 vite.config.ts 的 chunkSizeWarningLimit（600，仅警告）语义不同但数值配套，
+//   调整任一预算时需同步评估另一处；
+// - 依赖第三方服务（Clarity/Busuanzi）的引用存在性检查也在此门禁内，
+//   移除对应服务时需同步放宽。
 const maxInitialScriptBytes = 600 * 1024;
 const maxInitialStyleBytes = 180 * 1024;
 const entryHtml = fs.existsSync(path.join(DIST_DIR, 'index.html'))

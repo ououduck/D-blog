@@ -338,7 +338,7 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     plugins: [
-      react({ babel: { plugins: [] } }),
+      react(),
       injectEntryCssPreload(),
       offlinePostAssetsPlugin(),
       trimKatexFonts(),
