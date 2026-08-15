@@ -1,3 +1,7 @@
+/**
+ * 统计页：站点内容数据面板（文章/字数/分类/标签等）。
+ */
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';

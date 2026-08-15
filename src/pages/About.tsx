@@ -1,3 +1,7 @@
+/**
+ * 关于页：站点介绍、作者信息与站点功能说明。
+ */
+
 import { Github, Mail, Code, Terminal } from 'lucide-react';
 import { siteConfig } from '@config/site.config';
 import { absoluteSiteUrl } from '@/utils/siteUrl';

@@ -1,3 +1,7 @@
+/**
+ * 说说页：朋友圈式短动态流，支持图片九宫格与分享。
+ */
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle, Search as SearchIcon } from 'lucide-react';

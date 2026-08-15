@@ -1,3 +1,7 @@
+/**
+ * 赞助页：贡献代码/投稿/广告链接等支持方式说明。
+ */
+
 import React from 'react';
 import { Code2, ExternalLink, FileText, Megaphone } from 'lucide-react';
 

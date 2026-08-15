@@ -189,9 +189,9 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   return (
     <motion.article
-      layout
+      layout={!shouldReduceMotion}
       variants={cardVariants}
-      transition={{ duration: 0.25, ease: easeOut }}
+      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.25, ease: easeOut }}
       className="flex h-full min-w-0 flex-col"
       onMouseEnter={() => preloadPage(`/post/${post.id}`)}
     >

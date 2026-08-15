@@ -1,3 +1,7 @@
+/**
+ * 首页：精选/最新文章网格、站内搜索、分类/排序/分页筛选与继续阅读。
+ */
+
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';

@@ -1,3 +1,7 @@
+/**
+ * 标签页：标签云聚合视图，支持标签筛选与搜索。
+ */
+
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';

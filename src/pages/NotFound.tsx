@@ -1,3 +1,7 @@
+/**
+ * 404 页：页面不存在提示（带当前路径调试信息），noindex。
+ */
+
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { NotFoundState } from '@/components/NotFoundState';

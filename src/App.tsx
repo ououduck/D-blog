@@ -93,12 +93,25 @@ const AppRoutes: React.FC = () => {
     }
 
     if (hasViewTransition) {
-      (document as Document & { startViewTransition?: (callback: () => void) => void }).startViewTransition?.(() => {
-        flushSync(() => {
-          setDisplayLocation(location);
+      const startViewTransition = (
+        document as Document & {
+          startViewTransition?: (callback: () => void) => void;
+        }
+      ).startViewTransition;
+      // startViewTransition 在已有活动中的 transition 时（快速连续导航）
+      // 按规范同步抛 InvalidStateError：捕获并回退为直接更新，避免异常
+      // 冒泡到 ErrorBoundary 导致整页崩溃且导航不生效。
+      try {
+        startViewTransition?.(() => {
+          flushSync(() => {
+            setDisplayLocation(location);
+          });
+          window.scrollTo({ top: 0, behavior: 'auto' as ScrollBehavior });
         });
+      } catch {
+        setDisplayLocation(location);
         window.scrollTo({ top: 0, behavior: 'auto' as ScrollBehavior });
-      });
+      }
       return;
     }
 

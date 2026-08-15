@@ -1,3 +1,7 @@
+/**
+ * 归档页：按年份/月份聚合的时间线视图，支持搜索过滤与 URL 年份定位。
+ */
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';

@@ -1,3 +1,7 @@
+/**
+ * 友链页：展示友情链接（失联分组）与友链申请向导。
+ */
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Check, ExternalLink, Github, Sparkles, ChevronDown, Globe2, X } from 'lucide-react';

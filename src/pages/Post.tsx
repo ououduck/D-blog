@@ -1,3 +1,7 @@
+/**
+ * 文章详情页：Markdown 渲染（代码高亮/数学公式/Mermaid）、阅读进度、目录、分享与离线收藏。
+ */
+
 import React, { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';

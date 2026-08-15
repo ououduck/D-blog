@@ -1,3 +1,7 @@
+/**
+ * 搜索页：全文搜索独立页（q 参数驱动，带 q 时 noindex）。
+ */
+
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SearchField } from '@/components/SearchField';

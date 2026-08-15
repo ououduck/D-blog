@@ -1,3 +1,7 @@
+/**
+ * 水印工具页：为图片添加文字水印并导出。
+ */
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Download, Image as ImageIcon, RefreshCw, Upload, X } from 'lucide-react';
 import { Seo } from '../components/Seo';

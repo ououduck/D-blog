@@ -1,3 +1,7 @@
+/**
+ * 我的收藏页：列出本地离线收藏的文章，支持取消收藏与离线阅读入口。
+ */
+
 import React from 'react';
 import { Calendar, Clock, Heart, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';

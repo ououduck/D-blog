@@ -1,3 +1,7 @@
+/**
+ * 留言板页：基于 giscus 讨论的访客留言区。
+ */
+
 import { MessageSquareText, LogIn, ShieldCheck, Lightbulb } from 'lucide-react';
 import { siteConfig } from '@config/site.config';
 import { absoluteSiteUrl } from '@/utils/siteUrl';

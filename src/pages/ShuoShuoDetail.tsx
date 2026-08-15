@@ -1,3 +1,7 @@
+/**
+ * 说说详情页：单条短动态的独立可索引页面。
+ */
+
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, MessageCircle } from 'lucide-react';

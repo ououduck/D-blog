@@ -1,3 +1,7 @@
+/**
+ * 封面生成器页：可视化编辑文字/图标/背景并导出文章封面，含批量生成与预设。
+ */
+
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {

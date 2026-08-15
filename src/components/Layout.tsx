@@ -183,9 +183,16 @@ const ThemeToggle = () => {
         !prefersReducedMotion &&
         document.startViewTransition
       ) {
-        document.startViewTransition(() => {
+        try {
+          document.startViewTransition(() => {
+            applyChanges();
+          });
+        } catch {
+          // 已有活动中的 View Transition（快速连点主题按钮）时按规范同步抛
+          // InvalidStateError：直接应用主题，避免异常冒泡到 ErrorBoundary
+          // 导致整页崩溃且主题切换不生效。
           applyChanges();
-        });
+        }
       } else {
         if (themeActuallyChanges && hasInitializedThemeRef.current && !prefersReducedMotion) {
           root.classList.add('theme-switching');
