@@ -174,15 +174,24 @@ const stripEmojiFromHeadingText = (text) =>
     .replace(/\s{2,}/g, ' ')
     .trim();
 
-const createUniqueHeadingId = (baseId, seenIds) => {
+const createUniqueHeadingId = (baseId, seenIds, usedIds) => {
   const normalizedBaseId = baseId || 'section';
-  const duplicateCount = (seenIds.get(normalizedBaseId) ?? 0) + 1;
-  seenIds.set(normalizedBaseId, duplicateCount);
-  return duplicateCount === 1 ? normalizedBaseId : `${normalizedBaseId}-${duplicateCount}`;
+  let suffix = (seenIds.get(normalizedBaseId) ?? 0) + 1;
+  let candidate = suffix === 1 ? normalizedBaseId : `${normalizedBaseId}-${suffix}`;
+  // 生成的后缀 id 可能恰好与其它标题的 slug 相同（如「简介-2」本身是另一个标题），
+  // 继续追加后缀直到不与任何已占用 id 冲突，避免 DOM 中出现重复 id。
+  while (usedIds.has(candidate)) {
+    suffix += 1;
+    candidate = `${normalizedBaseId}-${suffix}`;
+  }
+  seenIds.set(normalizedBaseId, suffix);
+  usedIds.add(candidate);
+  return candidate;
 };
 
 export const extractMarkdownHeadings = (content) => {
   const seenIds = new Map();
+  const usedIds = new Set();
   const headings = [];
   const contentWithoutCodeBlocks = maskFencedCodeBlocks(content);
   for (const match of contentWithoutCodeBlocks.matchAll(MARKDOWN_HEADING_PATTERN)) {
@@ -190,7 +199,7 @@ export const extractMarkdownHeadings = (content) => {
     const level = isSetext ? (match[4][0] === '=' ? 1 : 2) : (match[1]?.length ?? 1);
     const rawText = stripInlineMarkdown(isSetext ? match[3] : (match[2] ?? ''));
     const text = stripEmojiFromHeadingText(rawText) || rawText;
-    const id = createUniqueHeadingId(slugifyHeading(rawText) || slugifyHeading(text), seenIds);
+    const id = createUniqueHeadingId(slugifyHeading(rawText) || slugifyHeading(text), seenIds, usedIds);
     headings.push({ id, level, rawText, text });
   }
   return headings;

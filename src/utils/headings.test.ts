@@ -115,6 +115,18 @@ describe('extractMarkdownHeadings', () => {
     expect(headings.map((heading) => heading.id)).toEqual(['重复', '重复-2', '重复-3']);
   });
 
+  it('生成的后缀 id 与其它标题 slug 冲突时继续追加后缀', () => {
+    // 第二个「简介」生成「简介-2」，恰好与第三个标题的 slug 相同：
+    // 第三个必须继续追加后缀，避免 DOM 中出现重复 id。
+    const headings = extractMarkdownHeadings('# 简介\n\n# 简介\n\n# 简介-2');
+    expect(headings.map((heading) => heading.id)).toEqual(['简介', '简介-2', '简介-2-2']);
+  });
+
+  it('已有标题占用「A-2」时重复 A 跳过占用 id', () => {
+    const headings = extractMarkdownHeadings('# A-2\n\n# A\n\n# A');
+    expect(headings.map((heading) => heading.id)).toEqual(['a-2', 'a', 'a-3']);
+  });
+
   it('特殊字符标题的 slug 处理', () => {
     const headings = extractMarkdownHeadings('# C++ 入门\n\n## C++ 进阶');
     expect(headings.map((heading) => heading.id)).toEqual(['c-入门', 'c-进阶']);

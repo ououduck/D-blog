@@ -695,14 +695,24 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
 
-      if (event.shiftKey && document.activeElement === firstElement) {
+      // 焦点在面板外（如遮罩上方导航栏的搜索/汉堡按钮，或打开瞬间焦点尚未移入）
+      // 时，Tab / Shift+Tab 一律收进面板：aria-modal 对话框要求背景内容不可达，
+      // 否则焦点会一路逃逸到弹层背后的页面内容。
+      if (!panel.contains(activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? lastElement : firstElement).focus();
+        return;
+      }
+
+      if (event.shiftKey && activeElement === firstElement) {
         event.preventDefault();
         lastElement.focus();
         return;
       }
 
-      if (!event.shiftKey && document.activeElement === lastElement) {
+      if (!event.shiftKey && activeElement === lastElement) {
         event.preventDefault();
         firstElement.focus();
       }

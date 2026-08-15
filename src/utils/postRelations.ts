@@ -1,26 +1,33 @@
 import type { PostMetadata } from '../types';
 import { getDateTimestamp } from './date';
 
-export interface SeriesNavigation {
+export interface SeriesNavigation<T extends PostMetadata = PostMetadata> {
   name: string;
-  posts: PostMetadata[];
+  posts: T[];
   currentIndex: number;
-  previous: PostMetadata | null;
-  next: PostMetadata | null;
+  previous: T | null;
+  next: T | null;
 }
 
 const comparePostsByDateAndId = (a: PostMetadata, b: PostMetadata) =>
   getDateTimestamp(b.date) - getDateTimestamp(a.date) || a.id.localeCompare(b.id);
 
-const getSeriesPosts = (posts: PostMetadata[], post: PostMetadata) => {
+const getSeriesPosts = <T extends PostMetadata>(posts: T[], post: PostMetadata): T[] => {
   if (!post.series || !post.seriesName) return [];
 
   return posts
     .filter((candidate) => candidate.series && candidate.seriesName === post.seriesName)
-    .sort((a, b) => (a.seriesOrder ?? Number.MAX_SAFE_INTEGER) - (b.seriesOrder ?? Number.MAX_SAFE_INTEGER) || comparePostsByDateAndId(a, b));
+    .sort(
+      (a, b) =>
+        (a.seriesOrder ?? Number.MAX_SAFE_INTEGER) - (b.seriesOrder ?? Number.MAX_SAFE_INTEGER) ||
+        comparePostsByDateAndId(a, b),
+    );
 };
 
-export const getSeriesNavigation = (posts: PostMetadata[], post: PostMetadata): SeriesNavigation | null => {
+export const getSeriesNavigation = <T extends PostMetadata>(
+  posts: T[],
+  post: PostMetadata,
+): SeriesNavigation<T> | null => {
   const seriesPosts = getSeriesPosts(posts, post);
   if (seriesPosts.length === 0) return null;
 
@@ -32,7 +39,7 @@ export const getSeriesNavigation = (posts: PostMetadata[], post: PostMetadata): 
     posts: seriesPosts,
     currentIndex,
     previous: seriesPosts[currentIndex - 1] ?? null,
-    next: seriesPosts[currentIndex + 1] ?? null
+    next: seriesPosts[currentIndex + 1] ?? null,
   };
 };
 
@@ -44,7 +51,7 @@ interface RelatedPostsOptions {
 export const getRelatedPosts = <T extends PostMetadata>(
   posts: T[],
   post: PostMetadata,
-  options: RelatedPostsOptions = {}
+  options: RelatedPostsOptions = {},
 ): T[] => {
   const excluded = new Set([post.id, ...(options.excludeIds ?? [])]);
   const postTags = new Set(post.tags.map((tag) => tag.trim()).filter(Boolean));

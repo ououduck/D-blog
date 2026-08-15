@@ -61,7 +61,11 @@ export const BatchCoverDialog: React.FC<BatchCoverDialogProps> = ({ isOpen, onCl
     } finally {
       // 无论读取成功、失败还是被取消（弹窗关闭/再次选择文件），都结束读取态，
       // 并清空 input 值，否则下次选择同一文件时 onChange 不会触发。
-      setIsReading(false);
+      // 结束读取态前须校验 generation：旧文件集仍在读取时用户已选择新文件，
+      // 旧调用的 finally 不得提前关闭新调用的读取态。
+      if (generation === readGenerationRef.current) {
+        setIsReading(false);
+      }
       event.target.value = '';
     }
   };

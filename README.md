@@ -60,7 +60,7 @@
 git clone https://github.com/ououduck/D-blog.git
 cd D-blog
 npm install
-cp .env.example .env          # 可选：覆盖站点 URL 与子路径
+cp .env.example .env          # 可选：覆盖站点 URL 与子路径（Windows 用 copy .env.example .env）
 npm run check                 # 数据生成校验 + 类型检查
 npm run dev                   # 本地开发（http://localhost:3000）
 npm run test                  # 单元测试
@@ -163,7 +163,11 @@ images:
 
 ### 留言板
 
-`/guestbook` 通过 Giscus `mapping=number` 固定指向仓库的「D-blog 留言板」Discussion（`config/site.config.ts` 的 `guestbook.discussionId`）。与文章评论共用 Akismet 反垃圾，并叠加自建关键词过滤（`config/comment-keywords.json`，可直接在 PagesCMS「评论关键词」中编辑）。仓库内置 `.github/workflows/notify-post-update.yml`：文章新增/修改时自动在指定 Issue 发布通知。
+`/guestbook` 通过 Giscus `mapping=number` 固定指向仓库的「D-blog 留言板」Discussion（`config/site.config.ts` 的 `guestbook.discussionId`）。与文章评论共用 Akismet 反垃圾，并叠加自建关键词过滤（`config/comment-keywords.json`，可直接在 PagesCMS「评论关键词」中编辑）。
+
+### 文章更新订阅
+
+在文章页/关于页可订阅 GitHub Issue（`src/components/IssueSubscriptionCard.tsx`），新文章发布时 `.github/workflows/notify-post-update.yml` 自动在指定 Issue 发布更新通知。
 
 ### Giscus 评论与大陆网络可达性
 
@@ -261,7 +265,7 @@ Service Worker 作用域跟随部署路径，在线按页面/静态资源/图片
 
 **一次性配置**：在 [@BotFather](https://t.me/BotFather) 创建机器人获取 `TELEGRAM_BOT_TOKEN`，通过 [@userinfobot](https://t.me/userinfobot) 获取 `TELEGRAM_CHAT_ID`，然后在仓库 **Settings → Secrets and variables → Actions** 添加（可选 `TELEGRAM_TOPIC_ID` 指定论坛话题）。未配置 token / chat id 时 workflow 优雅跳过（`::warning::` 正常退出，不红叉）。
 
-其他自动化：`ci.yml` 每次 push/PR 自动跑类型检查 + 完整构建 + 双审计；友链申请审核、友链可用性检查、评论 Akismet 反垃圾与关键词过滤均为独立 workflow。
+其他自动化：`ci.yml` 每次 push/PR 自动跑类型检查 + 完整构建 + 双审计；友链申请审核（`friend-link-bot.yml`）、友链可用性检查（`friend-link-check.yml`）、评论 Akismet 反垃圾（`akismet-discussion-comment-check.yml`）与关键词过滤（`comment-keyword-filter.yml` / `comment-keyword-recheck.yml`）、文章更新订阅通知（`notify-post-update.yml`）均为独立 workflow。
 
 ## 贡献指南
 

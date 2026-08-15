@@ -22,7 +22,10 @@ export const stripMarkdown = (markdown: string): string => {
     .replace(/^\s*\d+[.)]\s+/gm, '')
     // 粗体/斜体（注意先处理双符号，避免单符号吞掉双符号）
     .replace(/(\*\*|__)(.*?)\1/g, '$2')
-    .replace(/(\*|_)([^*_]+)\1/g, '$2')
+    // 下划线斜体仅在两侧非单词字符时剥离：避免吞掉 snake_case 标识符
+    // （如 my_variable_name / MAX_BUFFER_SIZE 中的下划线）。
+    .replace(/(?<!\w)_([^_]+)_(?!\w)/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
     // 删除线/脚注等残余标记
     .replace(/~~([^~]*)~~/g, '$1')
     // HTML 标签（原始 markdown 里的内嵌标签）

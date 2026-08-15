@@ -6,7 +6,7 @@ import {
   saveOfflinePost,
   subscribeOfflinePosts,
   type OfflinePost,
-  type OfflinePostInput
+  type OfflinePostInput,
 } from '@/services/offlinePosts';
 
 interface UseOfflinePostsResult {
@@ -21,9 +21,8 @@ interface UseOfflinePostsResult {
   refresh: () => Promise<void>;
 }
 
-const getErrorMessage = (error: unknown, fallback: string) => (
-  error instanceof Error && error.message ? error.message : fallback
-);
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message ? error.message : fallback;
 
 export const useOfflinePosts = (post?: OfflinePostInput | null): UseOfflinePostsResult => {
   const postId = post?.id;
@@ -47,7 +46,7 @@ export const useOfflinePosts = (post?: OfflinePostInput | null): UseOfflinePosts
     try {
       const [savedPosts, savedPost] = await Promise.all([
         getOfflinePosts(),
-        postId ? getOfflinePost(postId) : Promise.resolve(undefined)
+        postId ? getOfflinePost(postId) : Promise.resolve(undefined),
       ]);
       if (requestId !== requestIdRef.current) {
         return;
@@ -91,8 +90,9 @@ export const useOfflinePosts = (post?: OfflinePostInput | null): UseOfflinePosts
       }
       await refresh();
     } catch (toggleError) {
+      // 失败信息通过 error 状态反馈给 UI；不再向上抛出，避免调用点
+      // （Post.tsx 的 void toggleSaved()）产生未处理的 Promise rejection。
       setError(getErrorMessage(toggleError, '离线收藏操作失败，请稍后重试。'));
-      throw toggleError;
     } finally {
       toggleInFlightRef.current = false;
       setIsSaving(false);

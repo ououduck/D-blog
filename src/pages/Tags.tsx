@@ -34,7 +34,7 @@ const buildTagList = (posts: PostMetadata[]) => {
     .map(([name, taggedPosts]) => ({
       name,
       count: taggedPosts.length,
-      posts: taggedPosts.sort((a, b) => getDateTimestamp(b.date) - getDateTimestamp(a.date))
+      posts: taggedPosts.sort((a, b) => getDateTimestamp(b.date) - getDateTimestamp(a.date)),
     }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'));
 };
@@ -52,10 +52,13 @@ export const Tags = () => {
   const shouldReduceMotion = useReducedMotion();
   const selectedTag = searchParams.get('tag');
   const queryFromUrl = searchParams.get('q') || '';
-  const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
-    emptyResults: allPosts,
-    initialQuery: queryFromUrl
-  });
+  const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } =
+    // 不把 URL 的 ?q= 作为 useState 初始值（与 Search 页一致）：SSG 预渲染的是
+    // 无 q 的默认界面，首帧用空查询渲染可保证带 q 直访时客户端首帧与服务端
+    // HTML 一致（水合无冲突）；下方 effect 在水合后把 queryFromUrl 同步进搜索。
+    usePostSearch({
+      emptyResults: allPosts,
+    });
 
   useEffect(() => {
     let cancelled = false;
@@ -100,24 +103,30 @@ export const Tags = () => {
 
   const handleSearchChange = (query: string) => {
     handleSearch(query);
-    setSearchParams((previous) => {
-      const nextParams = new URLSearchParams(previous);
-      if (query.trim()) {
-        nextParams.set('q', query);
-      } else {
-        nextParams.delete('q');
-      }
-      return nextParams;
-    }, { replace: true });
+    setSearchParams(
+      (previous) => {
+        const nextParams = new URLSearchParams(previous);
+        if (query.trim()) {
+          nextParams.set('q', query);
+        } else {
+          nextParams.delete('q');
+        }
+        return nextParams;
+      },
+      { replace: true },
+    );
   };
 
   const handleClearSearch = () => {
     clearSearch();
-    setSearchParams((previous) => {
-      const nextParams = new URLSearchParams(previous);
-      nextParams.delete('q');
-      return nextParams;
-    }, { replace: true });
+    setSearchParams(
+      (previous) => {
+        const nextParams = new URLSearchParams(previous);
+        nextParams.delete('q');
+        return nextParams;
+      },
+      { replace: true },
+    );
   };
 
   useEffect(() => {
@@ -128,7 +137,7 @@ export const Tags = () => {
 
   const tags = useMemo(() => buildTagList(results), [results]);
   const allTags = useMemo(() => buildTagList(allPosts), [allPosts]);
-  const selectedTagInfo = selectedTag ? allTags.find((tag) => tag.name === selectedTag) ?? null : null;
+  const selectedTagInfo = selectedTag ? (allTags.find((tag) => tag.name === selectedTag) ?? null) : null;
   const filteredSelectedTagPosts = selectedTagInfo
     ? selectedTagInfo.posts.filter((post) => results.some((result) => result.id === post.id))
     : [];
@@ -155,13 +164,14 @@ export const Tags = () => {
 
   // 标签筛选页（?tag=xxx）为可索引内容页（canonical 自指保留 tag 参数），
   // 输出独立的 title/description，避免所有标签筛选页共用「标签」这一泛化标题。
-  const tagsPageDescription = 'D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。';
-  const seoTitle = selectedTag && selectedTagInfo
-    ? `标签：${selectedTag} - ${siteConfig.title}`
-    : `标签 - ${siteConfig.title}`;
-  const seoDescription = selectedTag && selectedTagInfo
-    ? `D-blog 标签「${selectedTag}」下的全部文章，共 ${selectedTagInfo.count} 篇，涵盖前端开发、后端运维、AI 工具与效率软件测评等主题。`
-    : tagsPageDescription;
+  const tagsPageDescription =
+    'D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。';
+  const seoTitle =
+    selectedTag && selectedTagInfo ? `标签：${selectedTag} - ${siteConfig.title}` : `标签 - ${siteConfig.title}`;
+  const seoDescription =
+    selectedTag && selectedTagInfo
+      ? `D-blog 标签「${selectedTag}」下的全部文章，共 ${selectedTagInfo.count} 篇，涵盖前端开发、后端运维、AI 工具与效率软件测评等主题。`
+      : tagsPageDescription;
 
   // 站点级 schema 与页面级 CollectionPage / ItemList（枚举各 /tags?tag= 筛选页 URL，
   // 帮助爬虫发现子页）/ BreadcrumbList 一并输出，SSG 静态页不再重复注入。
@@ -177,8 +187,8 @@ export const Tags = () => {
       isPartOf: {
         '@type': 'WebSite',
         name: siteConfig.title,
-        url: absoluteSiteUrl('/', siteConfig.url)
-      }
+        url: absoluteSiteUrl('/', siteConfig.url),
+      },
     },
     {
       '@context': 'https://schema.org',
@@ -189,8 +199,8 @@ export const Tags = () => {
         '@type': 'ListItem',
         position: index + 1,
         name: tag.name,
-        url: absoluteSiteUrl(`/tags?tag=${encodeURIComponent(tag.name)}`, siteConfig.url)
-      }))
+        url: absoluteSiteUrl(`/tags?tag=${encodeURIComponent(tag.name)}`, siteConfig.url),
+      })),
     },
     {
       '@context': 'https://schema.org',
@@ -200,24 +210,29 @@ export const Tags = () => {
         ...(selectedTag && selectedTagInfo
           ? [
               { '@type': 'ListItem', position: 2, name: '标签', item: absoluteSiteUrl('/tags', siteConfig.url) },
-              { '@type': 'ListItem', position: 3, name: selectedTag, item: absoluteSiteUrl(`/tags?tag=${encodeURIComponent(selectedTag)}`, siteConfig.url) }
+              {
+                '@type': 'ListItem',
+                position: 3,
+                name: selectedTag,
+                item: absoluteSiteUrl(`/tags?tag=${encodeURIComponent(selectedTag)}`, siteConfig.url),
+              },
             ]
-          : [{ '@type': 'ListItem', position: 2, name: '标签', item: absoluteSiteUrl('/tags', siteConfig.url) }])
-      ]
-    }
+          : [{ '@type': 'ListItem', position: 2, name: '标签', item: absoluteSiteUrl('/tags', siteConfig.url) }]),
+      ],
+    },
   ];
 
   return (
     <div className="pb-8 md:pb-14">
-      <Seo
-        title={seoTitle}
-        description={seoDescription}
-        structuredData={tagsStructuredData}
-      />
+      <Seo title={seoTitle} description={seoDescription} structuredData={tagsStructuredData} />
 
       <header className="mb-10 border-b border-zinc-200 pb-8 dark:border-zinc-800 md:pb-10">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Tags Collection</p>
-        <h1 className="font-serif text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">标签集合</h1>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
+          Tags Collection
+        </p>
+        <h1 className="font-serif text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
+          标签集合
+        </h1>
         <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-400 md:text-base">
           共 {allTags.length} 个标签，{allTags.reduce((sum, tag) => sum + tag.count, 0)} 篇文章
         </p>
@@ -236,7 +251,8 @@ export const Tags = () => {
         />
         {hasSearchQuery && (
           <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">
-            搜索 "<span className="font-bold text-zinc-900 dark:text-zinc-100">{searchQuery}</span>" 找到 {tags.length} 个标签
+            搜索 "<span className="font-bold text-zinc-900 dark:text-zinc-100">{searchQuery}</span>" 找到 {tags.length}{' '}
+            个标签
           </div>
         )}
       </div>
@@ -244,7 +260,10 @@ export const Tags = () => {
       {loading || isSearching ? (
         <div className="flex items-center justify-center py-20" aria-busy="true">
           <LoadingStatus label={isSearching ? '正在搜索标签和文章' : '正在加载标签'} />
-          <div aria-hidden="true" className={`${shouldReduceMotion ? '' : 'animate-spin '}h-8 w-8 rounded-full border-4 border-zinc-900 border-t-transparent dark:border-zinc-100`} />
+          <div
+            aria-hidden="true"
+            className={`${shouldReduceMotion ? '' : 'animate-spin '}h-8 w-8 rounded-full border-4 border-zinc-900 border-t-transparent dark:border-zinc-100`}
+          />
         </div>
       ) : loadError || searchError ? (
         <ContentStatus
@@ -265,13 +284,19 @@ export const Tags = () => {
                       key={tag.name}
                       initial={shouldReduceMotion ? false : { opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, delay: Math.min(index * 0.012, 0.06), ease: easeOut }}
+                      transition={
+                        shouldReduceMotion
+                          ? { duration: 0 }
+                          : { duration: 0.16, delay: Math.min(index * 0.012, 0.06), ease: easeOut }
+                      }
                       onClick={() => updateTagParam(tag.name)}
                       className={`${getTagSize(tag.count)} relative inline-flex min-h-11 max-w-full items-center justify-center break-words border-b border-zinc-300 px-2 py-1.5 text-center font-bold leading-tight text-zinc-700 transition-colors [overflow-wrap:anywhere] hover:border-zinc-900 hover:text-zinc-900 focus-visible:border-zinc-900 focus-visible:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 sm:px-3 sm:py-2 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-100 dark:hover:text-zinc-100 dark:focus-visible:border-zinc-100 dark:focus-visible:text-zinc-100 dark:focus-visible:outline-zinc-100`}
                       aria-label={`查看标签 ${tag.name}，共 ${tag.count} 篇文章`}
                     >
                       <span className="min-w-0 break-words [overflow-wrap:anywhere]">{tag.name}</span>
-                      <span className="ml-1.5 flex-shrink-0 text-[10px] opacity-60 sm:ml-2 sm:text-xs">({tag.count})</span>
+                      <span className="ml-1.5 flex-shrink-0 text-[10px] opacity-60 sm:ml-2 sm:text-xs">
+                        ({tag.count})
+                      </span>
                     </motion.button>
                   ))}
                 </div>
@@ -289,12 +314,17 @@ export const Tags = () => {
             <div>
               <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="min-w-0 font-serif text-2xl font-bold text-zinc-900 dark:text-zinc-100 md:text-3xl">
-                  标签: <span className="break-words underline decoration-zinc-400 underline-offset-4 dark:decoration-zinc-600">{selectedTag}</span>
-                  <span className="ml-3 text-base text-zinc-400">({hasSearchQuery ? filteredSelectedTagPosts.length : selectedTagInfo?.count ?? 0} 篇)</span>
+                  标签:{' '}
+                  <span className="break-words underline decoration-zinc-400 underline-offset-4 dark:decoration-zinc-600">
+                    {selectedTag}
+                  </span>
+                  <span className="ml-3 text-base text-zinc-400">
+                    ({hasSearchQuery ? filteredSelectedTagPosts.length : (selectedTagInfo?.count ?? 0)} 篇)
+                  </span>
                 </h2>
                 <button
                   onClick={() => updateTagParam()}
-                    className="editorial-button inline-flex w-full gap-2 px-4 font-bold sm:w-fit"
+                  className="editorial-button inline-flex w-full gap-2 px-4 font-bold sm:w-fit"
                 >
                   <ArrowLeft size={15} />
                   返回全部标签
@@ -307,9 +337,16 @@ export const Tags = () => {
                     key={post.id}
                     initial={shouldReduceMotion ? false : { opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, delay: Math.min(index * 0.015, 0.06), ease: easeOut }}
+                    transition={
+                      shouldReduceMotion
+                        ? { duration: 0 }
+                        : { duration: 0.16, delay: Math.min(index * 0.015, 0.06), ease: easeOut }
+                    }
                   >
-                    <Link to={`/post/${post.id}`} className="group block border-t border-zinc-200 py-5 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600">
+                    <Link
+                      to={`/post/${post.id}`}
+                      className="group block border-t border-zinc-200 py-5 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
+                    >
                       <div className="mb-3 flex items-center gap-2">
                         <span className="rounded-full border border-zinc-300 px-3 py-1 text-xs font-bold uppercase tracking-wider text-zinc-900 dark:border-zinc-700 dark:text-zinc-100">
                           {post.category}
@@ -352,4 +389,3 @@ export const Tags = () => {
     </div>
   );
 };
-

@@ -2,6 +2,9 @@
 node_modules
 .pnpm-debug.log*
 
+# Husky 自动生成的内部脚本目录（.husky/pre-commit 等手工文件保留提交）
+.husky/_
+
 # Build outputs
 dist
 dist-ssr

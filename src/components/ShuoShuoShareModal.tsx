@@ -25,12 +25,15 @@ export const ShuoShuoShareModal: React.FC<ShuoShuoShareModalProps> = ({
   url,
   contentPreview,
   date,
-  autoCopied
+  autoCopied,
 }) => {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const resetTimerRef = useRef<number | null>(null);
+  // 用户手动复制过之后，迟到的自动复制结果（autoCopied 异步返回）不得再覆盖
+  // 用户已成功的手动复制状态。
+  const userCopiedRef = useRef(false);
   const titleId = useId();
 
   const clearResetTimer = () => {
@@ -49,14 +52,18 @@ export const ShuoShuoShareModal: React.FC<ShuoShuoShareModalProps> = ({
   };
 
   // 每次打开弹窗时重置状态，并根据自动复制结果初始化反馈文案。
+  // autoCopied 的语义是「本次打开时自动复制的最终结果」：若用户已手动复制，
+  // 后续到达的 autoCopied 更新不再覆盖界面状态。
   useEffect(() => {
     if (!isOpen) {
       clearResetTimer();
+      userCopiedRef.current = false;
       setCopied(false);
       setCopyError(null);
       return;
     }
 
+    if (userCopiedRef.current) return;
     setCopied(autoCopied === true);
     setCopyError(autoCopied === false ? '自动复制失败，请点击下方按钮手动复制。' : null);
   }, [isOpen, autoCopied]);
@@ -68,6 +75,7 @@ export const ShuoShuoShareModal: React.FC<ShuoShuoShareModalProps> = ({
   }, []);
 
   const handleCopy = async () => {
+    userCopiedRef.current = true;
     try {
       const ok = await copyTextToClipboard(url);
       if (!ok) {
@@ -86,14 +94,11 @@ export const ShuoShuoShareModal: React.FC<ShuoShuoShareModalProps> = ({
   const formattedDate = formatDate(date, 'zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <SlideModal
-      isOpen={isOpen}
-      onClose={onClose}
-      initialFocusRef={closeButtonRef}
-      ariaLabelledby={titleId}
-    >
+    <SlideModal isOpen={isOpen} onClose={onClose} initialFocusRef={closeButtonRef} ariaLabelledby={titleId}>
       <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-3 dark:border-zinc-800">
-        <h3 id={titleId} className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">分享说说</h3>
+        <h3 id={titleId} className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          分享说说
+        </h3>
         <button
           ref={closeButtonRef}
           type="button"
@@ -128,11 +133,19 @@ export const ShuoShuoShareModal: React.FC<ShuoShuoShareModalProps> = ({
 
         <button
           type="button"
-          onClick={() => { void handleCopy(); }}
+          onClick={() => {
+            void handleCopy();
+          }}
           className="editorial-button-primary mt-4 w-full rounded-control active:scale-[0.98]"
           aria-label="复制说说链接"
         >
-          {copied ? <span className="copy-pop"><Check size={16} /></span> : <Copy size={16} />}
+          {copied ? (
+            <span className="copy-pop">
+              <Check size={16} />
+            </span>
+          ) : (
+            <Copy size={16} />
+          )}
           {copied ? '已复制' : '复制链接'}
         </button>
 

@@ -76,13 +76,23 @@ export const buildSsgRouteData = (posts: Post[], url: string): SsgRouteData | un
   const previous = currentIndex > 0 ? posts[currentIndex - 1] : null;
   const next = currentIndex < posts.length - 1 ? posts[currentIndex + 1] : null;
 
+  const seriesNavigation = getSeriesNavigation(posts, post);
+  const strippedSeriesNavigation: SeriesNavigation | null = seriesNavigation
+    ? {
+        ...seriesNavigation,
+        posts: seriesNavigation.posts.map(toMetadata),
+        previous: seriesNavigation.previous ? toMetadata(seriesNavigation.previous) : null,
+        next: seriesNavigation.next ? toMetadata(seriesNavigation.next) : null,
+      }
+    : null;
+
   return {
     post,
     adjacentPosts: {
       prev: previous ? toMetadata(previous) : null,
       next: next ? toMetadata(next) : null,
     },
-    seriesNavigation: getSeriesNavigation(posts, post),
+    seriesNavigation: strippedSeriesNavigation,
     relatedPosts: getRelatedPosts(posts, post, {
       limit: 3,
       excludeIds: [previous?.id, next?.id].filter((value): value is string => Boolean(value)),

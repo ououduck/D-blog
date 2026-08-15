@@ -425,7 +425,10 @@ const fetchPublicPage = async (value) => {
 };
 
 /**
- * 判断页面 HTML 是否包含本站反链（宽松规范化：大小写、转义、尾斜杠）。
+ * 判断页面 HTML 是否包含本站反链（二者任一命中即通过）：
+ * 1. 文本匹配：站点地址两侧必须是空白/引号/尖括号等非单词边界字符，
+ *    排除 blog.pldduck.com.evil.com 这类仅含域名子串的伪反链；
+ * 2. 锚点匹配：解析 <a href="..."> 的 host 与站点域名精确比对（含子域名）。
  * @param {string} html
  * @returns {boolean}
  */
@@ -437,7 +440,31 @@ const containsBacklink = (html) => {
     .replace(/\/+(["'\s>])/g, '$1');
   const canonical = normalizeUrl(SITE_URL);
   const withoutSlash = canonical.endsWith('/') ? canonical.slice(0, -1) : canonical;
-  return normalized.includes(canonical) || normalized.includes(withoutSlash);
+  const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // 文本匹配：站点地址前须为行首/空白/引号/括号等非单词字符，后须紧跟 URL
+  // 终结符（路径/查询/空白/引号/括号/常见标点或行尾）。点号不属于终结符：
+  // blog.pldduck.com.evil.com 这类「域名后拼接」的伪反链会被拒。
+  const urlTail = String.raw`(?:[/?#"'<>)\s,;\uFF09\u3002\uFF0C\uFF1B]|$)`;
+  const boundaryPattern = new RegExp(
+    `(^|[^\\w-])(?:${escapeRegExp(canonical)}|${escapeRegExp(withoutSlash)})${urlTail}`,
+    'i',
+  );
+  if (boundaryPattern.test(normalized)) return true;
+
+  // 锚点按 host 精确比对：对 https://blog.pldduck.com.evil.com 返回 false。
+  const targetHost = new URL(canonical).hostname;
+  const anchorPattern = /<a\b[^>]*\bhref\s*=\s*(["'])(.*?)\1/gi;
+  for (const match of normalized.matchAll(anchorPattern)) {
+    const href = (match[2] || '').trim();
+    if (!href || /^(?:#|javascript:|mailto:|tel:|data:)/.test(href)) continue;
+    try {
+      const host = new URL(href, SITE_URL).hostname;
+      if (host === targetHost || host.endsWith(`.${targetHost}`)) return true;
+    } catch {
+      // 非法 URL 忽略，不影响其余锚点的判断。
+    }
+  }
+  return false;
 };
 
 /* ------------------------------------------------------------------ */

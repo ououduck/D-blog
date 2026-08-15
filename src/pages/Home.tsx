@@ -560,9 +560,11 @@ export const Home = () => {
     [savedIds],
   );
   const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } =
+    // 不把 URL 的 ?q= 作为 useState 初始值（与 Search 页一致）：SSG 预渲染的是
+    // 无 q 的默认界面，首帧用空查询渲染可保证带 q 直访时客户端首帧与服务端
+    // HTML 一致（水合无冲突）；下方 effect 在水合后把 queryFromUrl 同步进搜索。
     usePostSearch({
       emptyResults: allPosts,
-      initialQuery: queryFromUrl,
     });
 
   const shouldReduceMotion = useReducedMotion();

@@ -32,6 +32,9 @@ async function proxyGiscus(request: Request): Promise<Response> {
     // GET/HEAD 不携带 body；POST/OPTIONS 等透传请求体（widget 的 API 调用）。
     body: request.method === 'GET' || request.method === 'HEAD' ? undefined : request.body,
     redirect: 'manual', // 原样透传 3xx（GitHub OAuth 跳转由浏览器继续）
+    // 大陆网络下 giscus.app 的 DNS 被污染成黑洞 IP，TCP 连接可能一直挂起且
+    // 不触发 error：显式超时兜底，快速失败由前端回退官方来源（与 dev 代理一致）。
+    signal: AbortSignal.timeout(10000),
   });
 
   const responseHeaders = new Headers(upstream.headers);

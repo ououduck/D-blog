@@ -34,6 +34,9 @@ export const ShuoShuo = () => {
   const [autoCopied, setAutoCopied] = useState<boolean | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const highlightTimerRef = useRef<number | null>(null);
+  // 分享序号：快速连续分享多条说说时，先发出的自动复制结果晚到会被丢弃，
+  // 避免旧说说的复制结果串台到新打开的弹窗。
+  const shareSeqRef = useRef(0);
 
   // ── 独立搜索：仅匹配说说正文内容（markdown 剥离后），大小写不敏感 ──
   const filteredItems = useMemo(() => {
@@ -91,6 +94,7 @@ export const ShuoShuo = () => {
 
   // ── 分享：自动复制链接 + 弹出分享框，链接指向该条说说的独立页 /shuoshuo/<id> ──
   const handleShare = async (item: ShuoShuoEntry) => {
+    const seq = ++shareSeqRef.current;
     const origin = typeof window !== 'undefined' ? window.location.origin : siteConfig.url;
     const url = absoluteSiteUrl(`/shuoshuo/${item.id}`, origin);
 
@@ -99,6 +103,8 @@ export const ShuoShuo = () => {
     setAutoCopied(null);
 
     const copied = await copyTextToClipboard(url);
+    // 分享目标已切换（快速连续分享）时丢弃过期结果，避免串台。
+    if (seq !== shareSeqRef.current) return;
     setAutoCopied(copied);
   };
 

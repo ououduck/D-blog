@@ -41,6 +41,8 @@ export const onRequest = async (context: { request: Request }): Promise<Response
   try {
     const upstreamResponse = await fetch(upstream.toString(), {
       headers: { 'user-agent': 'D-blog-img-proxy/1.0' },
+      // 图床失联/TCP 挂起时快速失败返回 502，避免边缘请求悬挂到平台超时。
+      signal: AbortSignal.timeout(10000),
     });
     const headers = new Headers(upstreamResponse.headers);
     // 关键：同源代理必须带上 CORS 头，前端 canvas 才能读取。
