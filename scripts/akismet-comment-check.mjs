@@ -64,20 +64,21 @@ const sanitizeForAkismet = (value) =>
 
 /**
  * 读取并校验 GitHub Actions 事件载荷。
- * @returns {{ comment: Record<string, any>, discussion: Record<string, any>, repository: Record<string, any> } | null}
+ * @returns {{ fatal: boolean, comment?: Record<string, any>, discussion?: Record<string, any>, repository?: Record<string, any> }}
+ *          fatal:true 表示载荷不可读（调用方应红叉）；fatal:false 且无数据表示事件不适用（良性跳过）。
  */
 const loadEventPayload = () => {
   const eventPath = process.env.GITHUB_EVENT_PATH;
   if (!eventPath) {
     logger.error('GITHUB_EVENT_PATH is not set; expected discussion_comment event');
-    return null;
+    return { fatal: true };
   }
   let payload;
   try {
     payload = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
   } catch (error) {
     logger.error('Failed to read GITHUB_EVENT_PATH payload', { error: formatError(error) });
-    return null;
+    return { fatal: true };
   }
 
   const comment = payload.comment;
@@ -85,9 +86,10 @@ const loadEventPayload = () => {
   const repository = payload.repository;
   if (!comment || !discussion || !repository) {
     logger.warn('Event payload does not contain discussion_comment data; skipping');
-    return null;
+    // 良性跳过（事件类型不适用），fatal:false 让调用方正常退出，避免无谓红叉。
+    return { fatal: false };
   }
-  return { comment, discussion, repository };
+  return { fatal: false, comment, discussion, repository };
 };
 
 /* ------------------------------------------------------------------ */
@@ -254,9 +256,12 @@ const main = async () => {
   }
 
   const event = loadEventPayload();
-  if (!event) {
-    logger.error('Skipping: could not load discussion_comment event payload');
-    process.exitCode = 1;
+  if (!event || event.fatal) {
+    // 仅载荷真正不可读（配置/环境错误）时红叉；事件不适用时 loadEventPayload
+    // 已 warn 并返回 fatal:false，此处正常退出。
+    if (event?.fatal) {
+      process.exitCode = 1;
+    }
     return;
   }
   const { comment, discussion, repository } = event;
