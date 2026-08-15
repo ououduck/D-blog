@@ -1,5 +1,5 @@
 ---
-id: deepseek-git-commit
+id: dsh-git-commit
 date: 2026-08-14
 images:
   - https://img.pldduck.com/D-blog/20260815070242801.png
