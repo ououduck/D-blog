@@ -32,6 +32,19 @@ export interface SiteComments {
   repoId: string;
   category: string;
   categoryId: string;
+  /**
+   * giscus 脚本/iframe 来源，默认 https://giscus.app。
+   * 大陆网络访问 giscus.app 不稳定时，可改为自托管 giscus 实例或可达的镜像地址
+   * （脚本注入、iframe 主题同步、消息源校验三处均使用该地址）。
+   */
+  origin?: string;
+  /**
+   * 严格匹配（data-strict）：true 时按「正文 SHA-1 哈希」搜索 Discussion（新讨论由
+   * giscus 自动附带哈希标记）；false 时按「标题」搜索并允许评论时自动创建讨论。
+   * 注意：历史已存在的 Discussion 正文没有哈希标记时，严格匹配会搜不到（评论不显示），
+   * 因此本仓库关闭严格匹配（现有讨论按标题 pathname 直接命中）。
+   */
+  strict?: boolean;
 }
 
 export interface SiteGuestbook {

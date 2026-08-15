@@ -143,6 +143,14 @@ content:
           - { name: repoId, label: 仓库 ID, type: string }
           - { name: category, label: 分类名, type: string }
           - { name: categoryId, label: 分类 ID, type: string }
+          - name: origin
+            label: giscus 来源地址
+            hint: 默认 https://giscus.app；大陆网络无法访问时可改为自托管/镜像地址
+            type: string
+          - name: strict
+            label: 严格匹配
+            hint: 关闭（推荐）：按标题匹配并允许自动建讨论；开启：按正文 SHA-1 哈希匹配（历史讨论需含哈希标记）
+            type: boolean
       - name: guestbook
         label: 留言板
         type: object

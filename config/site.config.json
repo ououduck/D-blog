@@ -28,7 +28,9 @@
     "repo": "ououduck/D-blog",
     "repoId": "R_kgDORApwuA",
     "category": "文章评论",
-    "categoryId": "DIC_kwDORApwuM4DCztq"
+    "categoryId": "DIC_kwDORApwuM4DCztq",
+    "origin": "https://giscus.app",
+    "strict": false
   },
   "guestbook": {
     "discussionId": 9
