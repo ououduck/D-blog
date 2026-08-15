@@ -86,14 +86,20 @@ for (const filePath of htmlFiles) {
 
   const isOfflineFallback = relativePath === 'offline.html';
   if (!/<title\b[^>]*>[\s\S]+<\/title>/i.test(html)) errors.push(`${relativePath}: missing title`);
-  if (!isOfflineFallback && !/<meta\b[^>]*\bname=["']description["'][^>]*>/i.test(html)) errors.push(`${relativePath}: missing description`);
-  if (!isOfflineFallback && !/<meta\b[^>]*\bname=["']robots["'][^>]*>/i.test(html)) errors.push(`${relativePath}: missing robots`);
+  if (!isOfflineFallback && !/<meta\b[^>]*\bname=["']description["'][^>]*>/i.test(html))
+    errors.push(`${relativePath}: missing description`);
+  if (!isOfflineFallback && !/<meta\b[^>]*\bname=["']robots["'][^>]*>/i.test(html))
+    errors.push(`${relativePath}: missing robots`);
   if (canonicalCount > 1) errors.push(`${relativePath}: duplicate canonical tags (${canonicalCount})`);
   // offline.html 是独立的应用壳兜底页（客户端渲染、无 SEO 需求），
   // 不要求 JSON-LD 与 SSG 正文，避免误报。
   if (!isOfflineFallback && jsonLdTags.length === 0) warnings.push(`${relativePath}: missing JSON-LD`);
-  if (!isOfflineFallback && rootContent === '') warnings.push(`${relativePath}: static HTML has an empty root; content remains client-rendered`);
-  if (!isOfflineFallback && rootContent.length < 64) warnings.push(`${relativePath}: root content looks too thin (${rootContent.length} chars); SSG may not have rendered body content`);
+  if (!isOfflineFallback && rootContent === '')
+    warnings.push(`${relativePath}: static HTML has an empty root; content remains client-rendered`);
+  if (!isOfflineFallback && rootContent.length < 64)
+    warnings.push(
+      `${relativePath}: root content looks too thin (${rootContent.length} chars); SSG may not have rendered body content`,
+    );
 
   for (const tag of jsonLdTags) {
     const json = tag.replace(/^.*?>/s, '').replace(/<\/script>\s*$/i, '');
@@ -153,8 +159,10 @@ if (fs.existsSync(assetsDir)) {
     }
   }
 }
-if (initialScriptBytes > maxInitialScriptBytes) warnings.push(`initial JavaScript is ${(initialScriptBytes / 1024).toFixed(1)} KiB`);
-if (initialStyleBytes > maxInitialStyleBytes) warnings.push(`initial CSS is ${(initialStyleBytes / 1024).toFixed(1)} KiB`);
+if (initialScriptBytes > maxInitialScriptBytes)
+  warnings.push(`initial JavaScript is ${(initialScriptBytes / 1024).toFixed(1)} KiB`);
+if (initialStyleBytes > maxInitialStyleBytes)
+  warnings.push(`initial CSS is ${(initialStyleBytes / 1024).toFixed(1)} KiB`);
 
 for (const warning of warnings) logger.warn(warning, '', verbose);
 for (const error of errors) logger.error(error);
@@ -162,7 +170,7 @@ logger.summary({
   html: htmlFiles.length,
   'initial-js': `${(initialScriptBytes / 1024).toFixed(1)}KiB`,
   'initial-css': `${(initialStyleBytes / 1024).toFixed(1)}KiB`,
-  errors: errors.length
+  errors: errors.length,
 });
 
 if (errors.length > 0 || (strict && warnings.length > 0)) process.exit(1);
