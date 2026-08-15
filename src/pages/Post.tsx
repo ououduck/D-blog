@@ -438,7 +438,9 @@ const PreBlock = ({
     document.body.appendChild(link);
     link.click();
     link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+    // 延迟释放：部分浏览器（如 Firefox）异步发起下载，同步 revoke 可能中止下载
+    // （与 ImageViewer 的下载逻辑保持一致的时序约定）。
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
   };
 
   if (isMermaidBlock || lang?.toLowerCase() === 'mermaid') {
