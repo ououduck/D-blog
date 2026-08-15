@@ -29,7 +29,10 @@ const isSafeUrl = (value) => {
   }
 };
 
-const stripMarkdownUrlDecorators = (value) => String(value).trim().replace(/\s+["'][^"']*["']$/, '');
+const stripMarkdownUrlDecorators = (value) =>
+  String(value)
+    .trim()
+    .replace(/\s+["'][^"']*["']$/, '');
 
 // 站内相对路径归一化为 / 开头的站点绝对路径（如 posts-img/x.png → /posts-img/x.png）。
 const toSitePath = (value) => {
@@ -74,11 +77,7 @@ const resolveImageUrl = (value, { siteUrl, basePath }) => {
     return isSafeUrl(rawUrl) ? rawUrl : undefined;
   }
 
-  return toAbsoluteSiteUrl(
-    rawUrl.startsWith('/') ? rawUrl : toSitePath(rawUrl),
-    siteUrl,
-    basePath
-  );
+  return toAbsoluteSiteUrl(rawUrl.startsWith('/') ? rawUrl : toSitePath(rawUrl), siteUrl, basePath);
 };
 
 const rewriteUrls = (options) => {
@@ -92,8 +91,7 @@ const rewriteUrls = (options) => {
         const href = resolveLinkUrl(node.properties.href, options);
         if (href) {
           node.properties.href = href;
-          const isHttpExternal = /^https?:/i.test(href)
-            && new URL(href).origin !== new URL(options.siteUrl).origin;
+          const isHttpExternal = /^https?:/i.test(href) && new URL(href).origin !== new URL(options.siteUrl).origin;
           if (isHttpExternal) {
             node.properties.target = '_blank';
             node.properties.rel = 'noopener noreferrer';
@@ -124,15 +122,16 @@ const rewriteUrls = (options) => {
   return (tree) => visit(tree);
 };
 
-const createProcessor = (options) => unified()
-  .use(remarkParse)
-  .use(remarkGfm)
-  .use(remarkMath)
-  .use(remarkRehype)
-  .use(rehypeKatex)
-  .use(rehypeHighlight)
-  .use(rewriteUrls, options)
-  .use(rehypeStringify);
+const createProcessor = (options) =>
+  unified()
+    .use(remarkParse)
+    .use(remarkGfm)
+    .use(remarkMath)
+    .use(remarkRehype)
+    .use(rehypeKatex)
+    .use(rehypeHighlight)
+    .use(rewriteUrls, options)
+    .use(rehypeStringify);
 
 export const markdownToFeedHtml = (markdown, options = {}) => {
   const siteUrl = String(options.siteUrl || '').replace(/\/+$/, '');

@@ -25,17 +25,9 @@
  * 运行环境：GITHUB_TOKEN（自动注入）、GITHUB_REPOSITORY（自动注入，owner/repo）。
  */
 
-import {
-  fetchWithRetry,
-  createTimeoutSignal,
-  readResponseText
-} from './lib/http.mjs';
+import { fetchWithRetry, createTimeoutSignal, readResponseText } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
-import {
-  loadConfig,
-  matchContent,
-  isExemptAuthor
-} from './lib/keyword-filter-core.mjs';
+import { loadConfig, matchContent, isExemptAuthor } from './lib/keyword-filter-core.mjs';
 
 const logger = createActionLogger('keyword-recheck');
 
@@ -116,25 +108,30 @@ const graphql = async (query, variables, { maxBytes } = {}) => {
 
   const { signal, cleanup } = createTimeoutSignal(GRAPHQL_TIMEOUT_MS);
   try {
-    const response = await fetchWithRetry(GITHUB_GRAPHQL_URL, {
-      method: 'POST',
-      signal,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'D-blog Keyword Recheck Action/1.0',
-        'X-GitHub-Api-Version': '2022-11-28'
+    const response = await fetchWithRetry(
+      GITHUB_GRAPHQL_URL,
+      {
+        method: 'POST',
+        signal,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'D-blog Keyword Recheck Action/1.0',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify({ query, variables }),
       },
-      body: JSON.stringify({ query, variables })
-    }, {
-      retries: GRAPHQL_RETRIES,
-      signal,
-      onRetry: (info) => logger.warn('Retrying GraphQL request', {
-        attempt: info.attempt,
-        status: info.status ?? 'network',
-        delayMs: info.delayMs
-      })
-    });
+      {
+        retries: GRAPHQL_RETRIES,
+        signal,
+        onRetry: (info) =>
+          logger.warn('Retrying GraphQL request', {
+            attempt: info.attempt,
+            status: info.status ?? 'network',
+            delayMs: info.delayMs,
+          }),
+      },
+    );
 
     const raw = await readResponseText(response, { maxBytes: maxBytes ?? LIST_MAX_RESPONSE_BYTES });
     let result;
@@ -150,7 +147,7 @@ const graphql = async (query, variables, { maxBytes } = {}) => {
       // 节点已处理（Akismet 并行删除等）属预期情况，不视为失败。
       logger.warn('GraphQL request failed', {
         status: response.status,
-        errors: result.errors || result.message || 'unknown'
+        errors: result.errors || result.message || 'unknown',
       });
       return null;
     }
@@ -235,7 +232,7 @@ const listDiscussionComments = async (discussionId) => {
           body: node.body ?? '',
           url: node.url ?? 'unknown',
           author: node.author?.login ?? '',
-          isMinimized: node.isMinimized === true
+          isMinimized: node.isMinimized === true,
         });
       }
     }
@@ -330,7 +327,9 @@ const main = async () => {
       if (action === 'none') {
         logger.info('Action is "none"; matched comment only logged', { author: comment.author, url: comment.url });
       } else if (action === 'minimize') {
-        ok = (await graphql(MINIMIZE_COMMENT_MUTATION, { subjectId: comment.id, reason: 'SPAM' }, { maxBytes: 65536 })) !== null;
+        ok =
+          (await graphql(MINIMIZE_COMMENT_MUTATION, { subjectId: comment.id, reason: 'SPAM' }, { maxBytes: 65536 })) !==
+          null;
       } else {
         ok = (await graphql(DELETE_COMMENT_MUTATION, { commentId: comment.id }, { maxBytes: 65536 })) !== null;
       }
@@ -345,9 +344,15 @@ const main = async () => {
         作者: comment.author || '-',
         命中: `${hit.type}:${hit.value}`,
         处理: ok ? action : '失败',
-        链接: comment.url
+        链接: comment.url,
       });
-      logger.warn('Matched comment processed', { author: comment.author, type: hit.type, value: hit.value, action: ok ? action : 'failed', url: comment.url });
+      logger.warn('Matched comment processed', {
+        author: comment.author,
+        type: hit.type,
+        value: hit.value,
+        action: ok ? action : 'failed',
+        url: comment.url,
+      });
 
       if (scanned % 50 === 0) {
         logger.info('Progress', { scanned, matched, actioned, failed });
@@ -363,7 +368,7 @@ const main = async () => {
     actioned,
     failed,
     discussions: discussions.length,
-    action: config.action
+    action: config.action,
   });
 };
 

@@ -62,11 +62,14 @@ export const ReadingModeProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, []);
   const exitReadingMode = useCallback(() => setReadingMode(false), []);
 
-  const value = useMemo(() => ({
-    isReadingMode,
-    toggleReadingMode,
-    exitReadingMode
-  }), [exitReadingMode, isReadingMode, toggleReadingMode]);
+  const value = useMemo(
+    () => ({
+      isReadingMode,
+      toggleReadingMode,
+      exitReadingMode,
+    }),
+    [exitReadingMode, isReadingMode, toggleReadingMode],
+  );
 
   return <ReadingModeContext.Provider value={value}>{children}</ReadingModeContext.Provider>;
 };

@@ -95,7 +95,9 @@ const maskFencedCode = (content) => {
 
 // ── 判断是否外链 ──────────────────────────────────────────
 const isExternalUrl = (value) => {
-  const trimmed = String(value ?? '').trim().replace(/^<|>$/g, '');
+  const trimmed = String(value ?? '')
+    .trim()
+    .replace(/^<|>$/g, '');
   return /^(?:https?:)?\/\//i.test(trimmed);
 };
 
@@ -132,7 +134,11 @@ const extractImagePathStrings = (frontmatterData, bodyContent) => {
 // ── 将路径字符串解析为本地绝对文件路径 ────────────────────
 // 返回 null 表示外链或无法解析。
 const resolveLocalPath = (rawPath, fileDir) => {
-  const clean = rawPath.replace(/^<|>$/g, '').replace(/[?#].*$/, '').replace(/\\/g, '/').trim();
+  const clean = rawPath
+    .replace(/^<|>$/g, '')
+    .replace(/[?#].*$/, '')
+    .replace(/\\/g, '/')
+    .trim();
   if (!clean || isExternalUrl(clean)) return null;
 
   // 站内绝对路径：/xxx → <root>/xxx
@@ -154,7 +160,7 @@ const uploadViaPicgo = async (absolutePaths) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ list: absolutePaths }),
-      signal: controller.signal
+      signal: controller.signal,
     });
 
     if (!response.ok) {
@@ -169,7 +175,7 @@ const uploadViaPicgo = async (absolutePaths) => {
     const results = data.result;
     if (!Array.isArray(results) || results.length !== absolutePaths.length) {
       throw new Error(
-        `PicGo 返回结果数量 ${Array.isArray(results) ? results.length : 'N/A'} 与上传数量 ${absolutePaths.length} 不匹配`
+        `PicGo 返回结果数量 ${Array.isArray(results) ? results.length : 'N/A'} 与上传数量 ${absolutePaths.length} 不匹配`,
       );
     }
 
@@ -184,7 +190,9 @@ const main = async () => {
   console.log(cyan('━'.repeat(60)));
   console.log(cyan('  PicGo 图片迁移脚本'));
   console.log(`${cyan('  目标目录:')} ${TARGET_DIR}`);
-  console.log(`${cyan('  模式:')} ${isDryRun ? yellow('dry-run（预览，不上传不写文件）') : green('实际执行（上传 + 替换）')}`);
+  console.log(
+    `${cyan('  模式:')} ${isDryRun ? yellow('dry-run（预览，不上传不写文件）') : green('实际执行（上传 + 替换）')}`,
+  );
   console.log(cyan('━'.repeat(60)));
 
   const mdFiles = walkMarkdownFiles(TARGET_DIR);
@@ -293,14 +301,13 @@ const main = async () => {
     // 不要逐条 split/join 累积替换：PicGo URL 常包含原文件名，短路径会把
     // 刚插入的 URL 内部再替换一遍（如 "a.png" → "https://…/a.png" 被二次破坏），
     // 单遍替换中插入的 URL 不会参与后续匹配，可彻底避免该污染。
-    const uniqueReplacements = [...new Map(
-      replacements.map((item) => [item.raw, item.url])
-    ).entries()].map(([raw, url]) => ({ raw, url }))
+    const uniqueReplacements = [...new Map(replacements.map((item) => [item.raw, item.url])).entries()]
+      .map(([raw, url]) => ({ raw, url }))
       .sort((a, b) => b.raw.length - a.raw.length);
 
     const escapedPattern = new RegExp(
       uniqueReplacements.map(({ raw }) => raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
-      'g'
+      'g',
     );
     const newContent = rawContent.replace(escapedPattern, (match) => {
       const item = uniqueReplacements.find(({ raw }) => raw === match);
@@ -319,7 +326,9 @@ const main = async () => {
   console.log(cyan('  迁移汇总'));
   console.log(`${cyan('  模式:')} ${isDryRun ? yellow('dry-run') : green('实际执行')}`);
   console.log(`${cyan('  扫描文件:')} ${mdFiles.length}`);
-  console.log(`${cyan('  上传图片:')} ${isDryRun ? yellow(`${uploadCache.size}（dry-run 未实际上传）`) : green(totalUploaded)}`);
+  console.log(
+    `${cyan('  上传图片:')} ${isDryRun ? yellow(`${uploadCache.size}（dry-run 未实际上传）`) : green(totalUploaded)}`,
+  );
   console.log(`${cyan('  修改文件:')} ${isDryRun ? dim('N/A（dry-run）') : green(totalFilesChanged)}`);
   console.log(`${cyan('  替换路径:')} ${isDryRun ? dim('见上方预览') : green(totalReplaced)}`);
   if (warnings.length > 0) {

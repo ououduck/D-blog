@@ -22,8 +22,5 @@
     "nmsl",
     "cnm"
   ],
-  "patterns": [
-    "(?:vx|wx|wechat|qq|tg)\\s*[:：]?\\s*[a-zA-Z0-9_-]{5,}",
-    "https?://\\S*(?:bet|casino|spam|ads)\\S*"
-  ]
+  "patterns": ["(?:vx|wx|wechat|qq|tg)\\s*[:：]?\\s*[a-zA-Z0-9_-]{5,}", "https?://\\S*(?:bet|casino|spam|ads)\\S*"]
 }

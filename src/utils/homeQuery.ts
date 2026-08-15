@@ -16,14 +16,10 @@ const parsePage = (value: string | null) => {
 
 export const getHomeQueryState = (params: URLSearchParams): HomeQueryState => ({
   sortOrder: params.get('sort') === 'oldest' ? 'oldest' : 'newest',
-  page: parsePage(params.get('page'))
+  page: parsePage(params.get('page')),
 });
 
-export const setHomeQueryParam = (
-  params: URLSearchParams,
-  key: 'sort' | 'page',
-  value: HomeSortOrder | number
-) => {
+export const setHomeQueryParam = (params: URLSearchParams, key: 'sort' | 'page', value: HomeSortOrder | number) => {
   const nextParams = new URLSearchParams(params);
 
   if (key === 'sort') {

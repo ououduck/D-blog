@@ -19,7 +19,7 @@ export const ContentStatus: React.FC<ContentStatusProps> = ({
   variant = 'empty',
   actionLabel,
   onAction,
-  className
+  className,
 }) => (
   <div
     role={variant === 'error' ? 'alert' : 'status'}
@@ -28,20 +28,18 @@ export const ContentStatus: React.FC<ContentStatusProps> = ({
       variant === 'error'
         ? 'border-dashed border-zinc-500 dark:border-zinc-500'
         : 'border-zinc-200 dark:border-zinc-800',
-      className
+      className,
     )}
   >
-    <p className={mergeClassName(
-      'font-serif text-lg font-semibold',
-      variant === 'error'
-        ? 'text-zinc-950 dark:text-zinc-100'
-        : 'text-zinc-700 dark:text-zinc-300'
-    )}>
+    <p
+      className={mergeClassName(
+        'font-serif text-lg font-semibold',
+        variant === 'error' ? 'text-zinc-950 dark:text-zinc-100' : 'text-zinc-700 dark:text-zinc-300',
+      )}
+    >
       {title}
     </p>
-    {description && (
-      <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{description}</p>
-    )}
+    {description && <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{description}</p>}
     {actionLabel && onAction && (
       <button type="button" onClick={onAction} className="editorial-button mt-4 rounded-control active:scale-[.98]">
         {actionLabel}

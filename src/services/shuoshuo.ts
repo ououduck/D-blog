@@ -4,7 +4,7 @@ import { ShuoShuo } from '../types';
 // （与 posts.ts 的 posts.json / friends.ts 的 friends.json 模式一致）。
 const generatedShuoShuoModules = import.meta.glob<ShuoShuo[]>('../../generated/shuoshuo.json', {
   eager: true,
-  import: 'default'
+  import: 'default',
 });
 const initialShuoShuo = Object.values(generatedShuoShuoModules)[0] ?? [];
 

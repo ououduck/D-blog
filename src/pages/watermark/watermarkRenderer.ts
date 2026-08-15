@@ -24,11 +24,13 @@ export const DEFAULT_WATERMARK_OPTIONS: WatermarkRenderOptions = {
   opacity: 30,
   position: 'bottom-right',
   padding: 32,
-  fontFamily: 'sans-serif'
+  fontFamily: 'sans-serif',
 };
 
-export const clampWatermarkFontSize = (value: number) => Math.min(240, Math.max(8, Number.isFinite(value) ? value : DEFAULT_WATERMARK_OPTIONS.fontSize));
-export const clampWatermarkOpacity = (value: number) => Math.min(100, Math.max(0, Number.isFinite(value) ? value : DEFAULT_WATERMARK_OPTIONS.opacity));
+export const clampWatermarkFontSize = (value: number) =>
+  Math.min(240, Math.max(8, Number.isFinite(value) ? value : DEFAULT_WATERMARK_OPTIONS.fontSize));
+export const clampWatermarkOpacity = (value: number) =>
+  Math.min(100, Math.max(0, Number.isFinite(value) ? value : DEFAULT_WATERMARK_OPTIONS.opacity));
 
 const getAnchor = (position: WatermarkPosition) => {
   const horizontal = position.endsWith('left') ? 'left' : position.endsWith('right') ? 'right' : 'center';
@@ -41,33 +43,38 @@ const getWatermarkPoint = (
   height: number,
   fontSize: number,
   position: WatermarkPosition,
-  padding = 32
+  padding = 32,
 ) => {
   const safePadding = Math.max(0, padding);
   const { horizontal, vertical } = getAnchor(position);
   const halfHeight = fontSize / 2;
-  const x = horizontal === 'left'
-    ? safePadding
-    : horizontal === 'right'
-      ? width - safePadding
-      : width / 2;
+  const x = horizontal === 'left' ? safePadding : horizontal === 'right' ? width - safePadding : width / 2;
   // 配合 renderWatermark 的 textBaseline='middle'：以 em 盒中心定位，
   // top/bottom 的 padding 语义对称，且底部文字不会因 descender 越界被裁切。
-  const y = vertical === 'top'
-    ? safePadding + halfHeight
-    : vertical === 'bottom'
-      ? height - safePadding - halfHeight
-      : height / 2;
+  const y =
+    vertical === 'top'
+      ? safePadding + halfHeight
+      : vertical === 'bottom'
+        ? height - safePadding - halfHeight
+        : height / 2;
 
   return { x, y, textAlign: horizontal === 'left' ? 'left' : horizontal === 'right' ? 'right' : 'center' } as const;
 };
 
 export const getWatermarkFilename = (filename: string, format: 'png' | 'jpeg') => {
-  const base = filename.replace(/\.[^/.]+$/, '').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'image';
+  const base =
+    filename
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[\\/:*?"<>|]+/g, '-')
+      .trim() || 'image';
   return `${base}-watermarked.${format === 'jpeg' ? 'jpg' : 'png'}`;
 };
 
-export const renderWatermark = (canvas: HTMLCanvasElement, image: CanvasImageSource, options: WatermarkRenderOptions) => {
+export const renderWatermark = (
+  canvas: HTMLCanvasElement,
+  image: CanvasImageSource,
+  options: WatermarkRenderOptions,
+) => {
   const context = canvas.getContext('2d');
   if (!context) {
     throw new Error('当前浏览器不支持 Canvas 绘制。');
@@ -83,9 +90,10 @@ export const renderWatermark = (canvas: HTMLCanvasElement, image: CanvasImageSou
     return;
   }
 
-  const requestedFontSize = Number.isFinite(options.fontSize) && options.fontSize > 0
-    ? Math.min(240, options.fontSize)
-    : DEFAULT_WATERMARK_OPTIONS.fontSize;
+  const requestedFontSize =
+    Number.isFinite(options.fontSize) && options.fontSize > 0
+      ? Math.min(240, options.fontSize)
+      : DEFAULT_WATERMARK_OPTIONS.fontSize;
   const opacity = clampWatermarkOpacity(options.opacity) / 100;
   const padding = Math.max(0, options.padding ?? DEFAULT_WATERMARK_OPTIONS.padding ?? 32);
   const fontFamily = options.fontFamily || DEFAULT_WATERMARK_OPTIONS.fontFamily;
@@ -94,12 +102,9 @@ export const renderWatermark = (canvas: HTMLCanvasElement, image: CanvasImageSou
   context.save();
   context.font = `600 ${requestedFontSize}px ${fontFamily}`;
   const measuredWidth = context.measureText(text).width;
-  const proportionalFontSize = measuredWidth > availableWidth
-    ? requestedFontSize * availableWidth / measuredWidth
-    : requestedFontSize;
-  const fontSize = measuredWidth > availableWidth
-    ? Math.max(minimumFontSize, proportionalFontSize)
-    : requestedFontSize;
+  const proportionalFontSize =
+    measuredWidth > availableWidth ? (requestedFontSize * availableWidth) / measuredWidth : requestedFontSize;
+  const fontSize = measuredWidth > availableWidth ? Math.max(minimumFontSize, proportionalFontSize) : requestedFontSize;
   context.font = `600 ${fontSize}px ${fontFamily}`;
   context.textBaseline = 'middle';
   const point = getWatermarkPoint(width, height, fontSize, options.position, padding);

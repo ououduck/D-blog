@@ -19,12 +19,14 @@ const DEFAULT_SITE_CONFIG = {
     name: '作者',
     avatar: '',
     role: '',
-    bio: ''
-  }
+    bio: '',
+  },
 };
 
 const normalizeBaseUrl = (value, logger) => {
-  const rawUrl = String(value || DEFAULT_SITE_CONFIG.url).trim().replace(/\/+$/, '');
+  const rawUrl = String(value || DEFAULT_SITE_CONFIG.url)
+    .trim()
+    .replace(/\/+$/, '');
 
   try {
     return new URL(rawUrl).toString().replace(/\/+$/, '');
@@ -46,7 +48,7 @@ export const loadSiteConfig = ({ logger } = {}) => {
   } catch (error) {
     logger?.warn('Failed to parse site.config.json, fallback to default config', {
       path: SITE_CONFIG_FILE,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
     return DEFAULT_SITE_CONFIG;
   }
@@ -65,8 +67,8 @@ export const loadSiteConfig = ({ logger } = {}) => {
       name: raw.author?.name || DEFAULT_SITE_CONFIG.author.name,
       avatar: raw.author?.avatar || DEFAULT_SITE_CONFIG.author.avatar,
       role: raw.author?.role || DEFAULT_SITE_CONFIG.author.role,
-      bio: raw.author?.bio || DEFAULT_SITE_CONFIG.author.bio
-    }
+      bio: raw.author?.bio || DEFAULT_SITE_CONFIG.author.bio,
+    },
   };
 };
 
@@ -87,7 +89,7 @@ export const toAbsoluteUrl = (value, baseUrl, basePath = getSiteBasePath()) => {
       }
       return new URL(
         withBasePath(`${candidate.pathname}${candidate.search}${candidate.hash}`, basePath),
-        `${baseUrl.replace(/\/+$/, '')}/`
+        `${baseUrl.replace(/\/+$/, '')}/`,
       ).toString();
     } catch {
       return rawValue;

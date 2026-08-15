@@ -46,6 +46,6 @@ export const createBuildLogger = (scope) => {
         .join(' ');
 
       write('summary', parts);
-    }
+    },
   };
 };

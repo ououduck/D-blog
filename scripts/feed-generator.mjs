@@ -3,12 +3,13 @@ import { markdownToFeedHtml } from './feed-markdown.mjs';
 
 const DEFAULT_LANGUAGE = 'zh-CN';
 
-const xmlEscape = (value) => String(value ?? '')
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&apos;');
+const xmlEscape = (value) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 
 const wrapCdata = (value) => `<![CDATA[${String(value ?? '').replace(/]]>/g, ']]]]><![CDATA[>')}]]>`;
 
@@ -41,14 +42,13 @@ const getLatestUpdate = (posts) => {
   }, getModifiedDate(posts[0]));
 };
 
-const renderCategory = (category) => category
-  ? `<category domain="category">${xmlEscape(category)}</category>`
-  : '';
+const renderCategory = (category) => (category ? `<category domain="category">${xmlEscape(category)}</category>` : '');
 
-const renderTags = (tags) => (Array.isArray(tags) ? tags : [])
-  .filter((tag) => typeof tag === 'string' && tag.trim())
-  .map((tag) => `<category domain="tag">${xmlEscape(tag.trim())}</category>`)
-  .join('\n      ');
+const renderTags = (tags) =>
+  (Array.isArray(tags) ? tags : [])
+    .filter((tag) => typeof tag === 'string' && tag.trim())
+    .map((tag) => `<category domain="tag">${xmlEscape(tag.trim())}</category>`)
+    .join('\n      ');
 
 const renderAuthors = (post, fallbackAuthor) => {
   const authors = Array.isArray(post.authors) ? post.authors : [];
@@ -59,14 +59,10 @@ const renderAuthors = (post, fallbackAuthor) => {
   return `<author>${xmlEscape(name)}</author>`;
 };
 
-export const buildRssFeed = (postsInput, {
-  siteUrl,
-  basePath = '/',
-  title,
-  description,
-  author,
-  language = DEFAULT_LANGUAGE
-} = {}) => {
+export const buildRssFeed = (
+  postsInput,
+  { siteUrl, basePath = '/', title, description, author, language = DEFAULT_LANGUAGE } = {},
+) => {
   const normalizedSiteUrl = normalizeSiteUrl(siteUrl);
   if (!normalizedSiteUrl) {
     throw new Error('buildRssFeed requires a siteUrl');
@@ -77,18 +73,19 @@ export const buildRssFeed = (postsInput, {
   const homeUrl = toAbsoluteUrl('/', normalizedSiteUrl, basePath);
   const latestUpdate = getLatestUpdate(posts);
 
-  const items = posts.map((post) => {
-    const postUrl = toAbsoluteUrl(`/post/${post.id}`, normalizedSiteUrl, basePath);
-    const publishedDate = getPublishedDate(post);
-    const modifiedDate = getModifiedDate(post);
-    const contentHtml = markdownToFeedHtml(post.content || '', {
-      siteUrl: normalizedSiteUrl,
-      basePath,
-      postUrl,
-      postId: post.id
-    });
+  const items = posts
+    .map((post) => {
+      const postUrl = toAbsoluteUrl(`/post/${post.id}`, normalizedSiteUrl, basePath);
+      const publishedDate = getPublishedDate(post);
+      const modifiedDate = getModifiedDate(post);
+      const contentHtml = markdownToFeedHtml(post.content || '', {
+        siteUrl: normalizedSiteUrl,
+        basePath,
+        postUrl,
+        postId: post.id,
+      });
 
-    return `
+      return `
     <item>
       <title>${wrapCdata(post.title)}</title>
       <link>${xmlEscape(postUrl)}</link>
@@ -101,7 +98,8 @@ export const buildRssFeed = (postsInput, {
       ${renderTags(post.tags)}
       ${renderAuthors(post, author || '')}
     </item>`;
-  }).join('');
+    })
+    .join('');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">

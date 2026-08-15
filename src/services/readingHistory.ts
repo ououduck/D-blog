@@ -9,7 +9,8 @@ export interface ReadingHistoryEntry {
   updatedAt: number;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 const clamp = (value: number) => Math.min(Math.max(value, 0), 1);
 
 const normalizeEntry = (value: unknown): ReadingHistoryEntry | undefined => {
@@ -19,7 +20,7 @@ const normalizeEntry = (value: unknown): ReadingHistoryEntry | undefined => {
   return {
     postId: value.postId,
     progress: clamp(value.progress),
-    updatedAt: value.updatedAt
+    updatedAt: value.updatedAt,
   };
 };
 
@@ -61,7 +62,7 @@ export const saveReadingHistory = (entry: Omit<ReadingHistoryEntry, 'updatedAt'>
   const nextEntry: ReadingHistoryEntry = {
     postId: entry.postId,
     progress: clamp(entry.progress),
-    updatedAt: entry.updatedAt ?? Date.now()
+    updatedAt: entry.updatedAt ?? Date.now(),
   };
   if (isReadingComplete(nextEntry.progress)) {
     removeReadingHistory(entry.postId);

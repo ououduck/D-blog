@@ -11,8 +11,15 @@ const parseISODate = (dateText: string) => {
   const month = Number.parseInt(monthText, 10);
   const day = Number.parseInt(dayText, 10);
 
-  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)
-    || month < 1 || month > 12 || day < 1 || day > 31) {
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
     return new Date(Number.NaN);
   }
 
@@ -34,11 +41,7 @@ export const getDateTimestamp = (dateText: string) => {
 
 const isValidDate = (date: Date) => !Number.isNaN(date.getTime());
 
-export const formatDate = (
-  dateText: string,
-  locale: string,
-  options: Intl.DateTimeFormatOptions
-) => {
+export const formatDate = (dateText: string, locale: string, options: Intl.DateTimeFormatOptions) => {
   const parsedDate = parseISODate(dateText);
   if (!isValidDate(parsedDate)) {
     return dateText;

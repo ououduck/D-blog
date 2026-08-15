@@ -17,10 +17,7 @@ import { Post } from './types';
  */
 const RENDER_TIMEOUT_MS = 30000;
 
-const renderTreeToString = (
-  node: React.ReactNode,
-  onError?: (error: unknown) => void
-): Promise<string> =>
+const renderTreeToString = (node: React.ReactNode, onError?: (error: unknown) => void): Promise<string> =>
   new Promise((resolve, reject) => {
     let settled = false;
     const timer = setTimeout(() => {
@@ -49,7 +46,7 @@ const renderTreeToString = (
               resolve(chunks.join(''));
               callback();
             },
-          })
+          }),
         );
       },
       onError(error) {
@@ -76,7 +73,7 @@ const MARKER_TAG = '<div data-ssg-marker="1">';
  */
 export const renderApp = async (
   url: string,
-  options: { posts?: Post[]; onError?: (error: unknown) => void } = {}
+  options: { posts?: Post[]; onError?: (error: unknown) => void } = {},
 ): Promise<{ html: string; head: string; routeData: SsgRouteData | undefined }> => {
   const routeData = buildSsgRouteData(options.posts ?? [], url);
   const helmetContext = {};
@@ -96,7 +93,7 @@ export const renderApp = async (
         </StaticRouter>
       </SsgRouteContext.Provider>
     </HelmetProvider>,
-    options.onError
+    options.onError,
   );
 
   const headMatch = rendered.match(/<head>([\s\S]*?)<\/head>/);

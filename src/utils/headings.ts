@@ -1,9 +1,5 @@
 import React from 'react';
-import {
-  extractMarkdownHeadings,
-  slugifyHeading,
-  stripInlineMarkdown
-} from './headings-core.mjs';
+import { extractMarkdownHeadings, slugifyHeading, stripInlineMarkdown } from './headings-core.mjs';
 
 export interface MarkdownHeading {
   id: string;

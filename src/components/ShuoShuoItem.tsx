@@ -18,7 +18,10 @@ const getImageGridClass = (count: number) => {
   return 'grid-cols-3';
 };
 
-const ImageGrid: React.FC<{ images: string[]; onPreview: (src: string, alt?: string) => void }> = ({ images, onPreview }) => {
+const ImageGrid: React.FC<{ images: string[]; onPreview: (src: string, alt?: string) => void }> = ({
+  images,
+  onPreview,
+}) => {
   const count = images.length;
 
   return (
@@ -36,7 +39,13 @@ const ImageGrid: React.FC<{ images: string[]; onPreview: (src: string, alt?: str
             alt={`说说配图 ${index + 1}`}
             loading="lazy"
             effect="fade"
-            sizes={count === 1 ? '(max-width: 640px) 80vw, 384px' : count === 2 ? '(max-width: 640px) 45vw, 240px' : '(max-width: 640px) 30vw, 160px'}
+            sizes={
+              count === 1
+                ? '(max-width: 640px) 80vw, 384px'
+                : count === 2
+                  ? '(max-width: 640px) 45vw, 240px'
+                  : '(max-width: 640px) 30vw, 160px'
+            }
             wrapperClassName="h-full w-full"
             className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
           />
@@ -62,7 +71,7 @@ export const ShuoShuoItem: React.FC<ShuoShuoItemProps> = ({
   onShare,
   isHighlighted = false,
   shouldReduceMotion = false,
-  showDetailLink = true
+  showDetailLink = true,
 }) => (
   <motion.li
     variants={shouldReduceMotion ? undefined : fadeInUp}
@@ -89,16 +98,16 @@ export const ShuoShuoItem: React.FC<ShuoShuoItemProps> = ({
         </time>
       </div>
 
-      <div className={`mt-2 rounded-surface border border-zinc-200 bg-paper p-4 shadow-none dark:border-zinc-800 dark:bg-zinc-900 sm:p-5 ${isHighlighted ? 'shuoshuo-highlight' : ''}`}>
+      <div
+        className={`mt-2 rounded-surface border border-zinc-200 bg-paper p-4 shadow-none dark:border-zinc-800 dark:bg-zinc-900 sm:p-5 ${isHighlighted ? 'shuoshuo-highlight' : ''}`}
+      >
         {item.content && (
           <div className="prose prose-stone max-w-none dark:prose-invert prose-p:my-1.5 prose-p:leading-7 prose-li:my-0.5 prose-blockquote:my-2 prose-blockquote:border-l-zinc-400 prose-blockquote:bg-zinc-100/70 prose-blockquote:px-3 prose-blockquote:py-1 prose-blockquote:not-italic prose-img:my-1.5 dark:prose-blockquote:border-l-zinc-500 dark:prose-blockquote:bg-zinc-900">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.content}</ReactMarkdown>
           </div>
         )}
 
-        {item.images && item.images.length > 0 && (
-          <ImageGrid images={item.images} onPreview={onPreview} />
-        )}
+        {item.images && item.images.length > 0 && <ImageGrid images={item.images} onPreview={onPreview} />}
 
         {/* 卡片底部操作栏：永久链接（独立页入口，利于爬虫发现/收录）+ 分享按钮 */}
         <div className="mt-3 flex items-center justify-between border-t border-zinc-100 pt-2 dark:border-zinc-800">

@@ -54,7 +54,7 @@ const run = async () => {
     `</linearGradient>`,
     `</defs>`,
     `<rect width="1200" height="630" fill="url(#paper)" />`,
-    `</svg>`
+    `</svg>`,
   ].join('');
 
   const cardBackground = sharp(Buffer.from(svgBackground)).png();
@@ -64,17 +64,19 @@ const run = async () => {
       height: logoHeight,
       fit: 'contain',
       position: 'centre',
-      background: { r: 0xff, g: 0xff, b: 0xff, alpha: 0 }
+      background: { r: 0xff, g: 0xff, b: 0xff, alpha: 0 },
     })
     .png()
     .toBuffer();
 
   await cardBackground
-    .composite([{
-      input: logoSquare,
-      top: Math.round((630 - logoHeight) / 2),
-      left: Math.round((1200 - LOGO_TARGET_WIDTH) / 2)
-    }])
+    .composite([
+      {
+        input: logoSquare,
+        top: Math.round((630 - logoHeight) / 2),
+        left: Math.round((1200 - LOGO_TARGET_WIDTH) / 2),
+      },
+    ])
     .png()
     .toFile(OUTPUT_PATH);
 

@@ -32,12 +32,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import {
-  fetchWithRetry,
-  sleep,
-  computeBackoffDelay,
-  RetryableHttpError
-} from './lib/http.mjs';
+import { fetchWithRetry, sleep, computeBackoffDelay, RetryableHttpError } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
 /* ------------------------------------------------------------------ */
@@ -96,23 +91,28 @@ const checkUrlReachable = async (rawUrl) => {
   }
 
   try {
-    const response = await fetchWithRetry(url.toString(), {
-      // 跟随重定向（Node fetch 默认 follow，最多 20 跳，跳转环抛网络错误）。
-      redirect: 'follow',
-      headers: {
-        'User-Agent': CHECK_USER_AGENT,
-        Accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8'
-      }
-    }, {
-      retries: CHECK_RETRIES,
-      timeoutMs: CHECK_TIMEOUT_MS,
-      onRetry: (info) => logger.warn('Retrying friend check', {
-        host: url.hostname,
-        attempt: info.attempt,
-        status: info.status ?? 'network',
-        delayMs: info.delayMs
-      })
-    });
+    const response = await fetchWithRetry(
+      url.toString(),
+      {
+        // 跟随重定向（Node fetch 默认 follow，最多 20 跳，跳转环抛网络错误）。
+        redirect: 'follow',
+        headers: {
+          'User-Agent': CHECK_USER_AGENT,
+          Accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
+        },
+      },
+      {
+        retries: CHECK_RETRIES,
+        timeoutMs: CHECK_TIMEOUT_MS,
+        onRetry: (info) =>
+          logger.warn('Retrying friend check', {
+            host: url.hostname,
+            attempt: info.attempt,
+            status: info.status ?? 'network',
+            delayMs: info.delayMs,
+          }),
+      },
+    );
 
     // 只关心状态码：立即取消 body 释放连接，不做内容读取（快且不会因
     // 慢速 body 挂起）。状态码 < 500 视为站点存活（服务器已响应）。
@@ -174,18 +174,26 @@ const commitAndPush = async (changedFiles) => {
   const staged = execFileSync('git', ['diff', '--cached', '--name-only'], {
     encoding: 'utf8',
     timeout: GIT_TIMEOUT_MS,
-    stdio: 'pipe'
+    stdio: 'pipe',
   }).trim();
   if (!staged) {
     logger.info('Nothing staged, skipping commit');
     return null;
   }
 
-  execFileSync('git', [
-    '-c', 'user.name=github-actions[bot]',
-    '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
-    'commit', '-m', 'chore: update friend link availability status'
-  ], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
+  execFileSync(
+    'git',
+    [
+      '-c',
+      'user.name=github-actions[bot]',
+      '-c',
+      'user.email=41898282+github-actions[bot]@users.noreply.github.com',
+      'commit',
+      '-m',
+      'chore: update friend link availability status',
+    ],
+    { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' },
+  );
 
   let lastError = null;
   for (let attempt = 1; attempt <= PUSH_RETRIES; attempt += 1) {
@@ -194,7 +202,7 @@ const commitAndPush = async (changedFiles) => {
       return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
         encoding: 'utf8',
         timeout: GIT_TIMEOUT_MS,
-        stdio: 'pipe'
+        stdio: 'pipe',
       }).trim();
     } catch (error) {
       lastError = error;
@@ -233,75 +241,86 @@ const main = async () => {
     recovered: 0,
     unchanged: 0,
     skipped: 0,
-    changed: 0
+    changed: 0,
   };
   const details = [];
   const changedFiles = [];
 
-  await mapWithConcurrency(filenames, async (filename) => {
-    const filePath = path.join(FRIENDS_DIR, filename);
-    let raw;
-    try {
-      raw = await fs.readFile(filePath, 'utf8');
-    } catch (error) {
-      logger.warn('Failed to read friend file, skipping', { file: filename, error: formatError(error) });
-      stats.skipped += 1;
-      return;
-    }
+  await mapWithConcurrency(
+    filenames,
+    async (filename) => {
+      const filePath = path.join(FRIENDS_DIR, filename);
+      let raw;
+      try {
+        raw = await fs.readFile(filePath, 'utf8');
+      } catch (error) {
+        logger.warn('Failed to read friend file, skipping', { file: filename, error: formatError(error) });
+        stats.skipped += 1;
+        return;
+      }
 
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch (error) {
-      logger.warn('Invalid JSON in friend file, skipping', { file: filename, error: formatError(error) });
-      stats.skipped += 1;
-      return;
-    }
-    if (typeof data.url !== 'string' || data.url.trim() === '') {
-      logger.warn('Friend file missing url, skipping', { file: filename });
-      stats.skipped += 1;
-      return;
-    }
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch (error) {
+        logger.warn('Invalid JSON in friend file, skipping', { file: filename, error: formatError(error) });
+        stats.skipped += 1;
+        return;
+      }
+      if (typeof data.url !== 'string' || data.url.trim() === '') {
+        logger.warn('Friend file missing url, skipping', { file: filename });
+        stats.skipped += 1;
+        return;
+      }
 
-    const wasUnavailable = data.unavailable === true;
-    const { reachable, detail } = await checkUrlReachable(data.url.trim());
+      const wasUnavailable = data.unavailable === true;
+      const { reachable, detail } = await checkUrlReachable(data.url.trim());
 
-    // 恢复机制（需求 3）：之前已失联、本次可访问 → 删除标记恢复为正常；
-    // 新增失联（需求 1b）：正常 → 本次不可访问 → 写入标记。
-    if (reachable && wasUnavailable) {
-      delete data.unavailable;
-      stats.recovered += 1;
-      stats.changed += 1;
-    } else if (!reachable && !wasUnavailable) {
-      data.unavailable = true;
-      stats.newlyUnavailable += 1;
-      stats.changed += 1;
-    } else if (!reachable) {
-      stats.unavailable += 1;
-    } else {
-      stats.reachable += 1;
-    }
+      // 恢复机制（需求 3）：之前已失联、本次可访问 → 删除标记恢复为正常；
+      // 新增失联（需求 1b）：正常 → 本次不可访问 → 写入标记。
+      if (reachable && wasUnavailable) {
+        delete data.unavailable;
+        stats.recovered += 1;
+        stats.changed += 1;
+      } else if (!reachable && !wasUnavailable) {
+        data.unavailable = true;
+        stats.newlyUnavailable += 1;
+        stats.changed += 1;
+      } else if (!reachable) {
+        stats.unavailable += 1;
+      } else {
+        stats.reachable += 1;
+      }
 
-    const statusLabel = reachable ? (wasUnavailable ? 'recovered' : 'ok') : (wasUnavailable ? 'unavailable' : 'newly-unavailable');
-    details.push({ file: filename, name: data.name || '(未命名)', url: data.url, status: statusLabel, detail });
+      const statusLabel = reachable
+        ? wasUnavailable
+          ? 'recovered'
+          : 'ok'
+        : wasUnavailable
+          ? 'unavailable'
+          : 'newly-unavailable';
+      details.push({ file: filename, name: data.name || '(未命名)', url: data.url, status: statusLabel, detail });
 
-    if (statusLabel === 'recovered' || statusLabel === 'newly-unavailable') {
-      // 保留原缩进与原字段顺序（JSON.parse 保持键序，unavailable 追加在末尾）。
-      const serialized = `${JSON.stringify(data, null, detectIndent(raw))}${raw.endsWith('\n') ? '\n' : ''}`;
-      if (serialized !== raw) {
-        changedFiles.push(filePath);
-        if (!DRY_RUN) {
-          await fs.writeFile(filePath, serialized, 'utf8');
+      if (statusLabel === 'recovered' || statusLabel === 'newly-unavailable') {
+        // 保留原缩进与原字段顺序（JSON.parse 保持键序，unavailable 追加在末尾）。
+        const serialized = `${JSON.stringify(data, null, detectIndent(raw))}${raw.endsWith('\n') ? '\n' : ''}`;
+        if (serialized !== raw) {
+          changedFiles.push(filePath);
+          if (!DRY_RUN) {
+            await fs.writeFile(filePath, serialized, 'utf8');
+          }
+        } else {
+          stats.unchanged += 1;
+          stats.changed -= 1;
+          if (reachable) stats.recovered -= 1;
+          else stats.newlyUnavailable -= 1;
         }
       } else {
         stats.unchanged += 1;
-        stats.changed -= 1;
-        if (reachable) stats.recovered -= 1; else stats.newlyUnavailable -= 1;
       }
-    } else {
-      stats.unchanged += 1;
-    }
-  }, CHECK_CONCURRENCY);
+    },
+    CHECK_CONCURRENCY,
+  );
 
   // 逐条输出检查结果（供 Actions 日志检索）。
   for (const item of details) {
@@ -320,7 +339,7 @@ const main = async () => {
     newlyUnavailable: stats.newlyUnavailable,
     recovered: stats.recovered,
     unchanged: stats.unchanged,
-    skipped: stats.skipped
+    skipped: stats.skipped,
   });
   logger.summaryTable('Friend Link Health Check', [
     { metric: 'total', value: stats.total },
@@ -329,7 +348,7 @@ const main = async () => {
     { metric: 'newly unavailable', value: stats.newlyUnavailable },
     { metric: 'recovered', value: stats.recovered },
     { metric: 'unchanged', value: stats.unchanged },
-    { metric: 'skipped', value: stats.skipped }
+    { metric: 'skipped', value: stats.skipped },
   ]);
 
   if (changedFiles.length === 0) {

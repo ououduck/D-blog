@@ -25,17 +25,9 @@
  */
 
 import fs from 'node:fs';
-import {
-  fetchWithRetry,
-  createTimeoutSignal,
-  readResponseText
-} from './lib/http.mjs';
+import { fetchWithRetry, createTimeoutSignal, readResponseText } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
-import {
-  loadConfig,
-  matchContent,
-  isExemptAuthor
-} from './lib/keyword-filter-core.mjs';
+import { loadConfig, matchContent, isExemptAuthor } from './lib/keyword-filter-core.mjs';
 
 const logger = createActionLogger('keyword');
 
@@ -79,7 +71,7 @@ const loadEventPayload = () => {
       id: payload.comment.node_id,
       author: payload.comment.user?.login || '',
       text: payload.comment.body || '',
-      url: payload.comment.html_url || 'unknown'
+      url: payload.comment.html_url || 'unknown',
     };
   } else if (eventName === 'discussion' && payload.discussion) {
     subject = {
@@ -87,7 +79,7 @@ const loadEventPayload = () => {
       id: payload.discussion.node_id,
       author: payload.discussion.user?.login || '',
       text: `${payload.discussion.title || ''}\n${payload.discussion.body || ''}`,
-      url: payload.discussion.html_url || 'unknown'
+      url: payload.discussion.html_url || 'unknown',
     };
   }
 
@@ -98,7 +90,7 @@ const loadEventPayload = () => {
 
   return {
     eventName,
-    subject
+    subject,
   };
 };
 
@@ -143,25 +135,30 @@ const runGraphQL = async (query, variables) => {
 
   const { signal, cleanup } = createTimeoutSignal(GRAPHQL_TIMEOUT_MS);
   try {
-    const response = await fetchWithRetry(GITHUB_GRAPHQL_URL, {
-      method: 'POST',
-      signal,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'D-blog Keyword Filter Action/1.0',
-        'X-GitHub-Api-Version': '2022-11-28'
+    const response = await fetchWithRetry(
+      GITHUB_GRAPHQL_URL,
+      {
+        method: 'POST',
+        signal,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'D-blog Keyword Filter Action/1.0',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify({ query, variables }),
       },
-      body: JSON.stringify({ query, variables })
-    }, {
-      retries: GRAPHQL_RETRIES,
-      signal,
-      onRetry: (info) => logger.warn('Retrying GraphQL request', {
-        attempt: info.attempt,
-        status: info.status ?? 'network',
-        delayMs: info.delayMs
-      })
-    });
+      {
+        retries: GRAPHQL_RETRIES,
+        signal,
+        onRetry: (info) =>
+          logger.warn('Retrying GraphQL request', {
+            attempt: info.attempt,
+            status: info.status ?? 'network',
+            delayMs: info.delayMs,
+          }),
+      },
+    );
 
     const raw = await readResponseText(response, { maxBytes: 65536 });
     let result;
@@ -177,14 +174,14 @@ const runGraphQL = async (query, variables) => {
       // 节点已处理（Akismet 并行删除等）属预期情况，不视为失败。
       logger.warn('GraphQL mutation failed', {
         status: response.status,
-        errors: result.errors || result.message || 'unknown'
+        errors: result.errors || result.message || 'unknown',
       });
       return { ok: false };
     }
     return { ok: true };
   } catch (error) {
     logger.warn('GraphQL request failed after retries; moderation action not applied', {
-      error: formatError(error)
+      error: formatError(error),
     });
     return { ok: false };
   } finally {
@@ -219,12 +216,14 @@ const main = async () => {
   try {
     if (!hit) {
       logger.info('No keyword matched; content left as is');
-      logger.summaryTable('关键词过滤结果', [{
-        类型: subject.kind,
-        作者: subject.author || '-',
-        目标: subject.url,
-        结果: '放行'
-      }]);
+      logger.summaryTable('关键词过滤结果', [
+        {
+          类型: subject.kind,
+          作者: subject.author || '-',
+          目标: subject.url,
+          结果: '放行',
+        },
+      ]);
       return;
     }
 
@@ -234,7 +233,7 @@ const main = async () => {
       type: hit.type,
       value: hit.value,
       action,
-      url: subject.url
+      url: subject.url,
     });
 
     let ok = true;
@@ -249,13 +248,15 @@ const main = async () => {
       ok = (await runGraphQL(DELETE_DISCUSSION_MUTATION, { id: subject.id })).ok;
     }
 
-    logger.summaryTable('关键词过滤结果', [{
-      类型: subject.kind,
-      作者: subject.author || '-',
-      目标: subject.url,
-      命中: `${hit.type}:${hit.value}`,
-      处理: ok ? action : '失败'
-    }]);
+    logger.summaryTable('关键词过滤结果', [
+      {
+        类型: subject.kind,
+        作者: subject.author || '-',
+        目标: subject.url,
+        命中: `${hit.type}:${hit.value}`,
+        处理: ok ? action : '失败',
+      },
+    ]);
   } finally {
     logger.endGroup();
   }

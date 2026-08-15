@@ -22,11 +22,12 @@ const ALWAYS_EXEMPT_USERS = new Set(['giscus[bot]', 'github-actions[bot]']);
  * @param {string | null | undefined} text
  * @returns {string}
  */
-const normalizeText = (text) => String(text ?? '')
-  .toLowerCase()
-  .replace(/[\u200b-\u200f\ufeff]/g, '')
-  .replace(/\s+/g, ' ')
-  .trim();
+const normalizeText = (text) =>
+  String(text ?? '')
+    .toLowerCase()
+    .replace(/[\u200b-\u200f\ufeff]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 /**
  * 加载并校验关键词配置。
@@ -44,7 +45,10 @@ export const loadConfig = (logger) => {
   try {
     raw = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
   } catch (error) {
-    logger?.warn('Failed to parse keyword config; filter skipped', { path: CONFIG_PATH, error: error instanceof Error ? error.message : String(error) });
+    logger?.warn('Failed to parse keyword config; filter skipped', {
+      path: CONFIG_PATH,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 
@@ -59,7 +63,10 @@ export const loadConfig = (logger) => {
       patterns.push(new RegExp(item, 'i'));
     } catch (error) {
       // 单条正则非法只跳过该条，不拖垮整份配置。
-      logger?.warn('Invalid keyword regex pattern skipped', { pattern: item, error: error instanceof Error ? error.message : String(error) });
+      logger?.warn('Invalid keyword regex pattern skipped', {
+        pattern: item,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -71,7 +78,7 @@ export const loadConfig = (logger) => {
   const exemptUsers = new Set(
     (Array.isArray(raw.exemptUsers) ? raw.exemptUsers : [])
       .filter((item) => typeof item === 'string')
-      .map((item) => item.toLowerCase())
+      .map((item) => item.toLowerCase()),
   );
 
   return {
@@ -80,7 +87,7 @@ export const loadConfig = (logger) => {
     discussionAction: raw.discussionAction === 'none' ? 'none' : 'delete',
     exemptUsers,
     keywords,
-    patterns
+    patterns,
   };
 };
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -31,19 +31,19 @@
     </script>
 
     <!-- DNS 预解析和预连接优化 -->
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- 图床域名提前建连：文章封面图（LCP 元素）托管于 img.pldduck.com，
          移动端 4G 下提前完成 DNS→TCP→TLS 可显著缩短首张封面图下载延迟。
          crossorigin 与 SSG 注入的 <link rel=preload as=image> 及 <img> 的跨域
          请求保持一致，确保连接可被复用而非重新握手。 -->
-    <link rel="preconnect" href="https://img.pldduck.com" crossorigin>
-    <link rel="dns-prefetch" href="https://img.pldduck.com">
+    <link rel="preconnect" href="https://img.pldduck.com" crossorigin />
+    <link rel="dns-prefetch" href="https://img.pldduck.com" />
     <!-- 不蒜子访问统计 API：提前完成 DNS/TLS，路由级统计请求由应用代码发起。 -->
-    <link rel="preconnect" href="https://cdn.busuanzi.cc" crossorigin>
-    <link rel="dns-prefetch" href="https://cdn.busuanzi.cc">
+    <link rel="preconnect" href="https://cdn.busuanzi.cc" crossorigin />
+    <link rel="dns-prefetch" href="https://cdn.busuanzi.cc" />
 
     <!-- 字体加载优化：异步加载避免阻塞渲染，减少不常用权重。
          preload 与正式 stylesheet 的 crossorigin 必须一致：浏览器按
@@ -52,34 +52,52 @@
          preload 默认 cors/anonymous，而 <link rel=stylesheet> 不带 crossorigin 时
          以 no-cors 请求——两者本不匹配，故 stylesheet 须显式加 crossorigin 对齐。
          Google Fonts CSS 返回 Access-Control-Allow-Origin: *，anonymous 跨域安全。 -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet" crossorigin media="print" onload="this.media='all'">
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap"
+      rel="stylesheet"
+      crossorigin
+      media="print"
+      onload="this.media = 'all'"
+    />
     <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet" crossorigin>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap"
+        rel="stylesheet"
+        crossorigin
+      />
     </noscript>
 
     <!-- Clarity Analytics：等 load 事件后再注入标签，避免与分析/智能体无关的脚本抢占首屏主线程 -->
     <script>
-    (function (c, l, a, r, i, t, y) {
-      var inject = function () {
-        c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
-        t = l.createElement(r);
-        t.async = 1;
-        t.src = 'https://www.clarity.ms/tag/' + i;
-        y = l.getElementsByTagName(r)[0];
-        y.parentNode.insertBefore(t, y);
-      };
-      if (l.readyState === 'complete' || l.readyState === 'interactive') {
-        inject();
-      } else {
-        c.addEventListener('load', inject, { once: true });
-      }
-    })(window, document, 'clarity', 'script', 'wloc3f723i');
+      (function (c, l, a, r, i, t, y) {
+        var inject = function () {
+          c[a] =
+            c[a] ||
+            function () {
+              (c[a].q = c[a].q || []).push(arguments);
+            };
+          t = l.createElement(r);
+          t.async = 1;
+          t.src = 'https://www.clarity.ms/tag/' + i;
+          y = l.getElementsByTagName(r)[0];
+          y.parentNode.insertBefore(t, y);
+        };
+        if (l.readyState === 'complete' || l.readyState === 'interactive') {
+          inject();
+        } else {
+          c.addEventListener('load', inject, { once: true });
+        }
+      })(window, document, 'clarity', 'script', 'wloc3f723i');
     </script>
-</head>
+  </head>
   <body class="bg-paper text-ink dark:bg-void dark:text-gray-200 overflow-x-hidden">
     <div id="root"></div>
-  <script type="module" src="/src/index.tsx"></script>
-
-</body>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
 </html>

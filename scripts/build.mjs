@@ -37,13 +37,14 @@ const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
 const color = (code, value) => (useColor ? `\u001B[${code}m${value}\u001B[0m` : value);
 const elapsed = (from) => `${((Date.now() - from) / 1000).toFixed(2)}s`;
 const write = (status, message, detail = '') => {
-  const label = status === 'done'
-    ? color('32', status)
-    : status === 'error'
-      ? color('31', status)
-      : status === 'timeout'
-        ? color('33', status)
-        : color('36', status);
+  const label =
+    status === 'done'
+      ? color('32', status)
+      : status === 'error'
+        ? color('31', status)
+        : status === 'timeout'
+          ? color('33', status)
+          : color('36', status);
   console.log(`[build] ${label} ${message}${detail ? ` ${detail}` : ''}`);
 };
 
@@ -54,21 +55,24 @@ const stages = [
   {
     name: 'Bundle application',
     command: process.execPath,
-    args: [viteCli, 'build', ...(verbose ? [] : ['--logLevel', 'warn'])]
+    args: [viteCli, 'build', ...(verbose ? [] : ['--logLevel', 'warn'])],
   },
   {
     name: 'Bundle server-side renderer',
     command: process.execPath,
-    args: [viteCli, 'build', '--config', 'vite.ssr.config.ts', ...(verbose ? [] : ['--logLevel', 'warn'])]
+    args: [viteCli, 'build', '--config', 'vite.ssr.config.ts', ...(verbose ? [] : ['--logLevel', 'warn'])],
   },
   {
     name: 'Snapshot clean HTML template',
     command: process.execPath,
-    args: ['-e', "const fs=require('fs');const s='dist/index.html',d='dist-ssr/index.template.html';fs.copyFileSync(s,d);console.log('[build] template snapshot saved')"]
+    args: [
+      '-e',
+      "const fs=require('fs');const s='dist/index.html',d='dist-ssr/index.template.html';fs.copyFileSync(s,d);console.log('[build] template snapshot saved')",
+    ],
   },
   { name: 'Generate static HTML (SSG)', command: process.execPath, args: ['scripts/ssg.mjs'] },
   { name: 'Audit build output', command: process.execPath, args: ['scripts/audit-build.mjs'] },
-  { name: 'Audit SEO output', command: process.execPath, args: ['scripts/seo-audit.mjs'] }
+  { name: 'Audit SEO output', command: process.execPath, args: ['scripts/seo-audit.mjs'] },
 ];
 
 /**
@@ -80,49 +84,50 @@ const stages = [
  * @param {{ command: string, args: string[] }} stage
  * @returns {Promise<'ok' | 'timeout' | { code: number | null, signal: string | null }>}
  */
-const run = ({ command, args }) => new Promise((resolve) => {
-  const child = spawn(command, args, {
-    stdio: 'inherit',
-    env: {
-      ...process.env,
-      // 条件展开而非显式 undefined：Node 会把 env 中的 undefined 值序列化为
-      // 字符串 "undefined" 注入子进程，污染其环境变量。
-      ...(verbose ? { BUILD_VERBOSE: '1' } : {}),
-      FORCE_COLOR: '0',
-      NO_COLOR: '1'
-    }
-  });
+const run = ({ command, args }) =>
+  new Promise((resolve) => {
+    const child = spawn(command, args, {
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        // 条件展开而非显式 undefined：Node 会把 env 中的 undefined 值序列化为
+        // 字符串 "undefined" 注入子进程，污染其环境变量。
+        ...(verbose ? { BUILD_VERBOSE: '1' } : {}),
+        FORCE_COLOR: '0',
+        NO_COLOR: '1',
+      },
+    });
 
-  let timedOut = false;
-  const timer = setTimeout(() => {
-    timedOut = true;
-    write('timeout', `Killing stage after ${Math.round(stageTimeoutMs / 1000)}s`, `pid=${child.pid}`);
-    // 先 SIGTERM 给优雅退出机会，3s 后仍不退出再 SIGKILL。
-    // 注意不能靠 child.killed 判断存活：kill() 调用后该标志同步置 true，
-    // 无论进程是否真的退出。signalCode/exitCode 在 close 事件后才被填充。
-    child.kill('SIGTERM');
-    setTimeout(() => {
-      if (child.exitCode === null && !child.signalCode) {
-        child.kill('SIGKILL');
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      write('timeout', `Killing stage after ${Math.round(stageTimeoutMs / 1000)}s`, `pid=${child.pid}`);
+      // 先 SIGTERM 给优雅退出机会，3s 后仍不退出再 SIGKILL。
+      // 注意不能靠 child.killed 判断存活：kill() 调用后该标志同步置 true，
+      // 无论进程是否真的退出。signalCode/exitCode 在 close 事件后才被填充。
+      child.kill('SIGTERM');
+      setTimeout(() => {
+        if (child.exitCode === null && !child.signalCode) {
+          child.kill('SIGKILL');
+        }
+      }, 3000).unref();
+    }, stageTimeoutMs);
+
+    child.once('error', (error) => {
+      clearTimeout(timer);
+      // spawn 失败（如命令不存在）：作为失败结果返回，不抛未处理异常。
+      resolve({ code: null, signal: null, spawnError: error });
+    });
+
+    child.once('close', (code, signal) => {
+      clearTimeout(timer);
+      if (timedOut) {
+        resolve('timeout');
+        return;
       }
-    }, 3000).unref();
-  }, stageTimeoutMs);
-
-  child.once('error', (error) => {
-    clearTimeout(timer);
-    // spawn 失败（如命令不存在）：作为失败结果返回，不抛未处理异常。
-    resolve({ code: null, signal: null, spawnError: error });
+      resolve({ code, signal });
+    });
   });
-
-  child.once('close', (code, signal) => {
-    clearTimeout(timer);
-    if (timedOut) {
-      resolve('timeout');
-      return;
-    }
-    resolve({ code, signal });
-  });
-});
 
 // run() 只 resolve 'timeout' 或 { code, signal, spawnError }，成功即 code === 0 且无 spawn 错误。
 const isOk = (result) => result && typeof result === 'object' && result.code === 0 && !result.spawnError;
@@ -134,7 +139,11 @@ const describeFailure = (result) => {
   return `exited with code ${result && result.code}`;
 };
 
-write('start', 'Production build', `stages=${stages.length} mode=${verbose ? 'verbose' : 'concise'} stageTimeout=${Math.round(stageTimeoutMs / 1000)}s totalTimeout=${Math.round(totalTimeoutMs / 1000)}s`);
+write(
+  'start',
+  'Production build',
+  `stages=${stages.length} mode=${verbose ? 'verbose' : 'concise'} stageTimeout=${Math.round(stageTimeoutMs / 1000)}s totalTimeout=${Math.round(totalTimeoutMs / 1000)}s`,
+);
 
 let failed = false;
 for (const [index, stage] of stages.entries()) {

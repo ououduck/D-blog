@@ -13,7 +13,7 @@ export const buildHeadingTree = (headings: MarkdownHeading[]) => {
     const node: TocNode = {
       ...heading,
       index,
-      children: []
+      children: [],
     };
 
     while (stack.length > 0 && stack[stack.length - 1].level >= node.level) {

@@ -32,7 +32,7 @@ export const loadPostsWithContent = () => {
     posts = JSON.parse(fs.readFileSync(POSTS_FILE, 'utf-8'));
   } catch (error) {
     throw new Error(
-      `Failed to load generated/posts.json (${error instanceof Error ? error.message : String(error)}); run "npm run gen:data" before SSG.`
+      `Failed to load generated/posts.json (${error instanceof Error ? error.message : String(error)}); run "npm run gen:data" before SSG.`,
     );
   }
   if (!Array.isArray(posts)) {

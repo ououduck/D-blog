@@ -34,7 +34,7 @@ const clampToRange = (value: number, bound: number) => Math.min(bound, Math.max(
  */
 const computePanBounds = (img: HTMLImageElement, scale: number) => ({
   maxX: Math.max(0, (img.offsetWidth * scale - window.innerWidth) / 2),
-  maxY: Math.max(0, (img.offsetHeight * scale - window.innerHeight) / 2)
+  maxY: Math.max(0, (img.offsetHeight * scale - window.innerHeight) / 2),
 });
 
 export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) => {
@@ -58,7 +58,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
     isOpen,
     onClose,
     initialFocusRef: closeButtonRef,
-    containerRef: viewerRef
+    containerRef: viewerRef,
   });
 
   const resetView = useCallback(() => {
@@ -99,12 +99,18 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
       }
       const blob = await response.blob();
       // 根据 MIME 类型追加文件扩展名，避免保存出无后缀文件。
-      const ext = blob.type === 'image/png' ? '.png'
-        : blob.type === 'image/jpeg' ? '.jpeg'
-        : blob.type === 'image/webp' ? '.webp'
-        : blob.type === 'image/gif' ? '.gif'
-        : blob.type === 'image/svg+xml' ? '.svg'
-        : '';
+      const ext =
+        blob.type === 'image/png'
+          ? '.png'
+          : blob.type === 'image/jpeg'
+            ? '.jpeg'
+            : blob.type === 'image/webp'
+              ? '.webp'
+              : blob.type === 'image/gif'
+                ? '.gif'
+                : blob.type === 'image/svg+xml'
+                  ? '.svg'
+                  : '';
       const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = objectUrl;
@@ -119,12 +125,15 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
     }
   }, [displaySrc, alt]);
 
-  const handleWheel = useCallback((event: WheelEvent) => {
-    if (!isOpen) return;
-    event.preventDefault();
-    const direction = event.deltaY > 0 ? -1 : 1;
-    setScale((current) => clampScale(current + direction * ZOOM_STEP));
-  }, [isOpen]);
+  const handleWheel = useCallback(
+    (event: WheelEvent) => {
+      if (!isOpen) return;
+      event.preventDefault();
+      const direction = event.deltaY > 0 ? -1 : 1;
+      setScale((current) => clampScale(current + direction * ZOOM_STEP));
+    },
+    [isOpen],
+  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -174,7 +183,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
       const { maxX, maxY } = computePanBounds(img, scale);
       setPosition({
         x: clampToRange(dragStartRef.current.posX + dx, maxX),
-        y: clampToRange(dragStartRef.current.posY + dy, maxY)
+        y: clampToRange(dragStartRef.current.posY + dy, maxY),
       });
       return;
     }
@@ -195,7 +204,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
         x: event.touches[0].clientX,
         y: event.touches[0].clientY,
         posX: position.x,
-        posY: position.y
+        posY: position.y,
       };
       return;
     }
@@ -224,7 +233,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
         const { maxX, maxY } = computePanBounds(img, scale);
         setPosition({
           x: clampToRange(touchStartRef.current.posX + dx, maxX),
-          y: clampToRange(touchStartRef.current.posY + dy, maxY)
+          y: clampToRange(touchStartRef.current.posY + dy, maxY),
         });
         return;
       }
@@ -254,7 +263,9 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
-          onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) onClose();
+          }}
           className="fixed inset-0 z-viewer flex cursor-default items-center justify-center overflow-hidden bg-zinc-950/95 p-3 text-white sm:p-6"
           role="dialog"
           aria-modal="true"
@@ -273,7 +284,10 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
             <button
               ref={closeButtonRef}
               type="button"
-              onClick={(event) => { event.stopPropagation(); onClose(); }}
+              onClick={(event) => {
+                event.stopPropagation();
+                onClose();
+              }}
               className="rounded-icon border border-white/20 bg-zinc-900 p-2.5 text-white/75 shadow-none transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98]"
               aria-label="关闭图片预览"
             >
@@ -289,15 +303,23 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
             className="relative max-h-[86vh] supports-[height:100dvh]:max-h-[86dvh] max-w-[94vw] touch-none select-none"
             style={{ cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in' }}
             onMouseDown={handleMouseDown}
-            onDoubleClick={(event) => { event.stopPropagation(); handleToggleZoom(); }}
+            onDoubleClick={(event) => {
+              event.stopPropagation();
+              handleToggleZoom();
+            }}
             onTouchStart={handleTouchStart}
             onClick={(event) => event.stopPropagation()}
           >
             {!isLoaded && !hasError && (
-              <div className={`absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/20 border-t-white/80 ${prefersReducedMotion ? '' : 'animate-spin'}`} />
+              <div
+                className={`absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/20 border-t-white/80 ${prefersReducedMotion ? '' : 'animate-spin'}`}
+              />
             )}
             {hasError && (
-              <div role="alert" className="flex min-h-32 min-w-[min(18rem,80vw)] items-center justify-center border border-white/20 px-5 text-center text-sm text-white/75">
+              <div
+                role="alert"
+                className="flex min-h-32 min-w-[min(18rem,80vw)] items-center justify-center border border-white/20 px-5 text-center text-sm text-white/75"
+              >
                 图片加载失败，请关闭后重试。
               </div>
             )}
@@ -306,31 +328,66 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
               src={displaySrc ?? undefined}
               alt={alt || ''}
               draggable={false}
-              onLoad={() => { setIsLoaded(true); setHasError(false); }}
-              onError={() => { setIsLoaded(false); setHasError(true); }}
+              onLoad={() => {
+                setIsLoaded(true);
+                setHasError(false);
+              }}
+              onError={() => {
+                setIsLoaded(false);
+                setHasError(true);
+              }}
               className={`${hasError ? 'hidden' : ''} max-h-[86vh] supports-[height:100dvh]:max-h-[86dvh] max-w-[94vw] object-contain shadow-none ring-1 ring-white/15`}
             />
           </motion.div>
 
           <div className="absolute bottom-4 left-1/2 z-50 flex w-[min(100%-1.5rem,23rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-1 rounded-surface border border-white/20 bg-zinc-900 p-1.5 shadow-none sm:bottom-6 sm:w-auto sm:flex-nowrap">
             <div className="flex items-center gap-1">
-              <button onClick={handleZoomOut} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-white/70 transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98] disabled:opacity-35" aria-label="缩小" title="缩小" disabled={scale <= MIN_SCALE}>
+              <button
+                onClick={handleZoomOut}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-white/70 transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98] disabled:opacity-35"
+                aria-label="缩小"
+                title="缩小"
+                disabled={scale <= MIN_SCALE}
+              >
                 <Minus size={17} />
               </button>
-              <span className="min-w-[3.25rem] text-center text-xs font-semibold text-white/80 tabular-nums">{toolbarLabel}</span>
-              <button onClick={handleZoomIn} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-white/70 transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98] disabled:opacity-35" aria-label="放大" title="放大" disabled={scale >= MAX_SCALE}>
+              <span className="min-w-[3.25rem] text-center text-xs font-semibold text-white/80 tabular-nums">
+                {toolbarLabel}
+              </span>
+              <button
+                onClick={handleZoomIn}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-white/70 transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98] disabled:opacity-35"
+                aria-label="放大"
+                title="放大"
+                disabled={scale >= MAX_SCALE}
+              >
                 <Plus size={17} />
               </button>
               <span className="mx-1 hidden h-5 w-px bg-white/15 sm:block" />
-              <button onClick={handleToggleZoom} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-white/70 transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98]" aria-label="切换缩放" title="切换缩放">
+              <button
+                onClick={handleToggleZoom}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-white/70 transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98]"
+                aria-label="切换缩放"
+                title="切换缩放"
+              >
                 <Maximize2 size={16} />
               </button>
             </div>
             <div className="flex basis-full justify-center gap-1 border-t border-white/15 pt-1 sm:basis-auto sm:border-0 sm:pt-0">
-              <button onClick={resetView} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-white/70 transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98]" aria-label="重置" title="重置">
+              <button
+                onClick={resetView}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-white/70 transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98]"
+                aria-label="重置"
+                title="重置"
+              >
                 <RotateCcw size={16} />
               </button>
-              <button onClick={handleDownload} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-white/70 transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98]" aria-label="下载" title="下载原图">
+              <button
+                onClick={handleDownload}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-white/70 transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98]"
+                aria-label="下载"
+                title="下载原图"
+              >
                 <Download size={16} />
               </button>
             </div>
@@ -349,6 +406,6 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
         </motion.div>
       )}
     </AnimatePresence>,
-    document.body
+    document.body,
   );
 };

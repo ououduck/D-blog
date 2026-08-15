@@ -3,7 +3,7 @@ import {
   applyServiceWorkerUpdate,
   getServiceWorkerState,
   subscribeToServiceWorker,
-  type ServiceWorkerState
+  type ServiceWorkerState,
 } from '@/registerServiceWorker';
 
 export const ServiceWorkerUpdatePrompt: React.FC = () => {
@@ -55,18 +55,10 @@ export const ServiceWorkerUpdatePrompt: React.FC = () => {
     >
       <span className="font-semibold">发现新版本，刷新后即可使用最新功能。</span>
       <div className="flex shrink-0 gap-2">
-        <button
-          type="button"
-          onClick={() => setDismissed(true)}
-          className="editorial-button px-3"
-        >
+        <button type="button" onClick={() => setDismissed(true)} className="editorial-button px-3">
           稍后
         </button>
-        <button
-          type="button"
-          onClick={() => applyServiceWorkerUpdate()}
-          className="editorial-button-primary px-3"
-        >
+        <button type="button" onClick={() => applyServiceWorkerUpdate()} className="editorial-button-primary px-3">
           立即更新
         </button>
       </div>

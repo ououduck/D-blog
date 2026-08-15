@@ -97,14 +97,14 @@ export const ShuoShuoDetail = () => {
         '@type': 'Person',
         name: siteConfig.author.name,
         url: siteConfig.social.github,
-        email: siteConfig.social.rawEmail
+        email: siteConfig.social.rawEmail,
       },
       articleBody: stripMarkdown(item.content),
       inLanguage: 'zh-CN',
       isPartOf: {
         '@type': 'WebSite',
         name: siteConfig.title,
-        url: absoluteSiteUrl('/', siteConfig.url)
+        url: absoluteSiteUrl('/', siteConfig.url),
       },
       mainEntityOfPage: absoluteSiteUrl(`/shuoshuo/${item.id}`, siteConfig.url),
       publisher: {
@@ -113,9 +113,9 @@ export const ShuoShuoDetail = () => {
         url: siteConfig.url,
         logo: {
           '@type': 'ImageObject',
-          url: absoluteSiteUrl(siteConfig.logo, siteConfig.url)
-        }
-      }
+          url: absoluteSiteUrl(siteConfig.logo, siteConfig.url),
+        },
+      },
     },
     {
       '@context': 'https://schema.org',
@@ -123,9 +123,14 @@ export const ShuoShuoDetail = () => {
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: '首页', item: absoluteSiteUrl('/', siteConfig.url) },
         { '@type': 'ListItem', position: 2, name: '说说', item: absoluteSiteUrl('/shuoshuo', siteConfig.url) },
-        { '@type': 'ListItem', position: 3, name: snippet, item: absoluteSiteUrl(`/shuoshuo/${item.id}`, siteConfig.url) }
-      ]
-    }
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: snippet,
+          item: absoluteSiteUrl(`/shuoshuo/${item.id}`, siteConfig.url),
+        },
+      ],
+    },
   ];
 
   return (
@@ -140,8 +145,14 @@ export const ShuoShuoDetail = () => {
         structuredData={structuredData}
       />
 
-      <nav aria-label="Breadcrumb" className="mb-6 flex min-w-0 items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-        <Link to="/" className="inline-flex items-center gap-1 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
+      <nav
+        aria-label="Breadcrumb"
+        className="mb-6 flex min-w-0 items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"
+      >
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
+        >
           <ArrowLeft size={13} />
           首页
         </Link>
@@ -150,7 +161,9 @@ export const ShuoShuoDetail = () => {
           说说
         </Link>
         <ChevronRight size={11} aria-hidden="true" />
-        <span className="truncate" aria-current="page">{snippet}</span>
+        <span className="truncate" aria-current="page">
+          {snippet}
+        </span>
       </nav>
 
       <header className="mb-8 border-b border-zinc-200 pb-6 dark:border-zinc-800">
