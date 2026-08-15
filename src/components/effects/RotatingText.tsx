@@ -112,6 +112,18 @@ export const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
       }));
     }, [texts, currentTextIndex, splitBy]);
 
+    // 预计算每个词在整句中的起始字符偏移与总字符数，
+    // 避免渲染期对每词 slice+reduce（O(n²)）与每字符重复求总长。
+    const charOffsets = useMemo(() => {
+      let offset = 0;
+      return elements.map((word) => {
+        const previous = offset;
+        offset += word.characters.length;
+        return previous;
+      });
+    }, [elements]);
+    const totalCharCount = useMemo(() => elements.reduce((sum, word) => sum + word.characters.length, 0), [elements]);
+
     const getStaggerDelay = useCallback(
       (index: number, totalChars: number): number => {
         const total = totalChars;
@@ -190,34 +202,26 @@ export const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
         <span className="sr-only">{currentText}</span>
         <AnimatePresence mode={animatePresenceMode} initial={animatePresenceInitial}>
           <motion.span key={currentTextIndex} layout aria-hidden="true" className="inline-flex flex-wrap">
-            {elements.map((wordObj, wordIndex, array) => {
-              const previousCharsCount = array
-                .slice(0, wordIndex)
-                .reduce((sum, word) => sum + word.characters.length, 0);
-              return (
-                <span key={wordIndex} className={splitLevelClassName}>
-                  {wordObj.characters.map((char, charIndex) => (
-                    <motion.span
-                      key={charIndex}
-                      initial={initial}
-                      animate={animate}
-                      exit={exit}
-                      transition={{
-                        ...transition,
-                        delay: getStaggerDelay(
-                          previousCharsCount + charIndex,
-                          array.reduce((sum, word) => sum + word.characters.length, 0),
-                        ),
-                      }}
-                      className={`inline-block ${elementLevelClassName ?? ''}`}
-                    >
-                      {char}
-                    </motion.span>
-                  ))}
-                  {wordObj.needsSpace && <span className="whitespace-pre"> </span>}
-                </span>
-              );
-            })}
+            {elements.map((wordObj, wordIndex) => (
+              <span key={wordIndex} className={splitLevelClassName}>
+                {wordObj.characters.map((char, charIndex) => (
+                  <motion.span
+                    key={charIndex}
+                    initial={initial}
+                    animate={animate}
+                    exit={exit}
+                    transition={{
+                      ...transition,
+                      delay: getStaggerDelay(charOffsets[wordIndex] + charIndex, totalCharCount),
+                    }}
+                    className={`inline-block ${elementLevelClassName ?? ''}`}
+                  >
+                    {char}
+                  </motion.span>
+                ))}
+                {wordObj.needsSpace && <span className="whitespace-pre"> </span>}
+              </span>
+            ))}
           </motion.span>
         </AnimatePresence>
       </motion.span>
