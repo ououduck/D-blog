@@ -785,7 +785,10 @@ const commitAndPushFriendFile = async (filePath, issueNumber) => {
 /** 安全解析 ISSUE_PAYLOAD（手动触发/空 payload 时容错为空）。 */
 const safeParseJson = (raw, fallback) => {
   try {
-    return JSON.parse(raw || '{}');
+    const parsed = JSON.parse(raw || '{}');
+    // JSON.parse('null' / '123' / '"str"' / '[]') 不抛错但结果不是对象：
+    // 调用方随后会访问 .number / .title，必须回退 fallback 防 TypeError。
+    return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : fallback;
   } catch {
     logger.warn('ISSUE_PAYLOAD is not valid JSON, treating as empty', { rawLength: (raw || '').length });
     return fallback;
