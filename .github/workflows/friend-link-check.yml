@@ -38,6 +38,10 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
         with:
           # 完整历史：脚本 push 需要本地 HEAD 与远端一致，fetch-depth: 0 避免浅克隆 push 失败。
           fetch-depth: 0

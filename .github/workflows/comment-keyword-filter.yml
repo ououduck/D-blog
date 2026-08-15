@@ -32,6 +32,10 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
 
       - name: Run keyword filter
         # 使用自动注入的 GITHUB_TOKEN（与 akismet workflow 相同的修复方案）。
