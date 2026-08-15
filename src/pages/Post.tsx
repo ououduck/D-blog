@@ -6,7 +6,33 @@ import remarkGfm from 'remark-gfm';
 import DOMPurify from 'dompurify';
 import { remarkCodeMeta } from '@/utils/remarkCodeMeta';
 
-import { ArrowLeft, ArrowRight, Clock, Calendar, ChevronRight, Share2, Copy, Check, Download, FileCode, WrapText, ChevronDown, ChevronUp, Users, ExternalLink, Eye, EyeOff, BookOpen, Bookmark, Minus, Plus, RotateCcw, LoaderCircle, TriangleAlert } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Clock,
+  Calendar,
+  ChevronRight,
+  Share2,
+  Copy,
+  Check,
+  Download,
+  FileCode,
+  WrapText,
+  ChevronDown,
+  ChevronUp,
+  Users,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  BookOpen,
+  Bookmark,
+  Minus,
+  Plus,
+  RotateCcw,
+  LoaderCircle,
+  TriangleAlert,
+  Github,
+} from 'lucide-react';
 import { getPostById, getPosts } from '@/services/posts';
 import { getReadingHistoryEntry, saveReadingHistory } from '@/services/readingHistory';
 import { getRelatedPosts, getSeriesNavigation, type SeriesNavigation } from '@/utils/postRelations';
@@ -20,7 +46,12 @@ import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { NotFoundState } from '@/components/NotFoundState';
 import { IssueSubscriptionCard } from '@/components/IssueSubscriptionCard';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
-import { extractMarkdownHeadings, extractTextFromReactNode, slugifyHeading, stripInlineMarkdown } from '@/utils/headings';
+import {
+  extractMarkdownHeadings,
+  extractTextFromReactNode,
+  slugifyHeading,
+  stripInlineMarkdown,
+} from '@/utils/headings';
 import type { MarkdownHeading } from '@/utils/headings';
 import { formatDate } from '@/utils/date';
 import { stripMarkdown } from '@/utils/markdownText';
@@ -31,7 +62,6 @@ import { ReadingModeToggle } from '@/components/ReadingModeToggle';
 import { GiscusComments } from '@/components/GiscusComments';
 import { useSsgRouteData } from '@/ssr/routeData';
 import { fillBusuanziSpans } from '@/services/busuanzi';
-
 
 type MarkdownImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   previewSrc?: string;
@@ -52,76 +82,77 @@ const HEADING_SCROLL_OFFSET = 104;
 
 const getIsDarkTheme = () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 
-const getMermaidConfig = (isDark: boolean) => ({
-  startOnLoad: false,
-  securityLevel: 'strict',
-  // 标签保留在 SVG 文本节点中，DOMPurify 的 SVG 配置才能保留它们。
-  htmlLabels: false,
-  theme: 'base',
-  flowchart: { htmlLabels: false, curve: 'basis', padding: 16, useMaxWidth: true },
-  sequence: { useMaxWidth: true, diagramMarginX: 24, diagramMarginY: 20 },
-  themeVariables: isDark
-    ? {
-        primaryColor: '#1e293b',
-        primaryTextColor: '#f8fafc',
-        primaryBorderColor: '#60a5fa',
-        lineColor: '#94a3b8',
-        secondaryColor: '#312e81',
-        secondaryTextColor: '#eef2ff',
-        secondaryBorderColor: '#a5b4fc',
-        tertiaryColor: '#134e4a',
-        tertiaryTextColor: '#ecfdf5',
-        tertiaryBorderColor: '#5eead4',
-        background: '#111827',
-        mainBkg: '#1e293b',
-        secondBkg: '#312e81',
-        nodeBorder: '#60a5fa',
-        clusterBkg: '#172033',
-        clusterBorder: '#64748b',
-        titleColor: '#f8fafc',
-        edgeLabelBackground: '#111827',
-        actorBkg: '#1e293b',
-        actorBorder: '#60a5fa',
-        actorTextColor: '#f8fafc',
-        signalColor: '#cbd5e1',
-        signalTextColor: '#f8fafc',
-        noteBkgColor: '#422006',
-        noteBorderColor: '#fbbf24',
-        noteTextColor: '#fef3c7',
-        fontSize: '16px',
-        fontFamily: '"Microsoft YaHei", "PingFang SC", ui-sans-serif, system-ui, sans-serif'
-      }
-    : {
-        primaryColor: '#eff6ff',
-        primaryTextColor: '#172033',
-        primaryBorderColor: '#2563eb',
-        lineColor: '#475569',
-        secondaryColor: '#eef2ff',
-        secondaryTextColor: '#312e81',
-        secondaryBorderColor: '#6366f1',
-        tertiaryColor: '#ecfdf5',
-        tertiaryTextColor: '#134e4a',
-        tertiaryBorderColor: '#0f766e',
-        background: '#ffffff',
-        mainBkg: '#eff6ff',
-        secondBkg: '#eef2ff',
-        nodeBorder: '#2563eb',
-        clusterBkg: '#f8fafc',
-        clusterBorder: '#94a3b8',
-        titleColor: '#172033',
-        edgeLabelBackground: '#ffffff',
-        actorBkg: '#eff6ff',
-        actorBorder: '#2563eb',
-        actorTextColor: '#172033',
-        signalColor: '#334155',
-        signalTextColor: '#172033',
-        noteBkgColor: '#fffbeb',
-        noteBorderColor: '#d97706',
-        noteTextColor: '#78350f',
-        fontSize: '16px',
-        fontFamily: '"Microsoft YaHei", "PingFang SC", ui-sans-serif, system-ui, sans-serif'
-      }
-} as const);
+const getMermaidConfig = (isDark: boolean) =>
+  ({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    // 标签保留在 SVG 文本节点中，DOMPurify 的 SVG 配置才能保留它们。
+    htmlLabels: false,
+    theme: 'base',
+    flowchart: { htmlLabels: false, curve: 'basis', padding: 16, useMaxWidth: true },
+    sequence: { useMaxWidth: true, diagramMarginX: 24, diagramMarginY: 20 },
+    themeVariables: isDark
+      ? {
+          primaryColor: '#1e293b',
+          primaryTextColor: '#f8fafc',
+          primaryBorderColor: '#60a5fa',
+          lineColor: '#94a3b8',
+          secondaryColor: '#312e81',
+          secondaryTextColor: '#eef2ff',
+          secondaryBorderColor: '#a5b4fc',
+          tertiaryColor: '#134e4a',
+          tertiaryTextColor: '#ecfdf5',
+          tertiaryBorderColor: '#5eead4',
+          background: '#111827',
+          mainBkg: '#1e293b',
+          secondBkg: '#312e81',
+          nodeBorder: '#60a5fa',
+          clusterBkg: '#172033',
+          clusterBorder: '#64748b',
+          titleColor: '#f8fafc',
+          edgeLabelBackground: '#111827',
+          actorBkg: '#1e293b',
+          actorBorder: '#60a5fa',
+          actorTextColor: '#f8fafc',
+          signalColor: '#cbd5e1',
+          signalTextColor: '#f8fafc',
+          noteBkgColor: '#422006',
+          noteBorderColor: '#fbbf24',
+          noteTextColor: '#fef3c7',
+          fontSize: '16px',
+          fontFamily: '"Microsoft YaHei", "PingFang SC", ui-sans-serif, system-ui, sans-serif',
+        }
+      : {
+          primaryColor: '#eff6ff',
+          primaryTextColor: '#172033',
+          primaryBorderColor: '#2563eb',
+          lineColor: '#475569',
+          secondaryColor: '#eef2ff',
+          secondaryTextColor: '#312e81',
+          secondaryBorderColor: '#6366f1',
+          tertiaryColor: '#ecfdf5',
+          tertiaryTextColor: '#134e4a',
+          tertiaryBorderColor: '#0f766e',
+          background: '#ffffff',
+          mainBkg: '#eff6ff',
+          secondBkg: '#eef2ff',
+          nodeBorder: '#2563eb',
+          clusterBkg: '#f8fafc',
+          clusterBorder: '#94a3b8',
+          titleColor: '#172033',
+          edgeLabelBackground: '#ffffff',
+          actorBkg: '#eff6ff',
+          actorBorder: '#2563eb',
+          actorTextColor: '#172033',
+          signalColor: '#334155',
+          signalTextColor: '#172033',
+          noteBkgColor: '#fffbeb',
+          noteBorderColor: '#d97706',
+          noteTextColor: '#78350f',
+          fontSize: '16px',
+          fontFamily: '"Microsoft YaHei", "PingFang SC", ui-sans-serif, system-ui, sans-serif',
+        },
+  }) as const;
 
 const HIGHLIGHT_STYLE_ID = 'post-highlight-theme';
 
@@ -151,7 +182,7 @@ const formatMetaDate = (dateText?: string) => {
   return formatDate(dateText, 'zh-CN', {
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
   });
 };
 
@@ -165,15 +196,19 @@ const getDisplayAuthors = (post: PostType): PostAuthor[] => {
       name: siteConfig.author.name,
       avatar: siteConfig.author.avatar,
       role: siteConfig.author.role,
-      bio: siteConfig.author.bio
-    }
+      bio: siteConfig.author.bio,
+    },
   ];
 };
 
 const ImageViewer = lazy(() => import('../components/ImageViewer').then((m) => ({ default: m.ImageViewer })));
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
-const TableOfContents = lazy(() => import('../components/TableOfContents').then((m) => ({ default: m.TableOfContents })));
-const ReadingProgressBadge = lazy(() => import('../components/ReadingProgressBadge').then((m) => ({ default: m.ReadingProgressBadge })));
+const TableOfContents = lazy(() =>
+  import('../components/TableOfContents').then((m) => ({ default: m.TableOfContents })),
+);
+const ReadingProgressBadge = lazy(() =>
+  import('../components/ReadingProgressBadge').then((m) => ({ default: m.ReadingProgressBadge })),
+);
 const MAX_CODE_LINES = 30;
 const READING_SCROLL_KEYS = new Set([
   'ArrowDown',
@@ -184,7 +219,7 @@ const READING_SCROLL_KEYS = new Set([
   'Home',
   'PageDown',
   'PageUp',
-  ' '
+  ' ',
 ]);
 
 const isEditableKeyboardTarget = (target: EventTarget | null) => {
@@ -194,7 +229,7 @@ const isEditableKeyboardTarget = (target: EventTarget | null) => {
 
 const extractLangFromChildren = (children: React.ReactNode): string | undefined => {
   const codeChild = React.Children.toArray(children).find(
-    (child) => React.isValidElement(child) && typeof (child.props as Record<string, unknown>).className === 'string'
+    (child) => React.isValidElement(child) && typeof (child.props as Record<string, unknown>).className === 'string',
   ) as React.ReactElement | undefined;
   if (!codeChild) return undefined;
   const cls = (codeChild.props as Record<string, string>).className || '';
@@ -204,25 +239,71 @@ const extractLangFromChildren = (children: React.ReactNode): string | undefined 
 
 const getLangDisplayName = (lang: string): string => {
   const langMap: Record<string, string> = {
-    js: 'JavaScript', jsx: 'JSX', ts: 'TypeScript', tsx: 'TSX',
-    py: 'Python', rb: 'Ruby', go: 'Go', rs: 'Rust',
-    java: 'Java', kt: 'Kotlin', swift: 'Swift',
-    html: 'HTML', css: 'CSS', scss: 'SCSS', json: 'JSON',
-    yaml: 'YAML', yml: 'YAML', xml: 'XML', md: 'Markdown',
-    sql: 'SQL', sh: 'Shell', bash: 'Bash', zsh: 'Zsh',
-    dockerfile: 'Dockerfile', docker: 'Docker',
-    graphql: 'GraphQL', gql: 'GraphQL',
-    c: 'C', cpp: 'C++', cs: 'C#',
+    js: 'JavaScript',
+    jsx: 'JSX',
+    ts: 'TypeScript',
+    tsx: 'TSX',
+    py: 'Python',
+    rb: 'Ruby',
+    go: 'Go',
+    rs: 'Rust',
+    java: 'Java',
+    kt: 'Kotlin',
+    swift: 'Swift',
+    html: 'HTML',
+    css: 'CSS',
+    scss: 'SCSS',
+    json: 'JSON',
+    yaml: 'YAML',
+    yml: 'YAML',
+    xml: 'XML',
+    md: 'Markdown',
+    sql: 'SQL',
+    sh: 'Shell',
+    bash: 'Bash',
+    zsh: 'Zsh',
+    dockerfile: 'Dockerfile',
+    docker: 'Docker',
+    graphql: 'GraphQL',
+    gql: 'GraphQL',
+    c: 'C',
+    cpp: 'C++',
+    cs: 'C#',
   };
   return langMap[lang] || lang;
 };
 
 const CODE_FILE_EXTENSIONS: Record<string, string> = {
-  bash: 'sh', c: 'c', cpp: 'cpp', cs: 'cs', css: 'css', docker: 'dockerfile',
-  dockerfile: 'dockerfile', go: 'go', gql: 'graphql', graphql: 'graphql', html: 'html',
-  java: 'java', js: 'js', json: 'json', jsx: 'jsx', kt: 'kt', md: 'md', py: 'py',
-  rb: 'rb', rs: 'rs', scss: 'scss', sh: 'sh', sql: 'sql', swift: 'swift', ts: 'ts',
-  tsx: 'tsx', xml: 'xml', yaml: 'yaml', yml: 'yaml', zsh: 'sh'
+  bash: 'sh',
+  c: 'c',
+  cpp: 'cpp',
+  cs: 'cs',
+  css: 'css',
+  docker: 'dockerfile',
+  dockerfile: 'dockerfile',
+  go: 'go',
+  gql: 'graphql',
+  graphql: 'graphql',
+  html: 'html',
+  java: 'java',
+  js: 'js',
+  json: 'json',
+  jsx: 'jsx',
+  kt: 'kt',
+  md: 'md',
+  py: 'py',
+  rb: 'rb',
+  rs: 'rs',
+  scss: 'scss',
+  sh: 'sh',
+  sql: 'sql',
+  swift: 'swift',
+  ts: 'ts',
+  tsx: 'tsx',
+  xml: 'xml',
+  yaml: 'yaml',
+  yml: 'yaml',
+  zsh: 'sh',
 };
 
 const getCodeFileExtension = (lang?: string) => {
@@ -230,9 +311,8 @@ const getCodeFileExtension = (lang?: string) => {
   return CODE_FILE_EXTENSIONS[lang.toLowerCase()] || 'txt';
 };
 
-const getCodeText = (children: React.ReactNode) => extractTextFromReactNode(children)
-  .replace(/\r\n?/g, '\n')
-  .replace(/\n$/, '');
+const getCodeText = (children: React.ReactNode) =>
+  extractTextFromReactNode(children).replace(/\r\n?/g, '\n').replace(/\n$/, '');
 
 /**
  * 从 code 子元素读取围栏代码块的 info 字符串（由 remarkCodeMeta 插件透传到
@@ -240,7 +320,7 @@ const getCodeText = (children: React.ReactNode) => extractTextFromReactNode(chil
  */
 const extractCodeMeta = (children: React.ReactNode): { filename?: string } => {
   const codeChild = React.Children.toArray(children).find(
-    (child) => React.isValidElement(child) && typeof (child.props as Record<string, unknown>).className === 'string'
+    (child) => React.isValidElement(child) && typeof (child.props as Record<string, unknown>).className === 'string',
   ) as React.ReactElement | undefined;
   const meta = codeChild ? (codeChild.props as Record<string, unknown>)['data-meta'] : undefined;
   if (typeof meta !== 'string' || !meta.trim()) return {};
@@ -248,7 +328,11 @@ const extractCodeMeta = (children: React.ReactNode): { filename?: string } => {
   return filenameMatch && filenameMatch[1].trim() ? { filename: filenameMatch[1].trim() } : {};
 };
 
-const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement> & { node?: unknown }) => {
+const PreBlock = ({
+  children,
+  node: _node,
+  ...props
+}: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement> & { node?: unknown }) => {
   const [copied, setCopied] = useState(false);
   const [copiedLine, setCopiedLine] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -258,7 +342,7 @@ const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<R
   const lang = extractLangFromChildren(children);
   const { filename } = extractCodeMeta(children);
   const isMermaidBlock = React.Children.toArray(children).some(
-    (child) => React.isValidElement(child) && child.type === MermaidBlock
+    (child) => React.isValidElement(child) && child.type === MermaidBlock,
   );
   const code = getCodeText(children);
   const lineCount = Math.max(1, code ? code.split('\n').length : 1);
@@ -371,18 +455,47 @@ const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<R
         </div>
         <div className="code-toolbar-actions">
           {copiedLine !== null ? (
-            <span className="code-copy-feedback" role="status" aria-live="polite">已复制第 {copiedLine} 行</span>
+            <span className="code-copy-feedback" role="status" aria-live="polite">
+              已复制第 {copiedLine} 行
+            </span>
           ) : copied ? (
-            <span className="code-copy-feedback" role="status" aria-live="polite">代码已复制</span>
+            <span className="code-copy-feedback" role="status" aria-live="polite">
+              代码已复制
+            </span>
           ) : null}
-          <button type="button" onClick={() => setIsWrapped((wrapped) => !wrapped)} className={`code-action-btn ${isWrapped ? 'code-action-btn-active' : ''}`} title={isWrapped ? '关闭自动换行' : '开启自动换行'} aria-label={isWrapped ? '关闭自动换行' : '开启自动换行'} aria-pressed={isWrapped}>
+          <button
+            type="button"
+            onClick={() => setIsWrapped((wrapped) => !wrapped)}
+            className={`code-action-btn ${isWrapped ? 'code-action-btn-active' : ''}`}
+            title={isWrapped ? '关闭自动换行' : '开启自动换行'}
+            aria-label={isWrapped ? '关闭自动换行' : '开启自动换行'}
+            aria-pressed={isWrapped}
+          >
             <WrapText size={15} aria-hidden="true" />
           </button>
-          <button type="button" onClick={handleCopy} className={`code-action-btn ${copied || copiedLine !== null ? 'code-action-btn-success' : ''}`} title={copied || copiedLine !== null ? '已复制' : '复制代码'} aria-label={copied || copiedLine !== null ? '已复制' : '复制代码'}>
-            {copied || copiedLine !== null ? <span className="copy-pop"><Check size={15} aria-hidden="true" /></span> : <Copy size={15} aria-hidden="true" />}
+          <button
+            type="button"
+            onClick={handleCopy}
+            className={`code-action-btn ${copied || copiedLine !== null ? 'code-action-btn-success' : ''}`}
+            title={copied || copiedLine !== null ? '已复制' : '复制代码'}
+            aria-label={copied || copiedLine !== null ? '已复制' : '复制代码'}
+          >
+            {copied || copiedLine !== null ? (
+              <span className="copy-pop">
+                <Check size={15} aria-hidden="true" />
+              </span>
+            ) : (
+              <Copy size={15} aria-hidden="true" />
+            )}
             <span>{copied || copiedLine !== null ? '已复制' : '复制'}</span>
           </button>
-          <button type="button" onClick={handleDownload} className="code-action-btn" title="下载代码" aria-label="下载代码">
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="code-action-btn"
+            title="下载代码"
+            aria-label="下载代码"
+          >
             <Download size={15} aria-hidden="true" />
             <span>下载</span>
           </button>
@@ -393,21 +506,45 @@ const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<R
         <div className="code-content">
           <div className="code-line-numbers" aria-hidden="true">
             {lineNumbers.map((number) => (
-              <span key={number} data-line={number} title={`复制第 ${number} 行`} onClick={() => { void handleCopyLine(number); }}>{number}</span>
+              <span
+                key={number}
+                data-line={number}
+                title={`复制第 ${number} 行`}
+                onClick={() => {
+                  void handleCopyLine(number);
+                }}
+              >
+                {number}
+              </span>
             ))}
           </div>
-          <pre {...props} className={`${props.className || ''} !my-0 !min-w-max !bg-transparent !p-3.5 !leading-6 md:!p-5`}>
+          <pre
+            {...props}
+            className={`${props.className || ''} !my-0 !min-w-max !bg-transparent !p-3.5 !leading-6 md:!p-5`}
+          >
             {children}
           </pre>
         </div>
         {needsExpand && !isExpanded && (
-          <button type="button" onClick={() => setIsExpanded(true)} className="code-expand-btn" aria-label="展开完整代码" aria-expanded="false">
+          <button
+            type="button"
+            onClick={() => setIsExpanded(true)}
+            className="code-expand-btn"
+            aria-label="展开完整代码"
+            aria-expanded="false"
+          >
             <ChevronDown size={15} aria-hidden="true" />
             展开完整代码（共 {lineCount} 行）
           </button>
         )}
         {needsExpand && isExpanded && (
-          <button type="button" onClick={() => setIsExpanded(false)} className="code-collapse-btn" aria-label="折叠代码" aria-expanded="true">
+          <button
+            type="button"
+            onClick={() => setIsExpanded(false)}
+            className="code-collapse-btn"
+            aria-label="折叠代码"
+            aria-expanded="true"
+          >
             <ChevronUp size={15} aria-hidden="true" />
             折叠代码
           </button>
@@ -439,7 +576,15 @@ const getMermaidNaturalWidth = (svgElement: SVGSVGElement): number => {
   return Number.isFinite(natural) && natural > 0 ? natural : 0;
 };
 
-function MermaidBlock({ children, renderer, theme }: { children: string; renderer: MermaidRenderer | null; theme: 'light' | 'dark' }) {
+function MermaidBlock({
+  children,
+  renderer,
+  theme,
+}: {
+  children: string;
+  renderer: MermaidRenderer | null;
+  theme: 'light' | 'dark';
+}) {
   const [svg, setSvg] = useState('');
   const [status, setStatus] = useState<MermaidStatus>('idle');
   const [scale, setScale] = useState(MERMAID_MIN_SCALE);
@@ -593,7 +738,7 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
       startX: event.clientX,
       startY: event.clientY,
       startPositionX: position.x,
-      startPositionY: position.y
+      startPositionY: position.y,
     };
     setIsDragging(true);
   };
@@ -602,7 +747,7 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
     if (dragRef.current.pointerId !== event.pointerId) return;
     setPosition({
       x: dragRef.current.startPositionX + event.clientX - dragRef.current.startX,
-      y: dragRef.current.startPositionY + event.clientY - dragRef.current.startY
+      y: dragRef.current.startPositionY + event.clientY - dragRef.current.startY,
     });
   };
 
@@ -630,7 +775,10 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
     } else if (event.key === '0') {
       event.preventDefault();
       resetView();
-    } else if (scaleRef.current > MERMAID_MIN_SCALE && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+    } else if (
+      scaleRef.current > MERMAID_MIN_SCALE &&
+      ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)
+    ) {
       event.preventDefault();
       const distance = event.shiftKey ? 48 : 24;
       const xDelta = event.key === 'ArrowLeft' ? distance * -1 : event.key === 'ArrowRight' ? distance : 0;
@@ -642,7 +790,11 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
   if (!svg) {
     const isError = status === 'error';
     return (
-      <div className={`mermaid-container mermaid-status my-8 ${isError ? 'is-error' : ''}`} role={isError ? 'alert' : 'status'} aria-live="polite">
+      <div
+        className={`mermaid-container mermaid-status my-8 ${isError ? 'is-error' : ''}`}
+        role={isError ? 'alert' : 'status'}
+        aria-live="polite"
+      >
         <div className="mermaid-status-icon" aria-hidden="true">
           {isError ? <TriangleAlert size={20} /> : <LoaderCircle className="animate-spin" size={20} />}
         </div>
@@ -652,14 +804,17 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
             {isError ? '请检查 Mermaid 语法，原始内容已保留在下方。' : '正在加载 Mermaid 并适配当前主题。'}
           </p>
         </div>
-        {isError && <pre className="mermaid-source"><code>{children}</code></pre>}
+        {isError && (
+          <pre className="mermaid-source">
+            <code>{children}</code>
+          </pre>
+        )}
       </div>
     );
   }
 
-  const sanitizedSvg = typeof DOMPurify !== 'undefined'
-    ? DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } })
-    : svg;
+  const sanitizedSvg =
+    typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } }) : svg;
   const scaleLabel = `${Math.round(scale * 100)}%`;
 
   return (
@@ -667,14 +822,36 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
       <div className="mermaid-toolbar" role="toolbar" aria-label="Mermaid 图表工具">
         <span className="mermaid-toolbar-label">图表缩放</span>
         <div className="mermaid-toolbar-actions">
-          <button type="button" className="mermaid-action-btn" onClick={() => zoomBy(-MERMAID_ZOOM_STEP)} disabled={scale <= MERMAID_MIN_SCALE} aria-label="缩小 Mermaid 图表" title="缩小">
+          <button
+            type="button"
+            className="mermaid-action-btn"
+            onClick={() => zoomBy(-MERMAID_ZOOM_STEP)}
+            disabled={scale <= MERMAID_MIN_SCALE}
+            aria-label="缩小 Mermaid 图表"
+            title="缩小"
+          >
             <Minus size={15} aria-hidden="true" />
           </button>
-          <span className="mermaid-scale" aria-live="polite">{scaleLabel}</span>
-          <button type="button" className="mermaid-action-btn" onClick={() => zoomBy(MERMAID_ZOOM_STEP)} disabled={scale >= MERMAID_MAX_SCALE} aria-label="放大 Mermaid 图表" title="放大">
+          <span className="mermaid-scale" aria-live="polite">
+            {scaleLabel}
+          </span>
+          <button
+            type="button"
+            className="mermaid-action-btn"
+            onClick={() => zoomBy(MERMAID_ZOOM_STEP)}
+            disabled={scale >= MERMAID_MAX_SCALE}
+            aria-label="放大 Mermaid 图表"
+            title="放大"
+          >
             <Plus size={15} aria-hidden="true" />
           </button>
-          <button type="button" className="mermaid-action-btn" onClick={resetView} aria-label="重置 Mermaid 图表视图" title="重置">
+          <button
+            type="button"
+            className="mermaid-action-btn"
+            onClick={resetView}
+            aria-label="重置 Mermaid 图表视图"
+            title="重置"
+          >
             <RotateCcw size={15} aria-hidden="true" />
           </button>
         </div>
@@ -698,9 +875,10 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
             // 未缩放且未平移时保持 transform: none：任何非 none 的 transform（包括
             // translate3d(0,0,0)）都会让浏览器把 SVG 图层化光栅化，缩放或下采样时
             // 文字变糊。缩放改为直接调整 SVG 宽度（矢量重绘），这里只负责平移。
-            transform: scale > MERMAID_MIN_SCALE || position.x !== 0 || position.y !== 0
-              ? `translate3d(${position.x}px, ${position.y}px, 0)`
-              : 'none'
+            transform:
+              scale > MERMAID_MIN_SCALE || position.x !== 0 || position.y !== 0
+                ? `translate3d(${position.x}px, ${position.y}px, 0)`
+                : 'none',
           }}
         >
           <div className="mermaid-diagram" ref={diagramRef} dangerouslySetInnerHTML={{ __html: sanitizedSvg }} />
@@ -731,7 +909,10 @@ const isSafeMarkdownHref = (href?: string) => {
 const isAbsoluteAssetPath = (value: string) => value.startsWith('/') || /^[a-z][a-z0-9+.-]*:/i.test(value);
 
 const resolveSitePath = (value: string) => {
-  const clean = value.replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/^(\.\.\/)+/g, '');
+  const clean = value
+    .replace(/\\/g, '/')
+    .replace(/^\.\/+/, '')
+    .replace(/^(\.\.\/)+/g, '');
   return assetUrl(`/${clean}`);
 };
 
@@ -745,14 +926,44 @@ const resolveBrowserAsset = (value?: string) => {
 const normalizeImageUrl = (value: string) => {
   const withoutHash = value.split('#', 1)[0];
   const withoutQuery = withoutHash.split('?', 1)[0];
-  return withoutQuery.replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/^\/+/, '').toLowerCase();
+  return withoutQuery
+    .replace(/\\/g, '/')
+    .replace(/^\.\/+/, '')
+    .replace(/^\/+/, '')
+    .toLowerCase();
 };
 
-const getPostSourceUrl = (repoUrl: string, filePath: string) => {
-  const sourcePath = filePath.replace(/\\/g, '/').replace(/^\/+/, '').split('/').filter(Boolean)
-    .map((segment) => encodeURIComponent(segment)).join('/');
-  return `${repoUrl.replace(/\/+$/, '')}/blob/main/${sourcePath}`;
+/**
+ * 把仓库地址归一化为 GitHub 网页形态（https://github.com/<owner>/<repo>）：
+ * - 去掉末尾斜杠与 .git 后缀；
+ * - SSH 形态（git@github.com:owner/repo.git）转换为 HTTPS 网页地址。
+ */
+const normalizeRepoUrl = (repoUrl: string) => {
+  let url = repoUrl.trim().replace(/\/+$/, '');
+  const sshMatch = url.match(/^git@([^:]+):(.+)$/);
+  if (sshMatch) {
+    url = `https://${sshMatch[1]}/${sshMatch[2]}`;
+  }
+  return url.replace(/\.git$/i, '');
 };
+
+/** 文章源文件在仓库中的路径：filePath 形如 /posts/xxx.md，去掉前导斜杠并逐段 URL 编码。 */
+const getSourceFilePath = (filePath: string) =>
+  filePath
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+
+/** 查看源文件（页尾"帮助改进本文"）。 */
+const getPostSourceUrl = (repoUrl: string, filePath: string) =>
+  `${normalizeRepoUrl(repoUrl)}/blob/main/${getSourceFilePath(filePath)}`;
+
+/** "在 GitHub 上编辑此文"：跳转到 Markdown 源文件的 GitHub 编辑页。 */
+const getPostEditUrl = (repoUrl: string, filePath: string) =>
+  `${normalizeRepoUrl(repoUrl)}/edit/main/${getSourceFilePath(filePath)}`;
 
 const findImageDimensions = (imageDimensions: PostMetadata['imageDimensions'], src: string) => {
   if (!imageDimensions) {
@@ -762,9 +973,11 @@ const findImageDimensions = (imageDimensions: PostMetadata['imageDimensions'], s
   const normalizedSrc = normalizeImageUrl(src);
   const matchingKey = Object.keys(imageDimensions).find((key) => {
     const normalizedKey = normalizeImageUrl(key);
-    return normalizedKey === normalizedSrc
-      || normalizedKey.endsWith(`/${normalizedSrc}`)
-      || normalizedSrc.endsWith(`/${normalizedKey}`);
+    return (
+      normalizedKey === normalizedSrc ||
+      normalizedKey.endsWith(`/${normalizedSrc}`) ||
+      normalizedSrc.endsWith(`/${normalizedKey}`)
+    );
   });
   return matchingKey ? imageDimensions[matchingKey] : undefined;
 };
@@ -819,7 +1032,11 @@ const createMarkdownComponents = (
     }
   };
 
-  const renderHeading = (level: number, Tag: string, { children, node: _node, ...props }: React.HTMLAttributes<HTMLHeadingElement> & { node?: unknown }) => {
+  const renderHeading = (
+    level: number,
+    Tag: string,
+    { children, node: _node, ...props }: React.HTMLAttributes<HTMLHeadingElement> & { node?: unknown },
+  ) => {
     const id = resolveHeadingId(level, children);
     return React.createElement(
       Tag,
@@ -832,23 +1049,38 @@ const createMarkdownComponents = (
           className: 'heading-anchor',
           role: 'button',
           tabIndex: 0,
-          onClick: (e: React.MouseEvent) => { e.stopPropagation(); handleHeadingClick(id); },
-          onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleHeadingClick(id); } },
+          onClick: (e: React.MouseEvent) => {
+            e.stopPropagation();
+            handleHeadingClick(id);
+          },
+          onKeyDown: (e: React.KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              handleHeadingClick(id);
+            }
+          },
           'aria-label': `复制标题链接：${extractTextFromReactNode(children)}`,
           title: '复制链接',
         },
-        '#'
+        '#',
       ),
-      children
+      children,
     );
   };
 
   const isImageUrl = (url: string) => /\.(jpe?g|png|gif|webp|avif|svg|bmp|ico)(\?.*)?$/i.test(url);
 
   return {
-    a: ({ href, children, node: _node, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }) => {
+    a: ({
+      href,
+      children,
+      node: _node,
+      ...props
+    }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }) => {
       const hrefIsImage = href ? isImageUrl(href) : false;
-      const resolvedHref = href && hrefIsImage ? (isAbsoluteAssetPath(href) ? resolveBrowserAsset(href) : resolveSitePath(href)) : href;
+      const resolvedHref =
+        href && hrefIsImage ? (isAbsoluteAssetPath(href) ? resolveBrowserAsset(href) : resolveSitePath(href)) : href;
       const safeHref = isSafeMarkdownHref(resolvedHref) ? resolvedHref : undefined;
       const normalizedHref = safeHref && safeHref.startsWith('/') ? routeUrl(safeHref) : safeHref;
 
@@ -856,7 +1088,7 @@ const createMarkdownComponents = (
         const childElements = React.Children.toArray(children);
         const imageChild = childElements.find(
           (child): child is React.ReactElement<MarkdownImageProps> =>
-            React.isValidElement(child) && typeof (child.props as Record<string, unknown>).src === 'string'
+            React.isValidElement(child) && typeof (child.props as Record<string, unknown>).src === 'string',
         );
 
         if (imageChild) {
@@ -866,7 +1098,8 @@ const createMarkdownComponents = (
         // 自定义 img 渲染器会输出已含预览按钮的 <figure>，不能再包一层按钮
         // （嵌套交互元素属非法 HTML，且会双重触发预览）。
         const containsMarkdownFigure = childElements.some(
-          (child) => React.isValidElement(child) && (child.props as Record<string, unknown>)['data-role'] === 'markdown-figure'
+          (child) =>
+            React.isValidElement(child) && (child.props as Record<string, unknown>)['data-role'] === 'markdown-figure',
         );
         if (containsMarkdownFigure) {
           return <>{children}</>;
@@ -883,7 +1116,10 @@ const createMarkdownComponents = (
         return (
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); onPreviewImage({ src: normalizedHref, alt: imgAlt || undefined }); }}
+            onClick={(e) => {
+              e.preventDefault();
+              onPreviewImage({ src: normalizedHref, alt: imgAlt || undefined });
+            }}
             className="block w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100"
             aria-label={imgAlt ? `预览图片：${imgAlt}` : '预览图片'}
           >
@@ -915,7 +1151,7 @@ const createMarkdownComponents = (
               event.preventDefault();
               window.scrollTo({
                 top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - HEADING_SCROLL_OFFSET),
-                behavior: shouldReduceMotion ? 'auto' : 'smooth'
+                behavior: shouldReduceMotion ? 'auto' : 'smooth',
               });
               const url = new URL(window.location.href);
               url.hash = targetId;
@@ -928,11 +1164,14 @@ const createMarkdownComponents = (
         );
       }
 
-      const isInternalLink = normalizedHref.startsWith('/')
-        || normalizedHref.startsWith('./')
-        || normalizedHref.startsWith('../');
+      const isInternalLink =
+        normalizedHref.startsWith('/') || normalizedHref.startsWith('./') || normalizedHref.startsWith('../');
       if (isInternalLink) {
-        return <Link to={normalizedHref} {...props}>{children}</Link>;
+        return (
+          <Link to={normalizedHref} {...props}>
+            {children}
+          </Link>
+        );
       }
 
       const isHttpExternal = /^https?:/i.test(normalizedHref);
@@ -953,7 +1192,7 @@ const createMarkdownComponents = (
       // 深色模式图片适配的豁免约定：![alt](url "no-dark") 表示保持原亮度
       // （如深色截图/图表），其余正文图片在暗色下自动柔和降亮。
       const isNoDarkAdapt = title === 'no-dark';
-      const captionText = isNoDarkAdapt ? alt : (alt || title);
+      const captionText = isNoDarkAdapt ? alt : alt || title;
       return (
         <figure data-role="markdown-figure" className="group/myimage my-7 md:my-10">
           <button
@@ -977,7 +1216,7 @@ const createMarkdownComponents = (
               预览
             </span>
           </button>
-          {(captionText) && (
+          {captionText && (
             <figcaption className="mt-2.5 text-center text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
               {captionText}
             </figcaption>
@@ -997,7 +1236,11 @@ const createMarkdownComponents = (
       const isBlockCode = /language-(\w+)/.test(className || '');
 
       if (className?.includes('language-mermaid')) {
-        return <MermaidBlock renderer={mermaidRenderer} theme={mermaidTheme}>{String(children)}</MermaidBlock>;
+        return (
+          <MermaidBlock renderer={mermaidRenderer} theme={mermaidTheme}>
+            {String(children)}
+          </MermaidBlock>
+        );
       }
 
       if (isBlockCode) {
@@ -1009,7 +1252,10 @@ const createMarkdownComponents = (
       }
 
       return (
-        <code className="rounded-none bg-zinc-100 px-1.5 py-0.5 font-bold text-zinc-900 before:content-none after:content-none dark:bg-zinc-900 dark:text-zinc-100" {...props}>
+        <code
+          className="rounded-none bg-zinc-100 px-1.5 py-0.5 font-bold text-zinc-900 before:content-none after:content-none dark:bg-zinc-900 dark:text-zinc-100"
+          {...props}
+        >
           {children}
         </code>
       );
@@ -1043,8 +1289,12 @@ export const Post = () => {
   const { isReadingMode, exitReadingMode } = useReadingMode();
   const { isSaved, isSaving, error: offlineError, toggleSaved } = useOfflinePosts(post ?? undefined);
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
-  const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostMetadata | null; next: PostMetadata | null }>(ssgRouteData?.adjacentPosts ?? { prev: null, next: null });
-  const [seriesNavigation, setSeriesNavigation] = useState<SeriesNavigation | null>(ssgRouteData?.seriesNavigation ?? null);
+  const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostMetadata | null; next: PostMetadata | null }>(
+    ssgRouteData?.adjacentPosts ?? { prev: null, next: null },
+  );
+  const [seriesNavigation, setSeriesNavigation] = useState<SeriesNavigation | null>(
+    ssgRouteData?.seriesNavigation ?? null,
+  );
   const [relatedPosts, setRelatedPosts] = useState<PostMetadata[]>(ssgRouteData?.relatedPosts ?? []);
   const articleBodyRef = useRef<HTMLDivElement>(null);
   const readingEndRef = useRef<HTMLDivElement>(null);
@@ -1055,7 +1305,12 @@ export const Post = () => {
   // 阅读进度保存的会话状态。必须放在组件级 ref 中：relatedPosts 等异步数据加载会
   // 触发保存 effect 重跑，若用 effect 内局部变量保存“已读完”等标记，重跑后会被重置，
   // 导致读完后再滚回上方时重新写入部分进度、让主页“继续阅读”卡片复活。
-  const readingSessionRef = useRef<{ postId: string; hasScrolled: boolean; completed: boolean; lastWrittenPercent: number } | null>(null);
+  const readingSessionRef = useRef<{
+    postId: string;
+    hasScrolled: boolean;
+    completed: boolean;
+    lastWrittenPercent: number;
+  } | null>(null);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -1167,37 +1422,43 @@ export const Post = () => {
       }
 
       if (hasCodeBlocks(post.content)) {
-        tasks.push((async () => {
-          const { default: rehypeHighlight } = await import('rehype-highlight');
+        tasks.push(
+          (async () => {
+            const { default: rehypeHighlight } = await import('rehype-highlight');
 
-          if (cancelled) return;
-          nextRehypePlugins.push(rehypeHighlight);
-        })());
+            if (cancelled) return;
+            nextRehypePlugins.push(rehypeHighlight);
+          })(),
+        );
       }
 
       if (hasMathExpressions(post.content)) {
-        tasks.push((async () => {
-          const [{ default: remarkMath }, { default: rehypeKatex }] = await Promise.all([
-            import('remark-math'),
-            import('rehype-katex'),
-            import('katex/dist/katex.min.css')
-          ]);
+        tasks.push(
+          (async () => {
+            const [{ default: remarkMath }, { default: rehypeKatex }] = await Promise.all([
+              import('remark-math'),
+              import('rehype-katex'),
+              import('katex/dist/katex.min.css'),
+            ]);
 
-          nextRemarkPlugins.push(remarkMath);
-          nextRehypePlugins.push(rehypeKatex);
-        })());
+            nextRemarkPlugins.push(remarkMath);
+            nextRehypePlugins.push(rehypeKatex);
+          })(),
+        );
       }
 
       if (hasMermaidDiagrams(post.content)) {
-        tasks.push((async () => {
-          const { default: mermaid } = await import('mermaid');
-          if (cancelled) {
-            return;
-          }
+        tasks.push(
+          (async () => {
+            const { default: mermaid } = await import('mermaid');
+            if (cancelled) {
+              return;
+            }
 
-          mermaid.initialize(getMermaidConfig(mermaidTheme === 'dark'));
-          nextMermaidRenderer = mermaid as MermaidRenderer;
-        })());
+            mermaid.initialize(getMermaidConfig(mermaidTheme === 'dark'));
+            nextMermaidRenderer = mermaid as MermaidRenderer;
+          })(),
+        );
       }
 
       try {
@@ -1290,7 +1551,7 @@ export const Post = () => {
       programmaticScrollRef.current = true;
       window.scrollTo({
         top: Math.max(0, element.getBoundingClientRect().top + window.scrollY - 104),
-        behavior: 'auto'
+        behavior: 'auto',
       });
       // 双 rAF 后清除标记：与恢复逻辑保持一致，等待程序化滚动完全落定。
       window.requestAnimationFrame(() => {
@@ -1319,10 +1580,12 @@ export const Post = () => {
         const next = currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : null;
         setAdjacentPosts({ prev: previous, next });
         setSeriesNavigation(getSeriesNavigation(allPosts, post));
-        setRelatedPosts(getRelatedPosts(allPosts, post, {
-          limit: 3,
-          excludeIds: [previous?.id, next?.id].filter((value): value is string => Boolean(value))
-        }));
+        setRelatedPosts(
+          getRelatedPosts(allPosts, post, {
+            limit: 3,
+            excludeIds: [previous?.id, next?.id].filter((value): value is string => Boolean(value)),
+          }),
+        );
       })
       .catch((error) => {
         if (!cancelled) {
@@ -1330,7 +1593,9 @@ export const Post = () => {
         }
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [post, hasSsgPost, loadAttempt]);
 
   useEffect(() => {
@@ -1403,26 +1668,30 @@ export const Post = () => {
         return;
       }
       missingEndRefCount = 0;
-      const top = getScrollTopForReadingProgress({
-        rect,
-        endRect,
-        viewportHeight: window.innerHeight,
-        scrollY: window.scrollY,
-        documentHeight
-      }, savedEntry.progress);
+      const top = getScrollTopForReadingProgress(
+        {
+          rect,
+          endRect,
+          viewportHeight: window.innerHeight,
+          scrollY: window.scrollY,
+          documentHeight,
+        },
+        savedEntry.progress,
+      );
       programmaticScroll = true;
       programmaticScrollRef.current = true;
       window.scrollTo({ top, behavior: 'auto' });
       if (resetProgrammaticFrame) window.cancelAnimationFrame(resetProgrammaticFrame);
       resetProgrammaticFrame = window.requestAnimationFrame(() => {
-        resetProgrammaticFrame = window.requestAnimationFrame(() => { programmaticScroll = false; programmaticScrollRef.current = false; });
+        resetProgrammaticFrame = window.requestAnimationFrame(() => {
+          programmaticScroll = false;
+          programmaticScrollRef.current = false;
+        });
       });
       // 布局稳定后重新应用（图片、代码高亮、数学公式会改变文章高度）。
       if (stableFrames < 2) scheduleRestore();
     };
-    const resizeObserver = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(scheduleLayoutRestore)
-      : null;
+    const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(scheduleLayoutRestore) : null;
 
     window.addEventListener('wheel', stopRestore, { passive: true });
     window.addEventListener('touchstart', stopRestore, { passive: true });
@@ -1465,7 +1734,7 @@ export const Post = () => {
         completed: false,
         // 上次写入的整百分数。挂载时的基线测量（通常在滚动恢复前为 0）不允许直接写库，
         // 否则会覆盖既有的继续阅读记录（如带 hash 打开文章、或用户在恢复窗口内滚动时）。
-        lastWrittenPercent: Math.round((getReadingHistoryEntry(post.id)?.progress ?? 0) * 100)
+        lastWrittenPercent: Math.round((getReadingHistoryEntry(post.id)?.progress ?? 0) * 100),
       };
     }
     const state = readingSessionRef.current!;
@@ -1477,7 +1746,14 @@ export const Post = () => {
     const saveLatestProgress = () => {
       // 仅真实用户滚动后才允许落库：程序化滚动（hash 深链/位置恢复）期间的
       // 进度快照不得覆盖既有的继续阅读记录。
-      if (!hasProgressSnapshot || !state.hasScrolled || state.completed || latestProgress <= 0 || isReadingComplete(latestProgress)) return;
+      if (
+        !hasProgressSnapshot ||
+        !state.hasScrolled ||
+        state.completed ||
+        latestProgress <= 0 ||
+        isReadingComplete(latestProgress)
+      )
+        return;
       const percent = Math.round(latestProgress * 100);
       if (percent === state.lastWrittenPercent) return;
       state.lastWrittenPercent = percent;
@@ -1493,7 +1769,7 @@ export const Post = () => {
         endRect,
         viewportHeight: window.innerHeight,
         scrollY: window.scrollY,
-        documentHeight: document.documentElement.scrollHeight
+        documentHeight: document.documentElement.scrollHeight,
       });
       latestProgress = progress;
       hasProgressSnapshot = true;
@@ -1517,7 +1793,8 @@ export const Post = () => {
       }
       // 进度为 0（正文尚未进入阅读区，或滚回页面顶部）时不写入，避免覆盖既有记录；
       // 未发生真实用户滚动（仅程序化 hash/恢复滚动）时同样不写入。
-      if (!state.hasScrolled || progress <= 0 || isReadingComplete(progress) || now - lastReadingSaveRef.current < 1000) return;
+      if (!state.hasScrolled || progress <= 0 || isReadingComplete(progress) || now - lastReadingSaveRef.current < 1000)
+        return;
       const percent = Math.round(progress * 100);
       if (percent === state.lastWrittenPercent) return;
       state.lastWrittenPercent = percent;
@@ -1561,8 +1838,14 @@ export const Post = () => {
       }
 
       if (e.key === 'Escape') {
-        if (previewImage) { setPreviewImage(null); return; }
-        if (shareModalOpen) { setShareModalOpen(false); return; }
+        if (previewImage) {
+          setPreviewImage(null);
+          return;
+        }
+        if (shareModalOpen) {
+          setShareModalOpen(false);
+          return;
+        }
       }
       if (e.key === 'ArrowLeft' && e.altKey && adjacentPosts.prev) {
         e.preventDefault();
@@ -1578,8 +1861,16 @@ export const Post = () => {
   }, [previewImage, shareModalOpen, adjacentPosts, navigate]);
 
   const markdownComponents = useMemo(
-    () => createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, mermaidTheme, post?.imageDimensions, headings, shouldReduceMotion),
-    [mermaidRenderer, mermaidTheme, post?.id, post?.imageDimensions, headings, shouldReduceMotion]
+    () =>
+      createMarkdownComponents(
+        (image) => setPreviewImage(image),
+        mermaidRenderer,
+        mermaidTheme,
+        post?.imageDimensions,
+        headings,
+        shouldReduceMotion,
+      ),
+    [mermaidRenderer, mermaidTheme, post?.id, post?.imageDimensions, headings, shouldReduceMotion],
   );
 
   if (loading) {
@@ -1596,7 +1887,10 @@ export const Post = () => {
           </div>
         </div>
 
-        <div aria-hidden="true" className="mb-20 aspect-[21/9] w-full animate-pulse rounded-media bg-zinc-200 dark:bg-zinc-800" />
+        <div
+          aria-hidden="true"
+          className="mb-20 aspect-[21/9] w-full animate-pulse rounded-media bg-zinc-200 dark:bg-zinc-800"
+        />
 
         <div aria-hidden="true" className="mx-auto max-w-3xl animate-pulse space-y-6 pb-32">
           <div className="h-5 w-full rounded-micro bg-zinc-200 dark:bg-zinc-800" />
@@ -1672,7 +1966,9 @@ export const Post = () => {
     '@type': 'BlogPosting',
     headline: post.title,
     description: postDescription,
-    image: post.coverImage ? [absoluteSiteUrl(post.coverImage, siteConfig.url)] : [absoluteSiteUrl(siteConfig.seoImage, siteConfig.url)],
+    image: post.coverImage
+      ? [absoluteSiteUrl(post.coverImage, siteConfig.url)]
+      : [absoluteSiteUrl(siteConfig.seoImage, siteConfig.url)],
     datePublished: post.date,
     dateModified: post.updatedAt || post.date,
     author: authors.map((author) => {
@@ -1686,9 +1982,9 @@ export const Post = () => {
         ...(isSiteAuthor
           ? {
               sameAs: [siteConfig.social.github],
-              email: siteConfig.social.rawEmail
+              email: siteConfig.social.rawEmail,
             }
-          : {})
+          : {}),
       };
     }),
     articleBody: stripMarkdown(post.content),
@@ -1700,7 +1996,7 @@ export const Post = () => {
     isPartOf: {
       '@type': 'WebSite',
       name: siteConfig.title,
-      url: absoluteSiteUrl('/', siteConfig.url)
+      url: absoluteSiteUrl('/', siteConfig.url),
     },
     mainEntityOfPage: absoluteSiteUrl(`/post/${post.id}`, siteConfig.url),
     publisher: {
@@ -1709,10 +2005,10 @@ export const Post = () => {
       url: siteConfig.url,
       logo: {
         '@type': 'ImageObject',
-        url: absoluteSiteUrl(siteConfig.logo, siteConfig.url)
-      }
+        url: absoluteSiteUrl(siteConfig.logo, siteConfig.url),
+      },
     },
-    keywords: post.tags?.join(', ')
+    keywords: post.tags?.join(', '),
   };
 
   const breadcrumbData = {
@@ -1720,9 +2016,14 @@ export const Post = () => {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: '首页', item: absoluteSiteUrl('/', siteConfig.url) },
-      { '@type': 'ListItem', position: 2, name: post.category, item: absoluteSiteUrl(`/?category=${encodeURIComponent(post.category)}`, siteConfig.url) },
-      { '@type': 'ListItem', position: 3, name: post.title, item: absoluteSiteUrl(`/post/${post.id}`, siteConfig.url) }
-    ]
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: post.category,
+        item: absoluteSiteUrl(`/?category=${encodeURIComponent(post.category)}`, siteConfig.url),
+      },
+      { '@type': 'ListItem', position: 3, name: post.title, item: absoluteSiteUrl(`/post/${post.id}`, siteConfig.url) },
+    ],
   };
 
   return (
@@ -1730,8 +2031,16 @@ export const Post = () => {
       <ReadingModeToggle />
 
       <Suspense fallback={null}>
-        {previewImage && <ImageViewer src={previewImage.src} alt={previewImage.alt} onClose={() => setPreviewImage(null)} />}
-        {!isReadingMode && <ReadingProgressBadge targetRef={articleBodyRef} endRef={readingEndRef} onVisibilityChange={setMobileFloatingVisible} />}
+        {previewImage && (
+          <ImageViewer src={previewImage.src} alt={previewImage.alt} onClose={() => setPreviewImage(null)} />
+        )}
+        {!isReadingMode && (
+          <ReadingProgressBadge
+            targetRef={articleBodyRef}
+            endRef={readingEndRef}
+            onVisibilityChange={setMobileFloatingVisible}
+          />
+        )}
         {!isReadingMode && headings.length > 0 && (
           <TableOfContents
             headings={headings}
@@ -1776,7 +2085,10 @@ export const Post = () => {
         <header className="post-header mx-auto mb-8 max-w-3xl px-3 pt-4 text-center md:mb-12 md:pt-8">
           {!isReadingMode && (
             <div className="print-hidden mb-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400 md:mb-7">
-              <Link to="/" className="inline-flex items-center gap-1 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
+              >
                 <ArrowLeft size={13} />
                 返回文章
               </Link>
@@ -1786,7 +2098,10 @@ export const Post = () => {
                   首页
                 </Link>
                 <ChevronRight size={11} aria-hidden="true" />
-                <Link to={`/?category=${encodeURIComponent(post.category)}`} className="truncate transition-colors hover:text-zinc-700 dark:hover:text-zinc-300">
+                <Link
+                  to={`/?category=${encodeURIComponent(post.category)}`}
+                  className="truncate transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
+                >
                   {post.category}
                 </Link>
               </nav>
@@ -1819,11 +2134,33 @@ export const Post = () => {
                   <Clock size={14} />
                   <span>{post.readTime}</span>
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 tabular-nums dark:border-zinc-700 dark:bg-zinc-900/70" title="由不蒜子提供本页阅读量">
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 tabular-nums dark:border-zinc-700 dark:bg-zinc-900/70"
+                  title="由不蒜子提供本页阅读量"
+                >
                   <Eye size={14} />
-                  <span><span id="busuanzi_page_pv">加载中</span> 次阅读</span>
+                  <span>
+                    <span id="busuanzi_page_pv">加载中</span> 次阅读
+                  </span>
                 </span>
-                <button type="button" onClick={() => setShareModalOpen(true)} className="print-hidden inline-flex min-h-11 items-center gap-1.5 rounded-control border border-zinc-400 bg-zinc-100 px-3 py-2 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400" aria-label={`分享文章：${post.title}`}>
+                {post.filePath && (
+                  <a
+                    href={getPostEditUrl(siteConfig.friendsPage.repoUrl, post.filePath)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`在 GitHub 上编辑此文：${post.title}`}
+                    className="print-hidden inline-flex min-h-11 items-center gap-1.5 rounded-control border border-zinc-400 bg-zinc-100 px-3 py-2 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400"
+                  >
+                    <Github size={14} />
+                    编辑
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShareModalOpen(true)}
+                  className="print-hidden inline-flex min-h-11 items-center gap-1.5 rounded-control border border-zinc-400 bg-zinc-100 px-3 py-2 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400"
+                  aria-label={`分享文章：${post.title}`}
+                >
                   <Share2 size={14} />
                   分享
                 </button>
@@ -1843,16 +2180,33 @@ export const Post = () => {
                   <Bookmark size={14} fill={isSaved ? 'currentColor' : 'none'} />
                   {isSaving ? '保存中' : isSaved ? '已收藏' : '收藏'}
                 </button>
-                <span className="sr-only" role="status" aria-live="polite">{savedFeedback || offlineError || ''}</span>
+                <span className="sr-only" role="status" aria-live="polite">
+                  {savedFeedback || offlineError || ''}
+                </span>
               </div>
             )}
           </div>
         </header>
 
         {post.coverImage && (
-          <button type="button" className="post-cover print-hidden mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0" onClick={() => setPreviewImage({ src: resolveBrowserAsset(post.coverImage!)!, alt: post.title })} aria-label={`预览文章封面：${post.title}`}>
+          <button
+            type="button"
+            className="post-cover print-hidden mx-auto block w-full max-w-5xl px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 sm:px-4 lg:px-0"
+            onClick={() => setPreviewImage({ src: resolveBrowserAsset(post.coverImage!)!, alt: post.title })}
+            aria-label={`预览文章封面：${post.title}`}
+          >
             <div className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-media border border-zinc-300 bg-zinc-100 shadow-none dark:border-zinc-700 dark:bg-zinc-900 sm:aspect-[16/8] md:mb-14 lg:aspect-[21/9]">
-              <ProgressiveImage src={resolveBrowserAsset(post.coverImage)} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px" wrapperClassName="h-full w-full" className="h-full w-full object-cover" />
+              <ProgressiveImage
+                src={resolveBrowserAsset(post.coverImage)}
+                alt={post.title}
+                loading="eager"
+                fetchPriority="high"
+                width={post.coverWidth}
+                height={post.coverHeight}
+                sizes="(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px"
+                wrapperClassName="h-full w-full"
+                className="h-full w-full object-cover"
+              />
             </div>
           </button>
         )}
@@ -1875,15 +2229,26 @@ export const Post = () => {
             <div ref={readingEndRef} aria-hidden="true" className="h-0" />
 
             {!isReadingMode && (
-              <aside className="post-license mt-14 border-l-2 border-zinc-200 pl-4 text-sm leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-16 md:pl-5" aria-labelledby="license-heading">
-              <h2 id="license-heading" className="mb-1 font-semibold text-zinc-700 dark:text-zinc-200">CC BY-SA 4.0 许可协议</h2>
-              <p>
-                本文由 <strong className="font-semibold text-zinc-700 dark:text-zinc-200">{authorsLabel}</strong> 原创。除非另有声明，可在署名并以相同协议发布衍生作品的前提下自由复制、传播和修改。详见
-                <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="noopener noreferrer" className="ml-1 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-800 dark:decoration-zinc-700 dark:hover:text-zinc-200">
-                  CC BY-SA 4.0
-                </a>
-                。
-              </p>
+              <aside
+                className="post-license mt-14 border-l-2 border-zinc-200 pl-4 text-sm leading-relaxed text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-16 md:pl-5"
+                aria-labelledby="license-heading"
+              >
+                <h2 id="license-heading" className="mb-1 font-semibold text-zinc-700 dark:text-zinc-200">
+                  CC BY-SA 4.0 许可协议
+                </h2>
+                <p>
+                  本文由 <strong className="font-semibold text-zinc-700 dark:text-zinc-200">{authorsLabel}</strong>{' '}
+                  原创。除非另有声明，可在署名并以相同协议发布衍生作品的前提下自由复制、传播和修改。详见
+                  <a
+                    href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-1 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-800 dark:decoration-zinc-700 dark:hover:text-zinc-200"
+                  >
+                    CC BY-SA 4.0
+                  </a>
+                  。
+                </p>
               </aside>
             )}
 
@@ -1909,13 +2274,22 @@ export const Post = () => {
                 </div>
 
                 {seriesNavigation && (
-                  <section className="post-series mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8" aria-labelledby="series-heading">
+                  <section
+                    className="post-series mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8"
+                    aria-labelledby="series-heading"
+                  >
                     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                       <div>
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">系列文章</p>
-                        <h2 id="series-heading" className="font-serif text-xl font-bold text-ink dark:text-white">{seriesNavigation.name}</h2>
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">
+                          系列文章
+                        </p>
+                        <h2 id="series-heading" className="font-serif text-xl font-bold text-ink dark:text-white">
+                          {seriesNavigation.name}
+                        </h2>
                       </div>
-                      <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">第 {seriesNavigation.currentIndex + 1} / {seriesNavigation.posts.length} 篇</span>
+                      <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                        第 {seriesNavigation.currentIndex + 1} / {seriesNavigation.posts.length} 篇
+                      </span>
                     </div>
                     <ol className="space-y-2">
                       {seriesNavigation.posts.map((seriesPost, index) => (
@@ -1925,7 +2299,9 @@ export const Post = () => {
                             aria-current={seriesPost.id === post.id ? 'page' : undefined}
                             className={`flex min-h-11 items-center gap-3 rounded-control border px-3 py-2 text-sm transition-colors ${seriesPost.id === post.id ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900' : 'border-zinc-200 text-zinc-700 hover:border-zinc-500 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-600'}`}
                           >
-                            <span className="w-7 shrink-0 text-center text-xs tabular-nums opacity-60">{index + 1}</span>
+                            <span className="w-7 shrink-0 text-center text-xs tabular-nums opacity-60">
+                              {index + 1}
+                            </span>
                             <span className="min-w-0 flex-1 truncate">{seriesPost.title}</span>
                           </Link>
                         </li>
@@ -1933,24 +2309,54 @@ export const Post = () => {
                     </ol>
                     {(seriesNavigation.previous || seriesNavigation.next) && (
                       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                        {seriesNavigation.previous ? <Link to={`/post/${seriesNavigation.previous.id}`} className="editorial-button inline-flex min-h-11 items-center justify-center gap-2 text-sm"><ArrowLeft size={15} />上一章</Link> : <span />}
-                        {seriesNavigation.next ? <Link to={`/post/${seriesNavigation.next.id}`} className="editorial-button inline-flex min-h-11 items-center justify-center gap-2 text-sm">下一章<ArrowRight size={15} /></Link> : <span />}
+                        {seriesNavigation.previous ? (
+                          <Link
+                            to={`/post/${seriesNavigation.previous.id}`}
+                            className="editorial-button inline-flex min-h-11 items-center justify-center gap-2 text-sm"
+                          >
+                            <ArrowLeft size={15} />
+                            上一章
+                          </Link>
+                        ) : (
+                          <span />
+                        )}
+                        {seriesNavigation.next ? (
+                          <Link
+                            to={`/post/${seriesNavigation.next.id}`}
+                            className="editorial-button inline-flex min-h-11 items-center justify-center gap-2 text-sm"
+                          >
+                            下一章
+                            <ArrowRight size={15} />
+                          </Link>
+                        ) : (
+                          <span />
+                        )}
                       </div>
                     )}
                   </section>
                 )}
 
-                <nav aria-label="文章导航" className="post-navigation mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8">
-                    <div className="grid gap-5 sm:grid-cols-2 sm:gap-10">
+                <nav
+                  aria-label="文章导航"
+                  className="post-navigation mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8"
+                >
+                  <div className="grid gap-5 sm:grid-cols-2 sm:gap-10">
                     {adjacentPosts.prev ? (
                       <Link
                         to={`/post/${adjacentPosts.prev.id}`}
                         className="group flex min-h-11 min-w-0 items-start gap-3 rounded-control py-1 text-left"
                       >
-                        <ArrowLeft size={17} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100" />
+                        <ArrowLeft
+                          size={17}
+                          className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100"
+                        />
                         <span className="min-w-0">
-                          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">上一篇</span>
-                          <span className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 transition-colors group-hover:text-zinc-950 dark:text-zinc-300 dark:group-hover:text-white">{adjacentPosts.prev.title}</span>
+                          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                            上一篇
+                          </span>
+                          <span className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 transition-colors group-hover:text-zinc-950 dark:text-zinc-300 dark:group-hover:text-white">
+                            {adjacentPosts.prev.title}
+                          </span>
                         </span>
                       </Link>
                     ) : (
@@ -1962,10 +2368,17 @@ export const Post = () => {
                         className="group flex min-h-11 min-w-0 items-start gap-3 rounded-control py-1 text-left sm:justify-end sm:text-right"
                       >
                         <span className="min-w-0">
-                          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">下一篇</span>
-                          <span className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 transition-colors group-hover:text-zinc-950 dark:text-zinc-300 dark:group-hover:text-white">{adjacentPosts.next.title}</span>
+                          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                            下一篇
+                          </span>
+                          <span className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 transition-colors group-hover:text-zinc-950 dark:text-zinc-300 dark:group-hover:text-white">
+                            {adjacentPosts.next.title}
+                          </span>
                         </span>
-                        <ArrowRight size={17} className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100" />
+                        <ArrowRight
+                          size={17}
+                          className="mt-0.5 flex-shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-900 dark:text-zinc-700 dark:group-hover:text-zinc-100"
+                        />
                       </Link>
                     ) : (
                       <span aria-hidden="true" />
@@ -1974,29 +2387,60 @@ export const Post = () => {
 
                   <div className="mt-5 hidden text-center md:block">
                     <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
-                      快捷键：<kbd className="kbd">Alt</kbd> + <kbd className="kbd">←</kbd> 上一篇 · <kbd className="kbd">Alt</kbd> + <kbd className="kbd">→</kbd> 下一篇 · <kbd className="kbd">Esc</kbd> 关闭弹窗
+                      快捷键：<kbd className="kbd">Alt</kbd> + <kbd className="kbd">←</kbd> 上一篇 ·{' '}
+                      <kbd className="kbd">Alt</kbd> + <kbd className="kbd">→</kbd> 下一篇 ·{' '}
+                      <kbd className="kbd">Esc</kbd> 关闭弹窗
                     </span>
                   </div>
                 </nav>
 
                 {relatedPosts.length > 0 && (
-                  <section className="post-related mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8" aria-labelledby="related-heading">
+                  <section
+                    className="post-related mt-10 border-t border-zinc-200 pt-7 dark:border-zinc-800 md:mt-12 md:pt-8"
+                    aria-labelledby="related-heading"
+                  >
                     <div className="mb-5 flex items-center gap-2">
                       <BookOpen size={16} className="text-zinc-400" />
-                      <h2 id="related-heading" className="font-serif text-xl font-bold text-ink dark:text-white">你可能还喜欢</h2>
+                      <h2 id="related-heading" className="font-serif text-xl font-bold text-ink dark:text-white">
+                        你可能还喜欢
+                      </h2>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
                       {relatedPosts.map((relatedPost) => (
-                        <Link key={relatedPost.id} to={`/post/${relatedPost.id}`} className="group flex h-24 overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-500 focus-visible:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-visible:border-zinc-500 sm:block sm:h-auto">
-                          {relatedPost.coverImage ? <ProgressiveImage src={resolveBrowserAsset(relatedPost.coverImage)} alt="" loading="lazy" width={relatedPost.coverWidth} height={relatedPost.coverHeight} wrapperClassName="aspect-video h-24 w-auto flex-none bg-zinc-100 dark:bg-zinc-800 sm:h-auto sm:w-full sm:aspect-[16/10]" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <div className="flex aspect-video h-24 w-auto flex-none items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500 sm:h-auto sm:w-full sm:aspect-[16/10]">无封面</div>}
+                        <Link
+                          key={relatedPost.id}
+                          to={`/post/${relatedPost.id}`}
+                          className="group flex h-24 overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-500 focus-visible:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-visible:border-zinc-500 sm:block sm:h-auto"
+                        >
+                          {relatedPost.coverImage ? (
+                            <ProgressiveImage
+                              src={resolveBrowserAsset(relatedPost.coverImage)}
+                              alt=""
+                              loading="lazy"
+                              width={relatedPost.coverWidth}
+                              height={relatedPost.coverHeight}
+                              wrapperClassName="aspect-video h-24 w-auto flex-none bg-zinc-100 dark:bg-zinc-800 sm:h-auto sm:w-full sm:aspect-[16/10]"
+                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                            />
+                          ) : (
+                            <div className="flex aspect-video h-24 w-auto flex-none items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500 sm:h-auto sm:w-full sm:aspect-[16/10]">
+                              无封面
+                            </div>
+                          )}
                           <div className="min-w-0 flex-1 overflow-hidden p-2 sm:p-3.5">
                             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500">
                               <span className="truncate">{relatedPost.category}</span>
                               <span aria-hidden="true">·</span>
-                              <span className="shrink-0 normal-case tracking-normal">{formatMetaDate(relatedPost.date)}</span>
+                              <span className="shrink-0 normal-case tracking-normal">
+                                {formatMetaDate(relatedPost.date)}
+                              </span>
                             </div>
-                            <h3 className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-800 group-hover:text-black dark:text-zinc-200 dark:group-hover:text-white">{relatedPost.title}</h3>
-                            <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 sm:mt-2 sm:line-clamp-2">{relatedPost.excerpt}</p>
+                            <h3 className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-800 group-hover:text-black dark:text-zinc-200 dark:group-hover:text-white">
+                              {relatedPost.title}
+                            </h3>
+                            <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 sm:mt-2 sm:line-clamp-2">
+                              {relatedPost.excerpt}
+                            </p>
                           </div>
                         </Link>
                       ))}
@@ -2018,7 +2462,10 @@ export const Post = () => {
             onClose={() => setShareModalOpen(false)}
             title={post.title}
             excerpt={post.excerpt}
-            url={absoluteSiteUrl(`/post/${post.id}`, typeof window !== 'undefined' ? window.location.origin : siteConfig.url)}
+            url={absoluteSiteUrl(
+              `/post/${post.id}`,
+              typeof window !== 'undefined' ? window.location.origin : siteConfig.url,
+            )}
             category={post.category}
             date={post.date}
             coverImage={post.coverImage}
@@ -2032,5 +2479,3 @@ export const Post = () => {
     </>
   );
 };
-
-
