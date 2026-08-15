@@ -1280,8 +1280,27 @@ export const CoverGenerator: React.FC = () => {
     setLayoutMode(layouts[Math.floor(Math.random() * layouts.length)]);
   }, [customIcon, showIcon]);
 
+  // 预览渲染节流：generateCover 依赖约 40 个表单状态，连续输入/拖拽滑块时
+  // 每次变化都触发全量 canvas 重绘（含多次 measureText 与图标加载）。用
+  // requestAnimationFrame 把同帧内的多次状态变化合并为一次渲染，停止输入后
+  // 最后一帧自然补上；renderId 竞态防护保证只有最新一次结果上屏。
   useEffect(() => {
-    generateCover();
+    let frame = 0;
+    const scheduleRender = () => {
+      if (frame) {
+        return;
+      }
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        void generateCover();
+      });
+    };
+    scheduleRender();
+    return () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
+    };
   }, [generateCover]);
 
   useEffect(

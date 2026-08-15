@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { SearchField } from '@/components/SearchField';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import type { PostSearchScope } from '@/services/posts';
-import { PostCard } from '@/pages/Home';
+import { PostCard } from '@/components/PostCard';
 import { saveOfflinePost, removeOfflinePost } from '@/services/offlinePosts';
 import { useOfflinePosts } from '@/hooks/useOfflinePosts';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
