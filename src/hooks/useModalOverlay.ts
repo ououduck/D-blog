@@ -46,6 +46,7 @@ export const lockBodyScroll = () => {
   scrollLockCount += 1;
 };
 
+/** 释放一次页面滚动锁（计数归零时恢复原始 overflow）。 */
 export const unlockBodyScroll = () => {
   scrollLockCount = Math.max(0, scrollLockCount - 1);
 
@@ -63,6 +64,7 @@ const getFocusableElements = (container: HTMLElement) =>
     const style = window.getComputedStyle(element);
     return style.visibility !== 'hidden' && style.display !== 'none';
   });
+/** 弹层叠加管理 hook：焦点陷阱、滚动锁、Escape 关闭与关闭后焦点还原。 */
 
 export function useModalOverlay({ isOpen, onClose, initialFocusRef, containerRef }: UseModalOverlayOptions) {
   const overlayIdRef = useRef(Symbol('modal-overlay'));

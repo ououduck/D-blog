@@ -54,6 +54,7 @@ const normalizeBasePath = (value?: string, currentPath?: string): string => {
   return clean ? `/${clean}/` : FALLBACK_BASE_PATH;
 };
 
+/** 读取构建期 base path（import.meta.env.BASE_URL，含相对部署推断）。 */
 export const getSiteBasePath = (currentPath?: string): string =>
   normalizeBasePath(import.meta.env.BASE_URL, currentPath);
 
@@ -95,16 +96,19 @@ const withBasePath = (value: string, basePath = getSiteBasePath()): string => {
   const joined = `${baseWithoutTrailing}/${trimLeadingSlash(normalizedPath)}`.replace(/\/+/g, '/');
   return `${joined || '/'}${suffix}`;
 };
+/** 拼接路由 URL（应用 base path，外部 URL 原样返回）。 */
 
 export const routeUrl = (route: string, basePath = getSiteBasePath()): string =>
   withBasePath(
     isExternalUrl(route) || route.startsWith('#') ? route : route.startsWith('/') ? route : `/${route}`,
     basePath,
+    /** 拼接静态资源 URL（应用 base path，外部/协议 URL 原样返回）。 */
   );
 
 export const assetUrl = (asset: string, basePath = getSiteBasePath()): string =>
   withBasePath(
     isExternalUrl(asset) || asset.startsWith('#') ? asset : asset.startsWith('/') ? asset : `/${asset}`,
+    /** 生成绝对站点 URL（应用 base path；同源 URL 重挂 base，异源原样返回）。 */
     basePath,
   );
 

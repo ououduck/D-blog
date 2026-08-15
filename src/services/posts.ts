@@ -86,6 +86,7 @@ const loadPostsSearchIndex = (): Promise<SearchIndexEntry[]> => {
   return postsSearchIndexPromise;
 };
 
+/** 计算单字段的搜索匹配得分（精确/前缀/包含加权）。 */
 export const getFieldMatchScore = (value: string, terms: string[], fullQuery: string, weight: number) => {
   if (!value) {
     return 0;

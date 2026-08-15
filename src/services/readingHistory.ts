@@ -57,9 +57,11 @@ const writeEntries = (entries: ReadingHistoryEntry[]) => {
   }
 };
 
+/** 读取全部阅读历史（按最近更新倒序）。 */
 export const getReadingHistory = () => readEntries().sort((a, b) => b.updatedAt - a.updatedAt);
 
 export const getReadingHistoryEntry = (postId: string) => getReadingHistory().find((entry) => entry.postId === postId);
+/** 保存阅读进度（合并/截断最近 20 条）。 */
 
 export const saveReadingHistory = (entry: Omit<ReadingHistoryEntry, 'updatedAt'> & { updatedAt?: number }) => {
   if (!entry.postId.trim()) return;
@@ -74,10 +76,12 @@ export const saveReadingHistory = (entry: Omit<ReadingHistoryEntry, 'updatedAt'>
   }
   const entries = readEntries().filter((candidate) => candidate.postId !== entry.postId);
   writeEntries([nextEntry, ...entries].slice(0, 20));
+  /** 删除单篇文章的阅读历史。 */
 };
 
 export const removeReadingHistory = (postId: string) => {
   const entries = readEntries().filter((entry) => entry.postId !== postId);
+  /** 订阅阅读历史变更，返回取消订阅函数。 */
   writeEntries(entries);
 };
 

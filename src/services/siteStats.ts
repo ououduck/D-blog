@@ -26,6 +26,7 @@ export interface SiteStats {
   topImageCountPosts?: SiteStatsPostSummary[];
 }
 
+/** 空统计常量（数据缺失时的兜底值）。 */
 export const EMPTY_SITE_STATS: SiteStats = {
   totalPosts: 0,
   totalWords: 0,

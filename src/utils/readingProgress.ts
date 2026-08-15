@@ -37,6 +37,7 @@ const getReadingScrollRange = (input: ReadingProgressInput): ReadingScrollRange 
   return { startScrollTop, endScrollTop, documentMaxScrollTop };
 };
 
+/** 按滚动位置计算文章阅读进度（0~1，clamp 到区间）。 */
 export const getReadingProgress = (input: ReadingProgressInput) => {
   const { startScrollTop, endScrollTop, documentMaxScrollTop } = getReadingScrollRange(input);
 
@@ -54,6 +55,7 @@ export const getReadingProgress = (input: ReadingProgressInput) => {
 
   return clamp((input.scrollY - startScrollTop) / totalScrollable, 0, 1);
 };
+/** 由阅读进度反推滚动位置（用于"继续阅读"恢复）。 */
 
 export const getScrollTopForReadingProgress = (input: ReadingProgressInput, progress: number) => {
   const { startScrollTop, endScrollTop, documentMaxScrollTop } = getReadingScrollRange(input);
@@ -64,6 +66,7 @@ export const getScrollTopForReadingProgress = (input: ReadingProgressInput, prog
   }
 
   return clamp(startScrollTop + clamp(progress, 0, 1) * totalScrollable, 0, documentMaxScrollTop);
+  /** 判断进度是否达到完成阈值（≥99.5%）。 */
 };
 
 export const isReadingComplete = (progress: number) => progress >= READING_PROGRESS_COMPLETION_THRESHOLD;

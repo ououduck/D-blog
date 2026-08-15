@@ -34,12 +34,14 @@ const parseISODate = (dateText: string) => {
   return date;
 };
 
+/** 解析 "YYYY-MM-DD" 日期字符串为时间戳；无效日期返回 0。 */
 export const getDateTimestamp = (dateText: string) => {
   const timestamp = parseISODate(dateText).getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
 };
 
 const isValidDate = (date: Date) => !Number.isNaN(date.getTime());
+/** 格式化日期字符串（本地时区）；无效日期或 locale 不可用时回退原字符串。 */
 
 export const formatDate = (dateText: string, locale: string, options: Intl.DateTimeFormatOptions) => {
   const parsedDate = parseISODate(dateText);

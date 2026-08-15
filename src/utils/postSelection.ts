@@ -4,6 +4,7 @@ type FeaturedPostFields = Pick<PostMetadata, 'featured' | 'featured-top'>;
 
 const isFeaturedPost = (post: Pick<PostMetadata, 'featured'>) => post.featured === true;
 
+/** 判断是否为置顶精选文章（featured 且带 featured-top 权重）。 */
 export const isPinnedFeaturedPost = (post: FeaturedPostFields) =>
   isFeaturedPost(post) && post['featured-top'] !== undefined;
 

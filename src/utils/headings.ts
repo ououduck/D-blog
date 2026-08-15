@@ -14,6 +14,7 @@ export interface MarkdownHeading {
 
 export { extractMarkdownHeadings, slugifyHeading, stripInlineMarkdown };
 
+/** 从 React 节点递归提取纯文本（用于标题文本比较与代码复制）。 */
 export const extractTextFromReactNode = (node: React.ReactNode): string => {
   if (typeof node === 'string' || typeof node === 'number') {
     return String(node);

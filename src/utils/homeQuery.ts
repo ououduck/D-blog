@@ -18,10 +18,12 @@ const parsePage = (value: string | null) => {
   return Number.isSafeInteger(page) ? page : 1;
 };
 
+/** 解析 URL 查询参数为首页状态（sort 排序、page 页码，非法值回退默认）。 */
 export const getHomeQueryState = (params: URLSearchParams): HomeQueryState => ({
   sortOrder: params.get('sort') === 'oldest' ? 'oldest' : 'newest',
   page: parsePage(params.get('page')),
 });
+/** 更新首页查询参数（sort/page），page=1 或默认排序时移除参数。 */
 
 export const setHomeQueryParam = (params: URLSearchParams, key: 'sort' | 'page', value: HomeSortOrder | number) => {
   const nextParams = new URLSearchParams(params);
@@ -39,6 +41,7 @@ export const setHomeQueryParam = (params: URLSearchParams, key: 'sort' | 'page',
   }
 
   return nextParams;
+  /** 归一化首页查询参数（移除无效 sort/page），保持 canonical 稳定。 */
 };
 
 export const canonicalizeHomeQuery = (params: URLSearchParams) => {

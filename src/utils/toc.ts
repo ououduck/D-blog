@@ -9,6 +9,7 @@ export type TocNode = MarkdownHeading & {
   children: TocNode[];
 };
 
+/** 从扁平标题列表构建目录树（按层级嵌套）。 */
 export const buildHeadingTree = (headings: MarkdownHeading[]) => {
   const tree: TocNode[] = [];
   const stack: TocNode[] = [];
@@ -35,6 +36,7 @@ export const buildHeadingTree = (headings: MarkdownHeading[]) => {
 
   return tree;
 };
+/** 计算目录初始展开状态（含子节点的父节点展开）。 */
 
 export const collectInitialExpandedState = (nodes: TocNode[]) => {
   const nextState: Record<string, boolean> = {};
@@ -51,6 +53,7 @@ export const collectInitialExpandedState = (nodes: TocNode[]) => {
   traverse(nodes);
 
   return nextState;
+  /** 构建子节点 id → 父节点 的映射。 */
 };
 
 export const buildParentMap = (nodes: TocNode[]) => {
@@ -65,6 +68,7 @@ export const buildParentMap = (nodes: TocNode[]) => {
 
   traverse(nodes, null);
 
+  /** 获取节点到根的全部祖先 id。 */
   return parentMap;
 };
 
@@ -82,6 +86,7 @@ export const getAncestorIds = (id: string | null, parentMap: Map<string, string 
     ancestorIds.push(parentId);
     currentId = parentId;
   }
+  /** 获取节点所属根分支（顶层节点）的 id。 */
 
   return ancestorIds;
 };
@@ -101,6 +106,7 @@ export const getRootBranchId = (id: string | null, parentMap: Map<string, string
     }
 
     currentId = parentId;
+    /** 按 id 在目录树中查找节点。 */
   }
 
   return null;

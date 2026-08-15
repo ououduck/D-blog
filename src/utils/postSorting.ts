@@ -6,6 +6,7 @@ import type { PostMetadata } from '@/types';
 import { getDateTimestamp } from '@/utils/date';
 import { isPinnedFeaturedPost } from '@/utils/postSelection';
 
+/** 按发布时间排序文章列表（newest 降序 / oldest 升序，稳定排序）。 */
 export const sortPosts = (posts: PostMetadata[], sortOrder: 'newest' | 'oldest') =>
   posts.slice().sort((a, b) => {
     const priorityA = isPinnedFeaturedPost(a) ? 0 : a.featured === true ? 1 : 2;
