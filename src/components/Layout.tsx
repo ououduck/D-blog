@@ -75,6 +75,20 @@ const shuoshuoNavItem: NavPathItem = {
   icon: MessageCircle,
 };
 
+// 模块级常量：导航项入场动画变体（组件内定义会在每次渲染时创建新对象，
+// 导致 framer-motion 的 variants 引用变化，轻微增加协调开销）。
+const navItemVariants = {
+  hidden: { opacity: 0, y: -6 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.25,
+      ease: easeSmooth,
+    },
+  },
+};
+
 const navItems: NavPathItem[] = [
   { path: '/', label: TEXT.navPosts, hint: '最新内容', icon: BookOpen },
   shuoshuoNavItem,
@@ -388,17 +402,6 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       onClick: () => requestCloseMobileNav(() => onSearchClick()),
     },
   ];
-  const navItemVariants = {
-    hidden: { opacity: 0, y: -6 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.25,
-        ease: easeSmooth,
-      },
-    },
-  };
 
   const clearAnimationFrame = useCallback(() => {
     if (animationFrameRef.current === null) {

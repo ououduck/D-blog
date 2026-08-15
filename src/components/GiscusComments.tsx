@@ -40,7 +40,8 @@ const resolveGiscusOrigins = (): string[] => {
   }
 
   push(GISCUS_OFFICIAL);
-  return origins.length > 0 ? origins : [GISCUS_OFFICIAL];
+  // origins 至少含官方兜底来源，恒非空，无需三元兜底。
+  return origins;
 };
 
 interface GiscusCommentsProps {

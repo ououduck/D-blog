@@ -170,11 +170,18 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, resetView]);
 
-  const handleMouseDown = (event: React.MouseEvent) => {
+  const handlePointerDown = (event: React.PointerEvent) => {
     if (scale <= 1) return;
     event.preventDefault();
     setIsDragging(true);
     dragStartRef.current = { x: event.clientX, y: event.clientY, posX: position.x, posY: position.y };
+    // 捕获指针：拖动中鼠标移出窗口/容器再松开时，pointerup 仍派发给本元素，
+    // 否则 isDragging 会一直为 true（move/up 事件丢失导致拖动"卡死"）。
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // 部分环境（如 jsdom/旧浏览器）不支持 pointer capture，忽略即可。
+    }
   };
 
   const handleMouseMove = (event: React.MouseEvent) => {
@@ -274,8 +281,9 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
           role="dialog"
           aria-modal="true"
           aria-label={alt ? `图片预览：${alt}` : '图片预览'}
-          onMouseMove={handleMouseMove}
-          onMouseUp={stopDragging}
+          onPointerMove={handleMouseMove}
+          onPointerUp={stopDragging}
+          onPointerCancel={stopDragging}
           onMouseLeave={stopDragging}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -306,7 +314,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
             transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', damping: 28, stiffness: 260 }}
             className="relative max-h-[86vh] supports-[height:100dvh]:max-h-[86dvh] max-w-[94vw] touch-none select-none"
             style={{ cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in' }}
-            onMouseDown={handleMouseDown}
+            onPointerDown={handlePointerDown}
             onDoubleClick={(event) => {
               event.stopPropagation();
               handleToggleZoom();
