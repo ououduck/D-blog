@@ -18,7 +18,7 @@ import { SlideModal } from '@/components/SlideModal';
 import { Surface } from '@/components/ui/Surface';
 import { easeOut, fadeInUp, staggerContainer } from '@/utils/motion';
 import { useSpotlight } from '@/components/effects/useSpotlight';
-import { SpotlightLayer } from '@/components/effects/SpotlightCard';
+import { SpotlightLayer } from '@/components/effects/SpotlightLayer';
 import {
   createFriendLinkApplication,
   type FriendLinkApplicationValues,
