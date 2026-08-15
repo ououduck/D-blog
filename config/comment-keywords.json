@@ -1,5 +1,5 @@
 {
-  "description": "评论/讨论关键词过滤配置。命中任一 keywords（子串匹配，忽略大小写）或 patterns（正则）即按 action 处理。修改此文件并推送到 main 即生效。",
+  "description": "评论/讨论关键词过滤配置。命中任一 keywords（子串匹配，忽略大小写）或 patterns（正则）即按 action 处理。修改此文件并推送到 main 即生效。注意：keywords 为子串匹配，禁用单字/过于通用的词（如“操”“草”“妈”会误删“操作系统”“操场”“妈妈”等正常评论），脏话请用 patterns 写完整词组。",
   "action": "delete",
   "discussionAction": "delete",
   "keywords": [
@@ -16,11 +16,14 @@
     "蒋介石",
     "毛泽东",
     "毛主席",
-    "操",
-    "草",
-    "妈",
     "nmsl",
     "cnm"
   ],
-  "patterns": ["(?:vx|wx|wechat|qq|tg)\\s*[:：]?\\s*[a-zA-Z0-9_-]{5,}", "https?://\\S*(?:bet|casino|spam|ads)\\S*"]
+  "patterns": [
+    "(?:微信\\s*号?|vx|wx|wechat|qq|tg)\\s*[:：]?\\s*[a-zA-Z0-9_-]{5,}",
+    "https?://\\S*(?:bet|casino|spam|ads)\\S*",
+    "(?:操|草)\\s*你(?:妈|吗|麻痹)",
+    "(?:他|尼)妈(?:的|逼|b)?",
+    "(?:妈|吗)的?(?:逼|b|bi)"
+  ]
 }
