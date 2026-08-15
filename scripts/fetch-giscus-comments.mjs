@@ -45,8 +45,10 @@ const parsePathname = (value) => {
   }
 };
 
-const graphqlQuery = (owner, name) => `query CommentCounts($cursor: String) {
-  repository(owner: "${owner}", name: "${name}") {
+// owner/name 走 GraphQL variables（而非模板插值进查询串），避免仓库名含
+// 引号等特殊字符时破坏查询结构。
+const COMMENT_COUNTS_QUERY = `query CommentCounts($owner: String!, $name: String!, $cursor: String) {
+  repository(owner: $owner, name: $name) {
     discussions(first: ${DISCUSSIONS_PER_PAGE}, after: $cursor) {
       pageInfo { hasNextPage endCursor }
       nodes {
@@ -93,7 +95,7 @@ export const fetchCommentCounts = async ({ posts, token = process.env.GITHUB_TOK
           'User-Agent': 'd-blog-build',
           Accept: 'application/json',
         },
-        body: JSON.stringify({ query: graphqlQuery(owner, name), variables: { cursor } }),
+        body: JSON.stringify({ query: COMMENT_COUNTS_QUERY, variables: { owner, name, cursor } }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
