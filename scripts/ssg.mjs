@@ -429,17 +429,13 @@ export const runSsg = async ({
   const staticPages = [
     {
       path: 'archive',
-      title: `归档 - ${siteConfig.title}`,
-      description:
-        'D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评与折腾记录，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。',
+      // schemaFromSeo: 页面级 title/description/schema 均由页面组件 Seo 输出，
+      // 此处不再重复声明（避免与 Seo 文案双源漂移），SSG 只注入站点级 schema。
       schemaType: 'CollectionPage',
       schemaFromSeo: true,
     },
     {
       path: 'tags',
-      title: `标签 - ${siteConfig.title}`,
-      description:
-        'D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。',
       schemaType: 'CollectionPage',
       schemaFromSeo: true,
     },
@@ -451,30 +447,21 @@ export const runSsg = async ({
     },
     {
       path: 'about',
-      title: `关于 - ${siteConfig.title}`,
-      description: '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。',
       schemaType: 'ProfilePage',
       schemaFromSeo: true,
     },
     {
       path: 'friends',
-      title: `友链 - ${siteConfig.title}`,
-      description: 'D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链，一起分享交流与成长。',
       schemaType: 'CollectionPage',
       schemaFromSeo: true,
     },
     {
       path: 'shuoshuo',
-      title: `说说 - ${siteConfig.title}`,
-      description:
-        'D-blog 说说：类似朋友圈的短动态分享，用一句话、一张图记录当下的想法与生活片段，Markdown 书写，随性更新。',
       schemaType: 'CollectionPage',
       schemaFromSeo: true,
     },
     {
       path: 'guestbook',
-      title: `留言板 - ${siteConfig.title}`,
-      description: '在 D-blog 留言板留下你的足迹：闲聊、建议、问题反馈都可以，登录 GitHub 账号即可留言。',
       schemaType: 'WebPage',
       schemaFromSeo: true,
     },
@@ -501,8 +488,6 @@ export const runSsg = async ({
     },
     {
       path: 'search',
-      title: `搜索 - ${siteConfig.title}`,
-      description: '在 D-blog 全站搜索文章：按标题、分类、标签、摘要与正文内容检索，快速定位感兴趣的技术分享。',
       schemaType: 'WebPage',
       schemaFromSeo: true,
     },
