@@ -10,10 +10,11 @@ import {
   DEFAULT_STATIC_ROUTES,
   findDuplicatePostIds,
   parseMarkdownImages,
-  validatePostContent
+  validatePostContent,
 } from './post-content-validator.mjs';
 import { extractMarkdownHeadings } from '../src/utils/headings-core.mjs';
 import { buildRssFeed } from './feed-generator.mjs';
+import { fetchCommentCounts } from './fetch-giscus-comments.mjs';
 
 const logger = createBuildLogger('gen:data');
 logger.start('Generate site data');
@@ -30,7 +31,10 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 process.on('unhandledRejection', (reason) => {
-  logger.error('Unhandled promise rejection during site data generation', reason instanceof Error ? reason.stack : String(reason));
+  logger.error(
+    'Unhandled promise rejection during site data generation',
+    reason instanceof Error ? reason.stack : String(reason),
+  );
   process.exit(1);
 });
 
@@ -67,10 +71,7 @@ const MAX_POST_FILE_BYTES = 5 * 1024 * 1024;
  * 注意：title/excerpt 等核心业务字段在 buildPost 中显式传递（见下方），
  * 此处只管辖"额外布尔/数字标志"的透传，避免核心字段被误过滤。
  */
-const POST_FRONTMATTER_ALLOWLIST = new Set([
-  'featured',
-  'featured-top'
-]);
+const POST_FRONTMATTER_ALLOWLIST = new Set(['featured', 'featured-top']);
 
 if (!fs.existsSync(OUTPUT_JSON_DIR)) {
   fs.mkdirSync(OUTPUT_JSON_DIR, { recursive: true });
@@ -89,12 +90,13 @@ const validateDateString = (value) => {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 };
 
-const xmlEscape = (value) => String(value ?? '')
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&apos;');
+const xmlEscape = (value) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 
 const HTTP_URL_PROTOCOLS = new Set(['http:', 'https:']);
 
@@ -164,19 +166,27 @@ const generateSiteStats = (postsWithSearch) => {
     coverImage: post.coverImage,
     readTime: post.readTime,
     wordCount: post.wordCount || 0,
-    imageCount: post.imageCount || 0
+    imageCount: post.imageCount || 0,
   });
-  const countBy = (items, getKey) => Array.from(items.reduce((map, item) => {
-    const key = getKey(item);
-    if (key) {
-      map.set(key, (map.get(key) || 0) + 1);
-    }
-    return map;
-  }, new Map()).entries())
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'));
+  const countBy = (items, getKey) =>
+    Array.from(
+      items
+        .reduce((map, item) => {
+          const key = getKey(item);
+          if (key) {
+            map.set(key, (map.get(key) || 0) + 1);
+          }
+          return map;
+        }, new Map())
+        .entries(),
+    )
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'));
   const categoryStats = countBy(postsWithSearch, (post) => post.category);
-  const tagStats = countBy(postsWithSearch.flatMap((post) => post.tags || []), (tag) => tag).slice(0, 12);
+  const tagStats = countBy(
+    postsWithSearch.flatMap((post) => post.tags || []),
+    (tag) => tag,
+  ).slice(0, 12);
   const recentPosts = postsWithSearch
     .slice()
     .sort((a, b) => new Date(b.updatedAt || b.date) - new Date(a.updatedAt || a.date))
@@ -206,14 +216,17 @@ const generateSiteStats = (postsWithSearch) => {
         tagStats,
         recentPosts,
         topWordCountPosts,
-        topImageCountPosts
+        topImageCountPosts,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 
-  logger.step('Generated site-stats.json', `posts=${totalPosts} words=${totalWords} categories=${totalCategories} tags=${totalTags} images=${totalImages}`);
+  logger.step(
+    'Generated site-stats.json',
+    `posts=${totalPosts} words=${totalWords} categories=${totalCategories} tags=${totalTags} images=${totalImages}`,
+  );
 };
 
 const calculateReadTime = (markdown) => {
@@ -245,22 +258,19 @@ const normalizeAuthor = (value) => {
     avatar: typeof value.avatar === 'string' && value.avatar.trim() ? value.avatar.trim() : undefined,
     role: typeof value.role === 'string' && value.role.trim() ? value.role.trim() : undefined,
     bio: typeof value.bio === 'string' && value.bio.trim() ? value.bio.trim() : undefined,
-    url: typeof value.url === 'string' && value.url.trim() ? value.url.trim() : undefined
+    url: typeof value.url === 'string' && value.url.trim() ? value.url.trim() : undefined,
   };
 };
 
 const normalizeAuthors = (author, authors) => {
-  const rawAuthors = [
-    ...(Array.isArray(authors) ? authors : authors ? [authors] : []),
-    ...(author ? [author] : [])
-  ];
+  const rawAuthors = [...(Array.isArray(authors) ? authors : authors ? [authors] : []), ...(author ? [author] : [])];
 
-  const normalizedAuthors = rawAuthors
-    .map((entry) => normalizeAuthor(entry))
-    .filter(Boolean);
+  const normalizedAuthors = rawAuthors.map((entry) => normalizeAuthor(entry)).filter(Boolean);
 
   return normalizedAuthors.length > 0
-    ? normalizedAuthors.filter((entry, index, collection) => collection.findIndex((candidate) => candidate.name === entry.name) === index)
+    ? normalizedAuthors.filter(
+        (entry, index, collection) => collection.findIndex((candidate) => candidate.name === entry.name) === index,
+      )
     : undefined;
 };
 
@@ -290,12 +300,14 @@ try {
 } catch (error) {
   throw new Error(`Failed to load ${CONTENT_CONFIG_FILE}: ${error instanceof Error ? error.message : String(error)}`);
 }
-const POST_CATEGORIES = Array.isArray(contentConfig.postCategories) && contentConfig.postCategories.length > 0
-  ? contentConfig.postCategories
-  : ['其他'];
-const FALLBACK_CATEGORY = typeof contentConfig.fallbackCategory === 'string' && contentConfig.fallbackCategory.trim()
-  ? contentConfig.fallbackCategory.trim()
-  : POST_CATEGORIES[POST_CATEGORIES.length - 1];
+const POST_CATEGORIES =
+  Array.isArray(contentConfig.postCategories) && contentConfig.postCategories.length > 0
+    ? contentConfig.postCategories
+    : ['其他'];
+const FALLBACK_CATEGORY =
+  typeof contentConfig.fallbackCategory === 'string' && contentConfig.fallbackCategory.trim()
+    ? contentConfig.fallbackCategory.trim()
+    : POST_CATEGORIES[POST_CATEGORIES.length - 1];
 
 const normalizeCategory = (value) => {
   if (typeof value !== 'string') {
@@ -345,15 +357,13 @@ const validatePostFrontmatter = (filename, data, formattedDate, formattedUpdated
     });
   }
   if (
-    typeof id === 'string'
-    && (
-      id !== id.trim()
-      || /\s|[\\/?#%"'<>]/.test(id)
-      || id === '.'
-      || id === '..'
-      || id.includes('/./')
-      || id.includes('/../')
-    )
+    typeof id === 'string' &&
+    (id !== id.trim() ||
+      /\s|[\\/?#%"'<>]/.test(id) ||
+      id === '.' ||
+      id === '..' ||
+      id.includes('/./') ||
+      id.includes('/../'))
   ) {
     errors.push(`id "${id}" contains characters that are unsafe in a post URL`);
   }
@@ -363,9 +373,10 @@ const validatePostFrontmatter = (filename, data, formattedDate, formattedUpdated
   if (data.featured !== undefined && typeof data.featured !== 'boolean') {
     errors.push('featured must be a boolean when provided');
   }
-  if (data['featured-top'] !== undefined && (
-    typeof data['featured-top'] !== 'number' || !Number.isFinite(data['featured-top'])
-  )) {
+  if (
+    data['featured-top'] !== undefined &&
+    (typeof data['featured-top'] !== 'number' || !Number.isFinite(data['featured-top']))
+  ) {
     errors.push('featured-top must be a finite number when provided');
   }
   if (data.series !== undefined && typeof data.series !== 'boolean') {
@@ -375,7 +386,11 @@ const validatePostFrontmatter = (filename, data, formattedDate, formattedUpdated
     if (typeof data['series-name'] !== 'string' || data['series-name'].trim() === '') {
       errors.push('series-name must be a non-empty string when series is true');
     }
-    if (typeof data['series-order'] !== 'number' || !Number.isInteger(data['series-order']) || data['series-order'] < 1) {
+    if (
+      typeof data['series-order'] !== 'number' ||
+      !Number.isInteger(data['series-order']) ||
+      data['series-order'] < 1
+    ) {
       errors.push('series-order must be a positive integer when series is true');
     }
   }
@@ -396,85 +411,85 @@ const files = fs.readdirSync(POSTS_DIR).filter((file) => {
 // 不能在 map 回调中直接引用它，否则触发 TDZ ReferenceError）。
 const oversizedFileErrors = [];
 
-const postRecords = files.map((filename) => {
-  const filePath = path.join(POSTS_DIR, filename);
-  // Phase 3 加固：先校验文件大小（fail-closed），超限文件不读入内存。
-  try {
-    const stat = fs.statSync(filePath);
-    if (stat.size > MAX_POST_FILE_BYTES) {
-      oversizedFileErrors.push(`Post file ${filename} exceeds size limit (${stat.size} > ${MAX_POST_FILE_BYTES} bytes); likely a binary/attachment mis-committed as Markdown.`);
-      return {
-        filename,
-        filePath,
-        data: {},
-        content: '',
-        restData: {},
-        draft: false,
-        id: '',
-        formattedDate: undefined,
-        formattedUpdatedAt: undefined,
-        headingIds: [],
-        contentStartLine: 0,
-        errors: []
-      };
+const postRecords = files
+  .map((filename) => {
+    const filePath = path.join(POSTS_DIR, filename);
+    // Phase 3 加固：先校验文件大小（fail-closed），超限文件不读入内存。
+    try {
+      const stat = fs.statSync(filePath);
+      if (stat.size > MAX_POST_FILE_BYTES) {
+        oversizedFileErrors.push(
+          `Post file ${filename} exceeds size limit (${stat.size} > ${MAX_POST_FILE_BYTES} bytes); likely a binary/attachment mis-committed as Markdown.`,
+        );
+        return {
+          filename,
+          filePath,
+          data: {},
+          content: '',
+          restData: {},
+          draft: false,
+          id: '',
+          formattedDate: undefined,
+          formattedUpdatedAt: undefined,
+          headingIds: [],
+          contentStartLine: 0,
+          errors: [],
+        };
+      }
+    } catch {
+      // statSync 失败（文件在遍历后被删除等极端竞态）：跳过该文件，不中断构建。
+      return null;
     }
-  } catch {
-    // statSync 失败（文件在遍历后被删除等极端竞态）：跳过该文件，不中断构建。
-    return null;
-  }
-  const fileContent = fs.readFileSync(filePath, 'utf-8');
-  let data = {};
-  let content = fileContent;
-  let parseError;
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    let data = {};
+    let content = fileContent;
+    let parseError;
 
-  try {
-    ({ data, content } = matter(fileContent));
-  } catch (error) {
-    parseError = `Invalid front matter in ${filename}: ${error instanceof Error ? error.message : String(error)}`;
-    content = '';
-  }
+    try {
+      ({ data, content } = matter(fileContent));
+    } catch (error) {
+      parseError = `Invalid front matter in ${filename}: ${error instanceof Error ? error.message : String(error)}`;
+      content = '';
+    }
 
-  // 仅解构实际使用的字段；其余未知键全部进入 restData，由下方白名单过滤剔除
-  // （frontmatter 中的 author/authors/coverImage 等经 data.* 显式读取）。
-  const { draft, updatedAt, ...restData } = data;
-  const id = typeof data.id === 'string' ? data.id : '';
-  const formattedDate = formatFrontmatterDate(data.date);
-  const formattedUpdatedAt = formatFrontmatterDate(updatedAt);
-  const frontMatterError = parseError || validatePostFrontmatter(filename, data, formattedDate, formattedUpdatedAt, id);
-  const contentStartLine = (() => {
-    const lines = fileContent.split(/\r?\n/);
-    if (!/^\uFEFF?---\s*$/.test(lines[0] || '')) return 0;
-    const closingIndex = lines.findIndex((line, index) => index > 0 && /^---\s*$/.test(line));
-    return closingIndex >= 0 ? closingIndex + 1 : 0;
-  })();
-  const headingIds = extractMarkdownHeadings(content).map((heading) => heading.id);
+    // 仅解构实际使用的字段；其余未知键全部进入 restData，由下方白名单过滤剔除
+    // （frontmatter 中的 author/authors/coverImage 等经 data.* 显式读取）。
+    const { draft, updatedAt, ...restData } = data;
+    const id = typeof data.id === 'string' ? data.id : '';
+    const formattedDate = formatFrontmatterDate(data.date);
+    const formattedUpdatedAt = formatFrontmatterDate(updatedAt);
+    const frontMatterError =
+      parseError || validatePostFrontmatter(filename, data, formattedDate, formattedUpdatedAt, id);
+    const contentStartLine = (() => {
+      const lines = fileContent.split(/\r?\n/);
+      if (!/^\uFEFF?---\s*$/.test(lines[0] || '')) return 0;
+      const closingIndex = lines.findIndex((line, index) => index > 0 && /^---\s*$/.test(line));
+      return closingIndex >= 0 ? closingIndex + 1 : 0;
+    })();
+    const headingIds = extractMarkdownHeadings(content).map((heading) => heading.id);
 
-  return {
-    filename,
-    filePath,
-    data,
-    content,
-    // Phase 3 加固：白名单过滤未知 frontmatter 键，杜绝污染产物数据契约。
-    restData: Object.fromEntries(
-      Object.entries(restData).filter(([key]) => POST_FRONTMATTER_ALLOWLIST.has(key))
-    ),
-    draft: draft === true,
-    id,
-    formattedDate,
-    formattedUpdatedAt,
-    headingIds,
-    contentStartLine,
-    errors: frontMatterError ? [frontMatterError] : []
-  };
-}).filter(Boolean);
+    return {
+      filename,
+      filePath,
+      data,
+      content,
+      // Phase 3 加固：白名单过滤未知 frontmatter 键，杜绝污染产物数据契约。
+      restData: Object.fromEntries(Object.entries(restData).filter(([key]) => POST_FRONTMATTER_ALLOWLIST.has(key))),
+      draft: draft === true,
+      id,
+      formattedDate,
+      formattedUpdatedAt,
+      headingIds,
+      contentStartLine,
+      errors: frontMatterError ? [frontMatterError] : [],
+    };
+  })
+  .filter(Boolean);
 
 const allPostIndex = new Map();
 const publishedPostIndex = new Map();
 // Phase 3 加固：合并超限文件错误（它们在 map 阶段独立收集，避免 TDZ）。
-const validationErrors = [
-  ...oversizedFileErrors,
-  ...postRecords.flatMap((record) => record.errors)
-];
+const validationErrors = [...oversizedFileErrors, ...postRecords.flatMap((record) => record.errors)];
 findDuplicatePostIds(postRecords).forEach(({ id, filename }) => {
   validationErrors.push(`Duplicate post id "${id}" found in ${filename}.`);
 });
@@ -491,9 +506,7 @@ postRecords.forEach((record) => {
 const normalizeTagsStrict = (value) => (Array.isArray(value) ? value.map((tag) => tag.trim()) : []);
 
 const buildPost = (record) => {
-  const {
-    filename, content, data, restData, id, formattedDate, formattedUpdatedAt, draft
-  } = record;
+  const { filename, content, data, restData, id, formattedDate, formattedUpdatedAt, draft } = record;
   const normalizedAuthors = normalizeAuthors(data.author, data.authors);
   const category = normalizeCategory(data.category);
   const tags = normalizeTagsStrict(data.tags);
@@ -502,45 +515,55 @@ const buildPost = (record) => {
   const seriesName = isSeries && typeof data['series-name'] === 'string' ? data['series-name'].trim() : undefined;
   const seriesOrder = isSeries && Number.isInteger(data['series-order']) ? data['series-order'] : undefined;
 
-  return draft ? null : {
-    ...restData,
-    // 核心业务字段显式传递（Phase 4 修复）：title/excerpt 原本依赖 restData 透传，
-    // 白名单过滤后会被剔除导致下游 llms.txt/RSS 崩溃。这里显式取值，
-    // 且 validatePostFrontmatter 已保证二者为非空字符串。
-    title: data.title,
-    excerpt: data.excerpt,
-    ...(isSeries ? { series: true, seriesName, seriesOrder } : {}),
-    coverImage: normalizedCoverImage,
-    category,
-    tags,
-    date: formattedDate,
-    updatedAt: formattedUpdatedAt,
-    authors: normalizedAuthors,
-    id,
-    filePath: `/posts/${filename}`,
-    readTime: calculateReadTime(content),
-    wordCount: countWords(content),
-    imageCount: countImages(content),
-    content,
-    searchText: markdownToSearchText(content)
-  };
+  return draft
+    ? null
+    : {
+        ...restData,
+        // 核心业务字段显式传递（Phase 4 修复）：title/excerpt 原本依赖 restData 透传，
+        // 白名单过滤后会被剔除导致下游 llms.txt/RSS 崩溃。这里显式取值，
+        // 且 validatePostFrontmatter 已保证二者为非空字符串。
+        title: data.title,
+        excerpt: data.excerpt,
+        ...(isSeries ? { series: true, seriesName, seriesOrder } : {}),
+        coverImage: normalizedCoverImage,
+        category,
+        tags,
+        date: formattedDate,
+        updatedAt: formattedUpdatedAt,
+        authors: normalizedAuthors,
+        id,
+        filePath: `/posts/${filename}`,
+        readTime: calculateReadTime(content),
+        wordCount: countWords(content),
+        imageCount: countImages(content),
+        content,
+        searchText: markdownToSearchText(content),
+      };
 };
 
 postRecords.forEach((record) => {
-  validationErrors.push(...validatePostContent(record, {
-    filename: record.filename,
-    imageRoot: IMAGE_ROOT,
-    allPosts: allPostIndex,
-    publishedPosts: publishedPostIndex,
-    staticRoutes: DEFAULT_STATIC_ROUTES,
-    skipFrontMatter: true,
-    lineOffset: record.contentStartLine
-  }));
+  validationErrors.push(
+    ...validatePostContent(record, {
+      filename: record.filename,
+      imageRoot: IMAGE_ROOT,
+      allPosts: allPostIndex,
+      publishedPosts: publishedPostIndex,
+      staticRoutes: DEFAULT_STATIC_ROUTES,
+      skipFrontMatter: true,
+      lineOffset: record.contentStartLine,
+    }),
+  );
 });
 
 const seriesOrders = new Map();
 postRecords.forEach((record) => {
-  if (record.draft || record.data.series !== true || !record.id || !record.data['series-name'] || !Number.isInteger(record.data['series-order'])) {
+  if (
+    record.draft ||
+    record.data.series !== true ||
+    !record.id ||
+    !record.data['series-name'] ||
+    !Number.isInteger(record.data['series-order'])
+  ) {
     return;
   }
 
@@ -549,7 +572,9 @@ postRecords.forEach((record) => {
   const seenOrders = seriesOrders.get(key) ?? new Map();
   const previous = seenOrders.get(order);
   if (previous) {
-    validationErrors.push(`Duplicate series-order ${order} for series "${key}" in ${record.filename}; already used by ${previous}.`);
+    validationErrors.push(
+      `Duplicate series-order ${order} for series "${key}" in ${record.filename}; already used by ${previous}.`,
+    );
   } else {
     seenOrders.set(order, record.filename);
     seriesOrders.set(key, seenOrders);
@@ -571,19 +596,21 @@ const shuoshuoRecords = shuoshuoFiles.map((filename) => {
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     ({ data, content } = matter(fileContent));
   } catch (error) {
-    validationErrors.push(`Invalid front matter in shuoshuo/${filename}: ${error instanceof Error ? error.message : String(error)}`);
+    validationErrors.push(
+      `Invalid front matter in shuoshuo/${filename}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 
   const id = typeof data.id === 'string' ? data.id.trim() : '';
   const formattedDate = formatFrontmatterDate(data.date);
-  const images = Array.isArray(data.images)
-    ? data.images.map((value) => String(value).trim()).filter(Boolean)
-    : [];
+  const images = Array.isArray(data.images) ? data.images.map((value) => String(value).trim()).filter(Boolean) : [];
 
   if (!id) {
     validationErrors.push(`Invalid front matter in shuoshuo/${filename}: id must be a non-empty string`);
   } else if (/\s|[\\/?#%"'<>]/.test(id) || id === '.' || id === '..') {
-    validationErrors.push(`Invalid front matter in shuoshuo/${filename}: id "${id}" contains characters that are unsafe in a URL`);
+    validationErrors.push(
+      `Invalid front matter in shuoshuo/${filename}: id "${id}" contains characters that are unsafe in a URL`,
+    );
   }
   if (!formattedDate || !validateDateString(formattedDate)) {
     validationErrors.push(`Invalid front matter in shuoshuo/${filename}: date must use YYYY-MM-DD format`);
@@ -595,7 +622,7 @@ const shuoshuoRecords = shuoshuoFiles.map((filename) => {
     date: formattedDate,
     images,
     content: content.trim(),
-    filePath: `/shuoshuo/${filename}`
+    filePath: `/shuoshuo/${filename}`,
   };
 });
 
@@ -604,7 +631,9 @@ shuoshuoRecords.forEach((record) => {
   if (!record.id) return;
   const previous = seenShuoShuoIds.get(record.id);
   if (previous) {
-    validationErrors.push(`Duplicate shuoshuo id "${record.id}" found in shuoshuo/${record.filename} and shuoshuo/${previous}.`);
+    validationErrors.push(
+      `Duplicate shuoshuo id "${record.id}" found in shuoshuo/${record.filename} and shuoshuo/${previous}.`,
+    );
   } else {
     seenShuoShuoIds.set(record.id, record.filename);
   }
@@ -619,13 +648,36 @@ if (validationErrors.length > 0) {
   throw new Error(validationErrors.join('\n'));
 }
 
-const postsWithSearch = postRecords.map(buildPost).filter(Boolean)
+const postsWithSearch = postRecords
+  .map(buildPost)
+  .filter(Boolean)
   .sort((a, b) => new Date(b.date) - new Date(a.date) || a.id.localeCompare(b.id));
-const posts = postsWithSearch.map(({ searchText, content, ...post }) => post);
 
 generateSiteStats(postsWithSearch);
+// 评论数：构建期从 GitHub GraphQL 拉取 Giscus 评论数（方案 A 快照）。
+// 无 token / API 失败 / 限速时优雅跳过（返回 null），页面侧不展示评论数，不阻塞构建。
+const commentCounts = await fetchCommentCounts({ posts: postsWithSearch });
+if (commentCounts) {
+  postsWithSearch.forEach((post) => {
+    const count = commentCounts.get(post.id);
+    if (count !== undefined) {
+      post.commentCount = count;
+    }
+  });
+  logger.step('Injected comment counts', `posts=${commentCounts.size}`);
+} else {
+  logger.warn('评论数获取已跳过，文章卡片将不展示评论数');
+}
+const posts = postsWithSearch.map(({ searchText, content, ...post }) => post);
 fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'posts.json'), JSON.stringify(posts, null, 2));
-fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'posts-search.json'), JSON.stringify(postsWithSearch.map(({ content, ...rest }) => rest), null, 2));
+fs.writeFileSync(
+  path.join(OUTPUT_JSON_DIR, 'posts-search.json'),
+  JSON.stringify(
+    postsWithSearch.map(({ content, ...rest }) => rest),
+    null,
+    2,
+  ),
+);
 logger.step('Generated posts data', `posts=${posts.length} sourceFiles=${files.length}`);
 
 const requiredFriendFields = ['name', 'description', 'avatar', 'url'];
@@ -641,7 +693,7 @@ const friends = friendFiles.flatMap((filename) => {
     const rawContent = fs.readFileSync(filePath, 'utf-8');
     const data = JSON.parse(rawContent);
     const missingFields = requiredFriendFields.filter(
-      (field) => typeof data[field] !== 'string' || data[field].trim() === ''
+      (field) => typeof data[field] !== 'string' || data[field].trim() === '',
     );
 
     if (missingFields.length > 0) {
@@ -668,8 +720,8 @@ const friends = friendFiles.flatMap((filename) => {
         url: friendUrl,
         // 已失联标记透传（由 friend-link-check Action 维护）：仅 true 时输出，
         // 保持产物精简；false/缺失视为正常状态。
-        ...(data.unavailable === true ? { unavailable: true } : {})
-      }
+        ...(data.unavailable === true ? { unavailable: true } : {}),
+      },
     ];
   } catch (error) {
     logger.warn('Skip invalid friend file', `${filename}: ${error.message}`);
@@ -689,9 +741,12 @@ const generateSitemap = () => {
   // 静态页面 lastmod 使用内容驱动的稳定值：取最新文章的更新时间，
   // 而非“今天”。构建日期会随每次部署变化，导致 lastmod 频繁抖动、
   // 搜索引擎反复重新抓取，而内容未变时 lastmod 变化毫无信息量。
-  const latestPostDate = posts.length > 0
-    ? new Date(Math.max(...posts.map((post) => new Date(post.updatedAt || post.date).getTime()))).toISOString().split('T')[0]
-    : new Date().toISOString().split('T')[0];
+  const latestPostDate =
+    posts.length > 0
+      ? new Date(Math.max(...posts.map((post) => new Date(post.updatedAt || post.date).getTime())))
+          .toISOString()
+          .split('T')[0]
+      : new Date().toISOString().split('T')[0];
   const staticPages = [
     { path: '', changefreq: 'daily', priority: '1.0', lastmod: latestPostDate },
     { path: 'archive', changefreq: 'daily', priority: '0.9', lastmod: latestPostDate },
@@ -703,7 +758,8 @@ const generateSitemap = () => {
     { path: 'about', changefreq: 'monthly', priority: '0.7', lastmod: latestPostDate },
     { path: 'cover', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },
     { path: 'watermark', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },
-    { path: 'sponsor', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate }
+    { path: 'sponsor', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },
+    { path: 'search', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },
   ];
   const postUrl = (post) => siteAbsoluteUrl(`/post/${post.id}`);
   const postLastmod = (post) => new Date(post.updatedAt || post.date).toISOString().split('T')[0];
@@ -719,7 +775,7 @@ const generateSitemap = () => {
     <lastmod>${page.lastmod}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
-  </url>`
+  </url>`,
     )
     .join('')}
 </urlset>`;
@@ -736,7 +792,7 @@ const generateSitemap = () => {
     <lastmod>${postLastmod(post)}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-  </url>`
+  </url>`,
     )
     .join('')}
 </urlset>`;
@@ -779,7 +835,7 @@ const generateSitemap = () => {
     <image:image>
       <image:loc>${xmlEscape(image.loc)}</image:loc>
       <image:title>${xmlEscape(image.title)}</image:title>
-    </image:image>`
+    </image:image>`,
       )
       .join('')}
   </url>`;
@@ -802,7 +858,7 @@ const generateSitemap = () => {
     <lastmod>${item.date}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
-  </url>`
+  </url>`,
     )
     .join('')}
 </urlset>`;
@@ -883,10 +939,13 @@ const generateSitemap = () => {
     'Allow: /',
     '',
     `Sitemap: ${siteAbsoluteUrl('/sitemap-index.xml')}`,
-    ''
+    '',
   ].join('\r\n');
   fs.writeFileSync(path.join(PUBLIC_DIR, 'robots.txt'), robotsTxt);
-  logger.step('Generated sitemaps', `pages=${staticPages.length} posts=${posts.length} shuoshuo=${shuoshuo.length} imageSitemap=1 index=1`);
+  logger.step(
+    'Generated sitemaps',
+    `pages=${staticPages.length} posts=${posts.length} shuoshuo=${shuoshuo.length} imageSitemap=1 index=1`,
+  );
 };
 
 const generateRss = () => {
@@ -895,7 +954,7 @@ const generateRss = () => {
     basePath: BASE_PATH,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    author: AUTHOR_NAME
+    author: AUTHOR_NAME,
   });
 
   fs.writeFileSync(path.join(PUBLIC_DIR, 'feed.xml'), rssContent);
@@ -909,7 +968,7 @@ const generateRss = () => {
 const generateLlmsTxt = () => {
   const sortedPosts = [...posts].sort((a, b) => (a.date === b.date ? 0 : a.date > b.date ? -1 : 1));
   const postLines = sortedPosts.map(
-    (post) => `- [${post.title}](${siteAbsoluteUrl(`/post/${post.id}`)}): ${post.excerpt.replace(/\n+/g, ' ').trim()}`
+    (post) => `- [${post.title}](${siteAbsoluteUrl(`/post/${post.id}`)}): ${post.excerpt.replace(/\n+/g, ' ').trim()}`,
   );
   // 说说为短动态，直接把剥离后的纯文本附在链接后，便于智能体直接读取内容。
   const shuoshuoLines = shuoshuo.map((item) => {
@@ -944,17 +1003,69 @@ const generateLlmsTxt = () => {
     '## 说说',
     '',
     ...shuoshuoLines,
-    ''
+    '',
+    '## 全文版',
+    '',
+    `Full-text version: ${siteAbsoluteUrl('/llms-full.txt')}`,
+    '',
   ].join('\n');
 
   fs.writeFileSync(path.join(PUBLIC_DIR, 'llms.txt'), content);
   logger.step('Generated llms.txt', `posts=${posts.length} shuoshuo=${shuoshuo.length}`);
 };
 
+/**
+ * llms-full.txt：llms.txt 规范的可选全文扩展（https://llmstxt.org）。
+ * 面向 LLM 的全站文章全文版：站点标题 + 文章目录（链接）+ 每篇全文
+ * （篇名 H1 + Markdown 正文，篇间以 --- 分隔）。
+ *
+ * 数据源为 buildPost 已剥离 front matter 的 content（与 posts.json / posts-search.json
+ * 同一过滤口径：draft 已剔除、正文为空时跳过并记录日志），排序与 llms.txt 一致（新 → 旧）。
+ */
+const generateLlmsFullTxt = () => {
+  const sortedPosts = [...postsWithSearch].sort((a, b) => (a.date === b.date ? 0 : a.date > b.date ? -1 : 1));
+  const tocLines = sortedPosts.map((post) => `- [${post.title}](${siteAbsoluteUrl(`/post/${post.id}`)})`);
+  const sections = [];
+  for (const post of sortedPosts) {
+    // 规范化行尾（源文件可能为 CRLF），保证全文文件为纯 LF 换行。
+    const body = String(post.content || '')
+      .replace(/\r\n?/g, '\n')
+      .trim();
+    if (!body) {
+      logger.warn('Skip post without body in llms-full.txt', `id=${post.id}`);
+      continue;
+    }
+    // 每篇以篇名 H1 开头（正文自带标题保留为内容的一部分），保证智能体能一眼识别文章边界。
+    sections.push(`# ${post.title}
+
+${body}`);
+  }
+
+  const content = [
+    `# ${SITE_TITLE} - 全文版`,
+    '',
+    `> ${SITE_DESCRIPTION}`,
+    '',
+    '## 文章目录',
+    '',
+    ...tocLines,
+    '',
+    '---',
+    '',
+    sections.join('\n\n---\n\n'),
+    '',
+  ].join('\n');
+
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'llms-full.txt'), content);
+  const sizeKiB = (Buffer.byteLength(content, 'utf8') / 1024).toFixed(1);
+  logger.step('Generated llms-full.txt', `posts=${sections.length} size=${sizeKiB}KiB`);
+};
+
 try {
   generateSitemap();
   generateRss();
   generateLlmsTxt();
+  generateLlmsFullTxt();
 } catch (error) {
   // 生成阶段的 I/O 或序列化失败（磁盘满、权限、畸形配置）：
   // 结构化记录后以非零码退出，阻止带缺文件件的产物继续构建。
@@ -963,13 +1074,20 @@ try {
 }
 
 if (process.exitCode) {
-  logger.summary({ posts: posts.length, friends: friends.length, shuoshuo: shuoshuo.length, outputs: 7, siteUrl: SITE_URL, status: 'failed' });
+  logger.summary({
+    posts: posts.length,
+    friends: friends.length,
+    shuoshuo: shuoshuo.length,
+    outputs: 7,
+    siteUrl: SITE_URL,
+    status: 'failed',
+  });
 } else {
   logger.summary({
     posts: posts.length,
     friends: friends.length,
     shuoshuo: shuoshuo.length,
     outputs: 7,
-    siteUrl: SITE_URL
+    siteUrl: SITE_URL,
   });
 }
