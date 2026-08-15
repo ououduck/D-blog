@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
@@ -59,7 +59,7 @@ const getMermaidConfig = (isDark: boolean) => ({
   // Keep labels in SVG text nodes so DOMPurify's SVG profile preserves them.
   htmlLabels: false,
   theme: 'base',
-  flowchart: { htmlLabels: false, curve: 'basis', padding: 16 },
+  flowchart: { htmlLabels: false, curve: 'basis', padding: 16, useMaxWidth: true },
   sequence: { useMaxWidth: true, diagramMarginX: 24, diagramMarginY: 20 },
   themeVariables: isDark
     ? {
@@ -431,14 +431,41 @@ const MERMAID_ZOOM_STEP = 0.25;
 
 const clampMermaidScale = (scale: number) => Math.min(MERMAID_MAX_SCALE, Math.max(MERMAID_MIN_SCALE, scale));
 
+/**
+ * 从渲染后的 <svg> 读取图表自然宽度（viewBox 宽 / 数值型 width 属性 / 内联
+ * max-width 三者取最大）。用于把基础视图限制在图表原始尺寸内，避免容器比
+ * 图表宽时被 CSS 拉伸放大而变糊。
+ */
+const getMermaidNaturalWidth = (svgElement: SVGSVGElement): number => {
+  const viewBox = svgElement.getAttribute('viewBox');
+  const viewBoxMatch = viewBox?.match(/(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s*$/);
+  const viewBoxWidth = viewBoxMatch ? Number.parseFloat(viewBoxMatch[1]) : 0;
+  const widthAttr = svgElement.getAttribute('width');
+  const attrWidth = widthAttr && /^\d+(?:\.\d+)?$/.test(widthAttr) ? Number.parseFloat(widthAttr) : 0;
+  const inlineMaxWidth = svgElement.style?.maxWidth ? Number.parseFloat(svgElement.style.maxWidth) : 0;
+  const natural = Math.max(viewBoxWidth, attrWidth, inlineMaxWidth);
+  return Number.isFinite(natural) && natural > 0 ? natural : 0;
+};
+
 function MermaidBlock({ children, renderer, theme }: { children: string; renderer: MermaidRenderer | null; theme: 'light' | 'dark' }) {
   const [svg, setSvg] = useState('');
   const [status, setStatus] = useState<MermaidStatus>('idle');
   const [scale, setScale] = useState(MERMAID_MIN_SCALE);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  /** 图表在 scale=1 时适配容器后的实际宽度（矢量缩放的基准尺寸）。 */
+  const [fitWidth, setFitWidth] = useState(0);
+  /** 图表自然宽度（viewBox），用于限制基础视图不超出原始尺寸。 */
+  const [naturalWidth, setNaturalWidth] = useState(0);
   const mermaidIdRef = useRef<string | null>(null);
   const dragRef = useRef({ pointerId: -1, startX: 0, startY: 0, startPositionX: 0, startPositionY: 0 });
+  const diagramRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const scaleRef = useRef(scale);
+
+  useEffect(() => {
+    scaleRef.current = scale;
+  }, [scale]);
 
   const getMermaidId = () => {
     if (mermaidIdRef.current === null) {
@@ -495,6 +522,45 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
       cancelled = true;
     };
   }, [children, renderer, theme]);
+
+  // 拿到注入后的 <svg>，读取其自然宽度（viewBox），用于限制拉伸并作为矢量缩放基准。
+  useLayoutEffect(() => {
+    const element = svg ? (diagramRef.current?.querySelector('svg') ?? null) : null;
+    svgRef.current = element;
+    setNaturalWidth(element ? getMermaidNaturalWidth(element) : 0);
+  }, [svg]);
+
+  // 采样 scale=1 时图表容器的实际宽度作为缩放基准；缩放状态下容器会随 SVG
+  // 变宽（.is-zoomed 的 max-content），因此只在未缩放时更新，避免反馈循环。
+  useEffect(() => {
+    const element = diagramRef.current;
+    if (!element) return;
+    const updateFitWidth = () => {
+      if (scaleRef.current <= MERMAID_MIN_SCALE && element.clientWidth > 0) {
+        setFitWidth(element.clientWidth);
+      }
+    };
+    updateFitWidth();
+    const observer = new ResizeObserver(updateFitWidth);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [svg]);
+
+  // 矢量缩放：直接调整 <svg> 的显示宽度，让浏览器按 viewBox 重新光栅化。
+  // 不使用 CSS transform: scale —— 那会直接放大已光栅化的图层，文字必然变糊。
+  useLayoutEffect(() => {
+    const element = svgRef.current;
+    if (!element) return;
+    if (scale > MERMAID_MIN_SCALE && fitWidth > 0) {
+      element.style.width = `${fitWidth * scale}px`;
+      element.style.maxWidth = 'none';
+    } else {
+      element.style.width = '100%';
+      // 基础视图：不超过容器宽度，同时不超过图表自然宽度（防止被拉伸放大变糊）。
+      element.style.maxWidth = naturalWidth > 0 ? `min(100%, ${naturalWidth}px)` : '100%';
+    }
+    element.style.height = 'auto';
+  }, [svg, scale, fitWidth, naturalWidth]);
 
   useEffect(() => {
     if (scale <= MERMAID_MIN_SCALE) {
@@ -616,8 +682,18 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
         onDoubleClick={handleDoubleClick}
         onKeyDown={handleKeyDown}
       >
-        <div className="mermaid-scene" style={{ transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${scale})` }}>
-          <div className="mermaid-diagram" dangerouslySetInnerHTML={{ __html: sanitizedSvg }} />
+        <div
+          className="mermaid-scene"
+          style={{
+            // 未缩放且未平移时保持 transform: none：任何非 none 的 transform（包括
+            // translate3d(0,0,0)）都会让浏览器把 SVG 图层化光栅化，缩放或下采样时
+            // 文字变糊。缩放改为直接调整 SVG 宽度（矢量重绘），这里只负责平移。
+            transform: scale > MERMAID_MIN_SCALE || position.x !== 0 || position.y !== 0
+              ? `translate3d(${position.x}px, ${position.y}px, 0)`
+              : 'none'
+          }}
+        >
+          <div className="mermaid-diagram" ref={diagramRef} dangerouslySetInnerHTML={{ __html: sanitizedSvg }} />
         </div>
       </div>
       <p className="mermaid-hint">滚轮或按钮缩放 · 放大后拖动平移 · 双击切换 · 按 0 重置</p>

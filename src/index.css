@@ -943,7 +943,6 @@ html.theme-switching .editorial-input {
     justify-content: center;
     padding: clamp(1rem, 3vw, 2rem);
     transform-origin: center top;
-    will-change: transform;
   }
 
   .mermaid-diagram {
@@ -952,11 +951,14 @@ html.theme-switching .editorial-input {
     justify-content: center;
   }
 
+  /* 尺寸交给 mermaid 输出的 width="100%" + 内联 max-width（自然尺寸上限）控制，
+     这里只兜底：max-width 限制不超出容器、height:auto 保持 viewBox 宽高比。
+     注意不要加 width:auto —— 它会把 <svg> 当无固有尺寸的替换元素缩成默认
+     300px 宽，文字被压成几像素的糊点（曾导致图表"渲染后糊看不清"）。 */
   .mermaid-diagram > svg {
     display: block;
-    width: auto !important;
-    max-width: 100% !important;
-    height: auto !important;
+    max-width: 100%;
+    height: auto;
     overflow: visible;
   }
 
@@ -968,6 +970,13 @@ html.theme-switching .editorial-input {
 
   .mermaid-viewport.is-zoomed .mermaid-diagram > svg {
     max-width: none !important;
+  }
+
+  /* 仅在缩放/拖动等交互态提升合成层（平移更顺滑）。空闲态保持不提升，
+     避免 SVG 被图层化后按错误尺寸光栅化导致文字变糊。 */
+  .mermaid-viewport.is-zoomed .mermaid-scene,
+  .mermaid-viewport.is-dragging .mermaid-scene {
+    will-change: transform;
   }
 
 html.dark .mermaid-diagram > svg {
