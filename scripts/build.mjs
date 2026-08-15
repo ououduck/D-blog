@@ -85,7 +85,9 @@ const run = ({ command, args }) => new Promise((resolve) => {
     stdio: 'inherit',
     env: {
       ...process.env,
-      BUILD_VERBOSE: verbose ? '1' : undefined,
+      // 条件展开而非显式 undefined：Node 会把 env 中的 undefined 值序列化为
+      // 字符串 "undefined" 注入子进程，污染其环境变量。
+      ...(verbose ? { BUILD_VERBOSE: '1' } : {}),
       FORCE_COLOR: '0',
       NO_COLOR: '1'
     }
@@ -122,7 +124,8 @@ const run = ({ command, args }) => new Promise((resolve) => {
   });
 });
 
-const isOk = (result) => result === 'ok' || (result && typeof result === 'object' && result.code === 0 && !result.spawnError);
+// run() 只 resolve 'timeout' 或 { code, signal, spawnError }，成功即 code === 0 且无 spawn 错误。
+const isOk = (result) => result && typeof result === 'object' && result.code === 0 && !result.spawnError;
 
 const describeFailure = (result) => {
   if (result === 'timeout') return 'killed by stage timeout';

@@ -10,7 +10,6 @@ const FALLBACK_BACKGROUND = '#667eea';
 function imageDimensions(image: CanvasImageSource): { width: number; height: number } {
   if ('naturalWidth' in image) return { width: image.naturalWidth, height: image.naturalHeight };
   if ('videoWidth' in image) return { width: image.videoWidth, height: image.videoHeight };
-  if ('displayWidth' in image) return { width: image.displayWidth, height: image.displayHeight };
   if ('width' in image && typeof image.width === 'number') return { width: image.width, height: image.height as number };
   if (typeof SVGImageElement !== 'undefined' && image instanceof SVGImageElement) return { width: image.width.baseVal.value, height: image.height.baseVal.value };
   throw new Error('无法读取图片尺寸');
@@ -20,8 +19,10 @@ function gradientPoints(width: number, height: number, angle: number): [number, 
   const radians = (angle - 90) * Math.PI / 180;
   const radius = Math.abs(width * Math.cos(radians)) / 2 + Math.abs(height * Math.sin(radians)) / 2;
   const cx = width / 2; const cy = height / 2;
-  return [cx + Math.cos(radians) * radius, cy + Math.sin(radians) * radius,
-    cx - Math.cos(radians) * radius, cy - Math.sin(radians) * radius];
+  // CSS linear-gradient(angle) 中角度指向渐变线终点（100% 色标），0% 色标位于
+  // 角度反方向：起点取反，首色才能落在 CSS 语义一致的位置（如 90deg → 左→右）。
+  return [cx - Math.cos(radians) * radius, cy - Math.sin(radians) * radius,
+    cx + Math.cos(radians) * radius, cy + Math.sin(radians) * radius];
 }
 
 function createTemplateFill(ctx: CanvasRenderingContext2D, value: string, width: number, height: number): string | CanvasGradient {

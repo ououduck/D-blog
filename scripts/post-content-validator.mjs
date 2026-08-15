@@ -347,7 +347,7 @@ export const validatePostContent = (post, context = {}) => {
         errors.push(lineError(filename, link.line + lineOffset, `link "${link.rawTarget}" targets a missing or draft article`));
         return;
       }
-    } else if (!staticRoutes.has(pathname)) {
+    } else if (!staticRoutes.has(pathname) && !/^\/shuoshuo\/[^/]+$/.test(pathname)) {
       errors.push(lineError(filename, link.line + lineOffset, `link "${link.rawTarget}" targets an unknown site route`));
       return;
     }

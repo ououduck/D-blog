@@ -103,7 +103,10 @@ const decodeHtmlEntities = (text) => text.replace(/&(#x[\da-f]+|#\d+|[a-z][a-z\d
     const codePoint = Number.parseInt(normalized.slice(1), 10);
     return isValidCodePoint(codePoint) ? String.fromCodePoint(codePoint) : entity;
   }
-  return HTML_ENTITY_REPLACEMENTS[normalized] ?? entity;
+  // 先按原始大小写查表（&Dagger; → ‡、&Prime; → ″、&Omega; → Ω 等大写键），
+  // 再退回小写（HTML 实体名大小写不敏感，但表中同时存在 dagger/Dagger 时
+  // 直接小写会把 &Dagger; 错解成 †）。
+  return HTML_ENTITY_REPLACEMENTS[value] ?? HTML_ENTITY_REPLACEMENTS[normalized] ?? entity;
 });
 
 /** Mask fenced and indented code while preserving line breaks for diagnostics and heading parsing. */

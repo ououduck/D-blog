@@ -9,9 +9,8 @@ export const isPinnedFeaturedPost = (post: FeaturedPostFields) => (
 );
 
 /**
- * Select the post used for the home page's featured slot.
- * Explicit featured pinning wins over the featured flag, with the smallest
- * featured-top value taking precedence.
+ * 选取首页精选槽位的文章：显式置顶（featured-top）优先于普通 featured 标记，
+ * 多个置顶时取 featured-top 最小者。
  */
 export const getHeroPost = <T extends FeaturedPostFields>(posts: T[]): T | null => {
   const pinnedPost = posts

@@ -64,7 +64,7 @@ const resolveLinkUrl = (value, { siteUrl, basePath, postUrl }) => {
   return toAbsoluteSiteUrl(rawUrl, siteUrl, basePath);
 };
 
-const resolveImageUrl = (value, { siteUrl, basePath, postId }) => {
+const resolveImageUrl = (value, { siteUrl, basePath }) => {
   const rawUrl = stripMarkdownUrlDecorators(value);
   if (!rawUrl) {
     return undefined;

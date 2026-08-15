@@ -54,6 +54,9 @@ export interface SiteConfig {
   subtitle: string;
   /** 站点头条：首页 <title> 与 og:title 使用（含关键词，利于首页排名）。 */
   seoHomeTitle?: string;
+  /** 首页 SEO 描述：仅用于 meta description / og:description / twitter:description 与站点级 schema，
+      不改变页面可见文案（首页 Hero 与页脚可见文案仍使用 description）。 */
+  seoHomeDescription?: string;
   description: string;
   logo: string;
   logoSmall: string;

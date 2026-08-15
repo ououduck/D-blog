@@ -246,7 +246,7 @@ export const ArchivePage = () => {
 
   return (
     <div className="pb-8 md:pb-14">
-      <Seo title="归档" description="D-blog 全站文章时间线，按年与月份归档全部技术分享、工具测评，快速回顾历史内容与更新轨迹。" />
+      <Seo title="归档" description="D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评与折腾记录，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。" />
 
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-zinc-200 pb-5 dark:border-zinc-800 md:pb-6">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">

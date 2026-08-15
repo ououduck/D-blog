@@ -167,17 +167,20 @@ export const Seo: React.FC<SeoProps> = ({
   const fullTitle = title === siteConfig.title
     ? (siteConfig.seoHomeTitle || siteConfig.title)
     : `${title} - ${siteConfig.title}`;
+  const fullDescription = title === siteConfig.title && siteConfig.seoHomeDescription
+    ? siteConfig.seoHomeDescription
+    : description;
   const isSearchVariant = hasSearchParam(resolvedUrl);
   const canonicalUrl = toAbsoluteUrl(buildCanonicalPath(resolvedUrl || '/'));
   const imageUrl = toAbsoluteUrl(image);
   const schema = structuredData
     ? (Array.isArray(structuredData) ? structuredData : [structuredData]).map(withBaseUrls) as Array<Record<string, unknown>>
-    : buildSiteSchemas(description);
+    : buildSiteSchemas(fullDescription);
 
   return (
     <Helmet>
       <title>{fullTitle}</title>
-      <meta name="description" content={description} />
+      <meta name="description" content={fullDescription} />
       <meta name="author" content={siteConfig.author.name} />
       <meta key="robots" name="robots" content={noindex || isSearchVariant ? 'noindex,follow' : 'index,follow,max-image-preview:large'} />
       {keywords && <meta name="keywords" content={keywords} />}
@@ -192,7 +195,7 @@ export const Seo: React.FC<SeoProps> = ({
       <meta property="og:site_name" content={siteConfig.title} />
       <meta property="og:type" content={type} />
       <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
+      <meta property="og:description" content={fullDescription} />
       <meta property="og:image" content={imageUrl} />
       <meta property="og:image:alt" content={fullTitle} />
       {/* 显式声明分享图尺寸：社交平台抓取时可立即按比例裁剪展示，避免二次探测请求 */}
@@ -207,7 +210,7 @@ export const Seo: React.FC<SeoProps> = ({
 
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
+      <meta name="twitter:description" content={fullDescription} />
       <meta name="twitter:image" content={imageUrl} />
       <meta name="twitter:image:alt" content={fullTitle} />
       <meta name="twitter:url" content={canonicalUrl} />

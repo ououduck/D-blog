@@ -128,7 +128,9 @@ for (const file of files) {
   if (!ogProps.title) fail(relativePath, 'og', '缺少 og:title');
   if (!ogProps.description) fail(relativePath, 'og', '缺少 og:description');
   if (!ogProps.image) fail(relativePath, 'og', '缺少 og:image');
-  else if (!/^https:\/\//.test(ogProps.image)) fail(relativePath, 'og', `og:image 非绝对 https URL：${ogProps.image}`);
+  // og:image 允许指向任意图床/CDN 域名，仅要求绝对 http(s) URL
+  // （http://localhost 本地预览也通过；data:/blob: 等动态协议拒绝）。
+  else if (!/^https?:\/\//i.test(ogProps.image)) fail(relativePath, 'og', `og:image 非绝对 http(s) URL：${ogProps.image}`);
   if (!ogProps.url) fail(relativePath, 'og', '缺少 og:url');
   else if (!ogProps.url.startsWith(SITE_URL)) fail(relativePath, 'og', `og:url 非站点 URL：${ogProps.url}`);
   if (ogProps.type !== 'website' && ogProps.type !== 'article') warn(relativePath, 'og', `og:type 异常：${ogProps.type}`);
@@ -192,7 +194,7 @@ for (const file of files) {
 
   // ---- 图片 alt ----
   const imgs = [...html.matchAll(/<img\b[^>]*>/gi)];
-  const missingAlt = imgs.filter((m) => !/\balt=["']/.test(m[0]) && !/aria-hidden/.test(m[0]));
+  const missingAlt = imgs.filter((m) => !/\balt\s*=\s*["']/.test(m[0]) && !/aria-hidden/.test(m[0]));
   if (missingAlt.length > 0) warn(relativePath, 'img-alt', `${missingAlt.length}/${imgs.length} 张图片缺少 alt`);
 
   // ---- 内部链接 ----

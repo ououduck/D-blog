@@ -61,7 +61,8 @@ const extractRootContent = (html) => {
 };
 const warnings = [];
 const errors = [];
-const localStylesheetPattern = /<link\b[^>]*\brel=["']stylesheet["'][^>]*\bhref=["']([^"']+)["'][^>]*>/gi;
+// 属性顺序无关：<link> 上同时存在 rel="stylesheet" 与 href，二者任意先后都能匹配。
+const localStylesheetPattern = /<link\b(?=[^>]*\brel=["']stylesheet["'])(?=[^>]*\bhref=["']([^"']+)["'])[^>]*>/gi;
 const localAssetPattern = /^(?:.*\/)?assets\/(.+\.css)$/;
 const localStylesheets = new Set();
 

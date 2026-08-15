@@ -141,9 +141,27 @@ const flattenSuspenseBoundaries = (html) => {
   };
 
   let result = html;
-  let match;
   let iterations = 0;
-  while ((match = rcCallPattern.exec(result)) !== null) {
+  // 只扫描 <script>…</script> 区域内的 $RC 调用：React 的序列化恢复调用
+  // 必定位于 <script> 内；全文匹配会把文章正文里的字面量 $RC("B:x","S:x")
+  // （例如讲解 React 水合原理的代码示例）误当成序列化标记，经防御路径
+  // 静默删除该段正文。逐区域扫描天然排除正文与属性中的字面量。
+  let searchFrom = 0;
+  while (searchFrom < result.length) {
+    const scriptStart = result.indexOf('<script', searchFrom);
+    if (scriptStart < 0) break;
+    const scriptClose = result.indexOf('</script>', scriptStart);
+    // 防御：script 缺少闭合标签（畸形输出）时放弃剩余扫描，保留原始标记。
+    if (scriptClose < 0) break;
+    const scriptEnd = scriptClose + '</script>'.length;
+    const scriptContent = result.slice(scriptStart, scriptEnd);
+    const match = rcCallPattern.exec(scriptContent);
+    if (!match) {
+      // 该 script 内没有 $RC 调用，继续扫描下一个 script 区域。
+      searchFrom = scriptEnd;
+      continue;
+    }
+
     iterations += 1;
     // 防御：迭代次数超限立即停止，保留剩余原始标记（内容优先于展平）。
     if (iterations > MAX_FLATTEN_ITERATIONS) {
@@ -154,19 +172,17 @@ const flattenSuspenseBoundaries = (html) => {
     const boundaryId = match[1];
     const hiddenId = match[2];
 
-    const scriptStart = result.lastIndexOf('<script', match.index);
-    const scriptEnd = scriptStart >= 0
-      ? result.indexOf('</script>', match.index) + '</script>'.length
-      : -1;
     const templateIdx = result.indexOf(`<template id="${boundaryId}">`);
     const hidden = templateIdx >= 0 ? findHiddenDivContent(result, hiddenId) : null;
     const fallbackStart = templateIdx >= 0 ? result.lastIndexOf('<!--$?-->', templateIdx) : -1;
     const fallbackEndIdx = templateIdx >= 0 ? result.indexOf('<!--/$-->', templateIdx) : -1;
 
-    if (scriptStart < 0 || scriptEnd <= scriptStart || !hidden || fallbackStart < 0 || fallbackEndIdx < 0) {
+    if (!hidden || fallbackStart < 0 || fallbackEndIdx < 0) {
       // 防御路径：输出异常时该边界无法配对处理。只摘除调用文本避免死循环，
       // 其余序列化标记原样保留，浏览器仍能按未展平的方式水合该边界。
-      result = result.slice(0, match.index) + result.slice(match.index + match[0].length);
+      const removeStart = scriptStart + match.index;
+      result = result.slice(0, removeStart) + result.slice(removeStart + match[0].length);
+      searchFrom = removeStart + match[0].length;
       continue;
     }
 
@@ -175,14 +191,17 @@ const flattenSuspenseBoundaries = (html) => {
     result = result.slice(0, scriptStart) + result.slice(scriptEnd);
     result = result.slice(0, hidden.start) + result.slice(hidden.end);
     result = result.slice(0, fallbackStart) + `<!--$-->${hidden.content}<!--/$-->` + result.slice(fallbackEnd);
+    // 三处编辑后索引整体前移，重置游标从头部重新扫描（每轮至少移除一个 script）。
+    searchFrom = 0;
   }
   return result;
 };
 
-const createImagePreload = (imageUrl, imagesizes) => {
+const createImagePreload = (imageUrl) => {
   if (!imageUrl) return '';
-  const sizesAttr = imagesizes ? ` imagesizes="${escapeHtmlAttribute(imagesizes)}"` : '';
-  return `\n    <link rel="preload" as="image" href="${escapeHtmlAttribute(imageUrl)}" fetchpriority="high"${sizesAttr}>`;
+  // 文章封面 <img> 为单变体（仅 src，无 srcset），preload 的 href 与其一致；
+  // 不输出 imagesizes —— 该属性脱离 imagesrcset 会被浏览器忽略，纯属噪声。
+  return `\n    <link rel="preload" as="image" href="${escapeHtmlAttribute(imageUrl)}" fetchpriority="high">`;
 };
 
 /**
@@ -388,7 +407,7 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   };
 
   const staticPages = [
-    { path: 'archive', title: `归档 - ${siteConfig.title}`, description: 'D-blog 全站文章时间线，按年与月份归档全部技术分享、工具测评，快速回顾历史内容与更新轨迹。', schemaType: 'CollectionPage' },
+    { path: 'archive', title: `归档 - ${siteConfig.title}`, description: 'D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评与折腾记录，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。', schemaType: 'CollectionPage' },
     { path: 'tags', title: `标签 - ${siteConfig.title}`, description: 'D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。', schemaType: 'CollectionPage' },
     { path: 'stats', title: `统计 - ${siteConfig.title}`, description: 'D-blog 站点数据统计面板，展示文章总数、累计字数、分类与标签分布、图片与代码规模等核心内容数据。', schemaType: 'WebPage' },
     { path: 'about', title: `关于 - ${siteConfig.title}`, description: '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。', schemaType: 'ProfilePage' },
@@ -436,7 +455,7 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
       continue;
     }
     const extraHead = post.coverImage
-      ? createImagePreload(toAbsoluteUrl(post.coverImage, SITE_URL, BASE_PATH), '(max-width: 767px) 100vw, (max-width: 1279px) 80vw, 1024px')
+      ? createImagePreload(toAbsoluteUrl(post.coverImage, SITE_URL, BASE_PATH))
       : '';
     try {
       await writePage(`/post/${post.id}`, `post/${post.id}`, extraHead);
@@ -456,7 +475,7 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
     }
     const firstImage = Array.isArray(item.images) ? item.images[0] : undefined;
     const extraHead = firstImage
-      ? createImagePreload(toAbsoluteUrl(firstImage, SITE_URL, BASE_PATH), '(max-width: 640px) 80vw, 384px')
+      ? createImagePreload(toAbsoluteUrl(firstImage, SITE_URL, BASE_PATH))
       : '';
     try {
       await writePage(`/shuoshuo/${item.id}`, `shuoshuo/${item.id}`, extraHead);
@@ -490,7 +509,7 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
     return pinnedPosts[0] || posts.find((post) => post.featured === true) || null;
   })();
   const homeExtraHead = homeHeroPost?.coverImage
-    ? createImagePreload(toAbsoluteUrl(homeHeroPost.coverImage, SITE_URL, BASE_PATH), '(max-width: 767px) 100vw, 60vw')
+    ? createImagePreload(toAbsoluteUrl(homeHeroPost.coverImage, SITE_URL, BASE_PATH))
     : '';
   if (budgetExceeded()) {
     skippedPages.push('/');

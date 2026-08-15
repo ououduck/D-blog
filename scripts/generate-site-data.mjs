@@ -145,7 +145,7 @@ const countImages = (markdown) => parseMarkdownImages(markdown).length;
 
 // 外链图片（图床）无法在构建期读取尺寸：coverWidth/coverHeight 恒为空，
 // 由前端 CSS aspect-ratio 兜底；正文图片维度（imageDimensions）也一并停用。
-// 本地图片路径已废弃，post-content-validator 会直接拒绝。
+// 本地 posts-img/ 路径仍被 post-content-validator 校验（文件必须存在）。
 
 const generateSiteStats = (postsWithSearch) => {
   const totalPosts = postsWithSearch.length;
@@ -284,7 +284,12 @@ const formatFrontmatterDate = (value) => {
 };
 
 const CONTENT_CONFIG_FILE = path.join(__dirname, '../config/content.config.json');
-const contentConfig = JSON.parse(fs.readFileSync(CONTENT_CONFIG_FILE, 'utf-8'));
+let contentConfig;
+try {
+  contentConfig = JSON.parse(fs.readFileSync(CONTENT_CONFIG_FILE, 'utf-8'));
+} catch (error) {
+  throw new Error(`Failed to load ${CONTENT_CONFIG_FILE}: ${error instanceof Error ? error.message : String(error)}`);
+}
 const POST_CATEGORIES = Array.isArray(contentConfig.postCategories) && contentConfig.postCategories.length > 0
   ? contentConfig.postCategories
   : ['其他'];
@@ -497,9 +502,6 @@ const buildPost = (record) => {
   const seriesName = isSeries && typeof data['series-name'] === 'string' ? data['series-name'].trim() : undefined;
   const seriesOrder = isSeries && Number.isInteger(data['series-order']) ? data['series-order'] : undefined;
 
-  if (!formattedDate) {
-    validationErrors.push(`Invalid front matter in ${filename}: date must use YYYY-MM-DD format`);
-  }
   return draft ? null : {
     ...restData,
     // 核心业务字段显式传递（Phase 4 修复）：title/excerpt 原本依赖 restData 透传，
@@ -891,7 +893,7 @@ const generateRss = () => {
  * 提供站点简介与文章链接列表，便于智能体浏览时快速定位内容。
  */
 const generateLlmsTxt = () => {
-  const sortedPosts = [...posts].sort((a, b) => (a.date > b.date ? -1 : 1));
+  const sortedPosts = [...posts].sort((a, b) => (a.date === b.date ? 0 : a.date > b.date ? -1 : 1));
   const postLines = sortedPosts.map(
     (post) => `- [${post.title}](${siteAbsoluteUrl(`/post/${post.id}`)}): ${post.excerpt.replace(/\n+/g, ' ').trim()}`
   );

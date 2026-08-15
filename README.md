@@ -19,7 +19,7 @@
 - **增强渲染**：代码高亮（diff 行高亮、文件名、折叠、行号复制、换行开关）、KaTeX 公式、Mermaid 图表、GFM 表格、图片预览、DOMPurify 净化，按正文内容按需懒加载
 - **全文搜索**：构建时生成索引，多维度权重评分，支持范围筛选与搜索历史
 - **阅读体验**：目录导航、阅读进度恢复、专注阅读模式、深色模式图片柔和降亮、CC BY-SA 4.0 声明、标题锚点复制链接
-- **分享与互动**：分享弹窗、竖版分享海报（Canvas 本地绘制）；Giscus 评论区懒加载；独立留言板（`/guestbook`）
+- **分享与互动**：分享弹窗、竖版分享海报（Canvas 本地绘制）；Giscus 评论区懒加载；独立留言板（`/guestbook`）；每条说说有独立页（`/shuoshuo/<id>`）与链接分享
 - **内置工具箱**：封面生成器（`/cover`）、水印工具（`/watermark`，图片不离开浏览器）
 - **文章导航**：上一篇/下一篇（`Alt + ←/→`）、系列文章、面包屑、相关推荐
 - **主题系统**：浅色/深色/跟随系统，CSS View Transitions 过渡
@@ -137,7 +137,7 @@ export const format = (value: string) => value.trim();
 
 ### 友链申请
 
-在友链页面展开「申请友链」，按步骤完成 GitHub Issue 申请：先添加本站友链 → 登录 GitHub → 填写资料 → 提交 Issue → Actions 自动校验反链后写入 `friends/`。
+在友链页面展开「申请友链」，按步骤完成 GitHub Issue 申请：先添加本站友链 → 登录 GitHub → 填写资料 → 提交 Issue → Actions 自动校验反链后写入 `friends/`。可手动运行「检查友链可用状态」：失联友链归入页面的「已失联的博客」折叠板块，恢复后自动回到主列表。
 
 ### 说说
 
@@ -176,8 +176,8 @@ images:
 | `npm run migrate:images` | 批量迁移本地图片至图床（支持 `--dry-run`） |
 | `npm run gen:data` | 数据生成 + 全量校验 |
 | `npm run ssg` | 仅执行 SSG 预渲染（需先完成两端构建） |
-| `npm run audit:build` | 构建产物完整性审计（HTML / SEO 标签 / 体积） |
-| `npm run audit:seo` | SEO 清单审计（全站页面，已接入 build） |
+| `npm run audit:build` | 构建产物完整性审计（HTML / 标签 / 体积，已接入 build） |
+| `npm run audit:seo` | 全站 SEO 清单审计（已接入 build） |
 | `npm run typecheck` / `check` | TypeScript 类型检查 / 类型检查 + 数据校验 |
 
 ## 部署
