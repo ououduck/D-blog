@@ -8,7 +8,7 @@
 }
 
 @layer base {
-  /* Smooth scrolling */
+  /* 平滑滚动 */
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
@@ -32,7 +32,7 @@
     color: #fafafa;
   }
 
-  /* Neutral focus states */
+  /* 中性焦点态（不依赖主题色的 focus 样式） */
   :focus-visible {
     outline: 2px solid #3f3f46;
     outline-offset: 3px;
@@ -42,7 +42,7 @@
     outline-color: #d4d4d8;
   }
 
-  /* View Transition for Theme Toggle */
+  /* 主题切换的 View Transition 动画 */
   ::view-transition-old(root),
   ::view-transition-new(root),
   ::view-transition-old(route-content),
@@ -189,7 +189,7 @@ html.theme-switching .editorial-input {
     color: #fafafa;
   }
 
-  /* Custom scrollbar */
+  /* 自定义滚动条 */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
