@@ -1,3 +1,7 @@
+/**
+ * 友链申请表单的纯函数校验与文件名归一化：字段必填/URL 合法性/头像地址/
+ * 反链确认，以及提交文件名的安全净化（供好友申请向导与 bot 共用口径）。
+ */
 const FRIEND_LINK_FIELDS = ['name', 'description', 'avatar', 'url', 'friendPageUrl', 'contact'] as const;
 type FriendLinkField = (typeof FRIEND_LINK_FIELDS)[number];
 

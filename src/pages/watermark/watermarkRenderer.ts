@@ -1,3 +1,7 @@
+/**
+ * 水印渲染工具：把文字水印绘制到图片 canvas，支持九个位置锚点、旋转、
+ * 缩放与透明度参数，供水印工具页调用。
+ */
 export type WatermarkPosition =
   | 'top-left'
   | 'top-center'

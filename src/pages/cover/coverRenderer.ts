@@ -1,3 +1,7 @@
+/**
+ * 封面画布渲染器：按布局计算结果把文字/图标/背景图绘制到 canvas，
+ * 支持缩放导出与字体预加载，是封面生成器的核心绘制层。
+ */
 import { BASE_CANVAS_WIDTH, CANVAS_SAFE_MARGIN } from './coverConstants';
 import {
   calculateLayoutMetrics,

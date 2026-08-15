@@ -1,3 +1,7 @@
+/**
+ * 批量封面导入：解析 Markdown（front matter + 标题）、CSV 与 JSON 输入，
+ * 生成封面条目列表，支持去重（slug）与 ZIP 打包导出。
+ */
 import JSZip from 'jszip';
 
 export interface BatchCoverItem {

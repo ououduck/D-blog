@@ -37,7 +37,7 @@ import { getPostById, getPosts } from '@/services/posts';
 import { getReadingHistoryEntry, saveReadingHistory } from '@/services/readingHistory';
 import { getRelatedPosts, getSeriesNavigation, type SeriesNavigation } from '@/utils/postRelations';
 import { getReadingProgress, getScrollTopForReadingProgress, isReadingComplete } from '@/utils/readingProgress';
-import { Post as PostType, PostAuthor, PostMetadata } from '../types';
+import type { Post as PostType, PostAuthor, PostMetadata } from '../types';
 import { useOfflinePosts } from '@/hooks/useOfflinePosts';
 import { assetUrl, absoluteSiteUrl, routeUrl } from '@/utils/siteUrl';
 import { siteConfig } from '@config/site.config';
@@ -358,6 +358,9 @@ const PreBlock = ({
   const code = getCodeText(children);
   const lineCount = Math.max(1, code ? code.split('\n').length : 1);
   const lineNumbers = Array.from({ length: lineCount }, (_, index) => index + 1);
+  // 折叠状态下只渲染可见范围内的行号（MAX_CODE_LINES 行）：超大代码块首屏
+  // 无需为上千行生成上千个行号 span，展开时才渲染全部，减少 DOM 节点数。
+  const visibleLineNumbers = needsExpand && !isExpanded ? lineNumbers.slice(0, MAX_CODE_LINES) : lineNumbers;
 
   // 给 <pre> 内的 <code> 子元素注入块级标记：无语言围栏块 / 缩进代码块没有
   // language-* 类，仅靠 className 判定会被 code 组件误判为行内样式渲染。
@@ -508,7 +511,7 @@ const PreBlock = ({
       <div className={`code-scroll ${needsExpand && !isExpanded ? 'code-block-collapsed' : 'code-block-expanded'}`}>
         <div className="code-content">
           <div className="code-line-numbers" aria-hidden="true">
-            {lineNumbers.map((number) => (
+            {visibleLineNumbers.map((number) => (
               <span
                 key={number}
                 data-line={number}
@@ -1392,7 +1395,7 @@ export const Post = () => {
           return;
         }
 
-        console.error('Failed to load post:', error);
+        console.error('文章加载失败:', error);
         setPost(null);
         setLoadError('文章内容加载失败，请检查网络后重试。');
       })
@@ -1475,7 +1478,7 @@ export const Post = () => {
         await Promise.all(tasks);
       } catch (error) {
         if (!cancelled) {
-          console.error('Failed to load markdown enhancements:', error);
+          console.error('Markdown 增强组件加载失败:', error);
           // 失败回退同样保持 remarkCodeMeta 常驻，避免代码块 data-meta 丢失。
           setRemarkPlugins([remarkGfm, remarkCodeMeta]);
           setRehypePlugins([]);
@@ -1516,7 +1519,7 @@ export const Post = () => {
       })
       .catch((error) => {
         if (!cancelled) {
-          console.error('Failed to sync highlight.js theme:', error);
+          console.error('代码高亮主题同步失败:', error);
         }
       });
 

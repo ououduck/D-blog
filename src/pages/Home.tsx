@@ -17,7 +17,7 @@ import {
 import { SearchField } from '@/components/SearchField';
 import { getInitialPosts, getPosts } from '@/services/posts';
 import { saveOfflinePost, removeOfflinePost } from '@/services/offlinePosts';
-import { PostMetadata } from '../types';
+import type { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
 import { usePostSearch } from '@/hooks/usePostSearch';
@@ -601,7 +601,7 @@ export const Home = () => {
         setCategories(getCategories(posts));
         setLoadError(null);
       } catch (error) {
-        console.error('Failed to load home data:', error);
+        console.error('首页数据加载失败:', error);
         if (!cancelled) {
           setLoadError('文章列表加载失败，请稍后刷新重试。');
         }

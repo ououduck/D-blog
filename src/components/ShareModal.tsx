@@ -88,7 +88,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       setCopyError(null);
       scheduleReset();
     } catch (error) {
-      console.error('Copy failed:', error);
+      console.error('复制失败:', error);
       setCopiedType(null);
       setCopyError('复制失败，请手动复制链接。');
       scheduleReset();
@@ -114,7 +114,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       });
       setPosterDataUrl(dataUrl);
     } catch (error) {
-      console.error('Poster generation failed:', error);
+      console.error('分享海报生成失败:', error);
       setPosterError('海报生成失败，请重试。');
     } finally {
       setIsGeneratingPoster(false);

@@ -1,3 +1,7 @@
+/**
+ * 封面生成器的核心类型定义：布局模式、文本对齐、导出格式与画布尺寸等，
+ * 供渲染（coverRenderer）、布局（coverLayout）与存储（coverStorage）共用。
+ */
 import type { CoverTemplate } from '../../config/coverTemplates';
 
 export type LayoutMode = 'icon-split' | 'stacked' | 'icon-only' | 'text-only';

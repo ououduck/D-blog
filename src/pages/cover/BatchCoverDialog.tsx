@@ -54,7 +54,7 @@ export const BatchCoverDialog: React.FC<BatchCoverDialogProps> = ({ isOpen, onCl
       setIssues(nextIssues);
     } catch (error) {
       // file.text() 等读取失败：展示错误而非让界面卡在「正在读取文件…」。
-      console.error('Failed to read batch cover files:', error);
+      console.error('批量封面文件读取失败:', error);
       if (generation === readGenerationRef.current) {
         setIssues([{ line: 1, message: '文件读取失败，请确认文件可读后重试。' }]);
       }

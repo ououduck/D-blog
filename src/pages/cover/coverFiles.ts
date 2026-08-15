@@ -1,3 +1,7 @@
+/**
+ * 封面素材文件工具：图片/字体/图标的加载（含跨域与格式校验）与文件校验，
+ * 常量上限定义在 coverConstants。
+ */
 import {
   BACKGROUND_IMAGE_MAX_BYTES,
   FONT_EXTENSIONS,

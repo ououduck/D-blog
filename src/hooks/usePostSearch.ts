@@ -70,7 +70,7 @@ export const usePostSearch = ({
           return;
         }
 
-        console.error('Search failed:', error);
+        console.error('搜索失败:', error);
         setResults([]);
         setSearchError('搜索暂时不可用，请稍后重试。');
       } finally {

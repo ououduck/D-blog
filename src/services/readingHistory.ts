@@ -1,3 +1,7 @@
+/**
+ * 阅读历史数据层：localStorage 持久化「继续阅读」记录（文章 id + 进度），
+ * 含订阅通知与损坏容错，供首页继续阅读卡片与文章页进度恢复使用。
+ */
 import { isReadingComplete } from '@/utils/readingProgress';
 
 const READING_HISTORY_STORAGE_KEY = 'd-blog-reading-history-v1';

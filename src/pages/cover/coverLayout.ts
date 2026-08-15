@@ -1,3 +1,7 @@
+/**
+ * 封面布局计算：按画布尺寸与比例推导版式（图标分栏/堆叠等）、文本换行
+ * 拟合（fitText）与图片适配缩放，纯函数实现，渲染层只消费计算结果。
+ */
 import { BASE_CANVAS_WIDTH, CANVAS_SAFE_MARGIN } from './coverConstants';
 import type { BackgroundFit, CanvasSize, CoverRatio, FittedText, LayoutMode } from './coverTypes';
 

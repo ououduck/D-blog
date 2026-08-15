@@ -10,7 +10,8 @@ import { CountUp } from '@/components/effects/CountUp';
 import { Reveal } from '@/components/effects/Reveal';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { easeOut } from '@/utils/motion';
-import { getSiteStats, getInitialSiteStats, EMPTY_SITE_STATS, SiteStats } from '../services/siteStats';
+import { getSiteStats, getInitialSiteStats, EMPTY_SITE_STATS } from '../services/siteStats';
+import type { SiteStats } from '../services/siteStats';
 import { fillBusuanziSpans } from '@/services/busuanzi';
 import { siteConfig } from '@config/site.config';
 
@@ -232,7 +233,7 @@ export const Stats = () => {
       // 防御性兜底：getSiteStats 目前不会 reject（缺失时返回 EMPTY_SITE_STATS），
       // 但异步加载一旦出现异常不应产生未处理的 promise rejection，
       // 页面保持初始空统计（全 0）即可，不再阻断渲染。
-      console.warn('Failed to load site stats:', error);
+      console.warn('站点统计加载失败:', error);
     } finally {
       if (isMountedRef.current) setSiteStatsLoading(false);
     }

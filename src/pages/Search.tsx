@@ -7,7 +7,7 @@ import { PostCard } from '@/pages/Home';
 import { saveOfflinePost, removeOfflinePost } from '@/services/offlinePosts';
 import { useOfflinePosts } from '@/hooks/useOfflinePosts';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { PostMetadata } from '../types';
+import type { PostMetadata } from '../types';
 import { Seo, buildSiteSchemas } from '../components/Seo';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';

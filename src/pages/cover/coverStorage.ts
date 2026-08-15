@@ -1,3 +1,7 @@
+/**
+ * 封面生成器本地存储：草稿与自定义预设持久化到 localStorage，带版本号与
+ * 容错读取（损坏数据丢弃并回退默认）。
+ */
 const COVER_STORAGE_VERSION = 1;
 const COVER_DRAFT_KEY = 'd-blog-cover-draft-v1';
 const COVER_PRESETS_KEY = 'd-blog-cover-presets-v1';
@@ -82,8 +86,14 @@ export function readDraft(): CoverDraft | null {
 }
 
 export function writeDraft(draft: CoverDraft): boolean {
+  const store = storage();
+  if (!store) {
+    // localStorage 不可用时写入失败，如实返回 false（此前 storage() 为 null
+    // 时静默跳过却仍返回 true，成功语义失真）。
+    return false;
+  }
   try {
-    storage()?.setItem(COVER_DRAFT_KEY, JSON.stringify({ ...draft, version: COVER_STORAGE_VERSION }));
+    store.setItem(COVER_DRAFT_KEY, JSON.stringify({ ...draft, version: COVER_STORAGE_VERSION }));
     return true;
   } catch {
     return false;

@@ -74,17 +74,37 @@ const collectOfflineAssetUrls = (post: OfflinePost): string[] => {
   return [...new Set(sourceUrls)];
 };
 
+/**
+ * 等待 Service Worker 就绪并返回活跃 worker：controller 存在时直接复用；
+ * 否则等 ready 事件，8 秒超时（ready 先完成时定时器在 finally 中清理，
+ * 避免超时定时器空转）。
+ */
+const getActiveWorker = async (): Promise<ServiceWorker | null> => {
+  const controller = navigator.serviceWorker.controller;
+  if (controller) {
+    return controller;
+  }
+  let timeoutId: number | undefined;
+  try {
+    return await Promise.race([
+      navigator.serviceWorker.ready.then((registration) => registration.active),
+      new Promise<null>((resolve) => {
+        timeoutId = window.setTimeout(() => resolve(null), 8000);
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
+    }
+  }
+};
+
 const prepareOfflineCache = async (post: OfflinePost): Promise<void> => {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     throw new Error('当前浏览器不支持离线缓存。');
   }
 
-  const worker =
-    navigator.serviceWorker.controller ??
-    (await Promise.race([
-      navigator.serviceWorker.ready.then((registration) => registration.active),
-      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8000)),
-    ]));
+  const worker = await getActiveWorker();
   if (!worker) {
     throw new Error('离线缓存尚未就绪，请刷新页面后重试。');
   }
@@ -783,7 +803,7 @@ export const saveOfflinePost = async (post: OfflinePostInput): Promise<OfflinePo
   try {
     await prepareOfflineCache(offlinePost);
   } catch (error) {
-    console.warn('Offline cache preparation skipped; the post is saved locally.', error);
+    console.warn('离线缓存准备被跳过，文章已保存在本地。', error);
   }
   emitChange('save', offlinePost.id);
   return offlinePost;

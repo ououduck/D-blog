@@ -13,6 +13,9 @@ const generatedPostModules = import.meta.glob<PostMetadata[]>('../../generated/p
 });
 const initialPosts = Object.values(generatedPostModules)[0] ?? [];
 let postsSearchIndexCache: SearchIndexEntry[] | null = null;
+// 并发合并：缓存为 null 时多个并发的 searchPosts 共享同一次动态 import +
+// 索引构建，避免各跑一遍全量 buildSearchIndex。
+let postsSearchIndexPromise: Promise<SearchIndexEntry[]> | null = null;
 const SEARCH_CACHE_LIMIT = 80;
 const searchResultsCache = new Map<string, PostSearchResult[]>();
 
@@ -63,14 +66,24 @@ const buildSearchIndex = (posts: Array<PostMetadata & { searchText?: string }>):
     tags: post.tags.map((tag) => normalizeSearchText(String(tag))),
   }));
 
-const loadPostsSearchIndex = async (): Promise<SearchIndexEntry[]> => {
+const loadPostsSearchIndex = (): Promise<SearchIndexEntry[]> => {
   if (postsSearchIndexCache) {
-    return postsSearchIndexCache;
+    return Promise.resolve(postsSearchIndexCache);
   }
-
-  const posts = await loadPostsSearchData();
-  postsSearchIndexCache = buildSearchIndex(posts);
-  return postsSearchIndexCache;
+  if (!postsSearchIndexPromise) {
+    postsSearchIndexPromise = loadPostsSearchData()
+      .then(buildSearchIndex)
+      .then((index) => {
+        postsSearchIndexCache = index;
+        postsSearchIndexPromise = null;
+        return index;
+      })
+      .catch((error) => {
+        postsSearchIndexPromise = null;
+        throw error;
+      });
+  }
+  return postsSearchIndexPromise;
 };
 
 export const getFieldMatchScore = (value: string, terms: string[], fullQuery: string, weight: number) => {
@@ -130,7 +143,7 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
         content: stripFrontmatter(rawContent),
       };
     } catch (error) {
-      console.warn('Failed to load bundled Markdown, trying offline copy.', error);
+      console.warn('打包的 Markdown 加载失败，尝试离线收藏副本。', error);
     }
   }
 
@@ -144,7 +157,7 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
     return undefined;
   }
 
-  const error = new Error(`Markdown file not found: ${relativePath}`);
+  const error = new Error(`Markdown 文件缺失: ${relativePath}`);
   console.error(error);
   throw error;
 };

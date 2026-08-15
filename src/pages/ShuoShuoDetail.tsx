@@ -31,7 +31,7 @@ const getTitleSnippet = (item: ShuoShuoEntry): string => {
   return snippet.length > 40 ? `${snippet.slice(0, 40).trimEnd()}…` : snippet;
 };
 
-/** meta description：带作者与日期上下文，正文过长时截断（Google 摘要上限约 160 字）。 */
+/** meta description：正文过长时截断为 120 字，再拼上作者与日期上下文（总长仍远低于 Google 摘要上限 160 字）。 */
 const getDescription = (item: ShuoShuoEntry): string => {
   const text = stripMarkdown(item.content).replace(/\s+/g, ' ').trim();
   const core = text.length > 120 ? `${text.slice(0, 120).trimEnd()}…` : text;

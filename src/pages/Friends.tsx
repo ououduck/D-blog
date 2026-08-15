@@ -6,7 +6,7 @@ import { siteConfig } from '@config/site.config';
 import { getFriends, getInitialFriends } from '@/services/friends';
 import { Seo, buildSiteSchemas } from '../components/Seo';
 import { absoluteSiteUrl } from '@/utils/siteUrl';
-import { Friend } from '../types';
+import type { Friend } from '../types';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -172,7 +172,7 @@ export const Friends = () => {
       })
       .catch((error) => {
         if (cancelled) return;
-        console.error('Failed to load friends:', error);
+        console.error('友链数据加载失败:', error);
         setLoadError('友链数据加载失败，请稍后刷新重试。');
       })
       .finally(() => {

@@ -1,3 +1,7 @@
+/**
+ * 封面导出工具：canvas 转 Blob（含跨域污染的降级提示）与画布合成导出，
+ * 供批量导出与单张保存共用。
+ */
 import type { ExportFormat } from './coverTypes';
 
 export function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> {

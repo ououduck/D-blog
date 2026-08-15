@@ -1,3 +1,7 @@
+/**
+ * 封面素材图片的模块级内存缓存：按 URL 缓存加载中的 Promise，预览期间
+ * 重复渲染不会为同一资源反复发请求。
+ */
 import { loadImage } from './coverFiles';
 
 const imageCache = new Map<string, Promise<HTMLImageElement>>();

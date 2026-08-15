@@ -1,3 +1,7 @@
+/**
+ * 封面配色工具：解析主题色并决策文字颜色（白/深蓝），保证与背景的对比度
+ * 达到可读阈值（WCAG 近似），提供纯函数便于单元测试。
+ */
 type RgbColor = { r: number; g: number; b: number };
 
 interface ColorDecision {

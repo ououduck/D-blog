@@ -5,7 +5,7 @@ import { ArrowLeft, Calendar, Clock } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
 import { siteConfig } from '@config/site.config';
 import { getInitialPosts, getPosts } from '@/services/posts';
-import { PostMetadata } from '../types';
+import type { PostMetadata } from '../types';
 import { Seo, buildSiteSchemas } from '../components/Seo';
 import { absoluteSiteUrl } from '@/utils/siteUrl';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
@@ -87,7 +87,7 @@ export const Tags = () => {
           return;
         }
 
-        console.error('Failed to load tags posts:', error);
+        console.error('标签数据加载失败:', error);
         setLoadError('标签数据加载失败，请稍后刷新重试。');
       })
       .finally(() => {

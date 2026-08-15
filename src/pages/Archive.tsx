@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronDown, ChevronRight, ArrowUpRight, MessageCircle } from 'lucide-react';
 import { siteConfig } from '@config/site.config';
 import { getInitialPosts, getPosts } from '@/services/posts';
-import { PostMetadata } from '../types';
+import type { PostMetadata } from '../types';
 import { Seo, buildSiteSchemas } from '../components/Seo';
 import { absoluteSiteUrl } from '@/utils/siteUrl';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
@@ -84,7 +84,7 @@ export const ArchivePage = () => {
       })
       .catch((error) => {
         if (!cancelled) {
-          console.error('Failed to load archive posts:', error);
+          console.error('归档数据加载失败:', error);
           setLoadError('归档数据加载失败，请稍后刷新重试。');
         }
       })
