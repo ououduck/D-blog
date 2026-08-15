@@ -126,6 +126,9 @@ export function parseBatchText(text: string, filename = 'input'): BatchParseResu
       else issues.push({ line: index + 2, message: '缺少 title 字段' });
     });
   } else {
+    // Markdown：只解析第一份 frontmatter 生成一个封面条目（多篇文档合并
+    // 上传时其余正文会被忽略——批量生成以「一文档一封面」为约定，与
+    // 单篇封面生成器的语义一致）。
     const item = parseMarkdownFrontmatter(text);
     if (item) items.push(item);
     else issues.push({ line: 1, message: 'Markdown 缺少有效 frontmatter 或 title' });

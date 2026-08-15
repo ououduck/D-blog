@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BarChart3, Database, FileImage, FileText, FolderTree, Hash, Type, Activity } from 'lucide-react';
@@ -217,7 +217,9 @@ export const Stats = () => {
   const [siteStats, setSiteStats] = useState<SiteStats>(initialSiteStats ?? EMPTY_SITE_STATS);
   const [siteStatsLoading, setSiteStatsLoading] = useState(initialSiteStats === null);
 
-  const loadSiteStats = async () => {
+  // 异步加载站点统计：useCallback 稳定引用，配合 effect 空依赖一次性加载；
+  // isMountedRef 防护卸载后的迟到 setState（getSiteStats 内部已有 requestId 竞态保护）。
+  const loadSiteStats = useCallback(async () => {
     if (siteStatsLoadedRef.current || !isMountedRef.current) {
       return;
     }
@@ -237,7 +239,7 @@ export const Stats = () => {
     } finally {
       if (isMountedRef.current) setSiteStatsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -254,7 +256,7 @@ export const Stats = () => {
     return () => {
       isMountedRef.current = false;
     };
-  }, []);
+  }, [loadSiteStats]);
 
   return (
     <div className="pb-10 md:pb-20">
