@@ -86,7 +86,6 @@ export const buildRssFeed = (
         siteUrl: normalizedSiteUrl,
         basePath,
         postUrl,
-        postId: post.id,
       });
 
       return `
