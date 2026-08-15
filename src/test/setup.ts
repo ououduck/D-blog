@@ -7,3 +7,8 @@ import '@testing-library/jest-dom/vitest';
 afterEach(() => {
   cleanup();
 });
+
+// jsdom 未实现 scrollIntoView：搜索结果高亮、目录自动滚动等组件依赖它。
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
