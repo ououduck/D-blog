@@ -641,7 +641,9 @@ export const runSsg = async ({
   }
 
   // 5. 404 页（根级独立 HTML，Cloudflare Pages 以 404.html 作为 404 响应）。
-  // 渲染路径 /__missing__ 是占位路由，不能出现在 canonical 中，mergeHead 之后显式剥离。
+  // 渲染路径 /__missing__ 是占位路由，不能出现在任何 URL 类 meta 中：
+  // - canonical：mergeHead 之后显式剥离；
+  // - og:url：替换为站点根地址（否则分享抓取/爬虫会暴露伪 URL）。
   if (budgetExceeded()) {
     skippedPages.push('/__missing__');
   } else {
@@ -652,7 +654,12 @@ export const runSsg = async ({
       const mergedNotFoundPage = mergeHead(flattenedNotFoundPage, notFoundHead, NOSCRIPT_FALLBACK);
       writeStandaloneHtml(
         '404.html',
-        mergedNotFoundPage.replace(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\/?\s*>/i, ''),
+        mergedNotFoundPage
+          .replace(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\/?\s*>/i, '')
+          .replace(
+            /(<meta\b(?=[^>]*\bproperty=["']og:url["'])[^>]*\bcontent=["'])[^"']*(["'][^>]*>)/i,
+            `$1${SITE_URL}/$2`,
+          ),
       );
       logger.step('Generated 404 page');
     } catch (error) {
