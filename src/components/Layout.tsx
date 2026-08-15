@@ -199,7 +199,7 @@ type MobileNavPhase = 'closed' | 'opening' | 'open' | 'closing';
 
 const MOBILE_NAV_ANIMATION_DURATION_MS = 340;
 
-export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
+const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const [mobileNavPhase, setMobileNavPhase] = useState<MobileNavPhase>('closed');
   const [isMobileNavMounted, setIsMobileNavMounted] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);

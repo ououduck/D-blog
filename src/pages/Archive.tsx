@@ -174,7 +174,6 @@ export const ArchivePage = () => {
     }
   }, [groups, isSearching, searchQuery]);
 
-  // 切换年份展开状态
   const toggleYear = (year: string) => {
     // 用闭包中的当前展开状态决定分支，副作用统一放在 updater 之外，
     // 避免在状态更新器内执行 setSearchParams/setExpandedMonths（StrictMode 下会重复执行）。
@@ -214,7 +213,6 @@ export const ArchivePage = () => {
     }
   };
 
-  // 切换月份展开状态
   const toggleMonth = (year: string, monthNum: number) => {
     const monthKey = getMonthKey(year, monthNum);
     setExpandedMonths(prev => {
