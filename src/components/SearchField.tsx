@@ -2,7 +2,7 @@
  * 搜索输入框：放大镜图标 + 清除按钮 + 可选尾部操作（endAction），带 iOS 聚焦字号防放大处理。
  */
 
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 
 type SearchFieldSize = 'default' | 'large';
@@ -35,6 +35,9 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
     },
     ref,
   ) => {
+    // 中文输入法（IME）组合期间的中间态（拼音未确认）不应触发搜索：
+    // compositionstart/end 之间忽略 onChange，组合结束时补一次完整值。
+    const isComposingRef = useRef(false);
     const hasValue = typeof value === 'string' || typeof value === 'number' ? String(value).length > 0 : false;
     const showClear = Boolean(onClear && hasValue && !disabled);
     const inputSpacing = endAction ? (showClear ? 'pr-24' : 'pr-14') : showClear ? 'pr-11' : 'pr-4';
@@ -56,7 +59,18 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
           ref={ref}
           type="search"
           value={value}
-          onChange={(event) => onValueChange?.(event.target.value)}
+          onChange={(event) => {
+            if (isComposingRef.current) return;
+            onValueChange?.(event.target.value);
+          }}
+          onCompositionStart={() => {
+            isComposingRef.current = true;
+          }}
+          onCompositionEnd={(event) => {
+            isComposingRef.current = false;
+            // 组合结束补发一次完整值，让防抖搜索基于最终中文。
+            onValueChange?.(event.currentTarget.value);
+          }}
           disabled={disabled}
           className={`w-full min-w-0 appearance-none rounded-control border pl-10 text-ink outline-none transition-[background-color,border-color,color,box-shadow] duration-150 placeholder:text-zinc-400 hover:border-zinc-400 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/15 disabled:cursor-not-allowed dark:text-white dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-100 dark:focus:ring-zinc-100/15 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-webkit-search-results-button]:hidden [&::-webkit-search-results-decoration]:hidden ${variantClasses} ${sizeClass} ${inputSpacing} ${className}`}
         />

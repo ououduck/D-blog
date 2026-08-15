@@ -45,4 +45,26 @@ describe('SearchField', () => {
     render(<SearchField value="" endAction={<button type="button">搜索按钮</button>} />);
     expect(screen.getByRole('button', { name: '搜索按钮' })).toBeInTheDocument();
   });
+
+  it('IME 组合期间不触发 onValueChange，组合结束补发完整值', async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<SearchField onValueChange={onValueChange} />);
+
+    // 模拟中文输入法：compositionstart → 输入拼音中间态 → compositionend
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    await user.type(input, 'n', {
+      skipClick: true,
+    });
+    // 手动派发 composition 事件序列（userEvent 不模拟 IME）
+    input.focus();
+    input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+    input.value = 'nihao';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    // 组合期间的 onChange 应被忽略
+    expect(onValueChange).not.toHaveBeenCalledWith('nihao');
+    input.value = '你好';
+    input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '你好' }));
+    expect(onValueChange).toHaveBeenLastCalledWith('你好');
+  });
 });
