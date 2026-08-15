@@ -87,7 +87,7 @@ describe('ReadingModeContext', () => {
 
   it('Provider 外使用 hook 抛错', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(() => render(<Consumer />)).toThrow('useReadingMode must be used within ReadingModeProvider');
+    expect(() => render(<Consumer />)).toThrow('useReadingMode 必须在 ReadingModeProvider 内使用');
     spy.mockRestore();
   });
 });
