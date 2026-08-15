@@ -1144,7 +1144,7 @@ export const Post = () => {
 
   useEffect(() => {
     if (!post?.content) {
-      setRemarkPlugins([remarkGfm]);
+      setRemarkPlugins([remarkGfm, remarkCodeMeta]);
       setRehypePlugins([]);
       setMermaidRenderer(null);
       return;
@@ -1153,7 +1153,10 @@ export const Post = () => {
     let cancelled = false;
 
     const loadMarkdownEnhancements = async () => {
-      const nextRemarkPlugins: MarkdownPlugin[] = [remarkGfm];
+      // 保持 remarkCodeMeta 常驻：pre 渲染依赖它透传代码块 data-meta
+      // （title="..." 文件名等），异步增强加载时若被移除，文件名展示与
+      // 下载命名会失效。
+      const nextRemarkPlugins: MarkdownPlugin[] = [remarkGfm, remarkCodeMeta];
       const nextRehypePlugins: MarkdownPlugin[] = [];
       let nextMermaidRenderer: MermaidRenderer | null = null;
       const tasks: Promise<void>[] = [];
@@ -1661,6 +1664,8 @@ export const Post = () => {
   const authors = getDisplayAuthors(post);
   const authorsLabel = authors.map((author) => author.name).join('\u3001');
   const postDescription = buildMetaDescription(post);
+  // 阅读时长（分钟）：由 readTime 文案（如「7分钟阅读」）解析，用于 Article 的 timeRequired。
+  const readMinutes = Number(post.readTime.match(/\d+/)?.[0]);
   const postStructuredData = {
     '@context': 'https://schema.org',
     // BlogPosting 是 Article 的子类型，Google 对博客文章富结果更认可该类型。
@@ -1688,6 +1693,8 @@ export const Post = () => {
     }),
     articleBody: stripMarkdown(post.content),
     wordCount: post.wordCount,
+    // timeRequired（ISO 8601 时长，如 PT7M）：Article 富结果字段，助搜索结果展示阅读时长。
+    ...(Number.isInteger(readMinutes) && readMinutes > 0 ? { timeRequired: `PT${readMinutes}M` } : {}),
     inLanguage: 'zh-CN',
     articleSection: post.category,
     isPartOf: {

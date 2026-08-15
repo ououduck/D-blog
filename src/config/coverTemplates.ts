@@ -1,4 +1,6 @@
-export type PatternType = 'dots' | 'grid' | 'waves' | 'solid' | 'hexagon' | 'triangles' | 'circles' | 'diagonal';
+// 当前模板仅使用纯色背景；如后续需要花式底纹，在此扩展 PatternType 并在
+// coverRenderer 的 drawPattern 中实现对应绘制分支即可。
+export type PatternType = 'solid';
 
 export interface CoverTemplate {
   id: string;

@@ -6,12 +6,28 @@
 ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)
 ![React](https://img.shields.io/badge/react-19-61dafb.svg)
 ![Vite](https://img.shields.io/badge/vite-6-646cff.svg)
+![CI](https://github.com/ououduck/D-blog/actions/workflows/ci.yml/badge.svg)
 
 基于 React 19 + Vite 6 + TypeScript 的静态博客：构建期生成站点数据与全站静态 HTML（SSG），客户端以 SPA 水合运行。
 
 **在线演示**：<https://blog.pldduck.com>
 
 </div>
+
+## 目录
+
+- [核心特性](#核心特性)
+- [技术栈](#技术栈)
+- [快速开始](#快速开始)
+- [构建流程](#构建流程)
+- [项目结构](#项目结构)
+- [内容管理](#内容管理)
+- [消息通知（Telegram）](#消息通知telegram)
+- [配置](#配置)
+- [NPM 脚本](#npm-脚本)
+- [部署](#部署)
+- [贡献指南](#贡献指南)
+- [许可证](#许可证)
 
 ## 核心特性
 
@@ -58,7 +74,7 @@ Node.js >= 20，npm >= 10。
 
 ## 构建流程
 
-`npm run build` 依次执行：数据生成 → OG 卡生成 → 客户端构建 → SSR 构建 → SSG 预渲染 → 产物审计 → SEO 审计，最终输出 `dist/`。
+`npm run build` 依次执行：数据生成 → OG 卡生成 → 客户端构建 → SSR 构建 → SSG 预渲染 → 产物审计 → SEO 审计，最终输出 `dist/`。各阶段独立超时并汇总耗时，任一阶段失败立即终止流水线并在日志中标明失败阶段（[N/M] 前缀）。
 
 - **数据生成**（`gen:data`）：校验 Front Matter、文章 ID、图片与链接，生成 `generated/` 索引、Sitemap、RSS、`llms.txt`、`robots.txt`
 - **SSG 预渲染**（`ssg`）：用 SSR bundle 按路由渲染全站静态 HTML，注入 SEO meta / JSON-LD 与封面 preload
@@ -137,7 +153,7 @@ export const format = (value: string) => value.trim();
 
 ### 友链申请
 
-在友链页面展开「申请友链」，按步骤完成 GitHub Issue 申请：先添加本站友链 → 登录 GitHub → 填写资料 → 提交 Issue → Actions 自动校验反链后写入 `friends/`。可手动运行「检查友链可用状态」：失联友链归入页面的「已失联的博客」折叠板块，恢复后自动回到主列表。
+在友链页面展开「申请友链」，按步骤完成 GitHub Issue 申请：先添加本站友链 → 登录 GitHub → 填写资料 → 提交 Issue → Actions 自动校验反链后写入 `friends/`。友链数据为 `friends/*.json`，可直接在 PagesCMS「友链」集合编辑。可手动运行「检查友链可用状态」：失联友链写入 `"unavailable": true` 并归入页面的「已失联的博客」折叠板块，恢复后自动回到主列表。
 
 ### 说说
 
@@ -153,11 +169,34 @@ images:
 今天也是元气满满的一天 🎉
 ```
 
-每条说说生成独立静态页 `/shuoshuo/<id>`，完整 SSR 正文与 SEO 标签，收录进 `sitemap-shuoshuo.xml` 与 `llms.txt`；旧的 `?id=` 定位链接仍兼容。
+每条说说生成独立静态页 `/shuoshuo/<id>`，完整 SSR 正文与 SEO 标签，收录进 `sitemap-shuoshuo.xml` 与 `llms.txt`；旧的 `?id=` 定位链接仍兼容。在 PagesCMS「说说」集合中新建即可，无需写代码。
 
 ### 留言板
 
-`/guestbook` 通过 Giscus `mapping=number` 固定指向仓库的「D-blog 留言板」Discussion（`config/site.config.ts` 的 `guestbook.discussionId`）。与文章评论共用 Akismet 反垃圾，并叠加自建关键词过滤（`config/comment-keywords.json`，可直接在 PagesCMS「评论关键词」中编辑）。仓库内置 `notify-post-update.yml`：文章新增/修改时自动在指定 Issue 发布通知。
+`/guestbook` 通过 Giscus `mapping=number` 固定指向仓库的「D-blog 留言板」Discussion（`config/site.config.ts` 的 `guestbook.discussionId`）。与文章评论共用 Akismet 反垃圾，并叠加自建关键词过滤（`config/comment-keywords.json`，可直接在 PagesCMS「评论关键词」中编辑）。仓库内置 `.github/workflows/notify-post-update.yml`：文章新增/修改时自动在指定 Issue 发布通知。
+
+## 消息通知（Telegram）
+
+仓库事件通过 [`telegram-notify.yml`](.github/workflows/telegram-notify.yml) 实时推送到 Telegram，作为站长的项目消息提醒：
+
+- 💬 **新评论 / 新讨论 / 新 Issue**：giscus 文章评论、留言板留言、友链申请（`discussion_comment` / `discussion` / `issues` 事件）
+- 🚀 **push 到 main 的提交**：提交列表 + 对比链接（Pages CMS 保存内容、友链 bot 推送等都会走到这里）
+- ⚙️ **Action 运行结果**：任一 workflow 完成时推送成功 / 失败 / 取消（`workflow_run` 事件自动覆盖新增 workflow，通知自身的结果会被跳过，不会循环）
+- 🔔 **手动测试**：Pages CMS 侧边栏「🔔 测试 Telegram 通知」按钮，或直接运行 `Telegram Notify` workflow
+
+### 一次性配置
+
+1. 在 [@BotFather](https://t.me/BotFather) 创建机器人，复制 `TELEGRAM_BOT_TOKEN`；
+2. 向机器人发一条消息，通过 [@userinfobot](https://t.me/userinfobot) 或 Bot API `getUpdates` 获取你的 `TELEGRAM_CHAT_ID`；
+3. 在仓库 **Settings → Secrets and variables → Actions** 添加：
+
+| Secret | 说明 |
+| --- | --- |
+| `TELEGRAM_BOT_TOKEN` | BotFather 的机器人 token（形如 `123456:ABC-...`） |
+| `TELEGRAM_CHAT_ID` | 接收通知的 chat id（私聊 / 群组 / 频道） |
+| `TELEGRAM_TOPIC_ID` | （可选）论坛话题 id，设置后消息发往该话题 |
+
+未配置 token / chat id 时 workflow 优雅跳过（`::warning::` 正常退出，不红叉）。本地调试可打印消息体而不发送：`GITHUB_EVENT_NAME=push GITHUB_EVENT_PATH=event.json node scripts/telegram-notify.mjs --print`。
 
 ## 配置
 

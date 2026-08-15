@@ -1,30 +1,38 @@
 import { MessageSquareText, LogIn, ShieldCheck, Lightbulb } from 'lucide-react';
 import { siteConfig } from '@config/site.config';
 import { absoluteSiteUrl } from '@/utils/siteUrl';
-import { Seo } from '../components/Seo';
+import { Seo, buildSiteSchemas } from '../components/Seo';
 import { Surface } from '@/components/ui/Surface';
 import { GiscusComments } from '@/components/GiscusComments';
+
+// 留言板页描述：Seo meta 与站点级 schema 共用同一文案，保证一致。
+const guestbookPageDescription = '在 D-blog 留言板留下你的足迹：闲聊、建议、问题反馈都可以，登录 GitHub 账号即可留言。';
 
 export const Guestbook = () => {
   return (
     <div className="mx-auto max-w-4xl pb-10 pt-6 md:pb-16 md:pt-10">
       <Seo
         title="留言板"
-        description="在 D-blog 留言板留下你的足迹：闲聊、建议、问题反馈都可以，登录 GitHub 账号即可留言。"
+        description={guestbookPageDescription}
         url="/guestbook"
-        structuredData={{
-          '@context': 'https://schema.org',
-          '@type': 'WebPage',
-          name: `${siteConfig.title} - 留言板`,
-          description: 'D-blog 访客留言板：闲聊、建议与问题反馈。',
-          url: absoluteSiteUrl('/guestbook', siteConfig.url),
-          inLanguage: 'zh-CN',
-          isPartOf: {
-            '@type': 'WebSite',
-            name: siteConfig.title,
-            url: absoluteSiteUrl('/', siteConfig.url)
+        // WebPage 与站点级 WebSite + Organization schema 一并输出，
+        // 保证全站各页 schema 一致（SSG 已标记 schemaFromSeo，不再重复注入）。
+        structuredData={[
+          ...buildSiteSchemas(guestbookPageDescription),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: `${siteConfig.title} - 留言板`,
+            description: 'D-blog 访客留言板：闲聊、建议与问题反馈。',
+            url: absoluteSiteUrl('/guestbook', siteConfig.url),
+            inLanguage: 'zh-CN',
+            isPartOf: {
+              '@type': 'WebSite',
+              name: siteConfig.title,
+              url: absoluteSiteUrl('/', siteConfig.url)
+            }
           }
-        }}
+        ]}
       />
 
       <header className="mb-6 md:mb-8">

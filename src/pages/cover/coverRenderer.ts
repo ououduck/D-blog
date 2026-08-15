@@ -37,31 +37,10 @@ function createTemplateFill(ctx: CanvasRenderingContext2D, value: string, width:
   return gradient;
 }
 
-function drawPattern(ctx: CanvasRenderingContext2D, pattern: PatternType, width: number, height: number, scale: number): void {
+function drawPattern(_ctx: CanvasRenderingContext2D, pattern: PatternType, _width: number, _height: number, _scale: number): void {
+  // 当前模板仅使用纯色背景（PatternType 仅剩 'solid'）；保留调用点以支持
+  // 后续扩展，无需绘制任何叠加图案。
   if (pattern === 'solid') return;
-  ctx.save(); ctx.globalAlpha = 0.08; ctx.strokeStyle = '#ffffff'; ctx.fillStyle = '#ffffff'; ctx.lineWidth = Math.max(1, 1.5 * scale);
-  const step = Math.max(8, 40 * scale);
-  if (pattern === 'dots') {
-    for (let x = 0; x < width; x += step) for (let y = 0; y < height; y += step) { ctx.beginPath(); ctx.arc(x, y, Math.max(1, 2 * scale), 0, Math.PI * 2); ctx.fill(); }
-  } else if (pattern === 'grid') {
-    for (let x = 0; x < width; x += 50 * scale) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
-    for (let y = 0; y < height; y += 50 * scale) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
-  } else if (pattern === 'waves') {
-    for (let y = 0; y < height; y += 30 * scale) { ctx.beginPath(); ctx.moveTo(0, y); for (let x = 0; x <= width; x += Math.max(2, 10 * scale)) ctx.lineTo(x, y + Math.sin(x / Math.max(1, 50 * scale)) * 10 * scale); ctx.stroke(); }
-  } else if (pattern === 'diagonal') {
-    for (let i = -height; i < width + height; i += 35 * scale) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i - height, height); ctx.stroke(); }
-  } else if (pattern === 'circles') {
-    for (let x = 40 * scale; x < width; x += 60 * scale) for (let y = 40 * scale; y < height; y += 60 * scale) { ctx.beginPath(); ctx.arc(x, y, 6 * scale, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 14 * scale, 0, Math.PI * 2); ctx.stroke(); }
-  } else {
-    const size = (pattern === 'hexagon' ? 18 : 20) * scale; const rowHeight = size * 0.866;
-    for (let row = 0; row <= height / rowHeight + 1; row++) for (let col = 0; col <= width / size + 1; col++) {
-      const cx = col * size + (row % 2) * size / 2; const cy = row * rowHeight; ctx.beginPath();
-      if (pattern === 'hexagon') for (let i = 0; i < 6; i++) { const angle = Math.PI / 3 * i - Math.PI / 6; const x = cx + size * Math.cos(angle); const y = cy + size * Math.sin(angle); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
-      else { const flip = (row + col) % 2 === 0; ctx.moveTo(cx, cy + (flip ? size : 0)); ctx.lineTo(cx + size / 2, cy + (flip ? 0 : size)); ctx.lineTo(cx + size, cy + (flip ? size : 0)); }
-      ctx.closePath(); ctx.stroke();
-    }
-  }
-  ctx.restore();
 }
 
 function drawCorners(ctx: CanvasRenderingContext2D, options: CoverRenderOptions, scale: number): void {

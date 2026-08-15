@@ -1,0 +1,64 @@
+# telegram-notify.yml — GitHub 事件 → Telegram 推送（D-blog 项目消息提醒）。
+#
+# 覆盖三类提醒：
+#   1. 💬 新评论 / 新讨论 / 新 Issue（giscus 文章评论、留言板留言、友链申请等）；
+#   2. 🚀 push 到 main 的提交（提交列表 + 对比链接）；
+#   3. ⚙️ 任一 Action 运行完成的结果（成功/失败/取消），自动覆盖新增 workflow。
+#
+# 触发：
+#   - push: main 分支提交（.pages.yml 保存内容、友链 bot 推送等都会走到这里）；
+#   - discussion_comment: created（giscus 评论）；
+#   - discussion: created（新建讨论）；
+#   - issues: opened（新 Issue / 友链申请）；
+#   - workflow_run: completed（所有 workflow 的运行结果；通知 workflow 自身的
+#     运行结果由脚本按名称跳过，避免"通知自己"的无限循环，无需维护白名单）；
+#   - workflow_dispatch（手动测试；可配合 .pages.yml「🔔 测试 Telegram 通知」按钮）。
+#
+# 一次性配置（仓库 Settings → Secrets and variables → Actions）：
+#   TELEGRAM_BOT_TOKEN — BotFather 创建机器人得到的 token（形如 123456:ABC-...）；
+#   TELEGRAM_CHAT_ID   — 接收消息的 chat id（私聊 / 群组 / 频道均可）；
+#   TELEGRAM_TOPIC_ID  — 可选：论坛话题 id，设置后消息发往该话题。
+# 未配置 token / chat id 时脚本优雅跳过（::warning:: 正常退出），不会红叉。
+name: Telegram Notify
+
+on:
+  push:
+    branches: [main]
+  discussion_comment:
+    types: [created]
+  discussion:
+    types: [created]
+  issues:
+    types: [opened]
+  workflow_run:
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: 'Pages CMS payload as JSON，手动触发可用 {"repository":{"ref":"main"}}'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  # 事件密集时串行发送（不取消：每条消息都值得送达，排队而非丢弃）。
+  group: telegram-notify
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    # 脚本只读事件载荷 + 调 Telegram API，正常 1 分钟内完成；5 分钟上限防失控。
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Send Telegram notification
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_TOPIC_ID: ${{ secrets.TELEGRAM_TOPIC_ID }}
+        run: node scripts/telegram-notify.mjs

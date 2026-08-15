@@ -4,7 +4,8 @@ import { ArrowRight, Check, ExternalLink, Github, Sparkles, ChevronDown, Globe2,
 import { SearchField } from '@/components/SearchField';
 import { siteConfig } from '@config/site.config';
 import { getFriends, getInitialFriends } from '@/services/friends';
-import { Seo } from '../components/Seo';
+import { Seo, buildSiteSchemas } from '../components/Seo';
+import { absoluteSiteUrl } from '@/utils/siteUrl';
 import { Friend } from '../types';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
@@ -211,9 +212,55 @@ export const Friends = () => {
     [filteredFriends]
   );
 
+  // 友链页结构化数据：站点级 schema + CollectionPage + ItemList（枚举全部有效友链，
+  // 帮助爬虫理解友链集合）+ BreadcrumbList。SSG 静态页已标记 schemaFromSeo，不重复注入。
+  const friendsPageDescription = 'D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链，一起分享交流与成长。';
+  const friendsStructuredData = [
+    ...buildSiteSchemas(friendsPageDescription),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: `友链 - ${siteConfig.title}`,
+      description: friendsPageDescription,
+      url: absoluteSiteUrl('/friends', siteConfig.url),
+      inLanguage: 'zh-CN',
+      isPartOf: {
+        '@type': 'WebSite',
+        name: siteConfig.title,
+        url: absoluteSiteUrl('/', siteConfig.url)
+      }
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: '友情链接',
+      url: absoluteSiteUrl('/friends', siteConfig.url),
+      itemListElement: friends
+        .filter((friend) => friend.unavailable !== true)
+        .map((friend, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          name: friend.name,
+          url: friend.url
+        }))
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: '首页', item: absoluteSiteUrl('/', siteConfig.url) },
+        { '@type': 'ListItem', position: 2, name: '友链', item: absoluteSiteUrl('/friends', siteConfig.url) }
+      ]
+    }
+  ];
+
   return (
     <div className="pb-12 pt-8 md:pb-20 md:pt-12">
-      <Seo title="友链" description="D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链，一起分享交流与成长。" />
+      <Seo
+        title="友链"
+        description={friendsPageDescription}
+        structuredData={friendsStructuredData}
+      />
 
       <header className="mb-12 border-b border-zinc-200 pb-8 dark:border-zinc-800 md:pb-10">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Friends Directory</p>

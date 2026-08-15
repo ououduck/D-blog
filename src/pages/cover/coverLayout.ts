@@ -31,7 +31,6 @@ interface LayoutMetrics {
   scale: number;
   scaled: boolean;
   overflow: boolean;
-  maxTextLines: number;
   mainFontSize: number;
   subFontSize: number;
   iconSize: number;
@@ -175,7 +174,6 @@ export function calculateLayoutMetrics(options: LayoutMetricsOptions): LayoutMet
     scale: safeScale,
     scaled,
     overflow,
-    maxTextLines: mainLines,
     mainFontSize: Math.max(options.minFontSize ?? 14, options.fontSize * safeScale),
     subFontSize: Math.max(10, options.subFontSize * safeScale),
     iconSize: options.iconSize * safeScale,

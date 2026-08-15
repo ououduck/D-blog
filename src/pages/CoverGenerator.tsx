@@ -71,6 +71,9 @@ export const CoverGenerator: React.FC = () => {
   const bgImageLoadGenerationRef = useRef(0);
   const iconLoadGenerationRef = useRef(0);
   const renderIdRef = useRef(0);
+  // 标记当前错误提示是否来自“预览生成”：成功重绘时只清除该来源的错误，
+  // 避免背景图/字体/图标上传错误被下一次输入触发的预览静默吞掉。
+  const previewErrorRef = useRef(false);
   const shouldReduceMotion = useReducedMotion();
 
   // 基础文本状态
@@ -82,6 +85,9 @@ export const CoverGenerator: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [renderWarnings, setRenderWarnings] = useState<string[]>([]);
   const customFontFaceRef = useRef<FontFace | null>(null);
+  // 会话内上传过的全部自定义字体：换字体/卸载时逐一从 document.fonts 移除，
+  // 避免只清理最后一个导致此前上传的 FontFace 永久泄漏。
+  const customFontFacesRef = useRef<FontFace[]>([]);
 
   // 排版布局
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('icon-split');
@@ -174,6 +180,8 @@ export const CoverGenerator: React.FC = () => {
   const [showBatchDialog, setShowBatchDialog] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ completed: number; total: number } | null>(null);
   const batchAbortRef = useRef<AbortController | null>(null);
+  // 复制成功反馈的 2 秒复位定时器：连续复制/卸载时清理，避免提前复位或卸载后 setState。
+  const copiedResetTimerRef = useRef<number | null>(null);
 
   const closeIconifyModal = useCallback(() => setShowIconifyModal(false), []);
   useModalOverlay({
@@ -322,9 +330,10 @@ export const CoverGenerator: React.FC = () => {
   const historyReadyRef = useRef(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [presets, setPresets] = useState<StoredPreset[]>([]);
-  const [historyVersion, setHistoryVersion] = useState(0);
-  const canUndo = historyVersion >= 0 && historyRef.current.past.length > 0;
-  const canRedo = historyVersion >= 0 && historyRef.current.future.length > 0;
+  // 撤销/重做历史版本号：仅作为变更 tick 触发重渲染（canUndo/canRedo 直接读取 historyRef），值本身不被消费。
+  const [, setHistoryVersion] = useState(0);
+  const canUndo = historyRef.current.past.length > 0;
+  const canRedo = historyRef.current.future.length > 0;
   const [presetName, setPresetName] = useState('');
 
   const applyDraft = useCallback((draft: CoverDraft) => {
@@ -344,22 +353,39 @@ export const CoverGenerator: React.FC = () => {
   useEffect(() => {
     const draft = readDraft();
     setPresets(readPresets());
-    if (draft) { applyDraft(draft); setDraftRestored(true); }
-    lastDraftRef.current = JSON.stringify(draft || serializableDraft);
+    if (draft) {
+      applyDraft(draft);
+      setDraftRestored(true);
+      // 恢复分支直接以草稿作为历史基线，避免首个提交（恢复前状态）被压入
+      // 撤销历史 —— 否则页面刚加载 canUndo 即为 true，Ctrl+Z 会退回默认状态。
+      lastDraftRef.current = JSON.stringify(draft);
+    } else {
+      // 首次访问无草稿：不把默认状态当作基线（null 表示尚未产生任何编辑），
+      // 避免把“从未编辑过”的默认状态持久化，导致下次访问误弹恢复横幅。
+      lastDraftRef.current = null;
+    }
     historyReadyRef.current = true;
   }, [applyDraft]);
 
   useEffect(() => {
-    const serialized = JSON.stringify(serializableDraft);
     if (!historyReadyRef.current) return;
-    if (restoringDraftRef.current) { restoringDraftRef.current = false; lastDraftRef.current = serialized; writeDraft(serializableDraft); return; }
+    if (restoringDraftRef.current) {
+      // 恢复提交：本 commit 的 serializableDraft 仍是恢复前的旧状态，
+      // 不能作为基线或写入存储；直接跳过，等待恢复值提交后再走常规路径。
+      restoringDraftRef.current = false;
+      return;
+    }
+    const serialized = JSON.stringify(serializableDraft);
     if (lastDraftRef.current && lastDraftRef.current !== serialized) {
       historyRef.current.past = [...historyRef.current.past, JSON.parse(lastDraftRef.current) as CoverDraft].slice(-50);
       historyRef.current.future = [];
       setHistoryVersion((value) => value + 1);
     }
+    const hasBaseline = lastDraftRef.current !== null;
     lastDraftRef.current = serialized;
-    writeDraft(serializableDraft);
+    // 仅存在基线（恢复了草稿，或用户已产生过编辑）时才持久化草稿；
+    // 首次访问的默认状态不写入存储。
+    if (hasBaseline) writeDraft(serializableDraft);
   }, [serializableDraft]);
 
   const undo = useCallback(() => {
@@ -555,7 +581,9 @@ export const CoverGenerator: React.FC = () => {
     return () => {
       if (iconifyDebounceRef.current) window.clearTimeout(iconifyDebounceRef.current);
       iconifyAbortRef.current?.abort();
-      if (customFontFaceRef.current) document.fonts.delete(customFontFaceRef.current);
+      if (copiedResetTimerRef.current !== null) window.clearTimeout(copiedResetTimerRef.current);
+      customFontFacesRef.current.forEach((face) => document.fonts.delete(face));
+      customFontFacesRef.current = [];
     };
   }, []);
 
@@ -577,7 +605,8 @@ export const CoverGenerator: React.FC = () => {
       const file = input.files?.[0];
       if (!file) return;
       const fontFace = await loadFontFile(file);
-      if (customFontFaceRef.current) document.fonts.delete(customFontFaceRef.current);
+      customFontFacesRef.current.forEach((face) => document.fonts.delete(face));
+      customFontFacesRef.current = [fontFace];
       document.fonts.add(fontFace);
       customFontFaceRef.current = fontFace;
       setCustomFont(fontFace.family);
@@ -737,8 +766,9 @@ export const CoverGenerator: React.FC = () => {
     if (!outputCtx) throw new Error('浏览器无法创建封面画布');
     const diagnostics = { scaled: false, truncated: false, overflow: false, lowContrast: false, warnings: [] as string[] };
     await renderCover(outputCtx, buildRenderOptions({ width: outputCanvas.width, height: outputCanvas.height }, diagnostics));
-    setRenderWarnings(Array.from(new Set(diagnostics.warnings)));
-    return outputCanvas;
+    // 警告由调用方在 renderId 校验通过后提交，避免快速连续输入时旧渲染的
+    // 警告覆盖最新参数的结果（见 generateCover）。
+    return { canvas: outputCanvas, warnings: Array.from(new Set(diagnostics.warnings)) };
   }, [buildRenderOptions]);
 
   const generateBatch = useCallback(async (items: BatchCoverItem[]) => {
@@ -793,13 +823,23 @@ export const CoverGenerator: React.FC = () => {
     if (!canvas) return;
     const renderId = ++renderIdRef.current; setIsGenerating(true);
     try {
-      const rendered = await renderCanvas(canvasSize);
+      const { canvas: rendered, warnings } = await renderCanvas(canvasSize);
       if (renderId !== renderIdRef.current) return;
       canvas.width = rendered.width; canvas.height = rendered.height;
       canvas.getContext('2d')?.drawImage(rendered, 0, 0);
-      setFeedback(current => current?.kind === 'error' ? null : current);
+      // 仅在本次预览成功后才提交警告，杜绝旧渲染（renderId 过期）覆盖新结果。
+      setRenderWarnings(warnings);
+      // 成功时只清除由“预览生成”产生的错误提示（如封面生成失败）；
+      // 背景图/字体/图标等上传类错误不会被下一次预览静默吞掉。
+      if (previewErrorRef.current) {
+        previewErrorRef.current = false;
+        setFeedback(current => current?.kind === 'error' ? null : current);
+      }
     } catch (error) {
-      if (renderId === renderIdRef.current) setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '封面生成失败' });
+      if (renderId === renderIdRef.current) {
+        previewErrorRef.current = true;
+        setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '封面生成失败' });
+      }
     } finally {
       if (renderId === renderIdRef.current) setIsGenerating(false);
     }
@@ -810,7 +850,8 @@ export const CoverGenerator: React.FC = () => {
     setIsExporting(true); setFeedback({ kind: 'info', message: '正在生成高清图片，请稍候…' });
     try {
       const size = { width: canvasSize.width * exportScale, height: canvasSize.height * exportScale };
-      const outputCanvas = await renderCanvas(size);
+      const { canvas: outputCanvas, warnings } = await renderCanvas(size);
+      setRenderWarnings(warnings);
       const filename = getExportFilename(exportFilename, exportFormat, exportScale);
       // 说明：JPEG 导出时 buildRenderOptions 已强制 transparentBackground=false，
       // 模板底色（纯黑/纯白）在 renderCover 内绘制为不透明，无需再补背景填充。
@@ -825,10 +866,12 @@ export const CoverGenerator: React.FC = () => {
     if (isGenerating || isExporting) return;
     setIsExporting(true); setFeedback({ kind: 'info', message: '正在生成高清图片，请稍候…' });
     try {
-      const outputCanvas = await renderCanvas({ width: canvasSize.width * exportScale, height: canvasSize.height * exportScale });
+      const { canvas: outputCanvas, warnings } = await renderCanvas({ width: canvasSize.width * exportScale, height: canvasSize.height * exportScale });
+      setRenderWarnings(warnings);
       const result = await copyCanvas(outputCanvas, exportFormat, jpegQuality / 100);
       setCopied(true); setFeedback({ kind: 'success', message: result === 'png-fallback' ? '已复制高清 PNG 到剪贴板（JPEG 已转换为 PNG）' : `已复制高清 ${exportFormat.toUpperCase()} 到剪贴板` });
-      window.setTimeout(() => setCopied(false), 2000);
+      if (copiedResetTimerRef.current !== null) window.clearTimeout(copiedResetTimerRef.current);
+      copiedResetTimerRef.current = window.setTimeout(() => { copiedResetTimerRef.current = null; setCopied(false); }, 2000);
     } catch (error) { setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '复制失败，请直接下载' }); }
     finally { setIsExporting(false); }
   }, [canvasSize, exportFormat, exportScale, isExporting, isGenerating, jpegQuality, renderCanvas]);
@@ -1081,7 +1124,7 @@ export const CoverGenerator: React.FC = () => {
                         onDragLeave={handleBgDragLeave}
                         onDrop={handleBgDrop}
                       >
-                        <p className="mb-3 text-xs leading-6 text-zinc-500 dark:text-zinc-400">背景模板固定保留现有两种：<strong>纯黑</strong> 与 <strong>纯白</strong>。自定义图片会叠加在底色上，可在白底下调节透明度。</p>
+                        <p className="mb-3 text-xs leading-6 text-zinc-500 dark:text-zinc-400">背景模板固定保留现有两种：<strong>纯黑</strong> 与 <strong>纯白</strong>。自定义图片会叠加在底色上，可配合调节图片不透明度。</p>
                         <input ref={bgImageInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleBgImageUpload} className="hidden" />
                         <button type="button" onClick={() => bgImageInputRef.current?.click()} className={dashedBtnClass + ' w-full'}>
                           <Upload size={14} />{bgDragActive ? '松开即可导入' : '上传或拖入背景图片'}
@@ -1788,7 +1831,7 @@ export const CoverGenerator: React.FC = () => {
                     <li>- <strong>内容</strong>：编辑主标题、副标题、图标与黑白模板。</li>
                     <li>- <strong>样式</strong>：调节字体、颜色、阴影、描边，并支持一键重置样式。</li>
                     <li>- <strong>排版</strong>：切换布局模式、文字对齐与装饰元素。</li>
-                    <li>- <strong>导出</strong>：支持比例、格式、倍率与文件名配置，倍率现在会真正影响下载尺寸。</li>
+                    <li>- <strong>导出</strong>：支持比例、格式、倍率与文件名配置，导出倍率决定下载分辨率。</li>
                     <li>- 上传背景图片后可用鼠标或触屏拖动位置、滚轮缩放，并用“重置背景位置”快速归位。</li>
                   </ul>
                 </div>

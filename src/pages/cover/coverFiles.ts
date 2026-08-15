@@ -13,7 +13,12 @@ function validateImageFile(file: File | null | undefined, kind: ImageUploadKind)
   assertFile(file);
   const label = kind === 'background' ? '背景图片' : '图标';
   const limit = kind === 'background' ? BACKGROUND_IMAGE_MAX_BYTES : ICON_IMAGE_MAX_BYTES;
-  if (!(IMAGE_MIME_TYPES as readonly string[]).includes(file.type.toLowerCase())) {
+  // 部分环境（个别移动端浏览器/拖拽来源）file.type 可能为空字符串，
+  // 与字体校验一致，MIME 或扩展名任一通过即可。
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+  const validMime = (IMAGE_MIME_TYPES as readonly string[]).includes(file.type.toLowerCase());
+  const validExtension = ['png', 'jpg', 'jpeg', 'webp'].includes(extension);
+  if (!validMime && !validExtension) {
     throw new Error(`${label}仅支持 PNG、JPEG 或 WebP 格式`);
   }
   if (file.size > limit) throw new Error(`${label}大小不能超过 ${limit / 1024 / 1024}MB`);

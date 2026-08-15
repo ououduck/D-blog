@@ -352,9 +352,12 @@ export const lookupWithTimeout = async (hostname, timeoutMs = DEFAULT_DNS_TIMEOU
  */
 export const isNetworkError = (error) => {
   if (!(error instanceof Error)) return false;
-  // AbortError：只有"内部超时"可重试；外部取消的 message 含 aborted by caller。
+  // AbortError：仅"内部超时"可重试。Node fetch（undici）在 signal abort 时抛出的
+  // DOMException message 恒为 "This operation was aborted"，reason 不会进入 message，
+  // 因此不能依赖 message 区分内外部取消 —— 外部取消由 fetchWithRetry 在调用本函数
+  // 之前通过 externalSignal.aborted 状态拦截（见 fetchWithRetry 的 catch 分支）。
   if (error.name === 'AbortError') {
-    return !error.message.includes('aborted by caller');
+    return true;
   }
   // fetch 网络故障（DNS 失败、连接拒绝、TLS 失败等）统一抛 TypeError。
   return error instanceof TypeError || error.name === 'FetchError';

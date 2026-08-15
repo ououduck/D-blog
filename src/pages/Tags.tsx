@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
+import { siteConfig } from '@config/site.config';
 import { getInitialPosts, getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
-import { Seo } from '../components/Seo';
+import { Seo, buildSiteSchemas } from '../components/Seo';
+import { absoluteSiteUrl } from '@/utils/siteUrl';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -151,9 +153,67 @@ export const Tags = () => {
     setSearchParams(nextParams);
   };
 
+  // 标签筛选页（?tag=xxx）为可索引内容页（canonical 自指保留 tag 参数），
+  // 输出独立的 title/description，避免所有标签筛选页共用「标签」这一泛化标题。
+  const tagsPageDescription = 'D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。';
+  const seoTitle = selectedTag && selectedTagInfo
+    ? `标签：${selectedTag} - ${siteConfig.title}`
+    : `标签 - ${siteConfig.title}`;
+  const seoDescription = selectedTag && selectedTagInfo
+    ? `D-blog 标签「${selectedTag}」下的全部文章，共 ${selectedTagInfo.count} 篇，涵盖前端开发、后端运维、AI 工具与效率软件测评等主题。`
+    : tagsPageDescription;
+
+  // 站点级 schema 与页面级 CollectionPage / ItemList（枚举各 /tags?tag= 筛选页 URL，
+  // 帮助爬虫发现子页）/ BreadcrumbList 一并输出，SSG 静态页不再重复注入。
+  const tagsStructuredData = [
+    ...buildSiteSchemas(seoDescription),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: `标签 - ${siteConfig.title}`,
+      description: tagsPageDescription,
+      url: absoluteSiteUrl('/tags', siteConfig.url),
+      inLanguage: 'zh-CN',
+      isPartOf: {
+        '@type': 'WebSite',
+        name: siteConfig.title,
+        url: absoluteSiteUrl('/', siteConfig.url)
+      }
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: '标签列表',
+      url: absoluteSiteUrl('/tags', siteConfig.url),
+      itemListElement: allTags.map((tag, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: tag.name,
+        url: absoluteSiteUrl(`/tags?tag=${encodeURIComponent(tag.name)}`, siteConfig.url)
+      }))
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: '首页', item: absoluteSiteUrl('/', siteConfig.url) },
+        ...(selectedTag && selectedTagInfo
+          ? [
+              { '@type': 'ListItem', position: 2, name: '标签', item: absoluteSiteUrl('/tags', siteConfig.url) },
+              { '@type': 'ListItem', position: 3, name: selectedTag, item: absoluteSiteUrl(`/tags?tag=${encodeURIComponent(selectedTag)}`, siteConfig.url) }
+            ]
+          : [{ '@type': 'ListItem', position: 2, name: '标签', item: absoluteSiteUrl('/tags', siteConfig.url) }])
+      ]
+    }
+  ];
+
   return (
     <div className="pb-8 md:pb-14">
-      <Seo title="标签" description="D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。" />
+      <Seo
+        title={seoTitle}
+        description={seoDescription}
+        structuredData={tagsStructuredData}
+      />
 
       <header className="mb-10 border-b border-zinc-200 pb-8 dark:border-zinc-800 md:pb-10">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Tags Collection</p>

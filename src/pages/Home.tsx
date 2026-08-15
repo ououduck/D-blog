@@ -622,6 +622,22 @@ export const Home = () => {
     [currentPosts, heroPost]
   );
 
+  // 分类筛选页（?category=xxx）为可索引内容页（robots: index,follow，canonical 自指），
+  // 输出独立的 title/description，避免与首页共用同一套站点级标题造成软重复；
+  // 无效分类（URL 直接拼写）回退首页标题。
+  const activeCategory = categoryFromUrl && categories.includes(categoryFromUrl) ? categoryFromUrl : null;
+  const categoryPostCount = activeCategory
+    ? allPosts.filter((post) => post.category === activeCategory).length
+    : 0;
+  const seoTitle = hasSearchQuery && results.length > 0
+    ? `搜索：${searchQuery}`
+    : activeCategory
+      ? `分类：${activeCategory} - ${siteConfig.title}`
+      : siteConfig.title;
+  const seoDescription = activeCategory
+    ? `D-blog「${activeCategory}」分类下的全部文章（共 ${categoryPostCount} 篇），涵盖前端开发、后端运维、AI 工具与效率软件测评等主题。`
+    : siteConfig.description;
+
   return (
       <div className="pb-8 md:pb-12">
       {/* 站内搜索页（?q=xxx）统一 noindex：搜索过滤在客户端执行，静态 HTML 无法
@@ -629,8 +645,8 @@ export const Home = () => {
           （Google 官方对站内搜索结果页的建议即是不索引）。该 noindex 由 Seo 组件
           根据 URL 中的 q 参数自动输出，无需在此显式传入。 */}
       <Seo
-        title={hasSearchQuery && results.length > 0 ? `搜索：${searchQuery}` : siteConfig.title}
-        description={siteConfig.description}
+        title={seoTitle}
+        description={seoDescription}
       />
       <Hero />
 

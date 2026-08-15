@@ -39,13 +39,20 @@ export const BatchCoverDialog: React.FC<BatchCoverDialogProps> = ({ isOpen, onCl
     const files = Array.from(event.target.files || []);
     setIsReading(true); setItems([]); setIssues([]);
     const nextItems: BatchCoverItem[] = []; const nextIssues: BatchParseIssue[] = [];
-    for (const file of files) {
-      const result = parseBatchText(await file.text(), file.name);
+    try {
+      for (const file of files) {
+        const result = parseBatchText(await file.text(), file.name);
+        if (generation !== readGenerationRef.current) return;
+        nextItems.push(...result.items); nextIssues.push(...result.issues.map((issue) => ({ ...issue, message: `${file.name}：${issue.message}` })));
+      }
       if (generation !== readGenerationRef.current) return;
-      nextItems.push(...result.items); nextIssues.push(...result.issues.map((issue) => ({ ...issue, message: `${file.name}：${issue.message}` })));
+      setItems(nextItems); setIssues(nextIssues);
+    } finally {
+      // 无论读取是否被取消（弹窗关闭/再次选择文件），都清空 input 值，
+      // 否则下次选择同一文件时 onChange 不会触发。
+      event.target.value = '';
     }
-    if (generation !== readGenerationRef.current) return;
-    setItems(nextItems); setIssues(nextIssues); setIsReading(false); event.target.value = '';
+    setIsReading(false);
   };
 
   return (

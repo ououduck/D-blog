@@ -1,0 +1,85 @@
+# ci.yml — 全量 CI 检测（每次 push / PR 自动运行，不部署）。
+#
+# 与 deploy.yml（手动部署）解耦：日常任何 push 都会先经过这里，
+# 通过类型检查、站点数据生成（含文章内容/链接校验）、生产构建与
+# 构建/SEO 双审计，保证 main 分支随时可部署 —— 部署按钮只是最后一公里。
+#
+# 触发方式（无需手动操作）：
+#   - push：任意分支的每次提交推送（含 Pages CMS 保存内容、友链 bot 推送等）；
+#   - pull_request：任意 PR 的每次提交推送。
+#
+# 注意：CI 结果会自动被 telegram-notify.yml 的 workflow_run: completed
+# 捕获并推送到 Telegram（成功/失败/取消），无需为此 workflow 额外配置。
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  # 同一分支/PR 连续触发只保留最新一次：快速迭代时取消旧 run，避免排队浪费额度。
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ── 快速门禁：类型检查 + 站点数据生成（含文章内容/链接校验）──
+  check:
+    name: Typecheck & content check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run checks
+        # npm run check = typecheck（tsc --noEmit）+ gen:data（生成站点数据，
+        # 并校验文章 front matter、内部链接、本地图片引用是否有效）。
+        run: npm run check
+
+  # ── 完整门禁：生产构建（客户端 + SSR + SSG）+ 构建审计 + SEO 审计 ──
+  build:
+    name: Production build & audits
+    # 类型/内容检查通过后才跑完整构建，失败时快速止损（省 20+ 分钟）。
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        # npm run build 依次执行：数据生成 → OG 分享卡片 → 客户端构建 →
+        # SSR 构建 → 模板快照 → SSG 全量静态化 → 构建审计 → SEO 审计。
+        # 任一阶段失败即整体失败，与 deploy.yml 使用完全相同的构建流程。
+        run: npm run build
+        env:
+          VITE_SITE_URL: https://blog.pldduck.com
+
+      - name: Upload dist artifact
+        # 上传构建产物，便于下载检查 / 本地预览（部署仍由 deploy.yml 独立构建）。
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error

@@ -868,6 +868,20 @@ const generateSitemap = () => {
     'User-agent: cohere-ai',
     'Allow: /',
     '',
+    // OpenAI 搜索/聊天助手（ChatGPT 联网搜索、SearchGPT）与 xAI Grok 搜索。
+    'User-agent: OAI-SearchBot',
+    'Allow: /',
+    '',
+    'User-agent: ChatGPT-User',
+    'Allow: /',
+    '',
+    'User-agent: GrokBot',
+    'Allow: /',
+    '',
+    // 字节跳动/抖音系（豆包、抖音搜索）的通用爬虫。
+    'User-agent: Bytespider',
+    'Allow: /',
+    '',
     `Sitemap: ${siteAbsoluteUrl('/sitemap-index.xml')}`,
     ''
   ].join('\r\n');

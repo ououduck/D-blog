@@ -1,7 +1,7 @@
 import { Github, Mail, Code, Terminal } from 'lucide-react';
 import { siteConfig } from '@config/site.config';
 import { absoluteSiteUrl } from '@/utils/siteUrl';
-import { Seo } from '../components/Seo';
+import { Seo, buildSiteSchemas } from '../components/Seo';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { Surface } from '@/components/ui/Surface';
 import { IssueSubscriptionCard } from '@/components/IssueSubscriptionCard';
@@ -29,15 +29,20 @@ const aboutPageSchema = {
   }
 };
 
+// 关于页描述：Seo meta 与站点级 schema 共用同一文案，保证一致。
+const aboutPageDescription = '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。';
+
 export const About = () => {
   return (
     <div className="mx-auto max-w-4xl pb-10 pt-6 md:pb-16 md:pt-10">
       <Seo
         title="关于"
-        description="关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。"
+        description={aboutPageDescription}
         url="/about"
         image={siteConfig.author.avatar}
-        structuredData={aboutPageSchema}
+        // ProfilePage 与站点级 WebSite + Organization schema 一并输出，
+        // 保证全站各页 schema 一致（SSG 已标记 schemaFromSeo，不再重复注入）。
+        structuredData={[ ...buildSiteSchemas(aboutPageDescription), aboutPageSchema ]}
       />
 
       <header className="mb-6 md:mb-8">

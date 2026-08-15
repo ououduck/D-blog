@@ -407,13 +407,13 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   };
 
   const staticPages = [
-    { path: 'archive', title: `归档 - ${siteConfig.title}`, description: 'D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评与折腾记录，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。', schemaType: 'CollectionPage' },
-    { path: 'tags', title: `标签 - ${siteConfig.title}`, description: 'D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。', schemaType: 'CollectionPage' },
+    { path: 'archive', title: `归档 - ${siteConfig.title}`, description: 'D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评与折腾记录，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。', schemaType: 'CollectionPage', schemaFromSeo: true },
+    { path: 'tags', title: `标签 - ${siteConfig.title}`, description: 'D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。', schemaType: 'CollectionPage', schemaFromSeo: true },
     { path: 'stats', title: `统计 - ${siteConfig.title}`, description: 'D-blog 站点数据统计面板，展示文章总数、累计字数、分类与标签分布、图片与代码规模等核心内容数据。', schemaType: 'WebPage' },
-    { path: 'about', title: `关于 - ${siteConfig.title}`, description: '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。', schemaType: 'ProfilePage' },
-    { path: 'friends', title: `友链 - ${siteConfig.title}`, description: 'D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链，一起分享交流与成长。', schemaType: 'CollectionPage' },
-    { path: 'shuoshuo', title: `说说 - ${siteConfig.title}`, description: 'D-blog 说说：类似朋友圈的短动态分享，用一句话、一张图记录当下的想法与生活片段，Markdown 书写，随性更新。', schemaType: 'CollectionPage' },
-    { path: 'guestbook', title: `留言板 - ${siteConfig.title}`, description: '在 D-blog 留言板留下你的足迹：闲聊、建议、问题反馈都可以，登录 GitHub 账号即可留言。', schemaType: 'WebPage' },
+    { path: 'about', title: `关于 - ${siteConfig.title}`, description: '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。', schemaType: 'ProfilePage', schemaFromSeo: true },
+    { path: 'friends', title: `友链 - ${siteConfig.title}`, description: 'D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链，一起分享交流与成长。', schemaType: 'CollectionPage', schemaFromSeo: true },
+    { path: 'shuoshuo', title: `说说 - ${siteConfig.title}`, description: 'D-blog 说说：类似朋友圈的短动态分享，用一句话、一张图记录当下的想法与生活片段，Markdown 书写，随性更新。', schemaType: 'CollectionPage', schemaFromSeo: true },
+    { path: 'guestbook', title: `留言板 - ${siteConfig.title}`, description: '在 D-blog 留言板留下你的足迹：闲聊、建议、问题反馈都可以，登录 GitHub 账号即可留言。', schemaType: 'WebPage', schemaFromSeo: true },
     { path: 'cover', title: `封面生成 - ${siteConfig.title}`, description: '在线免费生成精美博客文章封面图片，支持自定义文字、图标与渐变背景，适配多种社交分享比例，开箱即用无需登录。', schemaType: 'WebApplication' },
     { path: 'watermark', title: `水印工具 - ${siteConfig.title}`, description: '在浏览器中免费为图片添加文字水印，支持自定义文字样式、实时预览与本地导出，无需上传文件，保护图片版权。', schemaType: 'WebApplication' },
     { path: 'sponsor', title: `赞助 - ${siteConfig.title}`, description: '支持 D-blog 的多种方式：贡献代码、投稿原创文章或通过赞助链接，帮助博客持续输出高质量内容，感谢每一位支持者。', schemaType: 'WebPage' }
@@ -491,7 +491,9 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
       skippedPages.push(`/${page.path}`);
       continue;
     }
-    const schema = createStaticPageSchema(page);
+    // 页面级 schema 已由页面组件 Seo 的 structuredData 输出（about/shuoshuo/guestbook，
+    // 以及 tags/archive/friends 等页），SSG 不再重复注入，避免同一 @type 出现两份 JSON-LD。
+    const schema = page.schemaFromSeo ? '' : createStaticPageSchema(page);
     try {
       await writePage(`/${page.path}`, page.path, schema);
     } catch (error) {

@@ -87,10 +87,6 @@ html.theme-switching .editorial-input {
 }
 
 @layer components {
-  .editorial-section {
-    @apply border-t border-zinc-200 pt-8 dark:border-zinc-800 md:pt-10;
-  }
-
   .editorial-surface {
     @apply rounded-surface border border-zinc-300 bg-paper shadow-none dark:border-zinc-700 dark:bg-zinc-900;
   }
@@ -137,10 +133,6 @@ html.theme-switching .editorial-input {
     @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon border border-zinc-300 bg-paper text-zinc-600 shadow-none transition-[background-color,border-color,color,opacity,transform] duration-150 hover:border-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white;
   }
 
-  .editorial-status {
-    @apply rounded-surface border px-4 py-3 text-sm leading-6;
-  }
-
   .fixed-control-position {
     right: max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem));
   }
@@ -156,14 +148,6 @@ html.theme-switching .editorial-input {
   .editorial-button-primary:focus-visible,
   .editorial-icon-button:focus-visible {
     @apply outline outline-2 outline-offset-2 outline-zinc-900 dark:outline-zinc-100;
-  }
-
-  .touch-control {
-    @apply min-h-11 min-w-11;
-  }
-
-  .range-control {
-    @apply flex min-h-11 items-center;
   }
 
   .service-worker-prompt-bottom {
@@ -713,22 +697,6 @@ html.theme-switching .editorial-input {
     right: 2rem;
   }
 }
-
-  .post-nav-item {
-    @apply flex-1 rounded-none border border-zinc-300 bg-transparent p-4 shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-900 md:p-5;
-    content-visibility: auto;
-    contain-intrinsic-size: auto 80px;
-  }
-
-  .post-nav-label {
-    @apply mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500;
-  }
-
-  .post-nav-title {
-    @apply line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-700 dark:text-zinc-200 md:text-[15px];
-  }
-
-
 
 .prose img {
   @apply rounded-media;

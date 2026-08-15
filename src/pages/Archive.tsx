@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronDown, ChevronRight, ArrowUpRight } from 'lucide-react';
+import { siteConfig } from '@config/site.config';
 import { getInitialPosts, getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
-import { Seo } from '../components/Seo';
+import { Seo, buildSiteSchemas } from '../components/Seo';
+import { absoluteSiteUrl } from '@/utils/siteUrl';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { SearchField } from '@/components/SearchField';
 import { usePostSearch } from '@/hooks/usePostSearch';
@@ -244,9 +246,41 @@ export const ArchivePage = () => {
     }
   };
 
+  // 归档页结构化数据：站点级 schema + CollectionPage + BreadcrumbList。
+  // 页面级 schema 与 SSG 注入互补：SSG 静态页已标记 schemaFromSeo，不再重复注入。
+  const archivePageDescription = 'D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评与折腾记录，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。';
+  const archiveStructuredData = [
+    ...buildSiteSchemas(archivePageDescription),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: `归档 - ${siteConfig.title}`,
+      description: archivePageDescription,
+      url: absoluteSiteUrl('/archive', siteConfig.url),
+      inLanguage: 'zh-CN',
+      isPartOf: {
+        '@type': 'WebSite',
+        name: siteConfig.title,
+        url: absoluteSiteUrl('/', siteConfig.url)
+      }
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: '首页', item: absoluteSiteUrl('/', siteConfig.url) },
+        { '@type': 'ListItem', position: 2, name: '归档', item: absoluteSiteUrl('/archive', siteConfig.url) }
+      ]
+    }
+  ];
+
   return (
     <div className="pb-8 md:pb-14">
-      <Seo title="归档" description="D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评与折腾记录，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。" />
+      <Seo
+        title="归档"
+        description={archivePageDescription}
+        structuredData={archiveStructuredData}
+      />
 
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-zinc-200 pb-5 dark:border-zinc-800 md:pb-6">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">

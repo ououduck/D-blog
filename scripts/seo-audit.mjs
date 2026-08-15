@@ -144,6 +144,9 @@ for (const file of files) {
   const ldBlocks = html.match(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) ?? [];
   if (ldBlocks.length === 0) fail(relativePath, 'jsonld', '缺少 JSON-LD 结构化数据');
   else {
+    // 同一 @type 在一页内只应出现一次：SSG 静态 schema 与页面 Seo structuredData
+    // 若重复注入（如 ProfilePage × 2），属于结构化数据质量问题，统一告警。
+    const typeCounts = new Map();
     for (const block of ldBlocks) {
       try {
         const raw = block.replace(/^<script[^>]*>/i, '').replace(/<\/script>$/i, '');
@@ -151,6 +154,9 @@ for (const file of files) {
         const list = Array.isArray(parsed) ? parsed : [parsed];
         for (const item of list) {
           const type = item?.['@type'];
+          if (typeof type === 'string') {
+            typeCounts.set(type, (typeCounts.get(type) ?? 0) + 1);
+          }
           if (type === 'BlogPosting') {
             if (!item.datePublished) warn(relativePath, 'jsonld', 'BlogPosting 缺少 datePublished');
             if (!item.author) fail(relativePath, 'jsonld', 'BlogPosting 缺少 author');
@@ -173,6 +179,9 @@ for (const file of files) {
       } catch (err) {
         fail(relativePath, 'jsonld', `JSON-LD 解析失败：${err.message.slice(0, 80)}`);
       }
+    }
+    for (const [type, count] of typeCounts) {
+      if (count > 1) warn(relativePath, 'jsonld', `JSON-LD @type「${type}」出现 ${count} 次，页面级 schema 重复注入，应只保留一份`);
     }
   }
 

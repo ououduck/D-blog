@@ -193,3 +193,12 @@ actions:
       title: 确认检查全部友链？
       message: 将逐个访问所有友链网站：无法访问的站点会标记为「已失联」，重新上线的站点会自动恢复为正常状态。检查结果会以单个 commit 直接推送到仓库（不触发部署）。
       button: 开始检查
+  # ── Telegram 通知测试：验证 Bot Token / Chat ID 配置，并向 Telegram 发送测试消息 ──
+  - name: test-telegram
+    label: 🔔 测试 Telegram 通知
+    workflow: telegram-notify.yml
+    ref: current
+    confirm:
+      title: 确认发送测试消息？
+      message: 将触发 Telegram 通知 workflow，向已配置的 Chat 发送一条测试消息（需先在仓库 Secrets 配置 TELEGRAM_BOT_TOKEN 与 TELEGRAM_CHAT_ID）。
+      button: 发送测试
