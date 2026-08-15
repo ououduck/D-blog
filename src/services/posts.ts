@@ -1,3 +1,9 @@
+/**
+ * 文章数据层：构建期数据（generated/posts.json）经 eager glob 内联同步可读，
+ * 正文 Markdown 按需动态 import（import.meta.glob + ?raw），搜索索引
+ * （generated/posts-search.json）首次使用时懒加载并缓存。
+ * 提供全文搜索的多维权重评分（searchPosts）与结果 LRU 缓存。
+ */
 import { Post, PostMetadata } from '../types';
 import { getOfflinePost } from './offlinePosts';
 
@@ -101,10 +107,16 @@ export const getFieldMatchScore = (value: string, terms: string[], fullQuery: st
   return score;
 };
 
+/** 同步读取构建期内联的文章元数据列表（新 → 旧，SSG / 首帧渲染用）。 */
 export const getInitialPosts = (): PostMetadata[] => initialPosts;
 
+/** 异步读取文章元数据列表（保留 async 签名与调用方兼容）。 */
 export const getPosts = async (): Promise<PostMetadata[]> => initialPosts;
 
+/**
+ * 按 id 读取单篇文章（含正文）：优先动态加载打包的 Markdown 原文，失败时
+ * 回退离线收藏副本；两者皆不可得且元数据存在时抛错（Markdown 文件缺失）。
+ */
 export const getPostById = async (id: string): Promise<Post | undefined> => {
   const meta = initialPosts.find((post) => post.id === id);
   const relativePath = meta ? `../..${meta.filePath}` : undefined;
@@ -263,6 +275,11 @@ const getBestSearchMatch = (
   return undefined;
 };
 
+/**
+ * 全文搜索：对标题/分类/摘要/正文/标签做多维权重评分（scope 可限定搜索域），
+ * 结果按分数降序、日期倒序，并带命中片段（searchMatch）；结果按
+ * scope::query 键做 LRU 缓存。空查询返回空数组。
+ */
 export const searchPosts = async (
   query: string,
   options: { scope?: PostSearchScope } = {},

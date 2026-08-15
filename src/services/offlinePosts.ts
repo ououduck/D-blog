@@ -1,3 +1,12 @@
+/**
+ * 离线收藏数据层（"我的收藏"）。
+ *
+ * 存储拓扑：IndexedDB 为主存储（可存完整正文与大体积封面），localStorage 为
+ * 降级镜像 + 墓碑（删除决策）记录；两处通过 reconcileStores 在每次读写前合并，
+ * 并用墓碑时间戳解决跨标签页/并发场景下的"删除后复活"竞态。跨标签页变更通过
+ * BroadcastChannel + storage 事件 + 同页 CustomEvent 三路通知订阅者。
+ * 保存成功后尽力而为地把文章资源写入 Service Worker 缓存，实现断网离线阅读。
+ */
 import type { Post, PostMetadata } from '../types';
 import { assetUrl, routeUrl } from '@/utils/siteUrl';
 
@@ -690,12 +699,14 @@ const ensureSyncListeners = () => {
   }
 };
 
+/** 订阅离线收藏变更（同页事件 / storage 事件 / BroadcastChannel 三路通知）。返回取消订阅函数。 */
 export const subscribeOfflinePosts = (listener: OfflinePostsListener): (() => void) => {
   ensureSyncListeners();
   listeners.add(listener);
   return () => listeners.delete(listener);
 };
 
+/** 按 id 读取单篇离线收藏；不存在或读取失败时返回 undefined。 */
 export const getOfflinePost = async (id: string): Promise<OfflinePost | undefined> => {
   if (typeof id !== 'string' || !id.trim()) return undefined;
   try {
@@ -706,6 +717,7 @@ export const getOfflinePost = async (id: string): Promise<OfflinePost | undefine
   }
 };
 
+/** 读取全部离线收藏（主存储优先，降级镜像兜底）。 */
 export const getOfflinePosts = async (): Promise<OfflinePost[]> => {
   try {
     await reconcileStores();
@@ -715,6 +727,7 @@ export const getOfflinePosts = async (): Promise<OfflinePost[]> => {
   }
 };
 
+/** 保存一篇离线收藏（含 SW 离线资源缓存，尽力而为）；被更新的墓碑拒绝时抛错。 */
 export const saveOfflinePost = async (post: OfflinePostInput): Promise<OfflinePost> => {
   const offlinePost = createOfflinePost(post);
   let savedToIndexedDb = false;
@@ -776,6 +789,7 @@ export const saveOfflinePost = async (post: OfflinePostInput): Promise<OfflinePo
   return offlinePost;
 };
 
+/** 删除一篇离线收藏（写入墓碑防止并发"复活"，双存储同步清理）。 */
 export const removeOfflinePost = async (id: string): Promise<void> => {
   if (typeof id !== 'string' || !id.trim()) return;
   const tombstones = readTombstones();
