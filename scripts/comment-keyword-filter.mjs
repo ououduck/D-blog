@@ -46,14 +46,15 @@ const GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql';
 
 /**
  * 读取并校验 GitHub Actions 事件载荷。
- * @returns {{ eventName: string, subject: { kind: 'comment' | 'discussion', id: string, author: string, text: string, url: string } } | null}
+ * @returns {{ fatal: boolean, eventName?: string, subject?: { kind: 'comment' | 'discussion', id: string, author: string, text: string, url: string } }}
+ *          fatal:true 表示载荷不可读（调用方应红叉）；fatal:false 且无 subject 表示事件不适用（良性跳过）。
  */
 const loadEventPayload = () => {
   const eventName = process.env.GITHUB_EVENT_NAME;
   const eventPath = process.env.GITHUB_EVENT_PATH;
   if (!eventPath) {
     logger.error('GITHUB_EVENT_PATH is not set; expected discussion_comment/discussion event');
-    return null;
+    return { fatal: true };
   }
 
   let payload;
@@ -61,7 +62,7 @@ const loadEventPayload = () => {
     payload = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
   } catch (error) {
     logger.error('Failed to read GITHUB_EVENT_PATH payload', { error: formatError(error) });
-    return null;
+    return { fatal: true };
   }
 
   let subject = null;
@@ -85,7 +86,9 @@ const loadEventPayload = () => {
 
   if (!subject || !subject.id || !subject.text) {
     logger.warn('Event payload does not contain checkable content; skipping', { eventName });
-    return null;
+    // 良性跳过：事件类型不适用或正文为空，返回 fatal:false 让调用方正常退出，
+    // 避免事件级 job 因「无内容可检查」而无谓红叉。
+    return { fatal: false };
   }
 
   return {
@@ -197,13 +200,16 @@ const main = async () => {
   const config = loadConfig(logger);
   if (!config) return;
 
-  const event = loadEventPayload();
-  if (!event) {
-    logger.error('Skipping: could not load event payload');
-    process.exitCode = 1;
+  const result = loadEventPayload();
+  if (!result || result.fatal) {
+    // 只有载荷真正不可读（配置/环境错误）才红叉；事件类型不适用/无检查内容时
+    // loadEventPayload 已 warn 并返回 { fatal: false }，此处正常退出。
+    if (result?.fatal) {
+      process.exitCode = 1;
+    }
     return;
   }
-  const { subject } = event;
+  const { subject } = result;
 
   // 豁免：配置名单 + 机器人账号（仓库主不再自动豁免，按配置执行）。
   if (isExemptAuthor(subject.author, config.exemptUsers)) {
