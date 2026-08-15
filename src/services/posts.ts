@@ -12,8 +12,6 @@ const searchResultsCache = new Map<string, PostSearchResult[]>();
 
 const postFiles = import.meta.glob('../../posts/*.md', { query: '?raw', import: 'default' });
 
-const loadPostsData = async (): Promise<PostMetadata[]> => initialPosts;
-
 const loadPostsSearchData = async (): Promise<Array<PostMetadata & { searchText?: string }>> => {
   const data = await import('../../generated/posts-search.json');
   return data.default as Array<PostMetadata & { searchText?: string }>;
@@ -105,28 +103,22 @@ export const getFieldMatchScore = (value: string, terms: string[], fullQuery: st
 
 export const getInitialPosts = (): PostMetadata[] => initialPosts;
 
-export const getPosts = async (): Promise<PostMetadata[]> => {
-  return loadPostsData();
-};
+export const getPosts = async (): Promise<PostMetadata[]> => initialPosts;
 
 export const getPostById = async (id: string): Promise<Post | undefined> => {
-  const allPosts = await loadPostsData();
-  const meta = allPosts.find((post) => post.id === id);
+  const meta = initialPosts.find((post) => post.id === id);
+  const relativePath = meta ? `../..${meta.filePath}` : undefined;
+  const loader = relativePath ? postFiles[relativePath] : undefined;
 
-  if (meta) {
-    const relativePath = `../..${meta.filePath}`;
-    const loader = postFiles[relativePath];
-
-    if (loader) {
-      try {
-        const rawContent = (await loader()) as string;
-        return {
-          ...meta,
-          content: stripFrontmatter(rawContent),
-        };
-      } catch (error) {
-        console.warn('Failed to load bundled Markdown, trying offline copy.', error);
-      }
+  if (meta && loader) {
+    try {
+      const rawContent = (await loader()) as string;
+      return {
+        ...meta,
+        content: stripFrontmatter(rawContent),
+      };
+    } catch (error) {
+      console.warn('Failed to load bundled Markdown, trying offline copy.', error);
     }
   }
 
@@ -140,7 +132,6 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
     return undefined;
   }
 
-  const relativePath = `../..${meta.filePath}`;
   const error = new Error(`Markdown file not found: ${relativePath}`);
   console.error(error);
   throw error;

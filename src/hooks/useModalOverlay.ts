@@ -18,7 +18,7 @@ const FOCUSABLE_SELECTOR = [
   'object',
   'embed',
   '[contenteditable="true"]',
-  '[tabindex]:not([tabindex="-1"])'
+  '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
 const openOverlayStack: symbol[] = [];
@@ -50,7 +50,7 @@ export const unlockBodyScroll = () => {
   }
 };
 
-const getFocusableElements = (container: HTMLElement) => (
+const getFocusableElements = (container: HTMLElement) =>
   Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((element) => {
     if (element.getAttribute('aria-hidden') === 'true' || element.closest('[inert]')) {
       return false;
@@ -58,15 +58,9 @@ const getFocusableElements = (container: HTMLElement) => (
 
     const style = window.getComputedStyle(element);
     return style.visibility !== 'hidden' && style.display !== 'none';
-  })
-);
+  });
 
-export function useModalOverlay({
-  isOpen,
-  onClose,
-  initialFocusRef,
-  containerRef
-}: UseModalOverlayOptions) {
+export function useModalOverlay({ isOpen, onClose, initialFocusRef, containerRef }: UseModalOverlayOptions) {
   const overlayIdRef = useRef(Symbol('modal-overlay'));
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -79,21 +73,19 @@ export function useModalOverlay({
     if (!isOpen) return;
 
     const overlayId = overlayIdRef.current;
-    previousActiveElementRef.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    previousActiveElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     openOverlayStack.push(overlayId);
     lockBodyScroll();
 
-    const getContainer = () => containerRef?.current
-      ?? initialFocusRef?.current?.closest<HTMLElement>('[role="dialog"], [aria-modal="true"]')
-      ?? null;
+    const getContainer = () =>
+      containerRef?.current ??
+      initialFocusRef?.current?.closest<HTMLElement>('[role="dialog"], [aria-modal="true"]') ??
+      null;
 
     const focusFrame = window.requestAnimationFrame(() => {
       const container = getContainer();
-      const focusTarget = initialFocusRef?.current
-        ?? (container ? getFocusableElements(container)[0] : null)
-        ?? container;
+      const focusTarget =
+        initialFocusRef?.current ?? (container ? getFocusableElements(container)[0] : null) ?? container;
       focusTarget?.focus({ preventScroll: true });
     });
 
@@ -151,9 +143,11 @@ export function useModalOverlay({
       }
       unlockBodyScroll();
 
+      // 仅当本弹层是栈中最后一个（关闭后无其他弹层）时恢复焦点：
+      // 关闭下层弹层而上方仍有弹层时恢复焦点会把焦点从上层弹层抢走。
       const previousActiveElement = previousActiveElementRef.current;
       previousActiveElementRef.current = null;
-      if (previousActiveElement?.isConnected) {
+      if (openOverlayStack.length === 0 && previousActiveElement?.isConnected) {
         window.requestAnimationFrame(() => {
           previousActiveElement.focus({ preventScroll: true });
         });

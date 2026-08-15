@@ -47,9 +47,7 @@ const logger = createActionLogger('telegram');
 /* 常量                                                                 */
 /* ------------------------------------------------------------------ */
 
-/** Telegram sendMessage 单条消息硬上限（字符）。 */
-
-/** 安全预算：HTML 标签也计长度，留余量避免踩线。 */
+/** 安全预算：HTML 标签也计长度，留余量避免踩线（Telegram 单条硬上限 4096 字符）。 */
 const TELEGRAM_SAFE_BUDGET = 4000;
 /** 单次发送超时（毫秒）。 */
 const TELEGRAM_TIMEOUT_MS = 15000;

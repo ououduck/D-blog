@@ -1,7 +1,9 @@
 const DEFAULT_BASE_PATH = '/';
 
-export const normalizeBasePath = (value, { relativeFallback = '/' } = {}) => {
-  let raw = String(value ?? '').trim().replace(/\\/g, '/');
+const normalizeBasePath = (value, { relativeFallback = '/' } = {}) => {
+  let raw = String(value ?? '')
+    .trim()
+    .replace(/\\/g, '/');
 
   // Git Bash on Windows rewrites URL-like environment values such as
   // "/repo/" into the MSYS installation path before launching npm.
@@ -53,9 +55,10 @@ export const withBasePath = (value, basePath = getBasePath()) => {
   const baseWithoutTrailing = normalizedBase === '/' ? '' : normalizedBase.replace(/\/$/, '');
   const normalizedPath = pathname.startsWith('/') ? pathname : `/${pathname}`;
 
-  if (baseWithoutTrailing && (
-    normalizedPath === baseWithoutTrailing || normalizedPath.startsWith(`${baseWithoutTrailing}/`)
-  )) {
+  if (
+    baseWithoutTrailing &&
+    (normalizedPath === baseWithoutTrailing || normalizedPath.startsWith(`${baseWithoutTrailing}/`))
+  ) {
     return `${normalizedPath}${suffix}`;
   }
 

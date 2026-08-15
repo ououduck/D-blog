@@ -9,11 +9,15 @@ import { RotatingText } from '@/components/effects/RotatingText';
 import { Magnet } from '@/components/effects/Magnet';
 import { Reveal } from '@/components/effects/Reveal';
 
+// 关于页描述：Seo meta 与站点级/ProfilePage schema 共用同一文案，保证一致。
+const aboutPageDescription =
+  '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。';
+
 const aboutPageSchema = {
   '@context': 'https://schema.org',
   '@type': 'ProfilePage',
   name: `${siteConfig.author.name} - 关于`,
-  description: '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的用户界面。',
+  description: aboutPageDescription,
   url: absoluteSiteUrl('/about', siteConfig.url),
   inLanguage: 'zh-CN',
   isPartOf: {
@@ -31,10 +35,6 @@ const aboutPageSchema = {
     sameAs: [siteConfig.social.github],
   },
 };
-
-// 关于页描述：Seo meta 与站点级 schema 共用同一文案，保证一致。
-const aboutPageDescription =
-  '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。';
 
 export const About = () => {
   return (

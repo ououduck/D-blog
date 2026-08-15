@@ -57,7 +57,7 @@ const validateFriendLinkFilename = (filename: string): string | null => {
     return '请输入文件名。';
   }
 
-  if (!FILENAME_PATTERN.test(trimmed) || trimmed.toLowerCase() === '.json') {
+  if (!FILENAME_PATTERN.test(trimmed)) {
     return '文件名只能包含英文字母、数字、短横线和下划线。';
   }
 

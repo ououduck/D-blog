@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # 完整历史：commitAndPushFriendFile 的 push 需要本地 HEAD 与远端一致，
           # fetch-depth: 0 避免浅克隆 push 失败。

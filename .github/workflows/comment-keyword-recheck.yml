@@ -37,7 +37,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # Pages CMS 触发时按 CMS 当前打开的分支（main）检出，
           # 保证脚本读取到最新保存的关键词配置；手动触发时回退到触发分支。

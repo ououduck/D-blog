@@ -31,7 +31,6 @@ interface GiscusCommentsProps {
 export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCommentsProps) => {
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [autoRetryCount, setAutoRetryCount] = useState(0);
@@ -79,7 +78,6 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
     const container = containerRef.current;
     if (!container || isOffline || !isNearViewport) return;
 
-    setIsLoaded(false);
     setLoadFailed(false);
 
     let retryTimer: number | undefined;
@@ -143,7 +141,6 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
       }
 
       if (loadTimeout !== undefined) window.clearTimeout(loadTimeout);
-      setIsLoaded(true);
       setLoadFailed(false);
     };
     const observer = new MutationObserver(syncTheme);
@@ -204,8 +201,6 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
             重新加载评论
           </button>
         </div>
-      ) : isLoaded ? (
-        <div aria-hidden="true" className="hidden" />
       ) : (
         // 未加载完成前的占位：保持区块高度，避免加载开始/结束时布局跳动。
         <div

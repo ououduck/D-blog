@@ -15,7 +15,7 @@ import { fillBusuanziSpans } from '@/services/busuanzi';
 import { siteConfig } from '@config/site.config';
 
 // 构建期 SSG：site-stats.json 已通过 eager glob 内联，SSR 阶段即可同步渲染全部统计卡片，
-// 客户端水合首帧与 SSR 输出一致；异步重取仅用于“重新加载”。
+// 客户端水合首帧与 SSR 输出一致；异步加载仅作为初始数据缺失时的兜底。
 const initialSiteStats = getInitialSiteStats();
 
 const formatValue = (value: number) => new Intl.NumberFormat('zh-CN').format(value);

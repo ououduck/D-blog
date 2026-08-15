@@ -43,10 +43,11 @@ export const readSsgRouteData = (): SsgRouteData | undefined => {
   if (!element) {
     return undefined;
   }
+  // 无论解析是否成功都移除内联标签，避免失败时残留 <script> 在 DOM 中。
+  const raw = element.textContent || '';
+  element.remove();
   try {
-    const data = JSON.parse(element.textContent || '');
-    element.remove();
-    return data as SsgRouteData;
+    return JSON.parse(raw) as SsgRouteData;
   } catch {
     return undefined;
   }
@@ -61,7 +62,13 @@ export const buildSsgRouteData = (posts: Post[], url: string): SsgRouteData | un
   const match = url.split(/[?#]/, 1)[0].match(/^\/post\/([^/]+)$/);
   if (!match) return undefined;
 
-  const id = decodeURIComponent(match[1]);
+  let id: string;
+  try {
+    id = decodeURIComponent(match[1]);
+  } catch {
+    // 畸形百分号编码：按无此文章处理，避免整页 SSG 失败。
+    return undefined;
+  }
   const post = posts.find((candidate) => candidate.id === id);
   if (!post) return undefined;
 
@@ -73,12 +80,12 @@ export const buildSsgRouteData = (posts: Post[], url: string): SsgRouteData | un
     post,
     adjacentPosts: {
       prev: previous ? toMetadata(previous) : null,
-      next: next ? toMetadata(next) : null
+      next: next ? toMetadata(next) : null,
     },
     seriesNavigation: getSeriesNavigation(posts, post),
     relatedPosts: getRelatedPosts(posts, post, {
       limit: 3,
-      excludeIds: [previous?.id, next?.id].filter((value): value is string => Boolean(value))
-    }).map(toMetadata)
+      excludeIds: [previous?.id, next?.id].filter((value): value is string => Boolean(value)),
+    }).map(toMetadata),
   };
 };

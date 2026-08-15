@@ -113,7 +113,7 @@ const parseMarkdownTokens = (markdown) => {
 
 export const parseMarkdownImages = (markdown) => parseMarkdownTokens(markdown).images;
 
-export const stripMarkdownUrlDecorators = (value) => {
+const stripMarkdownUrlDecorators = (value) => {
   const firstDecorator = String(value).search(/[?#]/);
   return firstDecorator < 0 ? String(value) : String(value).slice(0, firstDecorator);
 };
@@ -250,7 +250,6 @@ export const validatePostContent = (post, context = {}) => {
 
     lineOffset = 0,
     skipFrontMatter = false,
-    getImageDimensions,
   } = context;
   const errors = [];
   const data = post.data || post;
@@ -283,8 +282,6 @@ export const validatePostContent = (post, context = {}) => {
         const resolved = resolveLocalImageTarget(coverTarget, { imageRoot });
         if (!resolved?.exists) {
           addFieldError(`coverImage "${coverTarget}" does not resolve to a file inside posts-img`);
-        } else if (getImageDimensions && !getImageDimensions(resolved.url, resolved.filePath)) {
-          addFieldError(`coverImage "${coverTarget}" has unreadable or invalid dimensions`);
         }
       }
     }
@@ -322,14 +319,6 @@ export const validatePostContent = (post, context = {}) => {
             filename,
             image.line + lineOffset,
             `local image "${image.rawTarget}" does not resolve to a file inside posts-img`,
-          ),
-        );
-      } else if (getImageDimensions && !getImageDimensions(resolved.url, resolved.filePath)) {
-        errors.push(
-          lineError(
-            filename,
-            image.line + lineOffset,
-            `local image "${image.rawTarget}" has unreadable or invalid dimensions`,
           ),
         );
       }

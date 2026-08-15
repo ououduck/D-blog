@@ -19,27 +19,24 @@
 - [核心特性](#核心特性)
 - [技术栈](#技术栈)
 - [快速开始](#快速开始)
-- [构建流程](#构建流程)
 - [项目结构](#项目结构)
 - [内容管理](#内容管理)
-- [消息通知（Telegram）](#消息通知telegram)
+- [构建与质量](#构建与质量)
 - [配置](#配置)
-- [NPM 脚本](#npm-脚本)
 - [部署](#部署)
+- [自动化与通知](#自动化与通知)
 - [贡献指南](#贡献指南)
 - [许可证](#许可证)
 
 ## 核心特性
 
-- **Markdown 驱动**：Front Matter 元数据、多作者、分类白名单与草稿过滤均在构建时校验
-- **增强渲染**：代码高亮（diff 行高亮、文件名、折叠、行号复制、换行开关）、KaTeX 公式、Mermaid 图表、GFM 表格、图片预览、DOMPurify 净化，按正文内容按需懒加载
-- **全文搜索**：构建时生成索引，多维度权重评分，支持范围筛选与搜索历史；独立搜索页 `/search` 与首页/弹窗搜索共用同一套评分逻辑
-- **阅读体验**：目录导航、阅读进度恢复、专注阅读模式、深色模式图片柔和降亮、CC BY-SA 4.0 声明、标题锚点复制链接
-- **分享与互动**：分享弹窗、竖版分享海报（Canvas 本地绘制）；Giscus 评论区懒加载，文章卡片展示评论数（构建期快照）；独立留言板（`/guestbook`）；每条说说有独立页（`/shuoshuo/<id>`）与链接分享；文章页可直接跳转 GitHub 编辑源文件
-- **内置工具箱**：封面生成器（`/cover`）、水印工具（`/watermark`，图片不离开浏览器）
-- **文章导航**：上一篇/下一篇（`Alt + ←/→`）、系列文章、面包屑、相关推荐
+- **Markdown 驱动**：Front Matter 元数据校验、多作者、分类白名单、草稿过滤均在构建时完成
+- **增强渲染**：代码高亮（diff 行高亮、文件名、折叠、行号复制、换行开关）、KaTeX 公式、Mermaid 图表（缩放/平移）、GFM 表格、图片预览，全部按需懒加载
+- **全文搜索**：构建时生成索引，多维权重评分，支持范围筛选与搜索历史；首页/弹窗/独立页 `/search` 共用同一套评分
+- **阅读体验**：目录导航、阅读进度恢复、专注阅读模式、深色模式图片柔和降亮、标题锚点复制链接、上一篇/下一篇（`Alt + ←/→`）与系列文章
+- **分享与互动**：分享弹窗与竖版分享海报（Canvas 本地绘制）；Giscus 评论区（文章卡片评论数为构建期快照）；独立留言板 `/guestbook`；说说 `/shuoshuo` 独立静态页
+- **内置工具箱**：封面生成器 `/cover`（含批量 ZIP 导出）、水印工具 `/watermark`（图片不离开浏览器）
 - **主题系统**：浅色/深色/跟随系统，CSS View Transitions 过渡
-- **首页信息流**：精选大图卡片、分类筛选、排序、分页与内联搜索，状态同步到 URL
 - **构建期 SSG**：每页独立 HTML + 精准 SEO meta 与 JSON-LD，爬虫可直接读取正文
 - **PWA**：Service Worker 缓存 + 收藏文章 IndexedDB 离线阅读
 - **SEO 与订阅**：OG/Twitter Card、JSON-LD、RSS、`llms.txt`、Sitemap、`robots.txt`
@@ -73,30 +70,22 @@ npm run preview               # 预览构建产物
 
 Node.js >= 20，npm >= 10。
 
-## 构建流程
-
-`npm run build` 依次执行：数据生成 → OG 卡生成 → 客户端构建 → SSR 构建 → 模板快照 → SSG 预渲染 → 产物审计 → SEO 审计，最终输出 `dist/`。各阶段独立超时并汇总耗时，任一阶段失败立即终止流水线并在日志中标明失败阶段（[N/M] 前缀）。
-
-- **数据生成**（`gen:data`）：校验 Front Matter、文章 ID、图片与链接，生成 `generated/` 索引、Sitemap、RSS、`llms.txt`、`robots.txt`
-- **SSG 预渲染**（`ssg`）：用 SSR bundle 按路由渲染全站静态 HTML，注入 SEO meta / JSON-LD 与封面 preload
-
-`generated/`、RSS 与 Sitemap 均为构建产物，不应手工编辑。
-
 ## 项目结构
 
 ```text
 D-blog/
-├── config/                  # site.config.json(+site.config.ts 类型) / content.config.json / ads.config.ts / comment-keywords.json / tsconfig / tailwind / postcss
+├── config/                  # 站点/内容/广告配置（site.config.json、content.config.json、ads.config.ts）、tsconfig、tailwind、postcss
 ├── posts/                   # Markdown 文章
 ├── friends/                 # 友链数据（JSON，PagesCMS 直接读写）
 ├── shuoshuo/                # 说说（短动态）Markdown 内容
 ├── .pages.yml               # PagesCMS 配置
 ├── generated/               # 构建产物：posts.json / posts-search.json / site-stats.json 等
-├── public/                  # favicon、PWA 图标、sw.js、offline.html、feed.xml、sitemap
-├── scripts/                 # 构建/自动化脚本
+├── public/                  # favicon、PWA 图标、sw.js、offline.html，以及构建生成的 feed/sitemap
+├── scripts/                 # 构建/自动化脚本（lib/ 为共享 HTTP 与日志库）
+├── functions/               # Pages 边缘函数（img-proxy 同源图片代理）
 ├── .github/workflows/       # 部署、友链审核、评论检查、更新通知
 └── src/
-    ├── components/          # Layout、Seo、TableOfContents、SearchModal、ImageViewer 等
+    ├── components/          # Layout、Seo、TableOfContents、SearchModal、ImageViewer 等（effects/、ui/ 为动效与基础组件）
     ├── pages/               # 页面组件（懒加载）；cover/、watermark/、archive/、friends/ 为模块集
     ├── config/              # 封面生成器配置：coverTemplates / coverPresets
     ├── services/            # posts / friends / shuoshuo / offlinePosts / readingHistory 等
@@ -176,53 +165,36 @@ images:
 
 `/guestbook` 通过 Giscus `mapping=number` 固定指向仓库的「D-blog 留言板」Discussion（`config/site.config.ts` 的 `guestbook.discussionId`）。与文章评论共用 Akismet 反垃圾，并叠加自建关键词过滤（`config/comment-keywords.json`，可直接在 PagesCMS「评论关键词」中编辑）。仓库内置 `.github/workflows/notify-post-update.yml`：文章新增/修改时自动在指定 Issue 发布通知。
 
-## 消息通知（Telegram）
+## 构建与质量
 
-仓库事件通过 [`telegram-notify.yml`](.github/workflows/telegram-notify.yml) 实时推送到 Telegram，作为站长的项目消息提醒：
+`npm run build` 依次执行：数据生成 → OG 卡生成 → 客户端构建 → SSR 构建 → 模板快照 → SSG 预渲染 → 产物审计 → SEO 审计，最终输出 `dist/`。各阶段独立超时并汇总耗时，任一阶段失败立即终止流水线并在日志中标明失败阶段（[N/M] 前缀）。
 
-- 💬 **新评论 / 新讨论 / 新 Issue**：giscus 文章评论、留言板留言、友链申请（`discussion_comment` / `discussion` / `issues` 事件）
-- 🚀 **push 到 main 的提交**：提交列表 + 对比链接（Pages CMS 保存内容、友链 bot 推送等都会走到这里）
-- ⚙️ **Action 运行结果**：任一 workflow 完成时推送成功 / 失败 / 取消（`workflow_run` 事件自动覆盖新增 workflow，通知自身的结果会被跳过，不会循环）
-- 🔔 **手动测试**：Pages CMS 侧边栏「🔔 测试 Telegram 通知」按钮，或直接运行 `Telegram Notify` workflow
+- **数据生成**（`gen:data`）：校验 Front Matter、文章 ID、图片与链接，生成 `generated/` 索引、Sitemap、RSS、`llms.txt`、`robots.txt`
+- **SSG 预渲染**（`ssg`）：用 SSR bundle 按路由渲染全站静态 HTML，注入 SEO meta / JSON-LD 与封面 preload
 
-### 一次性配置
+`generated/`、RSS 与 Sitemap 均为构建产物，不应手工编辑。
 
-1. 在 [@BotFather](https://t.me/BotFather) 创建机器人，复制 `TELEGRAM_BOT_TOKEN`；
-2. 向机器人发一条消息，通过 [@userinfobot](https://t.me/userinfobot) 或 Bot API `getUpdates` 获取你的 `TELEGRAM_CHAT_ID`；
-3. 在仓库 **Settings → Secrets and variables → Actions** 添加：
-
-| Secret | 说明 |
+| 命令 | 功能 |
 | --- | --- |
-| `TELEGRAM_BOT_TOKEN` | BotFather 的机器人 token（形如 `123456:ABC-...`） |
-| `TELEGRAM_CHAT_ID` | 接收通知的 chat id（私聊 / 群组 / 频道） |
-| `TELEGRAM_TOPIC_ID` | （可选）论坛话题 id，设置后消息发往该话题 |
-
-未配置 token / chat id 时 workflow 优雅跳过（`::warning::` 正常退出，不红叉）。本地调试可打印消息体而不发送：`GITHUB_EVENT_NAME=push GITHUB_EVENT_PATH=event.json node scripts/telegram-notify.mjs --print`。
+| `npm run dev` | 启动开发服务器（端口 3000），自动执行 `gen:data` |
+| `npm run build` / `build:verbose` | 生产构建 / 详细模式（保留 Vite 完整输出） |
+| `npm run build:ssr` | 仅构建 SSR bundle（`dist-ssr/`） |
+| `npm run preview` | 预览生产构建结果 |
+| `npm run migrate:images` | 批量迁移本地图片至图床（支持 `--dry-run`） |
+| `npm run gen:data` | 数据生成 + 全量校验 |
+| `npm run ssg` | 仅执行 SSG 预渲染（需先完成两端构建） |
+| `npm run audit:build` / `audit:seo` | 构建产物完整性 / 全站 SEO 清单审计（均已接入 build） |
+| `npm run typecheck` / `check` | 类型检查 / 数据生成校验 + 类型检查 |
+| `npm run test` / `test:watch` / `test:coverage` | vitest 单元测试 / 监听 / 覆盖率（均先执行 `gen:data`） |
+| `npm run lint` / `lint:fix` | ESLint 检查 / 自动修复 |
+| `npm run format` / `format:check` | Prettier 格式化 / 格式检查 |
 
 ## 配置
 
 - **站点配置**：`config/site.config.json` — 标题、描述、URL、社交链接、作者信息、备案号等，可在 PagesCMS「站点配置」中编辑
 - **赞助与广告**：赞助方式定义于 `src/pages/Sponsor.tsx`；广告横幅在 `config/ads.config.ts` 配置
 - **文章分类白名单**：`config/content.config.json` 的 `postCategories` 数组
-
-## NPM 脚本
-
-| 命令 | 功能 |
-| --- | --- |
-| `npm run dev` | 启动开发服务器（端口 3000），自动执行 `gen:data` |
-| `npm run build` | 生产构建：数据 → 客户端 → SSR → SSG → 审计 |
-| `npm run build:verbose` | 详细模式构建，保留 Vite 完整输出 |
-| `npm run build:ssr` | 仅构建 SSR bundle（`dist-ssr/`） |
-| `npm run preview` | 预览生产构建结果 |
-| `npm run migrate:images` | 批量迁移本地图片至图床（支持 `--dry-run`） |
-| `npm run gen:data` | 数据生成 + 全量校验 |
-| `npm run ssg` | 仅执行 SSG 预渲染（需先完成两端构建） |
-| `npm run audit:build` | 构建产物完整性审计（HTML / 标签 / 体积，已接入 build） |
-| `npm run audit:seo` | 全站 SEO 清单审计（已接入 build） |
-| `npm run typecheck` / `check` | TypeScript 类型检查 / 数据生成校验 + 类型检查 |
-| `npm run test` / `test:watch` / `test:coverage` | vitest 单元测试 / 监听模式 / 附带覆盖率报告（均先执行 `gen:data`） |
-| `npm run lint` / `lint:fix` | ESLint 检查 / 自动修复 |
-| `npm run format` / `format:check` | Prettier 格式化 / 格式检查 |
+- **环境变量**：`VITE_SITE_URL`（站点公开访问地址）、`VITE_BASE_PATH`（子路径部署时使用，留空为根路径），见 `.env.example`
 
 ## 部署
 
@@ -242,8 +214,6 @@ images:
 | 仓库 Secrets | `CLOUDFLARE_API_TOKEN`（Pages:Edit 权限）、`CLOUDFLARE_ACCOUNT_ID`、`EDGEONE_API_TOKEN` |
 
 两个平台的项目名均为 `d-blog`（已在 `deploy.yml` 配置，不一致时修改 `--project-name` / `-n`）。
-
-环境变量：`VITE_SITE_URL`（站点公开访问地址）、`VITE_BASE_PATH`（子路径部署时使用，留空为根路径）。
 
 ### 其他平台
 
@@ -268,6 +238,19 @@ location / { try_files $uri $uri/ /index.html; }
 ```
 
 Service Worker 作用域跟随部署路径，在线按页面/静态资源/图片分别缓存；断网时优先页面缓存，SPA 路由未命中则启动应用壳并从 IndexedDB 渲染已保存正文。
+
+## 自动化与通知
+
+仓库事件通过 [`telegram-notify.yml`](.github/workflows/telegram-notify.yml) 实时推送到 Telegram（站长消息提醒）：
+
+- 💬 **新评论 / 新讨论 / 新 Issue**：giscus 评论、留言板留言、友链申请
+- 🚀 **push 到 main 的提交**：提交列表 + 对比链接
+- ⚙️ **Action 运行结果**：任一 workflow 完成时推送成功 / 失败 / 取消（通知自身的结果会被跳过，不会循环）
+- 🔔 **手动测试**：Pages CMS 侧边栏「🔔 测试 Telegram 通知」按钮，或直接运行 `Telegram Notify` workflow
+
+**一次性配置**：在 [@BotFather](https://t.me/BotFather) 创建机器人获取 `TELEGRAM_BOT_TOKEN`，通过 [@userinfobot](https://t.me/userinfobot) 获取 `TELEGRAM_CHAT_ID`，然后在仓库 **Settings → Secrets and variables → Actions** 添加（可选 `TELEGRAM_TOPIC_ID` 指定论坛话题）。未配置 token / chat id 时 workflow 优雅跳过（`::warning::` 正常退出，不红叉）。
+
+其他自动化：`ci.yml` 每次 push/PR 自动跑类型检查 + 完整构建 + 双审计；友链申请审核、友链可用性检查、评论 Akismet 反垃圾与关键词过滤均为独立 workflow。
 
 ## 贡献指南
 

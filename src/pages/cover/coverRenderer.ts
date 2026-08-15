@@ -1,4 +1,3 @@
-import type { PatternType } from '../../config/coverTemplates';
 import { BASE_CANVAS_WIDTH, CANVAS_SAFE_MARGIN } from './coverConstants';
 import {
   calculateLayoutMetrics,
@@ -59,18 +58,6 @@ function createTemplateFill(
     ),
   );
   return gradient;
-}
-
-function drawPattern(
-  _ctx: CanvasRenderingContext2D,
-  pattern: PatternType,
-  _width: number,
-  _height: number,
-  _scale: number,
-): void {
-  // 当前模板仅使用纯色背景（PatternType 仅剩 'solid'）；保留调用点以支持
-  // 后续扩展，无需绘制任何叠加图案。
-  if (pattern === 'solid') return;
 }
 
 function drawCorners(ctx: CanvasRenderingContext2D, options: CoverRenderOptions, scale: number): void {
@@ -327,7 +314,6 @@ export async function renderCover(ctx: CanvasRenderingContext2D, options: CoverR
     ctx.fillRect(0, 0, width, height);
     ctx.restore();
   }
-  drawPattern(ctx, options.template.pattern, width, height, baseScale);
   if (options.decorations.showCorners) drawCorners(ctx, options, baseScale);
   const hasIcon = options.icon.source !== null;
   const layout = getEffectiveLayout(options.layout, options.icon.show, hasIcon);

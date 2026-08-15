@@ -57,6 +57,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+# 根目录构建/调试日志（build-*.log / preview*.log / verify-*.log 等，均由 *.log 覆盖）
 
 # Testing
 coverage
@@ -85,6 +86,8 @@ AGENTS.md
 .kiro/
 .codebuddy/
 CODEBUDDY.md
+.cursor/
+.windsurf/
 .zcode/
 .obsidian/
 .trash/

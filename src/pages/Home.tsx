@@ -66,10 +66,6 @@ const gridExitVariants = {
       delayChildren: 0.01,
     },
   },
-  exit: {
-    opacity: 0,
-    transition: { duration: 0.14, ease: easeSmooth },
-  },
 } as const;
 
 const getCategories = (posts: PostMetadata[]) => Array.from(new Set(posts.map((post) => post.category)));
@@ -570,7 +566,6 @@ export const Home = () => {
     });
 
   const shouldReduceMotion = useReducedMotion();
-  const postsPerPage = POSTS_PER_PAGE;
 
   useEffect(() => {
     let cancelled = false;
@@ -677,10 +672,10 @@ export const Home = () => {
 
   const paginationData = useMemo(() => {
     const totalSlots = displayedPosts.reduce((total, post) => total + (post.id === heroPost?.id ? heroSlots : 1), 0);
-    const totalPages = Math.max(1, Math.ceil(totalSlots / postsPerPage));
+    const totalPages = Math.max(1, Math.ceil(totalSlots / POSTS_PER_PAGE));
 
     return { totalSlots, totalPages };
-  }, [displayedPosts, heroPost, heroSlots, postsPerPage]);
+  }, [displayedPosts, heroPost, heroSlots]);
 
   const { totalPages } = paginationData;
 
@@ -786,8 +781,8 @@ export const Home = () => {
   };
 
   const currentPosts = useMemo(() => {
-    const pageStart = (currentPage - 1) * postsPerPage;
-    const pageEnd = pageStart + postsPerPage;
+    const pageStart = (currentPage - 1) * POSTS_PER_PAGE;
+    const pageEnd = pageStart + POSTS_PER_PAGE;
 
     const pagedPosts: PostMetadata[] = [];
     let consumedSlots = 0;
@@ -810,7 +805,7 @@ export const Home = () => {
     }
 
     return pagedPosts;
-  }, [currentPage, displayedPosts, heroPost, heroSlots, postsPerPage]);
+  }, [currentPage, displayedPosts, heroPost, heroSlots]);
 
   const paginate = (pageNumber: number) => {
     const nextPage = Math.min(Math.max(1, pageNumber), totalPages);

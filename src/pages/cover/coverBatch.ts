@@ -5,7 +5,6 @@ export interface BatchCoverItem {
   subtitle: string;
   description: string;
   slug: string;
-  sourceName?: string;
 }
 
 export interface BatchParseIssue {
@@ -35,13 +34,13 @@ function sanitizeBatchSlug(value: string, fallback = 'cover'): string {
   return slug || fallback;
 }
 
-function itemFromRecord(record: Record<string, unknown>, index: number, sourceName?: string): BatchCoverItem | null {
+function itemFromRecord(record: Record<string, unknown>, index: number): BatchCoverItem | null {
   const title = normalizeText(record.title || record.name);
   if (!title) return null;
   const subtitle = normalizeText(record.subtitle || record.category);
   const description = normalizeText(record.description || record.excerpt);
   const slug = sanitizeBatchSlug(normalizeText(record.slug || record.id || title), `cover-${index + 1}`);
-  return { title, subtitle, description, slug, sourceName };
+  return { title, subtitle, description, slug };
 }
 
 function parseCsv(text: string): Record<string, string>[] {
@@ -82,7 +81,7 @@ function parseCsv(text: string): Record<string, string>[] {
   return rows.map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ''])));
 }
 
-function parseMarkdownFrontmatter(text: string, sourceName?: string): BatchCoverItem | null {
+function parseMarkdownFrontmatter(text: string): BatchCoverItem | null {
   const match = text.match(/^\uFEFF?---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   if (!match) return null;
   const fields: Record<string, unknown> = {};
@@ -95,7 +94,7 @@ function parseMarkdownFrontmatter(text: string, sourceName?: string): BatchCover
       .trim()
       .replace(/^['"]|['"]$/g, '');
   }
-  return itemFromRecord(fields, 0, sourceName);
+  return itemFromRecord(fields, 0);
 }
 
 export function parseBatchText(text: string, filename = 'input'): BatchParseResult {
@@ -104,13 +103,12 @@ export function parseBatchText(text: string, filename = 'input'): BatchParseResu
   const issues: BatchParseIssue[] = [];
   if (extension === 'json') {
     try {
-      const parsed = JSON.parse(text) as unknown;
+      // 兼容带 UTF-8 BOM 的文件（PowerShell/记事本导出常见）。
+      const parsed = JSON.parse(text.replace(/^\uFEFF/, '')) as unknown;
       const records = Array.isArray(parsed) ? parsed : [parsed];
       records.forEach((record, index) => {
         const item =
-          record && typeof record === 'object'
-            ? itemFromRecord(record as Record<string, unknown>, index, filename)
-            : null;
+          record && typeof record === 'object' ? itemFromRecord(record as Record<string, unknown>, index) : null;
         if (item) items.push(item);
         else issues.push({ line: index + 1, message: '缺少 title 字段' });
       });
@@ -119,12 +117,12 @@ export function parseBatchText(text: string, filename = 'input'): BatchParseResu
     }
   } else if (extension === 'csv') {
     parseCsv(text).forEach((record, index) => {
-      const item = itemFromRecord(record, index, filename);
+      const item = itemFromRecord(record, index);
       if (item) items.push(item);
       else issues.push({ line: index + 2, message: '缺少 title 字段' });
     });
   } else {
-    const item = parseMarkdownFrontmatter(text, filename);
+    const item = parseMarkdownFrontmatter(text);
     if (item) items.push(item);
     else issues.push({ line: 1, message: 'Markdown 缺少有效 frontmatter 或 title' });
   }

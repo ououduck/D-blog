@@ -15,8 +15,8 @@ const offlinePostAssetsPlugin = (): Plugin => ({
       ),
     );
     if (routeChunks.some((chunk) => !chunk || chunk.type !== 'chunk')) {
+      // this.error 会抛出 RollupError 中止构建，后续代码不可达。
       this.error('Unable to find the offline route chunks.');
-      return;
     }
 
     const assets = new Set<string>();

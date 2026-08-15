@@ -30,7 +30,10 @@ type OfflinePostTombstone = { id: string; deletedAt: number };
 const EXTERNAL_URL_PATTERN = /^(?:[a-z][a-z\d+.-]*:|\/\/)/i;
 
 const toOfflineAssetUrl = (value: string): string | undefined => {
-  const clean = value.trim().replace(/^<|>$/g, '').replace(/[?#].*$/, '');
+  const clean = value
+    .trim()
+    .replace(/^<|>$/g, '')
+    .replace(/[?#].*$/, '');
   if (!clean || EXTERNAL_URL_PATTERN.test(clean)) {
     return undefined;
   }
@@ -57,9 +60,7 @@ const collectOfflineAssetUrls = (post: OfflinePost): string[] => {
     }
   }
 
-  const sourceUrls = values
-    .map((value) => toOfflineAssetUrl(value))
-    .filter((value): value is string => Boolean(value));
+  const sourceUrls = values.map((value) => toOfflineAssetUrl(value)).filter((value): value is string => Boolean(value));
 
   return [...new Set(sourceUrls)];
 };
@@ -69,10 +70,11 @@ const prepareOfflineCache = async (post: OfflinePost): Promise<void> => {
     throw new Error('当前浏览器不支持离线缓存。');
   }
 
-  const worker = navigator.serviceWorker.controller
-    ?? (await Promise.race([
+  const worker =
+    navigator.serviceWorker.controller ??
+    (await Promise.race([
       navigator.serviceWorker.ready.then((registration) => registration.active),
-      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8000))
+      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8000)),
     ]));
   if (!worker) {
     throw new Error('离线缓存尚未就绪，请刷新页面后重试。');
@@ -92,17 +94,21 @@ const prepareOfflineCache = async (post: OfflinePost): Promise<void> => {
         resolve();
         return;
       }
-      const message = isRecord(event.data) && typeof event.data.error === 'string'
-        ? event.data.error
-        : '离线缓存准备失败，请稍后重试。';
+      const message =
+        isRecord(event.data) && typeof event.data.error === 'string'
+          ? event.data.error
+          : '离线缓存准备失败，请稍后重试。';
       reject(new Error(message));
     };
 
-    worker.postMessage({
-      type: 'CACHE_OFFLINE_POST',
-      pageUrl: routeUrl(`/post/${encodeURIComponent(post.id)}`),
-      assetUrls: collectOfflineAssetUrls(post)
-    }, [channel.port2]);
+    worker.postMessage(
+      {
+        type: 'CACHE_OFFLINE_POST',
+        pageUrl: routeUrl(`/post/${encodeURIComponent(post.id)}`),
+        assetUrls: collectOfflineAssetUrls(post),
+      },
+      [channel.port2],
+    );
   });
 };
 
@@ -119,17 +125,13 @@ let reconciliationPromise: Promise<void> | null = null;
 let broadcastChannel: BroadcastChannel | null = null;
 const listeners = new Set<OfflinePostsListener>();
 
-const isRecord = (value: unknown): value is UnknownRecord => (
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-);
+const isRecord = (value: unknown): value is UnknownRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const isFiniteNumber = (value: unknown): value is number => (
-  typeof value === 'number' && Number.isFinite(value)
-);
+const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 
-const isNonNegativeTimestamp = (value: unknown): value is number => (
-  isFiniteNumber(value) && Number.isInteger(value) && value >= 0
-);
+const isNonNegativeTimestamp = (value: unknown): value is number =>
+  isFiniteNumber(value) && Number.isInteger(value) && value >= 0;
 
 const cloneAuthors = (value: unknown): PostMetadata['authors'] | undefined => {
   if (value === undefined) {
@@ -149,13 +151,11 @@ const cloneAuthors = (value: unknown): PostMetadata['authors'] | undefined => {
       ...(typeof author.avatar === 'string' ? { avatar: author.avatar } : {}),
       ...(typeof author.role === 'string' ? { role: author.role } : {}),
       ...(typeof author.bio === 'string' ? { bio: author.bio } : {}),
-      ...(typeof author.url === 'string' ? { url: author.url } : {})
+      ...(typeof author.url === 'string' ? { url: author.url } : {}),
     };
   });
 
-  return authors.every((author) => Boolean(author))
-    ? authors as NonNullable<PostMetadata['authors']>
-    : undefined;
+  return authors.every((author) => Boolean(author)) ? (authors as NonNullable<PostMetadata['authors']>) : undefined;
 };
 
 const cloneImageDimensions = (value: unknown): PostMetadata['imageDimensions'] | undefined => {
@@ -183,29 +183,35 @@ const validateOfflinePost = (value: unknown): OfflinePost | undefined => {
   }
 
   if (
-    typeof value.id !== 'string' || !value.id.trim()
-    || typeof value.title !== 'string' || !value.title.trim()
-    || typeof value.excerpt !== 'string'
-    || typeof value.date !== 'string' || !value.date.trim()
-    || typeof value.category !== 'string' || !value.category.trim()
-    || typeof value.filePath !== 'string' || !value.filePath.trim()
-    || typeof value.readTime !== 'string' || !value.readTime.trim()
-    || !Array.isArray(value.tags)
-    || !value.tags.every((tag) => typeof tag === 'string')
-    || !isNonNegativeTimestamp(value.savedAt)
-    || value.schema !== OFFLINE_POSTS_SCHEMA
-    || value.version !== OFFLINE_POSTS_SCHEMA_VERSION
-    || (value.searchText !== undefined && typeof value.searchText !== 'string')
-    || (value.updatedAt !== undefined && typeof value.updatedAt !== 'string')
-    || (value.coverImage !== undefined && typeof value.coverImage !== 'string')
-    || (value.coverWidth !== undefined && !isFiniteNumber(value.coverWidth))
-    || (value.coverHeight !== undefined && !isFiniteNumber(value.coverHeight))
-    || (value.featured !== undefined && typeof value.featured !== 'boolean')
-    || (value['featured-top'] !== undefined && !isFiniteNumber(value['featured-top']))
-    || (value.series !== undefined && typeof value.series !== 'boolean')
-    || (value.seriesName !== undefined && typeof value.seriesName !== 'string')
-    || (value.seriesOrder !== undefined && (!isFiniteNumber(value.seriesOrder) || !Number.isInteger(value.seriesOrder)))
-    || (value.content !== undefined && typeof value.content !== 'string')
+    typeof value.id !== 'string' ||
+    !value.id.trim() ||
+    typeof value.title !== 'string' ||
+    !value.title.trim() ||
+    typeof value.excerpt !== 'string' ||
+    typeof value.date !== 'string' ||
+    !value.date.trim() ||
+    typeof value.category !== 'string' ||
+    !value.category.trim() ||
+    typeof value.filePath !== 'string' ||
+    !value.filePath.trim() ||
+    typeof value.readTime !== 'string' ||
+    !value.readTime.trim() ||
+    !Array.isArray(value.tags) ||
+    !value.tags.every((tag) => typeof tag === 'string') ||
+    !isNonNegativeTimestamp(value.savedAt) ||
+    value.schema !== OFFLINE_POSTS_SCHEMA ||
+    value.version !== OFFLINE_POSTS_SCHEMA_VERSION ||
+    (value.searchText !== undefined && typeof value.searchText !== 'string') ||
+    (value.updatedAt !== undefined && typeof value.updatedAt !== 'string') ||
+    (value.coverImage !== undefined && typeof value.coverImage !== 'string') ||
+    (value.coverWidth !== undefined && !isFiniteNumber(value.coverWidth)) ||
+    (value.coverHeight !== undefined && !isFiniteNumber(value.coverHeight)) ||
+    (value.featured !== undefined && typeof value.featured !== 'boolean') ||
+    (value['featured-top'] !== undefined && !isFiniteNumber(value['featured-top'])) ||
+    (value.series !== undefined && typeof value.series !== 'boolean') ||
+    (value.seriesName !== undefined && typeof value.seriesName !== 'string') ||
+    (value.seriesOrder !== undefined && (!isFiniteNumber(value.seriesOrder) || !Number.isInteger(value.seriesOrder))) ||
+    (value.content !== undefined && typeof value.content !== 'string')
   ) {
     return undefined;
   }
@@ -234,11 +240,13 @@ const validateOfflinePost = (value: unknown): OfflinePost | undefined => {
     readTime: value.readTime,
     ...(typeof value.featured === 'boolean' ? { featured: value.featured } : {}),
     ...(isFiniteNumber(value['featured-top']) ? { 'featured-top': value['featured-top'] } : {}),
-    ...(value.series === true && typeof value.seriesName === 'string' && isFiniteNumber(value.seriesOrder) ? { series: true, seriesName: value.seriesName, seriesOrder: value.seriesOrder } : {}),
+    ...(value.series === true && typeof value.seriesName === 'string' && isFiniteNumber(value.seriesOrder)
+      ? { series: true, seriesName: value.seriesName, seriesOrder: value.seriesOrder }
+      : {}),
     ...(typeof value.content === 'string' ? { content: value.content } : {}),
     savedAt: value.savedAt,
     schema: OFFLINE_POSTS_SCHEMA,
-    version: OFFLINE_POSTS_SCHEMA_VERSION
+    version: OFFLINE_POSTS_SCHEMA_VERSION,
   };
 };
 
@@ -251,7 +259,7 @@ const createOfflinePost = (post: OfflinePostInput): OfflinePost => {
     ...post,
     savedAt: Date.now(),
     schema: OFFLINE_POSTS_SCHEMA,
-    version: OFFLINE_POSTS_SCHEMA_VERSION
+    version: OFFLINE_POSTS_SCHEMA_VERSION,
   };
   const validated = validateOfflinePost(candidate);
   if (!validated) {
@@ -329,24 +337,32 @@ const readIndexedDbPosts = async (): Promise<OfflinePost[]> => {
   const posts = await new Promise<OfflinePost[]>((resolve, reject) => {
     let transaction: IDBTransaction;
     try {
-      transaction = database.transaction(
-        [OFFLINE_POSTS_STORE_NAME, OFFLINE_POSTS_TOMBSTONE_STORE_NAME],
-        'readonly'
-      );
+      transaction = database.transaction([OFFLINE_POSTS_STORE_NAME, OFFLINE_POSTS_TOMBSTONE_STORE_NAME], 'readonly');
       const postsRequest = transaction.objectStore(OFFLINE_POSTS_STORE_NAME).getAll();
       const tombstonesRequest = transaction.objectStore(OFFLINE_POSTS_TOMBSTONE_STORE_NAME).getAll();
       let rawPosts: unknown[] = [];
       let rawTombstones: unknown[] = [];
-      postsRequest.onsuccess = () => { rawPosts = Array.isArray(postsRequest.result) ? postsRequest.result : []; };
-      tombstonesRequest.onsuccess = () => { rawTombstones = Array.isArray(tombstonesRequest.result) ? tombstonesRequest.result : []; };
+      postsRequest.onsuccess = () => {
+        rawPosts = Array.isArray(postsRequest.result) ? postsRequest.result : [];
+      };
+      tombstonesRequest.onsuccess = () => {
+        rawTombstones = Array.isArray(tombstonesRequest.result) ? tombstonesRequest.result : [];
+      };
       transaction.oncomplete = () => {
-        const tombstones = Object.fromEntries(rawTombstones
-          .filter((value): value is OfflinePostTombstone => isRecord(value) && typeof value.id === 'string' && isNonNegativeTimestamp(value.deletedAt))
-          .map((value) => [value.id, value.deletedAt]));
-        resolve(applyTombstones(rawPosts
-          .map(validateOfflinePost)
-          .filter((post): post is OfflinePost => Boolean(post)), tombstones)
-          .sort((a, b) => b.savedAt - a.savedAt));
+        const tombstones = Object.fromEntries(
+          rawTombstones
+            .filter(
+              (value): value is OfflinePostTombstone =>
+                isRecord(value) && typeof value.id === 'string' && isNonNegativeTimestamp(value.deletedAt),
+            )
+            .map((value) => [value.id, value.deletedAt]),
+        );
+        resolve(
+          applyTombstones(
+            rawPosts.map(validateOfflinePost).filter((post): post is OfflinePost => Boolean(post)),
+            tombstones,
+          ).sort((a, b) => b.savedAt - a.savedAt),
+        );
       };
       transaction.onerror = () => reject(transaction.error || new Error('离线文章事务失败。'));
       transaction.onabort = () => reject(transaction.error || new Error('离线文章事务已中止。'));
@@ -365,19 +381,16 @@ const readIndexedDbPosts = async (): Promise<OfflinePost[]> => {
 };
 
 const runOfflineMutation = async (
-  operation: (posts: IDBObjectStore, tombstones: IDBObjectStore) => void
+  operation: (posts: IDBObjectStore, tombstones: IDBObjectStore) => void,
 ): Promise<void> => {
   const database = await openDatabase();
   await new Promise<void>((resolve, reject) => {
     let transaction: IDBTransaction;
     try {
-      transaction = database.transaction(
-        [OFFLINE_POSTS_STORE_NAME, OFFLINE_POSTS_TOMBSTONE_STORE_NAME],
-        'readwrite'
-      );
+      transaction = database.transaction([OFFLINE_POSTS_STORE_NAME, OFFLINE_POSTS_TOMBSTONE_STORE_NAME], 'readwrite');
       operation(
         transaction.objectStore(OFFLINE_POSTS_STORE_NAME),
-        transaction.objectStore(OFFLINE_POSTS_TOMBSTONE_STORE_NAME)
+        transaction.objectStore(OFFLINE_POSTS_TOMBSTONE_STORE_NAME),
       );
     } catch (error) {
       if (activeDatabase === database) {
@@ -432,10 +445,7 @@ const saveIndexedDbPostIfCurrent = async (post: OfflinePost): Promise<{ accepted
     let newerDelete: number | undefined;
     let transaction: IDBTransaction;
     try {
-      transaction = database.transaction(
-        [OFFLINE_POSTS_STORE_NAME, OFFLINE_POSTS_TOMBSTONE_STORE_NAME],
-        'readwrite'
-      );
+      transaction = database.transaction([OFFLINE_POSTS_STORE_NAME, OFFLINE_POSTS_TOMBSTONE_STORE_NAME], 'readwrite');
       const postsStore = transaction.objectStore(OFFLINE_POSTS_STORE_NAME);
       const tombstonesStore = transaction.objectStore(OFFLINE_POSTS_TOMBSTONE_STORE_NAME);
       const postRequest = postsStore.get(post.id);
@@ -505,10 +515,10 @@ const readFallbackPosts = (): OfflinePost[] => {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return applyTombstones(parsed
-      .map(validateOfflinePost)
-      .filter((post): post is OfflinePost => Boolean(post)), readTombstones())
-      .sort((a, b) => b.savedAt - a.savedAt);
+    return applyTombstones(
+      parsed.map(validateOfflinePost).filter((post): post is OfflinePost => Boolean(post)),
+      readTombstones(),
+    ).sort((a, b) => b.savedAt - a.savedAt);
   } catch {
     return [];
   }
@@ -543,9 +553,8 @@ const writeTombstones = (tombstones: OfflinePostTombstones): void => {
   localStorage.setItem(OFFLINE_POSTS_TOMBSTONES_KEY, JSON.stringify(tombstones));
 };
 
-const applyTombstones = (posts: OfflinePost[], tombstones: OfflinePostTombstones): OfflinePost[] => (
-  posts.filter((post) => tombstones[post.id] === undefined || post.savedAt > tombstones[post.id])
-);
+const applyTombstones = (posts: OfflinePost[], tombstones: OfflinePostTombstones): OfflinePost[] =>
+  posts.filter((post) => tombstones[post.id] === undefined || post.savedAt > tombstones[post.id]);
 
 const reconcileStores = async (): Promise<void> => {
   if (reconciliationPromise) return reconciliationPromise;
@@ -607,7 +616,9 @@ const reconcileStores = async (): Promise<void> => {
     } catch {
       // localStorage 不可用时 IndexedDB 仍是权威数据源。
     }
-  })().finally(() => { reconciliationPromise = null; });
+  })().finally(() => {
+    reconciliationPromise = null;
+  });
   return reconciliationPromise;
 };
 
@@ -706,7 +717,6 @@ export const getOfflinePosts = async (): Promise<OfflinePost[]> => {
 
 export const saveOfflinePost = async (post: OfflinePostInput): Promise<OfflinePost> => {
   const offlinePost = createOfflinePost(post);
-  await prepareOfflineCache(offlinePost);
   let savedToIndexedDb = false;
   let rejectedByNewerDelete = false;
   let idbNewerDelete: number | undefined;
@@ -736,8 +746,7 @@ export const saveOfflinePost = async (post: OfflinePostInput): Promise<OfflinePo
         writeTombstones(tombstones);
         return;
       }
-      const fallbackPosts = readFallbackPosts()
-        .filter((savedPost) => savedPost.id !== offlinePost.id);
+      const fallbackPosts = readFallbackPosts().filter((savedPost) => savedPost.id !== offlinePost.id);
       writeFallbackPosts([...fallbackPosts, offlinePost]);
       delete tombstones[offlinePost.id];
       writeTombstones(tombstones);
@@ -746,10 +755,22 @@ export const saveOfflinePost = async (post: OfflinePostInput): Promise<OfflinePo
     if (!savedToIndexedDb) throw error;
   }
   if (newerDeleteToPersist !== undefined) {
-    try { await persistIndexedDbDelete(offlinePost.id, newerDeleteToPersist); } catch { /* 降级墓碑记录仍然持久。 */ }
+    try {
+      await persistIndexedDbDelete(offlinePost.id, newerDeleteToPersist);
+    } catch {
+      /* 降级墓碑记录仍然持久。 */
+    }
   }
   if (rejectedByNewerDelete) {
     throw new Error('文章已在其他页面取消收藏，请重新操作。');
+  }
+  // 本地落库成功后再准备 SW 离线缓存（尽力而为）：无 SW / SW 未就绪 / 超时
+  // 不应阻断收藏本身（本地 IndexedDB/localStorage 已可离线阅读）；被墓碑拒绝的
+  // 保存也不会再把已删除文章缓存进 SW。
+  try {
+    await prepareOfflineCache(offlinePost);
+  } catch (error) {
+    console.warn('Offline cache preparation skipped; the post is saved locally.', error);
   }
   emitChange('save', offlinePost.id);
   return offlinePost;

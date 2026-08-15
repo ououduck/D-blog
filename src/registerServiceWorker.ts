@@ -1,14 +1,7 @@
 import { getSiteBasePath } from '@/utils/siteUrl';
 
 type ServiceWorkerStatus =
-  | 'idle'
-  | 'unsupported'
-  | 'registering'
-  | 'installing'
-  | 'ready'
-  | 'update-available'
-  | 'updating'
-  | 'error';
+  'idle' | 'unsupported' | 'registering' | 'installing' | 'ready' | 'update-available' | 'updating' | 'error';
 
 export interface ServiceWorkerState {
   readonly status: ServiceWorkerStatus;
@@ -75,13 +68,21 @@ const watchInstallingWorker = (currentRegistration: ServiceWorkerRegistration, w
   watchedWorkers.add(worker);
   const isUpdate = Boolean(navigator.serviceWorker.controller);
   setState('installing', currentRegistration);
-  worker.addEventListener('statechange', () => {
+  const handleStateChange = () => {
     if (worker.state === 'installed') {
       setState(isUpdate ? 'update-available' : 'ready', currentRegistration);
     } else if (worker.state === 'redundant') {
       warn('worker installation became redundant');
     }
-  });
+  };
+  worker.addEventListener('statechange', handleStateChange);
+  // 附加监听时 worker 可能已越过 installed（快速安装竞态下 statechange 不会
+  // 再触发），需同步检查一次当前状态，否则状态会卡在 installing。
+  if (worker.state === 'installed') {
+    setState(isUpdate ? 'update-available' : 'ready', currentRegistration);
+  } else if (worker.state === 'redundant') {
+    warn('worker installation became redundant');
+  }
 };
 
 const watchRegistration = (currentRegistration: ServiceWorkerRegistration) => {

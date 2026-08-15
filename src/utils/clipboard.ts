@@ -28,6 +28,8 @@ export const copyTextToClipboard = async (text: string): Promise<boolean> => {
   document.body.appendChild(textArea);
   textArea.focus();
   textArea.select();
+  // 部分 iOS Safari 版本 select() 不生效，需显式设置选区才能复制非空文本。
+  textArea.setSelectionRange(0, text.length);
 
   let copied = false;
   try {

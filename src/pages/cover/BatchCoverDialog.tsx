@@ -52,12 +52,18 @@ export const BatchCoverDialog: React.FC<BatchCoverDialogProps> = ({ isOpen, onCl
       if (generation !== readGenerationRef.current) return;
       setItems(nextItems);
       setIssues(nextIssues);
+    } catch (error) {
+      // file.text() 等读取失败：展示错误而非让界面卡在「正在读取文件…」。
+      console.error('Failed to read batch cover files:', error);
+      if (generation === readGenerationRef.current) {
+        setIssues([{ line: 1, message: '文件读取失败，请确认文件可读后重试。' }]);
+      }
     } finally {
-      // 无论读取是否被取消（弹窗关闭/再次选择文件），都清空 input 值，
-      // 否则下次选择同一文件时 onChange 不会触发。
+      // 无论读取成功、失败还是被取消（弹窗关闭/再次选择文件），都结束读取态，
+      // 并清空 input 值，否则下次选择同一文件时 onChange 不会触发。
+      setIsReading(false);
       event.target.value = '';
     }
-    setIsReading(false);
   };
 
   return (

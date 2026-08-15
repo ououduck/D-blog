@@ -421,12 +421,8 @@ export const TableOfContents: React.FC<{
     );
   };
 
+  // 触摸下滑关闭：仅绑定在顶部抓手区域（nav 列表之外），无需判断触摸起点。
   const handleSheetTouchStart = (event: React.TouchEvent<HTMLElement>) => {
-    if (navRef.current?.contains(event.target as Node)) {
-      touchStartYRef.current = null;
-      return;
-    }
-
     touchStartYRef.current = event.touches[0]?.clientY ?? null;
   };
 

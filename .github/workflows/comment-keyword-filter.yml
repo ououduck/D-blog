@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Run keyword filter
         # 使用自动注入的 GITHUB_TOKEN（与 akismet workflow 相同的修复方案）。

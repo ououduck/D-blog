@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
@@ -9,8 +9,6 @@ import { easeOut } from '@/utils/motion';
 interface SlideModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpen?: () => void;
-  onCloseCallback?: () => void;
   initialFocusRef?: React.RefObject<HTMLElement | null>;
   children: React.ReactNode;
   className?: string;
@@ -21,8 +19,6 @@ interface SlideModalProps {
 export const SlideModal: React.FC<SlideModalProps> = ({
   isOpen,
   onClose,
-  onOpen,
-  onCloseCallback,
   initialFocusRef,
   children,
   className = '',
@@ -33,49 +29,24 @@ export const SlideModal: React.FC<SlideModalProps> = ({
   const isMobile = useMediaQuery('(max-width: 767px)', false);
   const reducedMotion = useReducedMotion();
   const modalRef = useRef<HTMLDivElement>(null);
-  const hasCalledOpenRef = useRef(false);
-  const hasCalledCloseRef = useRef(false);
 
   useModalOverlay({
     isOpen: shouldRender,
     onClose,
     initialFocusRef,
-    containerRef: modalRef
+    containerRef: modalRef,
   });
-
-  const handleOpen = useCallback(() => {
-    if (!hasCalledOpenRef.current && onOpen) {
-      onOpen();
-      hasCalledOpenRef.current = true;
-    }
-  }, [onOpen]);
-
-  const restoreState = useCallback(() => {
-    if (!hasCalledCloseRef.current && onCloseCallback) {
-      onCloseCallback();
-      hasCalledCloseRef.current = true;
-    }
-  }, [onCloseCallback]);
 
   useEffect(() => {
     if (!isOpen) {
       if (shouldRender && reducedMotion) {
         setShouldRender(false);
-        restoreState();
       }
       return;
     }
 
-    hasCalledOpenRef.current = false;
-    hasCalledCloseRef.current = false;
     setShouldRender(true);
-
-    const frame = requestAnimationFrame(() => {
-      handleOpen();
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [isOpen, shouldRender, reducedMotion, handleOpen, restoreState]);
+  }, [isOpen, shouldRender, reducedMotion]);
 
   if ((!shouldRender && !isOpen) || typeof document === 'undefined') {
     return null;
@@ -86,12 +57,12 @@ export const SlideModal: React.FC<SlideModalProps> = ({
   const desktopVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
-    exit: { opacity: 0 }
+    exit: { opacity: 0 },
   };
   const mobileVariants = {
     hidden: { opacity: 0, y: reducedMotion ? 0 : 20 },
     visible: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: reducedMotion ? 0 : 16 }
+    exit: { opacity: 0, y: reducedMotion ? 0 : 16 },
   };
 
   return createPortal(
@@ -99,7 +70,6 @@ export const SlideModal: React.FC<SlideModalProps> = ({
       onExitComplete={() => {
         if (!isOpen) {
           setShouldRender(false);
-          restoreState();
         }
       }}
     >
@@ -123,9 +93,6 @@ export const SlideModal: React.FC<SlideModalProps> = ({
             onClick={onClose}
             aria-hidden="true"
           />
-          <div className="sr-only" aria-live="polite">
-            {isOpen ? '弹窗已打开' : '弹窗已关闭'}
-          </div>
 
           {isMobile ? (
             <motion.div
@@ -145,7 +112,11 @@ export const SlideModal: React.FC<SlideModalProps> = ({
                 dark:bg-zinc-900
                 ${className}
               `}
-              style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)' }}
+              style={{
+                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+                paddingLeft: 'env(safe-area-inset-left, 0px)',
+                paddingRight: 'env(safe-area-inset-right, 0px)',
+              }}
               variants={mobileVariants}
               initial="hidden"
               animate="visible"
@@ -192,6 +163,6 @@ export const SlideModal: React.FC<SlideModalProps> = ({
         </motion.div>
       )}
     </AnimatePresence>,
-    document.body
+    document.body,
   );
 };

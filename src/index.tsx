@@ -6,7 +6,7 @@ import { registerServiceWorker } from './registerServiceWorker';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
+  throw new Error('Could not find root element to mount to');
 }
 
 document.head.querySelectorAll('[data-rh="true"]').forEach((element) => element.remove());
@@ -25,4 +25,8 @@ if (rootElement.childElementCount > 0) {
   ReactDOM.createRoot(rootElement).render(app);
 }
 
-registerServiceWorker();
+// 仅生产构建注册 Service Worker：dev 下模块 URL 无内容哈希，SW 的
+// stale-while-revalidate 缓存会优先命中旧模块，导致改动代码后刷新看不到效果。
+if (import.meta.env.PROD) {
+  registerServiceWorker();
+}

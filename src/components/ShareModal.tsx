@@ -2,11 +2,11 @@ import React, { useId, useRef, useState } from 'react';
 import { X, Copy, Check, Link as LinkIcon, Image as ImageIcon, Download, LoaderCircle, RefreshCw } from 'lucide-react';
 import { SlideModal } from './SlideModal';
 import { generateSharePoster } from '@/utils/sharePoster';
+import { copyTextToClipboard } from '@/utils/clipboard';
 
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCloseCallback?: () => void;
   title: string;
   excerpt: string;
   url: string;
@@ -22,7 +22,6 @@ interface ShareModalProps {
 export const ShareModal: React.FC<ShareModalProps> = ({
   isOpen,
   onClose,
-  onCloseCallback,
   title,
   excerpt,
   url,
@@ -32,7 +31,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   siteName,
   siteSubtitle,
   siteUrl,
-  logo
+  logo,
 }) => {
   const [copiedType, setCopiedType] = useState<'all' | 'link' | null>(null);
   const [copyError, setCopyError] = useState<string | null>(null);
@@ -76,35 +75,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     };
   }, []);
 
-  const writeToClipboard = async (value: string) => {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(value);
-      return true;
-    }
-
-    const textArea = document.createElement('textarea');
-    textArea.value = value;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-9999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-
-    let copied = false;
-    try {
-      copied = document.execCommand('copy');
-    } finally {
-      document.body.removeChild(textArea);
-    }
-
-    return copied;
-  };
-
   const handleCopy = async (type: 'all' | 'link') => {
     const text = type === 'all' ? `标题：${title}\n简介：${excerpt}\n链接：${url}` : url;
 
     try {
-      const copied = await writeToClipboard(text);
+      const copied = await copyTextToClipboard(text);
       if (!copied) {
         throw new Error('Copy command was rejected');
       }
@@ -161,14 +136,14 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     <SlideModal
       isOpen={isOpen}
       onClose={onClose}
-      onCloseCallback={onCloseCallback}
       initialFocusRef={closeButtonRef}
       ariaLabelledby={titleId}
       ariaDescribedby={descriptionId}
     >
-
       <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-3 dark:border-zinc-800">
-        <h3 id={titleId} className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">分享文章</h3>
+        <h3 id={titleId} className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          分享文章
+        </h3>
         <button
           ref={closeButtonRef}
           type="button"
@@ -190,9 +165,15 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             <LinkIcon size={14} />
             <span>当前文章</span>
           </div>
-          <h4 className="mb-2 line-clamp-2 text-base font-bold leading-snug text-zinc-900 dark:text-zinc-100">{title}</h4>
-          <p id={descriptionId} className="mb-3 line-clamp-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{excerpt}</p>
-          <div className="break-all rounded-control border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">{url}</div>
+          <h4 className="mb-2 line-clamp-2 text-base font-bold leading-snug text-zinc-900 dark:text-zinc-100">
+            {title}
+          </h4>
+          <p id={descriptionId} className="mb-3 line-clamp-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+            {excerpt}
+          </p>
+          <div className="break-all rounded-control border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+            {url}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -202,7 +183,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             className="editorial-button-primary rounded-control active:scale-[0.98]"
             aria-label="复制标题、简介和链接"
           >
-            {copiedType === 'all' ? <span className="copy-pop"><Check size={16} /></span> : <Copy size={16} />}
+            {copiedType === 'all' ? (
+              <span className="copy-pop">
+                <Check size={16} />
+              </span>
+            ) : (
+              <Copy size={16} />
+            )}
             {copiedType === 'all' ? '已复制全部' : '复制完整分享'}
           </button>
           <button
@@ -211,14 +198,22 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             className="editorial-button rounded-control active:scale-[0.98]"
             aria-label="仅复制文章链接"
           >
-            {copiedType === 'link' ? <span className="copy-pop"><Check size={16} /></span> : <LinkIcon size={16} />}
+            {copiedType === 'link' ? (
+              <span className="copy-pop">
+                <Check size={16} />
+              </span>
+            ) : (
+              <LinkIcon size={16} />
+            )}
             {copiedType === 'link' ? '链接已复制' : '仅复制链接'}
           </button>
         </div>
 
         <div className="my-5 flex items-center gap-3" aria-hidden="true">
           <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">分享海报</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">
+            分享海报
+          </span>
           <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
         </div>
 
@@ -243,7 +238,10 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => { setPosterDataUrl(null); setPosterError(null); }}
+                onClick={() => {
+                  setPosterDataUrl(null);
+                  setPosterError(null);
+                }}
                 className="editorial-button rounded-control active:scale-[0.98]"
                 aria-label="重新生成分享海报"
               >
@@ -259,14 +257,20 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           <>
             <button
               type="button"
-              onClick={() => { void handleGeneratePoster(); }}
+              onClick={() => {
+                void handleGeneratePoster();
+              }}
               disabled={isGeneratingPoster}
               className="editorial-button w-full rounded-control active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               aria-label="生成文章分享海报"
             >
               {isGeneratingPoster ? (
                 <>
-                  <LoaderCircle size={16} className={isGeneratingPoster ? 'animate-spin' : undefined} aria-hidden="true" />
+                  <LoaderCircle
+                    size={16}
+                    className={isGeneratingPoster ? 'animate-spin' : undefined}
+                    aria-hidden="true"
+                  />
                   正在生成海报…
                 </>
               ) : (

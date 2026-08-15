@@ -115,14 +115,6 @@ const assertValidUrl = (value, label, allowedProtocols = HTTP_URL_PROTOCOLS) => 
 
 const toPublicPath = (value) => withBasePath(value, BASE_PATH);
 
-// coverImage 保留外部协议字符串（图床链接）；本地路径（已废弃）原样透传供校验器拦截。
-const normalizeCoverImage = (value) => {
-  if (!value) {
-    return undefined;
-  }
-  return String(value);
-};
-
 assertValidUrl(SITE_URL, 'siteConfig.url');
 
 const markdownToSearchText = (markdown) =>
@@ -510,7 +502,8 @@ const buildPost = (record) => {
   const normalizedAuthors = normalizeAuthors(data.author, data.authors);
   const category = normalizeCategory(data.category);
   const tags = normalizeTagsStrict(data.tags);
-  const normalizedCoverImage = normalizeCoverImage(data.coverImage);
+  // coverImage 保留外部协议字符串（图床链接）；本地路径（已废弃）原样透传供校验器拦截。
+  const normalizedCoverImage = data.coverImage ? String(data.coverImage) : undefined;
   const isSeries = data.series === true;
   const seriesName = isSeries && typeof data['series-name'] === 'string' ? data['series-name'].trim() : undefined;
   const seriesOrder = isSeries && Number.isInteger(data['series-order']) ? data['series-order'] : undefined;

@@ -1,4 +1,5 @@
-import React, { RefObject, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import type { RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -11,94 +12,95 @@ interface ReadingProgressBadgeProps {
 }
 
 const MOBILE_BADGE_STYLE = {
-  bottom: 'max(calc(env(safe-area-inset-bottom, 0px) + var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 5rem), calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 5rem))',
-  width: 'min(10rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)))'
+  bottom:
+    'max(calc(env(safe-area-inset-bottom, 0px) + var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 5rem), calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 5rem))',
+  width: 'min(10rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)))',
 } as const;
 const DESKTOP_BADGE_STYLE = {
-  bottom: 'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 5rem)'
+  bottom: 'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 5rem)',
 } as const;
 
-export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.memo(({ targetRef, endRef, onVisibilityChange }) => {
-  const shouldReduceMotion = useReducedMotion();
-  const [progress, setProgress] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
+export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.memo(
+  ({ targetRef, endRef, onVisibilityChange }) => {
+    const shouldReduceMotion = useReducedMotion();
+    const [progress, setProgress] = useState(0);
+    const [isVisible, setIsVisible] = useState(false);
 
-  const progressRef = useRef(0);
-  const visibilityRef = useRef(false);
+    const progressRef = useRef(0);
+    const visibilityRef = useRef(false);
 
-  useEffect(() => {
-    let animationFrame = 0;
+    useEffect(() => {
+      let animationFrame = 0;
 
-    const updateProgress = () => {
-      animationFrame = 0;
-      const target = targetRef.current;
+      const updateProgress = () => {
+        animationFrame = 0;
+        const target = targetRef.current;
 
-      if (!target) {
-        if (progressRef.current !== 0) {
-          progressRef.current = 0;
-          setProgress(0);
+        if (!target) {
+          if (progressRef.current !== 0) {
+            progressRef.current = 0;
+            setProgress(0);
+          }
+          if (visibilityRef.current) {
+            visibilityRef.current = false;
+            setIsVisible(false);
+          }
+          return;
         }
-        if (visibilityRef.current) {
-          visibilityRef.current = false;
-          setIsVisible(false);
+
+        const rect = target.getBoundingClientRect();
+        const endRect = endRef?.current?.getBoundingClientRect();
+        const nextProgress = getReadingProgress({
+          rect,
+          endRect,
+          viewportHeight: window.innerHeight,
+          scrollY: window.scrollY,
+          documentHeight: document.documentElement.scrollHeight,
+        });
+        const nextPercentage = Math.round(nextProgress * 100);
+        const currentPercentage = Math.round(progressRef.current * 100);
+        const visibilityRect = endRect ?? rect;
+        // 正文末尾仍位于视口下半区（即尚未滚过正文）时显示徽章；
+        // 滚过正文末尾（进入评论区/推荐区）后隐藏。不附加 nextProgress >= 1：
+        // 进度被 clamp 在 1 后该条件恒真，会让隐藏分支永远不可达。
+        const nextVisible = visibilityRect.bottom > window.innerHeight * READING_PROGRESS_END_RATIO;
+
+        if (nextPercentage !== currentPercentage) {
+          progressRef.current = nextProgress;
+          setProgress(nextProgress);
         }
-        return;
-      }
+        if (nextVisible !== visibilityRef.current) {
+          visibilityRef.current = nextVisible;
+          setIsVisible(nextVisible);
+        }
+      };
 
-      const rect = target.getBoundingClientRect();
-      const endRect = endRef?.current?.getBoundingClientRect();
-      const nextProgress = getReadingProgress({
-        rect,
-        endRect,
-        viewportHeight: window.innerHeight,
-        scrollY: window.scrollY,
-        documentHeight: document.documentElement.scrollHeight
-      });
-      const nextPercentage = Math.round(nextProgress * 100);
-      const currentPercentage = Math.round(progressRef.current * 100);
-      const visibilityRect = endRect ?? rect;
-      // 正文末尾仍位于视口下半区（即尚未滚过正文）时显示徽章；
-      // 滚过正文末尾（进入评论区/推荐区）后隐藏。不附加 nextProgress >= 1：
-      // 进度被 clamp 在 1 后该条件恒真，会让隐藏分支永远不可达。
-      const nextVisible = visibilityRect.bottom > window.innerHeight * READING_PROGRESS_END_RATIO;
+      const scheduleUpdate = () => {
+        if (!animationFrame) {
+          animationFrame = window.requestAnimationFrame(updateProgress);
+        }
+      };
 
-      if (nextPercentage !== currentPercentage) {
-        progressRef.current = nextProgress;
-        setProgress(nextProgress);
-      }
-      if (nextVisible !== visibilityRef.current) {
-        visibilityRef.current = nextVisible;
-        setIsVisible(nextVisible);
-      }
-    };
+      scheduleUpdate();
+      window.addEventListener('scroll', scheduleUpdate, { passive: true });
+      window.addEventListener('resize', scheduleUpdate);
 
-    const scheduleUpdate = () => {
-      if (!animationFrame) {
-        animationFrame = window.requestAnimationFrame(updateProgress);
-      }
-    };
+      return () => {
+        window.removeEventListener('scroll', scheduleUpdate);
+        window.removeEventListener('resize', scheduleUpdate);
+        if (animationFrame) {
+          window.cancelAnimationFrame(animationFrame);
+        }
+      };
+    }, [endRef, targetRef]);
 
-    scheduleUpdate();
-    window.addEventListener('scroll', scheduleUpdate, { passive: true });
-    window.addEventListener('resize', scheduleUpdate);
+    useEffect(() => {
+      onVisibilityChange?.(isVisible);
+    }, [isVisible, onVisibilityChange]);
 
-    return () => {
-      window.removeEventListener('scroll', scheduleUpdate);
-      window.removeEventListener('resize', scheduleUpdate);
-      if (animationFrame) {
-        window.cancelAnimationFrame(animationFrame);
-      }
-    };
-  }, [endRef, targetRef]);
+    const percentage = Math.round(progress * 100);
 
-  useEffect(() => {
-    onVisibilityChange?.(isVisible);
-  }, [isVisible, onVisibilityChange]);
-
-  const percentage = Math.round(progress * 100);
-
-  const mobileBadge =
-    isVisible
+    const mobileBadge = isVisible
       ? createPortal(
           <div
             style={MOBILE_BADGE_STYLE}
@@ -116,12 +118,11 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
               />
             </div>
           </div>,
-          document.body
+          document.body,
         )
       : null;
 
-  const desktopBadge =
-    isVisible
+    const desktopBadge = isVisible
       ? createPortal(
           <div
             style={DESKTOP_BADGE_STYLE}
@@ -142,22 +143,23 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )
       : null;
 
-  return (
-    <motion.div
-      initial={false}
-      animate={{
-        opacity: isVisible ? 1 : 0,
-        y: isVisible ? 0 : 8
-      }}
-      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
-      aria-hidden={!isVisible}
-    >
-      {mobileBadge}
-      {desktopBadge}
-    </motion.div>
-  );
-});
+    return (
+      <motion.div
+        initial={false}
+        animate={{
+          opacity: isVisible ? 1 : 0,
+          y: isVisible ? 0 : 8,
+        }}
+        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
+        aria-hidden={!isVisible}
+      >
+        {mobileBadge}
+        {desktopBadge}
+      </motion.div>
+    );
+  },
+);

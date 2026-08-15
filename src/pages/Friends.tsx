@@ -723,7 +723,7 @@ export const Friends = () => {
         {!loading &&
           !loadError &&
           activeFriends.length > 0 &&
-          activeFriends.map((friend, index) => <FriendCard key={`${friend.url}-${index}`} friend={friend} />)}
+          activeFriends.map((friend) => <FriendCard key={friend.url} friend={friend} />)}
 
         {loading && <LoadingStatus label="正在加载友情链接" className="col-span-full" />}
         {loading &&
@@ -813,8 +813,8 @@ export const Friends = () => {
                     animate="visible"
                     className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
                   >
-                    {unavailableFriends.map((friend, index) => (
-                      <FriendCard key={`${friend.url}-${index}`} friend={friend} unavailable />
+                    {unavailableFriends.map((friend) => (
+                      <FriendCard key={friend.url} friend={friend} unavailable />
                     ))}
                   </motion.div>
                 ) : (

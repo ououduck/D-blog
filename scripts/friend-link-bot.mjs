@@ -127,7 +127,7 @@ const GIT_TIMEOUT_MS = 60000;
 /** git push 带内重试次数（事件驱动下无定时轮询兜底，网络抖动靠本 run 内重试吸收）。 */
 const PUSH_RETRIES = 3;
 
-/** 单个 review 批次最多处理多少个 open issue（每批 schedule 只处理一批，避免超长运行）。 */
+/** 单个 review 批次最多处理多少个 open issue（避免超长运行）。 */
 const MAX_ISSUES_PER_BATCH = 50;
 
 /* ------------------------------------------------------------------ */
@@ -582,7 +582,7 @@ const buildManualReviewSection = (issue) => {
  */
 const validateApplication = async (application) => {
   // 1. 文件名规则：仅字母数字下划线短横线，可带 .json 后缀。
-  if (!/^[A-Za-z0-9_-]+(?:\.json)?$/.test(application.filename) || application.filename.toLowerCase() === '.json') {
+  if (!/^[A-Za-z0-9_-]+(?:\.json)?$/.test(application.filename)) {
     return '文件名不符合规则。';
   }
 
@@ -735,10 +735,10 @@ const commitAndPushFriendFile = async (filePath, issueNumber) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* 业务逻辑：opened（事件触发） / review（定时巡检）                    */
+/* 业务逻辑：opened（事件触发） / review（事件驱动审核）                 */
 /* ------------------------------------------------------------------ */
 
-/** 安全解析 ISSUE_PAYLOAD（schedule 触发时为空字符串，必须容错）。 */
+/** 安全解析 ISSUE_PAYLOAD（手动触发/空 payload 时容错为空）。 */
 const safeParseJson = (raw, fallback) => {
   try {
     return JSON.parse(raw || '{}');

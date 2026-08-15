@@ -41,12 +41,9 @@ export const ArchivePage = () => {
   const [loading, setLoading] = useState(initialPosts.length === 0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [expandedYears, setExpandedYears] = useState<Set<string>>(
-    () => getInitialExpansion(buildArchiveGroups(initialPosts), null).years,
-  );
-  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(
-    () => getInitialExpansion(buildArchiveGroups(initialPosts), null).months,
-  );
+  const [initialExpansion] = useState(() => getInitialExpansion(buildArchiveGroups(initialPosts), null));
+  const [expandedYears, setExpandedYears] = useState<Set<string>>(() => initialExpansion.years);
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(() => initialExpansion.months);
   const shouldReduceMotion = useReducedMotion();
   const initializedRef = useRef(false);
   const searchStartedRef = useRef<string | null>(null);
@@ -421,7 +418,7 @@ export const ArchivePage = () => {
                         >
                           <div className="pt-6 md:pt-7">
                             {group.months.map((monthGroup, monthIndex) => {
-                              const monthKey = `${group.year}-${monthGroup.monthNum}`;
+                              const monthKey = getMonthKey(group.year, monthGroup.monthNum);
                               const isMonthExpanded = expandedMonths.has(monthKey);
 
                               return (

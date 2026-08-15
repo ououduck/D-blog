@@ -408,7 +408,9 @@ export const generateSharePoster = async (options: SharePosterOptions): Promise<
     const lines = wrapCanvasText(ctx, title, bandWidth, 3);
     titleFontSize = size;
     titleLines = lines;
-    if (lines.length <= 3) break;
+    // wrapCanvasText 恒返回 ≤3 行，超长时最后一行以省略号截断；
+    // 仅当未被截断（末行不以 … 结尾）时说明该字号能完整放下，停止降字号。
+    if (!lines[lines.length - 1]?.endsWith('…')) break;
   }
   const titleLineHeight = Math.round(titleFontSize * 1.42);
   ctx.fillStyle = COLORS.ink;

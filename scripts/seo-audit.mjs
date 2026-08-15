@@ -3,13 +3,21 @@
  * 用法：node scripts/seo-audit.mjs [distDir]
  * 检查项覆盖：文档元数据、OG/Twitter、结构化数据、链接、标题层级、图片 alt 等。
  */
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadSiteConfig } from './site-config-loader.mjs';
 
 const distDir = process.argv[2] ?? join(fileURLToPath(new URL('.', import.meta.url)), '..', 'dist');
 const SITE_URL = loadSiteConfig().url;
+
+// 与 audit-build.mjs 对齐：dist 缺失时给出指引而非裸 ENOENT 堆栈，
+// 便于本地单独运行 npm run audit:seo 时快速定位原因。
+if (!existsSync(distDir)) {
+  console.error(`[audit:seo] dist directory not found: ${distDir}`);
+  console.error('[audit:seo] 请先运行 npm run build 生成构建产物，再执行本审计。');
+  process.exit(1);
+}
 
 const walkHtml = (dir, base = dir) => {
   const results = [];
@@ -70,7 +78,8 @@ for (const file of files) {
   else {
     const text = titles[0].replace(/<[^>]+>/g, '').trim();
     if (!text) fail(relativePath, 'title', '<title> 为空');
-    else if (text.length < 10 || text.length > 70) warn(relativePath, 'title', `title 长度 ${text.length}（建议 10-70）：${text}`);
+    else if (text.length < 10 || text.length > 70)
+      warn(relativePath, 'title', `title 长度 ${text.length}（建议 10-70）：${text}`);
   }
 
   // ---- Meta description ----
@@ -86,7 +95,8 @@ for (const file of files) {
     if (!content) fail(relativePath, 'description', 'description 为空');
     else if (isPostPage) {
       if (content.length < 20) warn(relativePath, 'description', `文章页 description 过短（${content.length} 字）`);
-      else if (content.length > 160) warn(relativePath, 'description', `description 长度 ${content.length}（建议 ≤160）`);
+      else if (content.length > 160)
+        warn(relativePath, 'description', `description 长度 ${content.length}（建议 ≤160）`);
     } else if (content.length < 50 || content.length > 160) {
       warn(relativePath, 'description', `description 长度 ${content.length}（建议 50-160）`);
     }
@@ -118,9 +128,15 @@ for (const file of files) {
   // ---- Open Graph ----
   const ogProps = {};
   for (const [prop, name] of [
-    ['og:title', 'title'], ['og:description', 'description'], ['og:type', 'type'],
-    ['og:url', 'url'], ['og:image', 'image'], ['og:image:width', 'image:width'],
-    ['og:image:height', 'image:height'], ['og:site_name', 'site_name'], ['og:locale', 'locale']
+    ['og:title', 'title'],
+    ['og:description', 'description'],
+    ['og:type', 'type'],
+    ['og:url', 'url'],
+    ['og:image', 'image'],
+    ['og:image:width', 'image:width'],
+    ['og:image:height', 'image:height'],
+    ['og:site_name', 'site_name'],
+    ['og:locale', 'locale'],
   ]) {
     const m = html.match(new RegExp(`<meta\\b[^>]*property=["']${prop}["'][^>]*>`, 'i'));
     ogProps[name] = m?.[0]?.match(/content=["']([\s\S]*?)["']/i)?.[1];
@@ -130,10 +146,12 @@ for (const file of files) {
   if (!ogProps.image) fail(relativePath, 'og', '缺少 og:image');
   // og:image 允许指向任意图床/CDN 域名，仅要求绝对 http(s) URL
   // （http://localhost 本地预览也通过；data:/blob: 等动态协议拒绝）。
-  else if (!/^https?:\/\//i.test(ogProps.image)) fail(relativePath, 'og', `og:image 非绝对 http(s) URL：${ogProps.image}`);
+  else if (!/^https?:\/\//i.test(ogProps.image))
+    fail(relativePath, 'og', `og:image 非绝对 http(s) URL：${ogProps.image}`);
   if (!ogProps.url) fail(relativePath, 'og', '缺少 og:url');
   else if (!ogProps.url.startsWith(SITE_URL)) fail(relativePath, 'og', `og:url 非站点 URL：${ogProps.url}`);
-  if (ogProps.type !== 'website' && ogProps.type !== 'article') warn(relativePath, 'og', `og:type 异常：${ogProps.type}`);
+  if (ogProps.type !== 'website' && ogProps.type !== 'article')
+    warn(relativePath, 'og', `og:type 异常：${ogProps.type}`);
   if (!ogProps['image:width'] || !ogProps['image:height']) warn(relativePath, 'og', 'og:image 缺少尺寸声明');
 
   // ---- Twitter card ----
@@ -167,7 +185,8 @@ for (const file of files) {
             const items = item.itemListElement ?? [];
             if (items.length < 2) fail(relativePath, 'jsonld', 'BreadcrumbList 少于 2 项');
             items.forEach((it, i) => {
-              if (it.position !== i + 1) fail(relativePath, 'jsonld', `BreadcrumbList position 跳号：预期 ${i + 1} 实际 ${it.position}`);
+              if (it.position !== i + 1)
+                fail(relativePath, 'jsonld', `BreadcrumbList position 跳号：预期 ${i + 1} 实际 ${it.position}`);
               if (!it.item) fail(relativePath, 'jsonld', `BreadcrumbList 第 ${i + 1} 项缺少 item`);
             });
           }
@@ -181,7 +200,8 @@ for (const file of files) {
       }
     }
     for (const [type, count] of typeCounts) {
-      if (count > 1) warn(relativePath, 'jsonld', `JSON-LD @type「${type}」出现 ${count} 次，页面级 schema 重复注入，应只保留一份`);
+      if (count > 1)
+        warn(relativePath, 'jsonld', `JSON-LD @type「${type}」出现 ${count} 次，页面级 schema 重复注入，应只保留一份`);
     }
   }
 

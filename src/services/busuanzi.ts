@@ -33,7 +33,8 @@ const fillSpans = ({ pageUrl, data }: CachedBusuanziResponse): number => {
   let filled = 0;
   for (const key of Object.keys(data)) {
     if (key.startsWith('busuanzi_page_') && !canFillPageMetrics) continue;
-    document.querySelectorAll(`#${key}`).forEach((el) => {
+    // key 来自外部 API 响应，用 CSS.escape 转义后再拼选择器，避免注入非法选择器。
+    document.querySelectorAll(`#${CSS.escape(key)}`).forEach((el) => {
       el.textContent = String(data[key]);
       filled += 1;
     });

@@ -55,6 +55,7 @@ import {
 import type { MarkdownHeading } from '@/utils/headings';
 import { formatDate } from '@/utils/date';
 import { stripMarkdown } from '@/utils/markdownText';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 import { useReadingMode } from '@/components/ReadingModeContext';
@@ -378,32 +379,12 @@ const PreBlock = ({
     clearCopyFeedback();
   };
 
-  const copyText = async (text: string) => {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.setAttribute('readonly', '');
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-9999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-      return document.execCommand('copy');
-    } finally {
-      textArea.remove();
-    }
-  };
-
   const handleCopy = async () => {
     try {
-      const copiedOk = await copyText(code);
+      const copiedOk = await copyTextToClipboard(code);
       if (copiedOk) markCopied();
     } catch {
-      // Clipboard API 拒绝时静默失败，不打断阅读。
+      // 复制失败时静默，不打断阅读。
     }
   };
 
@@ -412,7 +393,7 @@ const PreBlock = ({
     const lineText = lines[line - 1];
     if (lineText === undefined) return;
     try {
-      const copiedOk = await copyText(lineText);
+      const copiedOk = await copyTextToClipboard(lineText);
       if (copiedOk) markLineCopied(line);
     } catch {
       // 同上，静默失败。
@@ -423,7 +404,10 @@ const PreBlock = ({
     const objectUrl = URL.createObjectURL(new Blob([code], { type: 'text/plain;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = objectUrl;
-    link.download = `${filename || 'code-snippet'}.${getCodeFileExtension(lang)}`;
+    // title="app.ts" 已带扩展名时不再追加，避免生成 app.ts.ts。
+    const baseName = filename || 'code-snippet';
+    const extension = getCodeFileExtension(lang);
+    link.download = baseName.toLowerCase().endsWith(`.${extension}`) ? baseName : `${baseName}.${extension}`;
     link.rel = 'noopener';
     document.body.appendChild(link);
     link.click();
@@ -1465,7 +1449,8 @@ export const Post = () => {
       } catch (error) {
         if (!cancelled) {
           console.error('Failed to load markdown enhancements:', error);
-          setRemarkPlugins([remarkGfm]);
+          // 失败回退同样保持 remarkCodeMeta 常驻，避免代码块 data-meta 丢失。
+          setRemarkPlugins([remarkGfm, remarkCodeMeta]);
           setRehypePlugins([]);
           setMermaidRenderer(null);
         }
@@ -1549,7 +1534,7 @@ export const Post = () => {
       // 标记为程序化滚动：hash 深链跳转不是用户阅读行为，不得计入阅读进度。
       programmaticScrollRef.current = true;
       window.scrollTo({
-        top: Math.max(0, element.getBoundingClientRect().top + window.scrollY - 104),
+        top: Math.max(0, element.getBoundingClientRect().top + window.scrollY - HEADING_SCROLL_OFFSET),
         behavior: 'auto',
       });
       // 双 rAF 后清除标记：与恢复逻辑保持一致，等待程序化滚动完全落定。
