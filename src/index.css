@@ -1220,7 +1220,7 @@ html.dark .mermaid-diagram > svg {
   [class*='z-floating'],
   [class*='z-popover'],
   .reading-mode-exit,
-  .reading-mode-toggle,
+  .reading-mode-floating-toggle,
   .post-cover,
   .post-actions,
   .post-navigation,
