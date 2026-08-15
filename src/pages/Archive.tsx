@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ArrowUpRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, ArrowUpRight, MessageCircle } from 'lucide-react';
 import { siteConfig } from '@config/site.config';
 import { getInitialPosts, getPosts } from '@/services/posts';
 import { PostMetadata } from '../types';
@@ -19,13 +19,14 @@ import {
   getAllExpansion,
   getInitialExpansion,
   getMonthKey,
-  isAllVisibleExpanded
+  isAllVisibleExpanded,
 } from './archive/archiveState';
 
-const formatDay = (dateText: string) => formatDate(dateText, 'zh-CN', {
-  month: '2-digit',
-  day: '2-digit'
-}).replace('/', '.');
+const formatDay = (dateText: string) =>
+  formatDate(dateText, 'zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+  }).replace('/', '.');
 
 // 构建期 SSG：posts.json 已通过 eager glob 内联进产物，模块加载时同步可读，
 // 使 /archive 在 SSR 阶段即可渲染完整时间线（爬虫无需执行 JS 就能读到正文列表），
@@ -40,16 +41,21 @@ export const ArchivePage = () => {
   const [loading, setLoading] = useState(initialPosts.length === 0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [expandedYears, setExpandedYears] = useState<Set<string>>(() => getInitialExpansion(buildArchiveGroups(initialPosts), null).years);
-  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(() => getInitialExpansion(buildArchiveGroups(initialPosts), null).months);
+  const [expandedYears, setExpandedYears] = useState<Set<string>>(
+    () => getInitialExpansion(buildArchiveGroups(initialPosts), null).years,
+  );
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(
+    () => getInitialExpansion(buildArchiveGroups(initialPosts), null).months,
+  );
   const shouldReduceMotion = useReducedMotion();
   const initializedRef = useRef(false);
   const searchStartedRef = useRef<string | null>(null);
   const autoExpandedSearchRef = useRef<string | null>(null);
-  const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
-    emptyResults: allPosts,
-    initialQuery: queryFromUrl
-  });
+  const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } =
+    usePostSearch({
+      emptyResults: allPosts,
+      initialQuery: queryFromUrl,
+    });
 
   useEffect(() => {
     let cancelled = false;
@@ -92,26 +98,32 @@ export const ArchivePage = () => {
 
   const handleSearchChange = (query: string) => {
     handleSearch(query);
-    setSearchParams((previous) => {
-      const nextParams = new URLSearchParams(previous);
-      nextParams.delete('year');
-      if (query.trim()) {
-        nextParams.set('q', query);
-      } else {
-        nextParams.delete('q');
-      }
-      return nextParams;
-    }, { replace: true });
+    setSearchParams(
+      (previous) => {
+        const nextParams = new URLSearchParams(previous);
+        nextParams.delete('year');
+        if (query.trim()) {
+          nextParams.set('q', query);
+        } else {
+          nextParams.delete('q');
+        }
+        return nextParams;
+      },
+      { replace: true },
+    );
   };
 
   const handleClearSearch = () => {
     clearSearch();
-    setSearchParams((previous) => {
-      const nextParams = new URLSearchParams(previous);
-      nextParams.delete('q');
-      nextParams.delete('year');
-      return nextParams;
-    }, { replace: true });
+    setSearchParams(
+      (previous) => {
+        const nextParams = new URLSearchParams(previous);
+        nextParams.delete('q');
+        nextParams.delete('year');
+        return nextParams;
+      },
+      { replace: true },
+    );
   };
 
   const groups = useMemo(() => buildArchiveGroups(results), [results]);
@@ -143,11 +155,14 @@ export const ArchivePage = () => {
       return;
     }
     if (!groups.some((group) => group.year === yearFromUrl)) {
-      setSearchParams((previous) => {
-        const nextParams = new URLSearchParams(previous);
-        nextParams.delete('year');
-        return nextParams;
-      }, { replace: true });
+      setSearchParams(
+        (previous) => {
+          const nextParams = new URLSearchParams(previous);
+          nextParams.delete('year');
+          return nextParams;
+        },
+        { replace: true },
+      );
       return;
     }
     setExpandedYears((previous) => ensureYearExpanded(groups, previous, yearFromUrl));
@@ -165,10 +180,7 @@ export const ArchivePage = () => {
       searchStartedRef.current = normalizedQuery;
       return;
     }
-    if (
-      searchStartedRef.current === normalizedQuery
-      && autoExpandedSearchRef.current !== normalizedQuery
-    ) {
+    if (searchStartedRef.current === normalizedQuery && autoExpandedSearchRef.current !== normalizedQuery) {
       const expansion = getAllExpansion(groups);
       setExpandedYears(expansion.years);
       setExpandedMonths(expansion.months);
@@ -189,35 +201,43 @@ export const ArchivePage = () => {
       // 折叠年份时，同时折叠该年份下的所有月份
       setExpandedMonths((prevMonths) => {
         const nextMonths = new Set(prevMonths);
-        groups.find((g) => g.year === year)?.months.forEach((m) => {
-          nextMonths.delete(getMonthKey(year, m.monthNum));
-        });
+        groups
+          .find((g) => g.year === year)
+          ?.months.forEach((m) => {
+            nextMonths.delete(getMonthKey(year, m.monthNum));
+          });
         return nextMonths;
       });
-      setSearchParams((previous) => {
-        const nextParams = new URLSearchParams(previous);
-        if (nextParams.get('year') === year) {
-          nextParams.delete('year');
-        }
-        return nextParams;
-      }, { replace: true });
+      setSearchParams(
+        (previous) => {
+          const nextParams = new URLSearchParams(previous);
+          if (nextParams.get('year') === year) {
+            nextParams.delete('year');
+          }
+          return nextParams;
+        },
+        { replace: true },
+      );
     } else {
       setExpandedYears((prev) => {
         const next = new Set(prev);
         next.add(year);
         return next;
       });
-      setSearchParams((previous) => {
-        const nextParams = new URLSearchParams(previous);
-        nextParams.set('year', year);
-        return nextParams;
-      }, { replace: true });
+      setSearchParams(
+        (previous) => {
+          const nextParams = new URLSearchParams(previous);
+          nextParams.set('year', year);
+          return nextParams;
+        },
+        { replace: true },
+      );
     }
   };
 
   const toggleMonth = (year: string, monthNum: number) => {
     const monthKey = getMonthKey(year, monthNum);
-    setExpandedMonths(prev => {
+    setExpandedMonths((prev) => {
       const next = new Set(prev);
       if (next.has(monthKey)) {
         next.delete(monthKey);
@@ -230,11 +250,14 @@ export const ArchivePage = () => {
 
   // 全部展开/折叠
   const toggleAll = () => {
-    setSearchParams((previous) => {
-      const nextParams = new URLSearchParams(previous);
-      nextParams.delete('year');
-      return nextParams;
-    }, { replace: true });
+    setSearchParams(
+      (previous) => {
+        const nextParams = new URLSearchParams(previous);
+        nextParams.delete('year');
+        return nextParams;
+      },
+      { replace: true },
+    );
 
     if (allGroupsExpanded) {
       setExpandedYears(new Set());
@@ -248,7 +271,8 @@ export const ArchivePage = () => {
 
   // 归档页结构化数据：站点级 schema + CollectionPage + BreadcrumbList。
   // 页面级 schema 与 SSG 注入互补：SSG 静态页已标记 schemaFromSeo，不再重复注入。
-  const archivePageDescription = 'D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评与折腾记录，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。';
+  const archivePageDescription =
+    'D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评与折腾记录，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。';
   const archiveStructuredData = [
     ...buildSiteSchemas(archivePageDescription),
     {
@@ -261,26 +285,22 @@ export const ArchivePage = () => {
       isPartOf: {
         '@type': 'WebSite',
         name: siteConfig.title,
-        url: absoluteSiteUrl('/', siteConfig.url)
-      }
+        url: absoluteSiteUrl('/', siteConfig.url),
+      },
     },
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: '首页', item: absoluteSiteUrl('/', siteConfig.url) },
-        { '@type': 'ListItem', position: 2, name: '归档', item: absoluteSiteUrl('/archive', siteConfig.url) }
-      ]
-    }
+        { '@type': 'ListItem', position: 2, name: '归档', item: absoluteSiteUrl('/archive', siteConfig.url) },
+      ],
+    },
   ];
 
   return (
     <div className="pb-8 md:pb-14">
-      <Seo
-        title="归档"
-        description={archivePageDescription}
-        structuredData={archiveStructuredData}
-      />
+      <Seo title="归档" description={archivePageDescription} structuredData={archiveStructuredData} />
 
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-zinc-200 pb-5 dark:border-zinc-800 md:pb-6">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
@@ -307,7 +327,8 @@ export const ArchivePage = () => {
             />
             {hasSearchQuery && (
               <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-                “<span className="font-semibold text-zinc-900 dark:text-zinc-100">{searchQuery}</span>” · {totalPosts} 篇文章
+                “<span className="font-semibold text-zinc-900 dark:text-zinc-100">{searchQuery}</span>” · {totalPosts}{' '}
+                篇文章
               </p>
             )}
           </div>
@@ -327,7 +348,11 @@ export const ArchivePage = () => {
           <div className="space-y-6" aria-busy="true">
             <LoadingStatus label={isSearching ? '正在搜索归档文章' : '正在加载归档文章'} />
             {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} aria-hidden="true" className={`${shouldReduceMotion ? '' : 'animate-pulse '}h-32 rounded-surface border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-900`} />
+              <div
+                key={index}
+                aria-hidden="true"
+                className={`${shouldReduceMotion ? '' : 'animate-pulse '}h-32 rounded-surface border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-900`}
+              />
             ))}
           </div>
         ) : loadError || searchError ? (
@@ -341,7 +366,9 @@ export const ArchivePage = () => {
         ) : groups.length === 0 ? (
           <ContentStatus
             title={hasSearchQuery ? '未找到匹配文章' : '暂无归档文章'}
-            description={hasSearchQuery ? '尝试缩短关键词，或清除搜索条件后查看全部文章。' : '发布文章后，归档时间线会显示在这里。'}
+            description={
+              hasSearchQuery ? '尝试缩短关键词，或清除搜索条件后查看全部文章。' : '发布文章后，归档时间线会显示在这里。'
+            }
             actionLabel={hasSearchQuery ? '清除搜索' : undefined}
             onAction={hasSearchQuery ? handleClearSearch : undefined}
           />
@@ -356,7 +383,11 @@ export const ArchivePage = () => {
                     key={group.year}
                     initial={shouldReduceMotion ? false : { opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, delay: Math.min(groupIndex * 0.02, 0.08), ease: easeOut }}
+                    transition={
+                      shouldReduceMotion
+                        ? { duration: 0 }
+                        : { duration: 0.2, delay: Math.min(groupIndex * 0.02, 0.08), ease: easeOut }
+                    }
                   >
                     <button
                       onClick={() => toggleYear(group.year)}
@@ -398,7 +429,11 @@ export const ArchivePage = () => {
                                   key={monthKey}
                                   initial={shouldReduceMotion ? false : { opacity: 0 }}
                                   animate={{ opacity: 1 }}
-                                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, delay: Math.min(monthIndex * 0.015, 0.06), ease: easeOut }}
+                                  transition={
+                                    shouldReduceMotion
+                                      ? { duration: 0 }
+                                      : { duration: 0.16, delay: Math.min(monthIndex * 0.015, 0.06), ease: easeOut }
+                                  }
                                   className={monthIndex < group.months.length - 1 ? 'mb-7 md:mb-8' : undefined}
                                 >
                                   <button
@@ -409,13 +444,19 @@ export const ArchivePage = () => {
                                   >
                                     <motion.span
                                       animate={{ rotate: isMonthExpanded ? 0 : -90 }}
-                                      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: easeOut }}
+                                      transition={
+                                        shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: easeOut }
+                                      }
                                       className="text-zinc-400 transition-colors group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
                                     >
                                       <ChevronDown size={14} />
                                     </motion.span>
-                                    <h3 className="font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">{monthGroup.month}</h3>
-                                    <span className="text-xs text-zinc-500 dark:text-zinc-400">{monthGroup.total} 篇</span>
+                                    <h3 className="font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                                      {monthGroup.month}
+                                    </h3>
+                                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                      {monthGroup.total} 篇
+                                    </span>
                                   </button>
 
                                   <AnimatePresence>
@@ -424,7 +465,9 @@ export const ArchivePage = () => {
                                         initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
                                         animate={{ height: 'auto', opacity: 1 }}
                                         exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
-                                        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: easeOut }}
+                                        transition={
+                                          shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: easeOut }
+                                        }
                                         className="overflow-hidden"
                                       >
                                         <div className="border-t border-zinc-200 dark:border-zinc-800">
@@ -433,7 +476,15 @@ export const ArchivePage = () => {
                                               key={post.id}
                                               initial={shouldReduceMotion ? false : { opacity: 0 }}
                                               animate={{ opacity: 1 }}
-                                              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.14, delay: Math.min(postIndex * 0.01, 0.05), ease: easeOut }}
+                                              transition={
+                                                shouldReduceMotion
+                                                  ? { duration: 0 }
+                                                  : {
+                                                      duration: 0.14,
+                                                      delay: Math.min(postIndex * 0.01, 0.05),
+                                                      ease: easeOut,
+                                                    }
+                                              }
                                             >
                                               <Link
                                                 to={`/post/${post.id}`}
@@ -444,10 +495,24 @@ export const ArchivePage = () => {
                                                 </time>
                                                 <h4 className="min-w-0 break-words font-serif text-lg font-bold leading-snug text-zinc-900 transition-colors [overflow-wrap:anywhere] group-hover:text-zinc-600 dark:text-zinc-100 dark:group-hover:text-zinc-300 md:text-xl">
                                                   {post.title}
-                                                  <ArrowUpRight className="ml-1 inline-block -translate-y-0.5 opacity-0 transition-opacity group-hover:opacity-100" size={14} />
+                                                  <ArrowUpRight
+                                                    className="ml-1 inline-block -translate-y-0.5 opacity-0 transition-opacity group-hover:opacity-100"
+                                                    size={14}
+                                                  />
                                                 </h4>
                                                 <p className="min-w-0 break-words text-xs text-zinc-500 [overflow-wrap:anywhere] dark:text-zinc-400 md:whitespace-nowrap">
-                                                  {post.category} <span className="mx-1 text-zinc-300 dark:text-zinc-700">·</span> {post.readTime}
+                                                  {post.category}{' '}
+                                                  <span className="mx-1 text-zinc-300 dark:text-zinc-700">·</span>{' '}
+                                                  {post.readTime}
+                                                  {typeof post.commentCount === 'number' && (
+                                                    <>
+                                                      <span className="mx-1 text-zinc-300 dark:text-zinc-700">·</span>
+                                                      <span className="inline-flex items-center gap-1">
+                                                        <MessageCircle size={11} />
+                                                        {post.commentCount} 条评论
+                                                      </span>
+                                                    </>
+                                                  )}
                                                 </p>
                                               </Link>
                                             </motion.div>
@@ -473,4 +538,3 @@ export const ArchivePage = () => {
     </div>
   );
 };
-

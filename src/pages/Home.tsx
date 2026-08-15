@@ -1,7 +1,19 @@
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Calendar, ArrowDownWideNarrow, ArrowUpWideNarrow, Pin, Clock, Sparkles, ChevronRight, Share2, Bookmark, X } from 'lucide-react';
+import {
+  Calendar,
+  ArrowDownWideNarrow,
+  ArrowUpWideNarrow,
+  Pin,
+  Clock,
+  Sparkles,
+  ChevronRight,
+  Share2,
+  Bookmark,
+  X,
+  MessageCircle,
+} from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
 import { getInitialPosts, getPosts } from '@/services/posts';
 import { saveOfflinePost, removeOfflinePost } from '@/services/offlinePosts';
@@ -59,12 +71,18 @@ const gridExitVariants = {
 
 const getCategories = (posts: PostMetadata[]) => Array.from(new Set(posts.map((post) => post.category)));
 
-const SkeletonBlock: React.FC<{ className?: string; shouldReduceMotion: boolean }> = ({ className, shouldReduceMotion }) => (
+const SkeletonBlock: React.FC<{ className?: string; shouldReduceMotion: boolean }> = ({
+  className,
+  shouldReduceMotion,
+}) => (
   <div className={`${shouldReduceMotion ? '' : 'editorial-shimmer'} bg-zinc-200 dark:bg-zinc-800 ${className || ''}`} />
 );
 
 const FeaturedPostSkeleton: React.FC<{ shouldReduceMotion: boolean }> = ({ shouldReduceMotion }) => (
-  <div aria-hidden="true" className="col-span-full overflow-hidden rounded-surface border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+  <div
+    aria-hidden="true"
+    className="col-span-full overflow-hidden rounded-surface border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+  >
     <div className="md:grid md:min-h-80 md:grid-cols-5">
       <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="aspect-[16/9] md:col-span-3 md:aspect-auto" />
       <div className="flex flex-col p-4 md:col-span-2 md:p-7">
@@ -85,7 +103,10 @@ const FeaturedPostSkeleton: React.FC<{ shouldReduceMotion: boolean }> = ({ shoul
 );
 
 const PostCardSkeleton: React.FC<{ shouldReduceMotion: boolean }> = ({ shouldReduceMotion }) => (
-  <div aria-hidden="true" className="overflow-hidden rounded-surface border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+  <div
+    aria-hidden="true"
+    className="overflow-hidden rounded-surface border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+  >
     <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="aspect-[16/9] md:aspect-[16/10]" />
     <div className="space-y-2.5 p-3.5 md:space-y-3 md:p-5">
       <SkeletonBlock shouldReduceMotion={shouldReduceMotion} className="h-3 w-20" />
@@ -99,34 +120,56 @@ const PostCardSkeleton: React.FC<{ shouldReduceMotion: boolean }> = ({ shouldRed
   </div>
 );
 
-const LoadingGrid: React.FC<{ heroSlots: number; label: string; hasFeatured: boolean }> = ({ heroSlots, label, hasFeatured }) => {
+const LoadingGrid: React.FC<{ heroSlots: number; label: string; hasFeatured: boolean }> = ({
+  heroSlots,
+  label,
+  hasFeatured,
+}) => {
   const shouldReduceMotion = useReducedMotion();
   const featuredSlots = hasFeatured ? heroSlots : 0;
   const regularSkeletonCount = Math.max(0, POSTS_PER_PAGE - featuredSlots);
 
   return (
-    <motion.div variants={shouldReduceMotion ? undefined : fadeInUp} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+    <motion.div
+      variants={shouldReduceMotion ? undefined : fadeInUp}
+      className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
+      aria-busy="true"
+    >
       <LoadingStatus label={label} className="col-span-full" />
       {hasFeatured && <FeaturedPostSkeleton shouldReduceMotion={shouldReduceMotion} />}
-      {Array.from({ length: regularSkeletonCount }).map((_, index) => <PostCardSkeleton key={index} shouldReduceMotion={shouldReduceMotion} />)}
+      {Array.from({ length: regularSkeletonCount }).map((_, index) => (
+        <PostCardSkeleton key={index} shouldReduceMotion={shouldReduceMotion} />
+      ))}
     </motion.div>
   );
 };
 
-const filterAndSortPosts = (
-  posts: PostMetadata[],
-  selectedCategory: string,
-  sortOrder: 'newest' | 'oldest'
-) => {
+const filterAndSortPosts = (posts: PostMetadata[], selectedCategory: string, sortOrder: 'newest' | 'oldest') => {
   const filteredPosts =
-    selectedCategory === ALL_CATEGORY
-      ? posts
-      : posts.filter((post) => post.category === selectedCategory);
+    selectedCategory === ALL_CATEGORY ? posts : posts.filter((post) => post.category === selectedCategory);
 
   return sortPosts(filteredPosts, sortOrder);
 };
 
-const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean; onShare: (post: PostMetadata) => void; isSaved: boolean; isSaving: boolean; onToggleSave: (post: PostMetadata) => void }> = ({ post, index, featured, onShare, isSaved, isSaving, onToggleSave }) => {
+export interface PostCardProps {
+  post: PostMetadata;
+  index: number;
+  featured?: boolean;
+  onShare: (post: PostMetadata) => void;
+  isSaved: boolean;
+  isSaving: boolean;
+  onToggleSave: (post: PostMetadata) => void;
+}
+
+export const PostCard: React.FC<PostCardProps> = ({
+  post,
+  index,
+  featured,
+  onShare,
+  isSaved,
+  isSaving,
+  onToggleSave,
+}) => {
   const shouldReduceMotion = useReducedMotion();
   const cardVariants = {
     hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 8 },
@@ -136,9 +179,9 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
       transition: {
         duration: shouldReduceMotion ? 0 : 0.25,
         ease: easeSmooth,
-        delay: shouldReduceMotion ? 0 : index * 0.02
-      }
-    }
+        delay: shouldReduceMotion ? 0 : index * 0.02,
+      },
+    },
   };
 
   const handleShareClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -153,20 +196,21 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
     onToggleSave(post);
   };
 
-  const Tags = () => post.tags.length > 0 ? (
-    <div className="flex flex-wrap gap-1.5">
-      {post.tags.slice(0, 3).map((tag) => (
-        <Link
-          key={tag}
-          to={`/tags?tag=${encodeURIComponent(tag)}`}
-          className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-100/70 px-2 py-0.5 text-[11px] font-medium text-zinc-600 transition-colors hover:border-zinc-400 hover:bg-zinc-900 hover:text-white dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-100 dark:hover:text-zinc-950"
-          onClick={(event) => event.stopPropagation()}
-        >
-          {tag}
-        </Link>
-      ))}
-    </div>
-  ) : null;
+  const Tags = () =>
+    post.tags.length > 0 ? (
+      <div className="flex flex-wrap gap-1.5">
+        {post.tags.slice(0, 3).map((tag) => (
+          <Link
+            key={tag}
+            to={`/tags?tag=${encodeURIComponent(tag)}`}
+            className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-100/70 px-2 py-0.5 text-[11px] font-medium text-zinc-600 transition-colors hover:border-zinc-400 hover:bg-zinc-900 hover:text-white dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-100 dark:hover:text-zinc-950"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {tag}
+          </Link>
+        ))}
+      </div>
+    ) : null;
 
   if (featured) {
     return (
@@ -178,9 +222,25 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
         onMouseEnter={() => preloadPage(`/post/${post.id}`)}
       >
         <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-within:border-zinc-500 md:grid md:grid-cols-5">
-          <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:col-span-3 md:aspect-auto md:min-h-80" aria-label={`阅读文章：${post.title}`}>
+          <Link
+            to={`/post/${post.id}`}
+            className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:col-span-3 md:aspect-auto md:min-h-80"
+            aria-label={`阅读文章：${post.title}`}
+          >
             {post.coverImage ? (
-              <ProgressiveImage src={assetUrl(post.coverImage)} alt={post.title} loading="eager" fetchPriority="high" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/9" sizes="(max-width: 767px) 100vw, 60vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
+              <ProgressiveImage
+                src={assetUrl(post.coverImage)}
+                alt={post.title}
+                loading="eager"
+                fetchPriority="high"
+                width={post.coverWidth}
+                height={post.coverHeight}
+                aspectRatio="16/9"
+                sizes="(max-width: 767px) 100vw, 60vw"
+                wrapperClassName="h-full w-full"
+                className="h-full w-full object-cover"
+                effect="fade"
+              />
             ) : (
               <div className="flex h-full min-h-56 items-center justify-center bg-zinc-100 dark:bg-zinc-800">
                 <Sparkles className="h-12 w-12 text-zinc-300 dark:text-zinc-600" />
@@ -204,16 +264,42 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
                 {post.title}
               </h2>
             </Link>
-            <p className="mb-3 line-clamp-3 text-sm leading-5 md:mb-4 md:leading-6 text-zinc-600 dark:text-zinc-300">{post.excerpt}</p>
+            <p className="mb-3 line-clamp-3 text-sm leading-5 md:mb-4 md:leading-6 text-zinc-600 dark:text-zinc-300">
+              {post.excerpt}
+            </p>
             <Tags />
             <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-3 text-xs md:pt-4 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:mt-auto">
-              <span className="flex items-center gap-1.5"><Calendar size={12} />{post.date}</span>
-              <span className="flex items-center gap-1.5"><Clock size={12} />{post.readTime}</span>
+              <span className="flex items-center gap-1.5">
+                <Calendar size={12} />
+                {post.date}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock size={12} />
+                {post.readTime}
+              </span>
+              {typeof post.commentCount === 'number' && (
+                <span className="flex items-center gap-1.5" title="来自 Giscus 评论区的评论数">
+                  <MessageCircle size={12} />
+                  {post.commentCount} 条评论
+                </span>
+              )}
               <div className="ml-auto flex items-center gap-0.5">
-                <button type="button" onClick={handleToggleSaveClick} disabled={isSaving} aria-pressed={isSaved} aria-label={isSaved ? `取消收藏：${post.title}` : `收藏文章：${post.title}`} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-colors hover:text-ink active:scale-[.98] disabled:opacity-50 dark:hover:text-white">
+                <button
+                  type="button"
+                  onClick={handleToggleSaveClick}
+                  disabled={isSaving}
+                  aria-pressed={isSaved}
+                  aria-label={isSaved ? `取消收藏：${post.title}` : `收藏文章：${post.title}`}
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-colors hover:text-ink active:scale-[.98] disabled:opacity-50 dark:hover:text-white"
+                >
                   <Bookmark size={13} fill={isSaved ? 'currentColor' : 'none'} />
                 </button>
-                <button type="button" onClick={handleShareClick} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
+                <button
+                  type="button"
+                  onClick={handleShareClick}
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white"
+                  aria-label={`分享文章：${post.title}`}
+                >
                   <Share2 size={13} />
                 </button>
               </div>
@@ -225,11 +311,33 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
   }
 
   return (
-    <motion.article layout variants={cardVariants} transition={{ duration: 0.25, ease: easeOut }} className="flex h-full min-w-0 flex-col" onMouseEnter={() => preloadPage(`/post/${post.id}`)}>
+    <motion.article
+      layout
+      variants={cardVariants}
+      transition={{ duration: 0.25, ease: easeOut }}
+      className="flex h-full min-w-0 flex-col"
+      onMouseEnter={() => preloadPage(`/post/${post.id}`)}
+    >
       <div className="flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-zinc-400 hover:shadow-[0_4px_12px_rgba(24,24,27,0.08)] focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:shadow-black/20 dark:focus-within:border-zinc-500">
-        <Link to={`/post/${post.id}`} className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]" aria-label={`阅读文章：${post.title}`}>
+        <Link
+          to={`/post/${post.id}`}
+          className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]"
+          aria-label={`阅读文章：${post.title}`}
+        >
           {post.coverImage ? (
-              <ProgressiveImage src={assetUrl(post.coverImage)} alt={post.title} loading="lazy" fetchPriority="auto" width={post.coverWidth} height={post.coverHeight} aspectRatio="16/10" sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" wrapperClassName="h-full w-full" className="h-full w-full object-cover" effect="fade" />
+            <ProgressiveImage
+              src={assetUrl(post.coverImage)}
+              alt={post.title}
+              loading="lazy"
+              fetchPriority="auto"
+              width={post.coverWidth}
+              height={post.coverHeight}
+              aspectRatio="16/10"
+              sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
+              wrapperClassName="h-full w-full"
+              className="h-full w-full object-cover"
+              effect="fade"
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-300 dark:text-zinc-600">
               <Sparkles className="h-9 w-9" />
@@ -240,7 +348,10 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
           <div className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider md:mb-2 text-zinc-500 dark:text-zinc-400">
             <span>{post.category}</span>
             {isPinnedFeaturedPost(post) && (
-              <span className="ml-auto flex items-center gap-1 normal-case tracking-normal"><Pin size={10} />置顶</span>
+              <span className="ml-auto flex items-center gap-1 normal-case tracking-normal">
+                <Pin size={10} />
+                置顶
+              </span>
             )}
           </div>
           <Link to={`/post/${post.id}`} aria-label={`阅读文章：${post.title}`}>
@@ -251,13 +362,37 @@ const PostCard: React.FC<{ post: PostMetadata; index: number; featured?: boolean
           <p className="mb-2 line-clamp-1 text-sm leading-5 text-zinc-600 md:mb-3 dark:text-zinc-300">{post.excerpt}</p>
           <Tags />
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-[11px] md:mt-4 md:pt-3 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-            <span className="flex items-center gap-1"><Calendar size={11} />{post.date}</span>
-            <span className="flex items-center gap-1"><Clock size={11} />{post.readTime}</span>
+            <span className="flex items-center gap-1">
+              <Calendar size={11} />
+              {post.date}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock size={11} />
+              {post.readTime}
+            </span>
+            {typeof post.commentCount === 'number' && (
+              <span className="flex items-center gap-1" title="来自 Giscus 评论区的评论数">
+                <MessageCircle size={11} />
+                {post.commentCount} 条评论
+              </span>
+            )}
             <div className="ml-auto flex items-center gap-0.5">
-              <button type="button" onClick={handleToggleSaveClick} disabled={isSaving} aria-pressed={isSaved} aria-label={isSaved ? `取消收藏：${post.title}` : `收藏文章：${post.title}`} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-colors hover:text-ink active:scale-[.98] disabled:opacity-50 dark:hover:text-white">
+              <button
+                type="button"
+                onClick={handleToggleSaveClick}
+                disabled={isSaving}
+                aria-pressed={isSaved}
+                aria-label={isSaved ? `取消收藏：${post.title}` : `收藏文章：${post.title}`}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-colors hover:text-ink active:scale-[.98] disabled:opacity-50 dark:hover:text-white"
+              >
                 <Bookmark size={12} fill={isSaved ? 'currentColor' : 'none'} />
               </button>
-              <button type="button" onClick={handleShareClick} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white" aria-label={`分享文章：${post.title}`}>
+              <button
+                type="button"
+                onClick={handleShareClick}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white"
+                aria-label={`分享文章：${post.title}`}
+              >
                 <Share2 size={12} />
               </button>
             </div>
@@ -276,16 +411,22 @@ interface FilterBarProps {
   onToggleSort: () => void;
 }
 
-const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({ categories, selected, onSelect, sortOrder, onToggleSort, shouldReduceMotion }) => {
+const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
+  categories,
+  selected,
+  onSelect,
+  sortOrder,
+  onToggleSort,
+  shouldReduceMotion,
+}) => {
   return (
-      <motion.div
-        variants={fadeInUp}
-        initial={shouldReduceMotion ? false : 'hidden'}
-        animate="visible"
-        transition={shouldReduceMotion ? { duration: 0 } : undefined}
-        className="flex items-center justify-between gap-2 border-y border-zinc-200 py-3 sm:gap-3 dark:border-zinc-800"
-      >
-
+    <motion.div
+      variants={fadeInUp}
+      initial={shouldReduceMotion ? false : 'hidden'}
+      animate="visible"
+      transition={shouldReduceMotion ? { duration: 0 } : undefined}
+      className="flex items-center justify-between gap-2 border-y border-zinc-200 py-3 sm:gap-3 dark:border-zinc-800"
+    >
       <div className="filter-scroll-mask min-w-0 flex-1 overflow-x-auto overscroll-x-contain scroll-smooth no-scrollbar">
         <div className="flex items-center gap-2" role="group" aria-label="文章分类筛选">
           {[ALL_CATEGORY, ...categories].map((category) => (
@@ -304,8 +445,16 @@ const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
           ))}
         </div>
       </div>
-      <div className="relative isolate grid grid-cols-2 shrink-0 items-center rounded-control border border-zinc-300 bg-paper p-0.5 dark:border-zinc-700 dark:bg-void" role="group" aria-label="文章排序">
-        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-control bg-ink shadow-[0_1px_3px_rgba(24,24,27,0.3)] transition-transform duration-200 ease-out dark:bg-white dark:shadow-none" style={{ transform: sortOrder === 'oldest' ? 'translateX(100%)' : 'translateX(0)' }} />
+      <div
+        className="relative isolate grid grid-cols-2 shrink-0 items-center rounded-control border border-zinc-300 bg-paper p-0.5 dark:border-zinc-700 dark:bg-void"
+        role="group"
+        aria-label="文章排序"
+      >
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-control bg-ink shadow-[0_1px_3px_rgba(24,24,27,0.3)] transition-transform duration-200 ease-out dark:bg-white dark:shadow-none"
+          style={{ transform: sortOrder === 'oldest' ? 'translateX(100%)' : 'translateX(0)' }}
+        />
         {[
           { key: 'newest' as const, label: '最新', Icon: ArrowDownWideNarrow },
           { key: 'oldest' as const, label: '最早', Icon: ArrowUpWideNarrow },
@@ -315,7 +464,9 @@ const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
             <button
               key={key}
               type="button"
-              onClick={() => { if (!active) onToggleSort(); }}
+              onClick={() => {
+                if (!active) onToggleSort();
+              }}
               aria-pressed={active}
               aria-label={`按${label}优先排序`}
               className={`relative z-10 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control px-3 text-sm font-semibold transition-colors duration-150 active:scale-[.98] ${active ? 'text-white dark:text-zinc-950' : 'text-zinc-700 hover:text-ink dark:text-zinc-300 dark:hover:text-white'}`}
@@ -366,24 +517,28 @@ export const Home = () => {
   const { posts: savedPosts } = useOfflinePosts();
   const savedIds = useMemo(() => new Set(savedPosts.map((savedPost) => savedPost.id)), [savedPosts]);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const handleToggleSave = useCallback(async (post: PostMetadata) => {
-    setSavingId(post.id);
-    try {
-      if (savedIds.has(post.id)) {
-        await removeOfflinePost(post.id);
-      } else {
-        await saveOfflinePost(post);
+  const handleToggleSave = useCallback(
+    async (post: PostMetadata) => {
+      setSavingId(post.id);
+      try {
+        if (savedIds.has(post.id)) {
+          await removeOfflinePost(post.id);
+        } else {
+          await saveOfflinePost(post);
+        }
+      } catch {
+        // 收藏/取消收藏失败时静默：savedIds 不会更新，按钮自动恢复原样。
+      } finally {
+        setSavingId((current) => (current === post.id ? null : current));
       }
-    } catch {
-      // 收藏/取消收藏失败时静默：savedIds 不会更新，按钮自动恢复原样。
-    } finally {
-      setSavingId((current) => (current === post.id ? null : current));
-    }
-  }, [savedIds]);
-  const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } = usePostSearch({
-    emptyResults: allPosts,
-    initialQuery: queryFromUrl
-  });
+    },
+    [savedIds],
+  );
+  const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } =
+    usePostSearch({
+      emptyResults: allPosts,
+      initialQuery: queryFromUrl,
+    });
 
   const shouldReduceMotion = useReducedMotion();
   const postsPerPage = POSTS_PER_PAGE;
@@ -452,12 +607,15 @@ export const Home = () => {
     }
 
     if (categories.length > 0) {
-      setSearchParams((previous) => {
-        const nextParams = new URLSearchParams(previous);
-        nextParams.delete('category');
-        nextParams.delete('page');
-        return nextParams;
-      }, { replace: true });
+      setSearchParams(
+        (previous) => {
+          const nextParams = new URLSearchParams(previous);
+          nextParams.delete('category');
+          nextParams.delete('page');
+          return nextParams;
+        },
+        { replace: true },
+      );
       setSelectedCategory(ALL_CATEGORY);
     }
   }, [categories, categoryFromUrl, setSearchParams]);
@@ -468,7 +626,10 @@ export const Home = () => {
     }
   }, [queryFromUrl, searchQuery, setSearchQuery]);
 
-  const displayedPosts = useMemo(() => filterAndSortPosts(results, selectedCategory, sortOrder), [results, selectedCategory, sortOrder]);
+  const displayedPosts = useMemo(
+    () => filterAndSortPosts(results, selectedCategory, sortOrder),
+    [results, selectedCategory, sortOrder],
+  );
   const continueReading = useMemo(() => {
     if (!latestReading || isReadingComplete(latestReading.progress)) return null;
     const matchingPost = allPosts.find((post) => post.id === latestReading.postId);
@@ -486,10 +647,7 @@ export const Home = () => {
   const heroSlots = heroPost ? HERO_SLOTS : 0;
 
   const paginationData = useMemo(() => {
-    const totalSlots = displayedPosts.reduce(
-      (total, post) => total + (post.id === heroPost?.id ? heroSlots : 1),
-      0
-    );
+    const totalSlots = displayedPosts.reduce((total, post) => total + (post.id === heroPost?.id ? heroSlots : 1), 0);
     const totalPages = Math.max(1, Math.ceil(totalSlots / postsPerPage));
 
     return { totalSlots, totalPages };
@@ -498,9 +656,8 @@ export const Home = () => {
   const { totalPages } = paginationData;
 
   useEffect(() => {
-    const categoryStateFromUrl = categoryFromUrl && categories.includes(categoryFromUrl)
-      ? categoryFromUrl
-      : ALL_CATEGORY;
+    const categoryStateFromUrl =
+      categoryFromUrl && categories.includes(categoryFromUrl) ? categoryFromUrl : ALL_CATEGORY;
     const filtersAreSynced = selectedCategory === categoryStateFromUrl && searchQuery === queryFromUrl;
     const initialSearchIsPending = Boolean(queryFromUrl.trim()) && results === allPosts;
 
@@ -510,23 +667,39 @@ export const Home = () => {
 
     setCurrentPage(totalPages);
     setSearchParams((previous) => setHomeQueryParam(previous, 'page', totalPages), { replace: true });
-  }, [allPosts, categories, categoryFromUrl, currentPage, isSearching, loading, queryFromUrl, results, searchQuery, selectedCategory, setSearchParams, totalPages]);
+  }, [
+    allPosts,
+    categories,
+    categoryFromUrl,
+    currentPage,
+    isSearching,
+    loading,
+    queryFromUrl,
+    results,
+    searchQuery,
+    selectedCategory,
+    setSearchParams,
+    totalPages,
+  ]);
 
   const handleSelectCategory = (category: string) => {
     setSelectedCategory(category);
     setCurrentPage(1);
-    setSearchParams((previous) => {
-      const nextParams = new URLSearchParams(previous);
+    setSearchParams(
+      (previous) => {
+        const nextParams = new URLSearchParams(previous);
 
-      if (category === ALL_CATEGORY) {
-        nextParams.delete('category');
-      } else {
-        nextParams.set('category', category);
-      }
-      nextParams.delete('page');
+        if (category === ALL_CATEGORY) {
+          nextParams.delete('category');
+        } else {
+          nextParams.set('category', category);
+        }
+        nextParams.delete('page');
 
-      return nextParams;
-    }, { replace: true });
+        return nextParams;
+      },
+      { replace: true },
+    );
   };
 
   const handleAbandonReading = () => {
@@ -539,39 +712,48 @@ export const Home = () => {
     const nextSortOrder = sortOrder === 'newest' ? 'oldest' : 'newest';
     setSortOrder(nextSortOrder);
     setCurrentPage(1);
-    setSearchParams((previous) => {
-      const nextParams = setHomeQueryParam(previous, 'sort', nextSortOrder);
-      nextParams.delete('page');
-      return nextParams;
-    }, { replace: false });
+    setSearchParams(
+      (previous) => {
+        const nextParams = setHomeQueryParam(previous, 'sort', nextSortOrder);
+        nextParams.delete('page');
+        return nextParams;
+      },
+      { replace: false },
+    );
   };
 
   const handleSearchChange = (query: string) => {
     handleSearch(query);
     setCurrentPage(1);
-    setSearchParams((previous) => {
-      const nextParams = new URLSearchParams(previous);
+    setSearchParams(
+      (previous) => {
+        const nextParams = new URLSearchParams(previous);
 
-      if (query.trim()) {
-        nextParams.set('q', query);
-      } else {
-        nextParams.delete('q');
-      }
-      nextParams.delete('page');
+        if (query.trim()) {
+          nextParams.set('q', query);
+        } else {
+          nextParams.delete('q');
+        }
+        nextParams.delete('page');
 
-      return nextParams;
-    }, { replace: true });
+        return nextParams;
+      },
+      { replace: true },
+    );
   };
 
   const handleClearSearch = () => {
     clearSearch();
     setCurrentPage(1);
-    setSearchParams((previous) => {
-      const nextParams = new URLSearchParams(previous);
-      nextParams.delete('q');
-      nextParams.delete('page');
-      return nextParams;
-    }, { replace: true });
+    setSearchParams(
+      (previous) => {
+        const nextParams = new URLSearchParams(previous);
+        nextParams.delete('q');
+        nextParams.delete('page');
+        return nextParams;
+      },
+      { replace: true },
+    );
   };
 
   const currentPosts = useMemo(() => {
@@ -614,52 +796,64 @@ export const Home = () => {
 
   const featuredPost = useMemo(
     () => (heroPost && currentPosts.some((post) => post.id === heroPost.id) ? heroPost : null),
-    [currentPosts, heroPost]
+    [currentPosts, heroPost],
   );
   const hasFeaturedPost = Boolean(featuredPost);
   const remainingPosts = useMemo(
     () => currentPosts.filter((post) => post.id !== heroPost?.id),
-    [currentPosts, heroPost]
+    [currentPosts, heroPost],
   );
 
   // 分类筛选页（?category=xxx）为可索引内容页（robots: index,follow，canonical 自指），
   // 输出独立的 title/description，避免与首页共用同一套站点级标题造成软重复；
   // 无效分类（URL 直接拼写）回退首页标题。
   const activeCategory = categoryFromUrl && categories.includes(categoryFromUrl) ? categoryFromUrl : null;
-  const categoryPostCount = activeCategory
-    ? allPosts.filter((post) => post.category === activeCategory).length
-    : 0;
-  const seoTitle = hasSearchQuery && results.length > 0
-    ? `搜索：${searchQuery}`
-    : activeCategory
-      ? `分类：${activeCategory} - ${siteConfig.title}`
-      : siteConfig.title;
+  const categoryPostCount = activeCategory ? allPosts.filter((post) => post.category === activeCategory).length : 0;
+  const seoTitle =
+    hasSearchQuery && results.length > 0
+      ? `搜索：${searchQuery}`
+      : activeCategory
+        ? `分类：${activeCategory} - ${siteConfig.title}`
+        : siteConfig.title;
   const seoDescription = activeCategory
     ? `D-blog「${activeCategory}」分类下的全部文章（共 ${categoryPostCount} 篇），涵盖前端开发、后端运维、AI 工具与效率软件测评等主题。`
     : siteConfig.description;
 
   return (
-      <div className="pb-8 md:pb-12">
+    <div className="pb-8 md:pb-12">
       {/* 站内搜索页（?q=xxx）统一 noindex：搜索过滤在客户端执行，静态 HTML 无法
           反映搜索意图；且搜索 URL 空间无限，收录会造成软重复与爬虫资源浪费
           （Google 官方对站内搜索结果页的建议即是不索引）。该 noindex 由 Seo 组件
           根据 URL 中的 q 参数自动输出，无需在此显式传入。 */}
-      <Seo
-        title={seoTitle}
-        description={seoDescription}
-      />
+      <Seo title={seoTitle} description={seoDescription} />
       <Hero />
 
       {continueReading && (
-        <section className="continue-reading mx-4 mb-8 rounded-surface border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 md:mx-0 md:mb-10 md:p-5" aria-labelledby="continue-reading-heading">
+        <section
+          className="continue-reading mx-4 mb-8 rounded-surface border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 md:mx-0 md:mb-10 md:p-5"
+          aria-labelledby="continue-reading-heading"
+        >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">继续阅读</p>
-              <h2 id="continue-reading-heading" className="truncate font-serif text-xl font-bold text-ink dark:text-white">{continueReading.post.title}</h2>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{continueReading.post.category} · 已阅读 {Math.round(continueReading.entry.progress * 100)}%</p>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">
+                继续阅读
+              </p>
+              <h2
+                id="continue-reading-heading"
+                className="truncate font-serif text-xl font-bold text-ink dark:text-white"
+              >
+                {continueReading.post.title}
+              </h2>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                {continueReading.post.category} · 已阅读 {Math.round(continueReading.entry.progress * 100)}%
+              </p>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <Link to={`/post/${continueReading.post.id}`} className="editorial-button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold" aria-label={`继续阅读：${continueReading.post.title}`}>
+              <Link
+                to={`/post/${continueReading.post.id}`}
+                className="editorial-button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold"
+                aria-label={`继续阅读：${continueReading.post.title}`}
+              >
                 继续阅读 <ChevronRight size={15} />
               </Link>
               <button
@@ -674,14 +868,28 @@ export const Home = () => {
             </div>
           </div>
           <div className="mt-4 h-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800" aria-hidden="true">
-            <div className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100" style={{ width: `${Math.round(continueReading.entry.progress * 100)}%` }} />
+            <div
+              className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
+              style={{ width: `${Math.round(continueReading.entry.progress * 100)}%` }}
+            />
           </div>
         </section>
       )}
 
-      <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-6 px-4 md:space-y-8 md:px-0">
-          <FilterBar categories={categories} selected={selectedCategory} onSelect={handleSelectCategory} sortOrder={sortOrder} onToggleSort={handleToggleSort} shouldReduceMotion={shouldReduceMotion} />
-
+      <motion.div
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        className="space-y-6 px-4 md:space-y-8 md:px-0"
+      >
+        <FilterBar
+          categories={categories}
+          selected={selectedCategory}
+          onSelect={handleSelectCategory}
+          sortOrder={sortOrder}
+          onToggleSort={handleToggleSort}
+          shouldReduceMotion={shouldReduceMotion}
+        />
 
         <div className="mx-auto max-w-2xl">
           <SearchField
@@ -711,6 +919,17 @@ export const Home = () => {
           </motion.div>
         ) : (
           <div id="posts-panel" className="space-y-7" aria-live="polite" tabIndex={-1}>
+            {hasSearchQuery && results.length > 0 && (
+              <div className="flex items-center justify-end px-4 md:px-0">
+                <Link
+                  to={`/search?q=${encodeURIComponent(searchQuery)}`}
+                  className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-zinc-600 underline decoration-zinc-300 underline-offset-4 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:decoration-zinc-700 dark:hover:text-white"
+                >
+                  在搜索页查看全部结果 <ChevronRight size={14} aria-hidden="true" />
+                </Link>
+              </div>
+            )}
+
             <motion.div
               layout={!shouldReduceMotion}
               id="posts-grid"
@@ -720,14 +939,45 @@ export const Home = () => {
               animate="visible"
               transition={shouldReduceMotion ? { duration: 0 } : gridLayoutTransition}
             >
-              {featuredPost && <PostCard key={featuredPost.id} post={featuredPost} index={0} featured onShare={setSharePost} isSaved={savedIds.has(featuredPost.id)} isSaving={savingId === featuredPost.id} onToggleSave={handleToggleSave} />}
+              {featuredPost && (
+                <PostCard
+                  key={featuredPost.id}
+                  post={featuredPost}
+                  index={0}
+                  featured
+                  onShare={setSharePost}
+                  isSaved={savedIds.has(featuredPost.id)}
+                  isSaving={savingId === featuredPost.id}
+                  onToggleSave={handleToggleSave}
+                />
+              )}
               {remainingPosts.length > 0 ? (
-                remainingPosts.map((post, index) => <PostCard key={post.id} post={post} index={index + (featuredPost ? 1 : 0)} onShare={setSharePost} isSaved={savedIds.has(post.id)} isSaving={savingId === post.id} onToggleSave={handleToggleSave} />)
+                remainingPosts.map((post, index) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    index={index + (featuredPost ? 1 : 0)}
+                    onShare={setSharePost}
+                    isSaved={savedIds.has(post.id)}
+                    isSaving={savingId === post.id}
+                    onToggleSave={handleToggleSave}
+                  />
+                ))
               ) : !featuredPost ? (
-                <motion.div layout variants={fadeInUp} className="col-span-full border-y border-zinc-200 py-14 text-center dark:border-zinc-800">
-                  <p className="text-base text-zinc-500 dark:text-zinc-400">{hasSearchQuery ? '未找到匹配的文章' : '暂无相关文章'}</p>
+                <motion.div
+                  layout
+                  variants={fadeInUp}
+                  className="col-span-full border-y border-zinc-200 py-14 text-center dark:border-zinc-800"
+                >
+                  <p className="text-base text-zinc-500 dark:text-zinc-400">
+                    {hasSearchQuery ? '未找到匹配的文章' : '暂无相关文章'}
+                  </p>
                   {hasSearchQuery && (
-                    <button onClick={handleClearSearch} className="mt-3 text-sm font-medium text-zinc-700 hover:underline dark:text-zinc-300" aria-label="清除搜索条件">
+                    <button
+                      onClick={handleClearSearch}
+                      className="mt-3 text-sm font-medium text-zinc-700 hover:underline dark:text-zinc-300"
+                      aria-label="清除搜索条件"
+                    >
                       清除搜索条件
                     </button>
                   )}
@@ -742,7 +992,13 @@ export const Home = () => {
 
       {sharePost && (
         <Suspense fallback={null}>
-          <ShareModal isOpen={!!sharePost} onClose={() => setSharePost(null)} title={sharePost.title} excerpt={sharePost.excerpt} url={absoluteSiteUrl(`/post/${sharePost.id}`, window.location.origin)} />
+          <ShareModal
+            isOpen={!!sharePost}
+            onClose={() => setSharePost(null)}
+            title={sharePost.title}
+            excerpt={sharePost.excerpt}
+            url={absoluteSiteUrl(`/post/${sharePost.id}`, window.location.origin)}
+          />
         </Suspense>
       )}
     </div>

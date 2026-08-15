@@ -28,6 +28,8 @@ export interface PostMetadata {
   imageDimensions?: Record<string, ImageDimensions>;
   readTime: string;
   wordCount?: number;
+  /** Giscus 评论数：构建期快照（generated/posts.json 注入），无数据时为 undefined（页面不展示）。 */
+  commentCount?: number;
   featured?: boolean;
   'featured-top'?: number;
   series?: boolean;
@@ -56,4 +58,3 @@ export interface ShuoShuo {
   content: string;
   filePath: string;
 }
-
