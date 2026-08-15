@@ -532,8 +532,9 @@ export const runSsg = async ({
   const budgetExceeded = () => Date.now() - ssgStartedAt > TOTAL_BUDGET_MS;
 
   // 1. 文章页：SSR 同步渲染完整正文（爬虫可直接读取）。
-  // 封面 preload 的 imagesizes 必须与 Post.tsx 中 <img sizes> 的断点上限一致
-  // （"(max-width: 1279px) 80vw, 1024px"），否则预取到的变体可能大于页面实际使用。
+  // 封面 preload 为单变体（href 与 <img src> 主资源一致）。Post.tsx 封面
+  // <img> 的 sizes 属性未搭配 srcset，浏览器会忽略之，preload 无需输出
+  // imagesizes（脱离 imagesrcset 会被忽略，见 createImagePreload）。
   for (const post of posts) {
     if (budgetExceeded()) {
       skippedPages.push(`/post/${post.id}`);
@@ -553,7 +554,7 @@ export const runSsg = async ({
 
   // 1.5 说说详情页：每条说说一个独立可索引页面 /shuoshuo/<id>（SSG 静态 HTML）。
   // 与文章页一致，正文随首帧 HTML 输出，爬虫/智能体无需执行 JS 即可读取。
-  // 首图 preload 的 imagesizes 与 ShuoShuoItem 单图断点一致（"(max-width: 640px) 80vw, 384px"）。
+  // 首图 preload 同文章封面：单变体 href 与 <img src> 一致，无 srcset 故不输出 imagesizes。
   for (const item of shuoshuoItems) {
     if (budgetExceeded()) {
       skippedPages.push(`/shuoshuo/${item.id}`);
