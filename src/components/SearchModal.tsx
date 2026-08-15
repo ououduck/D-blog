@@ -37,7 +37,9 @@ const SEARCH_SCOPE_HINTS: Record<PostSearchScope, string> = {
   title: '只匹配文章标题，适合按标题关键字快速定位',
 };
 
-const SEARCH_HISTORY_KEY = 'searchHistory';
+// 键名带站点前缀（与 reading-history/offline-posts 等 d-blog-* 约定一致），
+// 避免与同源其他应用共用过通用的键名（'searchHistory' 曾可能冲突）。
+const SEARCH_HISTORY_KEY = 'd-blog-search-history';
 
 const readSearchHistory = (): string[] => {
   if (typeof window === 'undefined') {
