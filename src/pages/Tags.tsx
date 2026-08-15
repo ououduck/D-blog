@@ -168,10 +168,10 @@ export const Tags = () => {
 
   // 标签筛选页（?tag=xxx）为可索引内容页（canonical 自指保留 tag 参数），
   // 输出独立的 title/description，避免所有标签筛选页共用「标签」这一泛化标题。
+  // 注意：此处只传页面名，Seo 组件统一拼「页面名 - 站点名」，避免重复。
   const tagsPageDescription =
     'D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。';
-  const seoTitle =
-    selectedTag && selectedTagInfo ? `标签：${selectedTag} - ${siteConfig.title}` : `标签 - ${siteConfig.title}`;
+  const seoTitle = selectedTag && selectedTagInfo ? `标签：${selectedTag}` : '标签';
   const seoDescription =
     selectedTag && selectedTagInfo
       ? `D-blog 标签「${selectedTag}」下的全部文章，共 ${selectedTagInfo.count} 篇，涵盖前端开发、后端运维、AI 工具与效率软件测评等主题。`
