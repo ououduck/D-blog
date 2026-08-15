@@ -52,6 +52,28 @@ jobs:
         # 内部链接、本地图片引用是否有效）+ typecheck（tsc --noEmit）。
         run: npm run check
 
+  # ── 单元测试门禁：vitest 全量用例（349+），与类型检查并行，互不阻塞 ──
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        # npm test = gen:data（测试数据依赖生成的 posts/shuoshuo JSON）+ vitest run。
+        run: npm test
+
   # ── 完整门禁：生产构建（客户端 + SSR + SSG）+ 构建审计 + SEO 审计 ──
   build:
     name: Production build & audits
