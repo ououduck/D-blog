@@ -656,10 +656,9 @@ export const runSsg = async ({
         '404.html',
         mergedNotFoundPage
           .replace(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\/?\s*>/i, '')
-          .replace(
-            /(<meta\b(?=[^>]*\bproperty=["']og:url["'])[^>]*\bcontent=["'])[^"']*(["'][^>]*>)/i,
-            `$1${SITE_URL}/$2`,
-          ),
+          // 占位路由 /__missing__ 不得出现在任何 URL 类 meta（og:url / twitter:url /
+          // hreflang）或调试文本中，统一替换为根地址。
+          .replaceAll('/__missing__', '/'),
       );
       logger.step('Generated 404 page');
     } catch (error) {
