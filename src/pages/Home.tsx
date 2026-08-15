@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Calendar,
@@ -35,6 +35,9 @@ import { isReadingComplete } from '@/utils/readingProgress';
 import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';
 import { Pagination } from '@/components/Pagination';
 import { canonicalizeHomeQuery, getHomeQueryState, setHomeQueryParam } from '@/utils/homeQuery';
+import { useSpotlight } from '@/components/effects/useSpotlight';
+import { SpotlightLayer } from '@/components/effects/SpotlightCard';
+import { Magnet } from '@/components/effects/Magnet';
 
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
 
@@ -171,6 +174,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   onToggleSave,
 }) => {
   const shouldReduceMotion = useReducedMotion();
+  // react-bits SpotlightCard 启发：光标在卡片内移动时跟随柔光，触屏/减弱动效下自动禁用。
+  const spotlight = useSpotlight<HTMLDivElement>({ activeOpacity: 0.5 });
   const cardVariants = {
     hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 8 },
     visible: {
@@ -221,7 +226,11 @@ export const PostCard: React.FC<PostCardProps> = ({
         className="col-span-full w-full"
         onMouseEnter={() => preloadPage(`/post/${post.id}`)}
       >
-        <div className="overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-within:border-zinc-500 md:grid md:grid-cols-5">
+        <div
+          {...spotlight.bind}
+          className="relative overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-within:border-zinc-500 md:grid md:grid-cols-5"
+        >
+          <SpotlightLayer style={spotlight.layerStyle} />
           <Link
             to={`/post/${post.id}`}
             className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:col-span-3 md:aspect-auto md:min-h-80"
@@ -318,7 +327,11 @@ export const PostCard: React.FC<PostCardProps> = ({
       className="flex h-full min-w-0 flex-col"
       onMouseEnter={() => preloadPage(`/post/${post.id}`)}
     >
-      <div className="flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-zinc-400 hover:shadow-[0_4px_12px_rgba(24,24,27,0.08)] focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:shadow-black/20 dark:focus-within:border-zinc-500">
+      <div
+        {...spotlight.bind}
+        className="relative flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-zinc-400 hover:shadow-[0_4px_12px_rgba(24,24,27,0.08)] focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:shadow-black/20 dark:focus-within:border-zinc-500"
+      >
+        <SpotlightLayer style={spotlight.layerStyle} />
         <Link
           to={`/post/${post.id}`}
           className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]"
@@ -482,19 +495,35 @@ const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
 };
 
 const Hero = () => {
-  // LCP 元素首帧即渲染最终可见状态：SSR HTML 中不可见（opacity:0）会拖慢
-  // LCP 且 JS 失败时内容完全不可见，故不设入场动画。
+  const shouldReduceMotion = useReducedMotion();
+  // 滚动视差：首屏内容随页面滚动轻微上移、淡出（react-bits「ScrollFloat」
+  // 启发）。仅作用于滚动变换，不设入场动画——LCP 元素首帧即渲染最终可见
+  // 状态：SSR HTML 中不可见（opacity:0）会拖慢 LCP 且 JS 失败时内容完全
+  // 不可见。减弱动效偏好下跳过视差。
+  const { scrollY } = useScroll();
+  const heroY = useTransform(scrollY, [0, 520], [0, 56]);
+  const heroOpacity = useTransform(scrollY, [0, 340], [1, 0.3]);
+
   return (
-    <div className="px-4 pb-8 pt-5 text-center md:pb-10 md:pt-8">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
-        {siteConfig.subtitle}
-      </p>
-      <h1 className="mb-3 text-balance font-serif text-5xl font-bold tracking-tight text-ink [overflow-wrap:anywhere] dark:text-white max-[400px]:text-4xl sm:text-6xl md:text-7xl">
-        {siteConfig.title}
-      </h1>
-      <p className="mx-auto max-w-xl text-sm leading-6 text-zinc-600 dark:text-zinc-300 md:text-base">
-        {siteConfig.description}
-      </p>
+    <div className="relative overflow-hidden px-4 pb-8 pt-5 text-center md:pb-10 md:pt-8">
+      {/* react-bits「Aurora」启发：纯 CSS 柔光渐变背景，零 JS、无额外请求，
+          缓慢漂移仅在减弱动效偏好下关闭；光斑在内容层之下。 */}
+      <div className="editorial-aurora" aria-hidden="true">
+        <div className="editorial-aurora-blob" />
+        <div className="editorial-aurora-blob" />
+        <div className="editorial-aurora-blob" />
+      </div>
+      <motion.div className="relative" style={shouldReduceMotion ? undefined : { y: heroY, opacity: heroOpacity }}>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
+          {siteConfig.subtitle}
+        </p>
+        <h1 className="mb-3 text-balance font-serif text-5xl font-bold tracking-tight text-ink [overflow-wrap:anywhere] dark:text-white max-[400px]:text-4xl sm:text-6xl md:text-7xl">
+          {siteConfig.title}
+        </h1>
+        <p className="mx-auto max-w-xl text-sm leading-6 text-zinc-600 dark:text-zinc-300 md:text-base">
+          {siteConfig.description}
+        </p>
+      </motion.div>
     </div>
   );
 };
@@ -849,13 +878,15 @@ export const Home = () => {
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <Link
-                to={`/post/${continueReading.post.id}`}
-                className="editorial-button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold"
-                aria-label={`继续阅读：${continueReading.post.title}`}
-              >
-                继续阅读 <ChevronRight size={15} />
-              </Link>
+              <Magnet>
+                <Link
+                  to={`/post/${continueReading.post.id}`}
+                  className="editorial-button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold"
+                  aria-label={`继续阅读：${continueReading.post.title}`}
+                >
+                  继续阅读 <ChevronRight size={15} />
+                </Link>
+              </Magnet>
               <button
                 type="button"
                 onClick={handleAbandonReading}

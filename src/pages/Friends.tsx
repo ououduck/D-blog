@@ -13,6 +13,8 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { SlideModal } from '@/components/SlideModal';
 import { Surface } from '@/components/ui/Surface';
 import { easeOut, fadeInUp, staggerContainer } from '@/utils/motion';
+import { useSpotlight } from '@/components/effects/useSpotlight';
+import { SpotlightLayer } from '@/components/effects/SpotlightCard';
 import {
   createFriendLinkApplication,
   type FriendLinkApplicationValues,
@@ -50,8 +52,11 @@ interface FriendCardProps {
  */
 const FriendCard = ({ friend, unavailable = false }: FriendCardProps) => {
   const shouldReduceMotion = useReducedMotion();
+  // react-bits SpotlightCard 启发：光标跟随柔光，触屏/减弱动效下自动禁用。
+  const spotlight = useSpotlight<HTMLAnchorElement>({ activeOpacity: 0.5 });
   return (
     <motion.a
+      {...spotlight.bind}
       variants={shouldReduceMotion ? undefined : fadeInUp}
       transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.14, ease: easeOut }}
       href={friend.url}
@@ -63,6 +68,7 @@ const FriendCard = ({ friend, unavailable = false }: FriendCardProps) => {
           : 'border-zinc-300 hover:border-ink dark:border-zinc-700 dark:hover:border-white dark:focus-visible:border-white'
       }`}
     >
+      <SpotlightLayer style={spotlight.layerStyle} />
       {unavailable && (
         <span className="absolute left-0 top-0 z-10 rounded-br-lg border-b border-r border-red-300/70 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600 dark:border-red-900/60 dark:bg-red-950/60 dark:text-red-400">
           已失联

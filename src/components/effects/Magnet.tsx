@@ -1,0 +1,99 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+
+/**
+ * 参考 react-bits「Magnet」的磁吸效果：元素在光标接近时向光标方向轻微
+ * 平移，离开后回弹。适配 D-blog：
+ * - 仅在支持 hover + 精细指针的设备上启用（触屏无意义）；
+ * - 尊重 prefers-reduced-motion：整体禁用；
+ * - 位移幅度默认更克制（magnetStrength 更大），保持编辑风的内敛观感。
+ */
+
+interface MagnetProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onMouseMove'> {
+  /** 感应范围（以元素边缘向外扩展的像素数）。 */
+  padding?: number;
+  disabled?: boolean;
+  /** 磁吸强度：数值越大，光标拉动位移越小。 */
+  magnetStrength?: number;
+  /** 激活状态过渡（进入磁吸范围）。 */
+  activeTransition?: string;
+  /** 非激活状态过渡（回弹）。 */
+  inactiveTransition?: string;
+  wrapperClassName?: string;
+  innerClassName?: string;
+}
+
+export const Magnet: React.FC<MagnetProps> = ({
+  children,
+  padding = 80,
+  disabled = false,
+  magnetStrength = 5,
+  activeTransition = 'transform 0.25s ease-out',
+  inactiveTransition = 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+  wrapperClassName = '',
+  innerClassName = '',
+  ...props
+}) => {
+  const [isActive, setIsActive] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const magnetRef = useRef<HTMLDivElement | null>(null);
+  const hoverCapable = useMediaQuery('(hover: hover) and (pointer: fine)', false);
+  const reducedMotion = useReducedMotion();
+  const effectiveDisabled = disabled || !hoverCapable || reducedMotion;
+
+  useEffect(() => {
+    if (effectiveDisabled) {
+      setPosition({ x: 0, y: 0 });
+      return;
+    }
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const element = magnetRef.current;
+      if (!element) {
+        return;
+      }
+
+      const { left, top, width, height } = element.getBoundingClientRect();
+      const centerX = left + width / 2;
+      const centerY = top + height / 2;
+
+      const distanceX = Math.abs(centerX - event.clientX);
+      const distanceY = Math.abs(centerY - event.clientY);
+
+      if (distanceX < width / 2 + padding && distanceY < height / 2 + padding) {
+        setIsActive(true);
+        setPosition({
+          x: (event.clientX - centerX) / magnetStrength,
+          y: (event.clientY - centerY) / magnetStrength,
+        });
+      } else {
+        setIsActive(false);
+        setPosition({ x: 0, y: 0 });
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [effectiveDisabled, magnetStrength, padding]);
+
+  return (
+    <div
+      ref={magnetRef}
+      className={wrapperClassName}
+      style={{ position: 'relative', display: 'inline-block' }}
+      {...props}
+    >
+      <div
+        className={innerClassName}
+        style={{
+          transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+          transition: isActive ? activeTransition : inactiveTransition,
+          willChange: 'transform',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};

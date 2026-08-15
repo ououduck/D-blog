@@ -10,14 +10,9 @@ interface NotFoundStateProps {
   debugLabel?: string;
 }
 
-export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(({
-  title,
-  description,
-  backTo = '/',
-  backLabel = '返回首页',
-  debugLabel
-}) => {
-  return (
+export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(
+  ({ title, description, backTo = '/', backLabel = '返回首页', debugLabel }) => {
+    return (
       <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center px-4 py-10">
         <div className="w-full border-y border-zinc-200 py-10 dark:border-zinc-800 md:py-14">
           <div className="mb-6 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
@@ -26,17 +21,18 @@ export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(({
           </div>
 
           <div>
-            <div className="mb-5 font-serif text-7xl font-black leading-none text-zinc-200 dark:text-zinc-800 md:text-8xl">
+            {/* react-bits「GlitchText」启发：编辑风故障字（灰阶切片而非霓虹红青），
+                减弱动效偏好下自动退化为静态 404。 */}
+            <div
+              data-text="404"
+              className="editorial-glitch mb-5 font-serif text-7xl font-black leading-none text-zinc-200 dark:text-zinc-800 md:text-8xl"
+            >
               404
             </div>
 
-            <h1 className="mb-4 font-serif text-3xl font-bold text-ink dark:text-white md:text-4xl">
-              {title}
-            </h1>
+            <h1 className="mb-4 font-serif text-3xl font-bold text-ink dark:text-white md:text-4xl">{title}</h1>
 
-            <p className="max-w-xl text-sm leading-7 text-zinc-700 dark:text-zinc-300 md:text-base">
-              {description}
-            </p>
+            <p className="max-w-xl text-sm leading-7 text-zinc-700 dark:text-zinc-300 md:text-base">{description}</p>
 
             {debugLabel && (
               <div className="mt-6 inline-flex max-w-full items-center border-l-2 border-zinc-300 bg-zinc-50 px-4 py-3 font-mono text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
@@ -56,5 +52,6 @@ export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(({
           </div>
         </div>
       </div>
-  );
-});
+    );
+  },
+);

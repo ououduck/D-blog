@@ -1157,7 +1157,13 @@ const Footer = () => {
 };
 
 const Background = () => {
-  return <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden bg-paper dark:bg-void" />;
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden bg-paper dark:bg-void">
+      {/* 静态胶片颗粒（react-bits Noise 启发）：内联 SVG 噪点纹理，
+          零 JS 零动画，为纸张底色增加一层细微的编辑质感。 */}
+      <div className="editorial-grain" aria-hidden="true" />
+    </div>
+  );
 };
 
 interface LayoutProps {

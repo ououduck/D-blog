@@ -1,10 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { BarChart3, Database, FileImage, FileText, FolderTree, Hash, Type, Activity } from 'lucide-react';
 
 import { Seo } from '../components/Seo';
 import { LoadingStatus } from '@/components/ContentStatus';
 import { Surface } from '@/components/ui/Surface';
+import { CountUp } from '@/components/effects/CountUp';
+import { Reveal } from '@/components/effects/Reveal';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { easeOut } from '@/utils/motion';
 import { getSiteStats, getInitialSiteStats, EMPTY_SITE_STATS, SiteStats } from '../services/siteStats';
 import { fillBusuanziSpans } from '@/services/busuanzi';
 import { siteConfig } from '@config/site.config';
@@ -23,7 +28,7 @@ const SummaryCard = ({
 }: {
   icon: React.ElementType;
   title: string;
-  value: string | number;
+  value: number;
   detail: string;
 }) => (
   <Surface className="flex min-w-0 min-h-52 flex-col p-5 sm:min-h-56 sm:p-6">
@@ -33,9 +38,12 @@ const SummaryCard = ({
     <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 sm:text-[11px]">
       {title}
     </div>
-    <div className="mb-2 text-2xl font-bold leading-none text-zinc-900 dark:text-zinc-100 sm:text-3xl lg:text-4xl">
-      {value}
-    </div>
+    {/* react-bits「CountUp」启发：进入视口后数字滚动到目标值；SSR 首帧直接
+        渲染最终值，减弱动效偏好下静态显示。 */}
+    <CountUp
+      to={value}
+      className="mb-2 text-2xl font-bold leading-none tabular-nums text-zinc-900 dark:text-zinc-100 sm:text-3xl lg:text-4xl"
+    />
     <div className="mt-auto text-xs leading-5 text-zinc-600 dark:text-zinc-400 sm:text-sm sm:leading-6">{detail}</div>
   </Surface>
 );
@@ -50,6 +58,7 @@ const RankingCard = ({
   valueSuffix?: string;
 }) => {
   const max = Math.max(...items.map((item) => item.count), 1);
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <Surface className="min-w-0 p-5 sm:p-6">
@@ -69,10 +78,14 @@ const RankingCard = ({
                   {valueSuffix}
                 </span>
               </div>
-              <div className="h-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                <div
-                  className="h-full rounded-full bg-zinc-900 transition-[width] duration-200 ease-out dark:bg-zinc-100"
-                  style={{ width: `${Math.max(8, (item.count / max) * 100)}%` }}
+              {/* react-bits「FadeContent」启发：进入视口后进度条从 0 生长到目标宽度 */}
+              <div className="h-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800" aria-hidden="true">
+                <motion.div
+                  className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
+                  initial={shouldReduceMotion ? false : { width: 0 }}
+                  whileInView={{ width: `${Math.max(8, (item.count / max) * 100)}%` }}
+                  viewport={{ once: true, amount: 0.6 }}
+                  transition={{ duration: 0.65, ease: easeOut, delay: Math.min(index * 0.06, 0.3) }}
                 />
               </div>
             </div>
@@ -277,102 +290,108 @@ export const Stats = () => {
         </div>
       ) : (
         <>
-          <section className="mt-8 md:mt-10" aria-labelledby="site-overview-title">
-            <h2
-              id="site-overview-title"
-              className="mb-4 font-serif text-2xl font-bold text-zinc-900 dark:text-zinc-100"
-            >
-              站点概览
-            </h2>
-            <div className="grid min-w-0 gap-3 min-[400px]:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
-              <SummaryCard
-                icon={FileText}
-                title="当前文章数"
-                value={formatValue(siteStats.totalPosts)}
-                detail="已公开发布的文章总数"
-              />
-              <SummaryCard
-                icon={Type}
-                title="总字数"
-                value={formatValue(siteStats.totalWords)}
-                detail="按正文内容累计的总阅读字数"
-              />
-              <SummaryCard
-                icon={FolderTree}
-                title="总分类数"
-                value={formatValue(siteStats.totalCategories)}
-                detail="当前启用的文章分类数量"
-              />
-              <SummaryCard
-                icon={Hash}
-                title="总标签数"
-                value={formatValue(siteStats.totalTags)}
-                detail="去重后的标签总数量"
-              />
-              <SummaryCard
-                icon={FileImage}
-                title="总图片数"
-                value={formatValue(siteStats.totalImages)}
-                detail="正文内 Markdown 图片累计数量"
-              />
-            </div>
-          </section>
+          {/* react-bits「FadeContent」启发：分区进入视口时淡入 */}
+          <Reveal>
+            <section className="mt-8 md:mt-10" aria-labelledby="site-overview-title">
+              <h2
+                id="site-overview-title"
+                className="mb-4 font-serif text-2xl font-bold text-zinc-900 dark:text-zinc-100"
+              >
+                站点概览
+              </h2>
+              <div className="grid min-w-0 gap-3 min-[400px]:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
+                <SummaryCard
+                  icon={FileText}
+                  title="当前文章数"
+                  value={siteStats.totalPosts}
+                  detail="已公开发布的文章总数"
+                />
+                <SummaryCard
+                  icon={Type}
+                  title="总字数"
+                  value={siteStats.totalWords}
+                  detail="按正文内容累计的总阅读字数"
+                />
+                <SummaryCard
+                  icon={FolderTree}
+                  title="总分类数"
+                  value={siteStats.totalCategories}
+                  detail="当前启用的文章分类数量"
+                />
+                <SummaryCard icon={Hash} title="总标签数" value={siteStats.totalTags} detail="去重后的标签总数量" />
+                <SummaryCard
+                  icon={FileImage}
+                  title="总图片数"
+                  value={siteStats.totalImages}
+                  detail="正文内 Markdown 图片累计数量"
+                />
+              </div>
+            </section>
+          </Reveal>
 
-          <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-2">
-            <RankingCard title="分类文章数" items={siteStats.categoryStats || []} />
-            <RankingCard title="热门标签 Top" items={(siteStats.tagStats || []).slice(0, 8)} />
-          </section>
+          <Reveal delay={0.05}>
+            <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-2">
+              <RankingCard title="分类文章数" items={siteStats.categoryStats || []} />
+              <RankingCard title="热门标签 Top" items={(siteStats.tagStats || []).slice(0, 8)} />
+            </section>
+          </Reveal>
 
-          <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-3">
-            <Surface className="min-w-0 p-5 sm:p-6">
-              <h3 className="mb-4 font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">最近更新</h3>
-              {(siteStats.recentPosts || []).length === 0 ? (
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无可展示的数据。</p>
-              ) : (
-                <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                  {(siteStats.recentPosts || []).map((post) => (
-                    <Link
-                      key={post.id}
-                      to={`/post/${post.id}`}
-                      className="block py-3 first:pt-0 last:pb-0 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                    >
-                      <div className="line-clamp-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                        {post.title}
-                      </div>
-                      <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{post.updatedAt || post.date}</div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </Surface>
-            <RankingCard
-              title="字数最多"
-              valueSuffix="字"
-              items={(siteStats.topWordCountPosts || []).map((post) => ({
-                name: post.title,
-                count: post.wordCount || 0,
-              }))}
-            />
-            <RankingCard
-              title="图片最多"
-              valueSuffix="张"
-              items={(siteStats.topImageCountPosts || []).map((post) => ({
-                name: post.title,
-                count: post.imageCount || 0,
-              }))}
-            />
-          </section>
+          <Reveal delay={0.1}>
+            <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-3">
+              <Surface className="min-w-0 p-5 sm:p-6">
+                <h3 className="mb-4 font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">最近更新</h3>
+                {(siteStats.recentPosts || []).length === 0 ? (
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无可展示的数据。</p>
+                ) : (
+                  <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                    {(siteStats.recentPosts || []).map((post) => (
+                      <Link
+                        key={post.id}
+                        to={`/post/${post.id}`}
+                        className="block py-3 first:pt-0 last:pb-0 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                      >
+                        <div className="line-clamp-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                          {post.title}
+                        </div>
+                        <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                          {post.updatedAt || post.date}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </Surface>
+              <RankingCard
+                title="字数最多"
+                valueSuffix="字"
+                items={(siteStats.topWordCountPosts || []).map((post) => ({
+                  name: post.title,
+                  count: post.wordCount || 0,
+                }))}
+              />
+              <RankingCard
+                title="图片最多"
+                valueSuffix="张"
+                items={(siteStats.topImageCountPosts || []).map((post) => ({
+                  name: post.title,
+                  count: post.imageCount || 0,
+                }))}
+              />
+            </section>
+          </Reveal>
 
-          <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-3">
-            <BusuanziCard className="lg:col-span-2" />
-            <ExternalStatsCard
-              icon={Activity}
-              title="运行状态"
-              description="实时监控网站的运行状态和可用性，查看历史运行时间和响应速度。"
-              href="https://stats.uptimerobot.com/NcIOI9kfVP"
-              buttonLabel="查看网站运行状态"
-            />
-          </section>
+          <Reveal delay={0.15}>
+            <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-3">
+              <BusuanziCard className="lg:col-span-2" />
+              <ExternalStatsCard
+                icon={Activity}
+                title="运行状态"
+                description="实时监控网站的运行状态和可用性，查看历史运行时间和响应速度。"
+                href="https://stats.uptimerobot.com/NcIOI9kfVP"
+                buttonLabel="查看网站运行状态"
+              />
+            </section>
+          </Reveal>
         </>
       )}
     </div>
