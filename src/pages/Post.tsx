@@ -644,10 +644,10 @@ function MermaidBlock({
   const toggleZoom = () => zoomTo(scaleRef.current > MERMAID_MIN_SCALE ? MERMAID_MIN_SCALE : 2);
 
   useEffect(() => {
-    setSvg('');
     resetView();
     if (!renderer) {
-      setStatus('idle');
+      // 渲染器重建中（懒加载 / 主题切换）：保留现有 svg，避免图表闪回
+      // 「正在生成图表」的加载态；渲染器就绪后本 effect 重跑并重新渲染。
       return;
     }
 
