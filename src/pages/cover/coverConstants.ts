@@ -9,14 +9,23 @@ export const MAX_EXPORT_SCALE = 4;
 export const MIN_BACKGROUND_SCALE = 0.1;
 export const MAX_BACKGROUND_SCALE = 10;
 export const DEFAULT_TEXT_SHADOW: Readonly<ShadowConfig> = {
-  x: 2, y: 2, blur: 8, color: '#000000', opacity: 0.3
+  x: 2,
+  y: 2,
+  blur: 8,
+  color: '#000000',
+  opacity: 0.3,
 };
 export const BACKGROUND_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 export const ICON_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 export const FONT_MAX_BYTES = 10 * 1024 * 1024;
 export const IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
 export const FONT_MIME_TYPES = [
-  'font/woff', 'font/woff2', 'font/ttf', 'font/otf',
-  'application/font-woff', 'application/x-font-ttf', 'application/x-font-opentype'
+  'font/woff',
+  'font/woff2',
+  'font/ttf',
+  'font/otf',
+  'application/font-woff',
+  'application/x-font-ttf',
+  'application/x-font-opentype',
 ] as const;
 export const FONT_EXTENSIONS = ['woff', 'woff2', 'ttf', 'otf'] as const;

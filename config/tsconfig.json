@@ -5,16 +5,9 @@
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "module": "ESNext",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
-    "types": [
-      "node",
-      "react-dom"
-    ],
+    "types": ["node", "react-dom"],
     "moduleResolution": "bundler",
     "baseUrl": "..",
     "isolatedModules": true,
@@ -22,12 +15,8 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "@config/*": [
-        "config/*"
-      ]
+      "@/*": ["src/*"],
+      "@config/*": ["config/*"]
     },
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
@@ -36,9 +25,5 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": [
-    "../src",
-    "../config/**/*.ts",
-    "../vite.config.ts"
-  ]
+  "include": ["../src", "../config/**/*.ts", "../vite.config.ts", "../vitest.config.ts"]
 }

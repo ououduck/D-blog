@@ -38,11 +38,7 @@
  */
 
 import fs from 'node:fs';
-import {
-  fetchWithRetry,
-  readResponseText,
-  RetryableHttpError
-} from './lib/http.mjs';
+import { fetchWithRetry, readResponseText, RetryableHttpError } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
 const logger = createActionLogger('telegram');
@@ -52,7 +48,7 @@ const logger = createActionLogger('telegram');
 /* ------------------------------------------------------------------ */
 
 /** Telegram sendMessage 单条消息硬上限（字符）。 */
-const TELEGRAM_MAX_CHARS = 4096;
+
 /** 安全预算：HTML 标签也计长度，留余量避免踩线。 */
 const TELEGRAM_SAFE_BUDGET = 4000;
 /** 单次发送超时（毫秒）。 */
@@ -78,7 +74,7 @@ const CONCLUSION_LABELS = Object.freeze({
   action_required: '🔔 需要处理',
   neutral: '➖ 中性',
   skipped: '⏭ 已跳过',
-  stale: '🕓 已过期'
+  stale: '🕓 已过期',
 });
 
 /* ------------------------------------------------------------------ */
@@ -91,17 +87,19 @@ const CONCLUSION_LABELS = Object.freeze({
  * @param {unknown} value
  * @returns {string}
  */
-const escapeHtml = (value) => String(value ?? '')
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;');
+const escapeHtml = (value) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
 /** 折叠为单行（换行/连续空白 → 单个空格），用于预览行，防消息体被撑破。 */
-const oneLine = (value) => String(value ?? '')
-  .replace(/[\r\n\u2028\u2029]+/g, ' ')
-  .replace(/\s+/g, ' ')
-  .trim();
+const oneLine = (value) =>
+  String(value ?? '')
+    .replace(/[\r\n\u2028\u2029]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 /** 字段级截断（在转义之前对纯文本截断，不会切断 HTML 实体/标签）。 */
 const truncate = (value, maxChars, suffix = '…') => {
@@ -119,7 +117,9 @@ const loadEvent = () => {
   const eventName = process.env.GITHUB_EVENT_NAME;
   const eventPath = process.env.GITHUB_EVENT_PATH;
   if (!eventName) {
-    throw new Error('GITHUB_EVENT_NAME is not set (run inside GitHub Actions, or set it manually for local --print debugging).');
+    throw new Error(
+      'GITHUB_EVENT_NAME is not set (run inside GitHub Actions, or set it manually for local --print debugging).',
+    );
   }
   if (!eventPath || !fs.existsSync(eventPath)) {
     throw new Error(`GITHUB_EVENT_PATH not found: ${eventPath || '(empty)'}`);
@@ -164,8 +164,10 @@ const buildPushMessage = (event) => {
       // 顺序颠倒会让"第二行及之后"误并入第一行预览。
       const rawFirstLine = String(commit.message ?? '').split(/\r?\n/)[0] || '';
       const firstLine = oneLine(rawFirstLine) || '(无提交信息)';
-      lines.push(`• <b>${escapeHtml(truncate(firstLine, MAX_COMMIT_MSG_CHARS))}</b> — ${escapeHtml(author)} (` +
-        `<code>${escapeHtml(sha)}</code>)`);
+      lines.push(
+        `• <b>${escapeHtml(truncate(firstLine, MAX_COMMIT_MSG_CHARS))}</b> — ${escapeHtml(author)} (` +
+          `<code>${escapeHtml(sha)}</code>)`,
+      );
     }
     if (commits.length > MAX_COMMITS_LISTED) {
       lines.push(`• … 其余 ${commits.length - MAX_COMMITS_LISTED} 个提交省略`);
@@ -297,7 +299,7 @@ const buildTestMessage = (event) => {
     `仓库: ${escapeHtml(repo)}`,
     `触发人: ${escapeHtml(actor)}`,
     '',
-    '配置正常，消息推送成功 ✅'
+    '配置正常，消息推送成功 ✅',
   ].join('\n');
 };
 
@@ -308,7 +310,7 @@ const BUILDERS = Object.freeze({
   discussion: buildDiscussionMessage,
   issues: buildIssueMessage,
   workflow_run: buildWorkflowRunMessage,
-  workflow_dispatch: buildTestMessage
+  workflow_dispatch: buildTestMessage,
 });
 
 /* ------------------------------------------------------------------ */
@@ -341,11 +343,13 @@ const ensureSafeLength = (text) => {
  */
 const TELEGRAM_ERROR_HINTS = Object.freeze({
   401: 'Bot token 无效：检查 TELEGRAM_BOT_TOKEN 是否抄错或已被 BotFather 重置。',
-  403: '机器人无权向该 chat 发消息：TELEGRAM_CHAT_ID 疑似指向机器人自身（getMe 的 id 是机器人不是你的 chat id），' +
+  403:
+    '机器人无权向该 chat 发消息：TELEGRAM_CHAT_ID 疑似指向机器人自身（getMe 的 id 是机器人不是你的 chat id），' +
     '或机器人从未加入该群组/频道。先用你自己的账号向机器人发一条消息，' +
     '再用 @userinfobot 或 getUpdates 确认 chat id（私聊为正数用户 id，群组为负数 id，频道用 @频道名）。',
-  400: '请求参数错误：常见于 TELEGRAM_CHAT_ID 不存在（chat not found）、' +
-    'TELEGRAM_TOPIC_ID 与消息线程不匹配、或消息内容超长。'
+  400:
+    '请求参数错误：常见于 TELEGRAM_CHAT_ID 不存在（chat not found）、' +
+    'TELEGRAM_TOPIC_ID 与消息线程不匹配、或消息内容超长。',
 });
 
 /** 把 Telegram 错误 JSON 转为带排障提示的报错文案。 */
@@ -370,7 +374,7 @@ const sendTelegramMessage = async (text) => {
     chat_id: chatId,
     text: ensureSafeLength(text),
     parse_mode: 'HTML',
-    disable_web_page_preview: true
+    disable_web_page_preview: true,
   };
   const topicId = Number(process.env.TELEGRAM_TOPIC_ID);
   if (Number.isFinite(topicId) && topicId > 0) {
@@ -379,28 +383,32 @@ const sendTelegramMessage = async (text) => {
 
   let response;
   try {
-    response = await fetchWithRetry(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }, {
-      timeoutMs: TELEGRAM_TIMEOUT_MS,
-      retries: TELEGRAM_RETRIES,
-      onRetry: ({ attempt, status, error, delayMs }) => {
-        logger.warn('Telegram API transient failure, retrying', {
-          attempt,
-          status: status ?? 'network',
-          error: error ? error.message : '',
-          delayMs
-        });
-      }
-    });
+    response = await fetchWithRetry(
+      url,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+      {
+        timeoutMs: TELEGRAM_TIMEOUT_MS,
+        retries: TELEGRAM_RETRIES,
+        onRetry: ({ attempt, status, error, delayMs }) => {
+          logger.warn('Telegram API transient failure, retrying', {
+            attempt,
+            status: status ?? 'network',
+            error: error ? error.message : '',
+            delayMs,
+          });
+        },
+      },
+    );
   } catch (error) {
     if (error instanceof RetryableHttpError) {
       logger.error('Telegram API request failed after retries', {
         status: error.status,
         attempts: error.attempts,
-        body: error.body?.slice(0, 200)
+        body: error.body?.slice(0, 200),
       });
     }
     throw error;
@@ -462,7 +470,7 @@ const main = async () => {
   const result = await sendTelegramMessage(message);
   logger.info('Telegram notification sent', {
     event: eventName,
-    messageId: result.message_id ?? 'unknown'
+    messageId: result.message_id ?? 'unknown',
   });
   return 0;
 };

@@ -60,14 +60,20 @@ export interface StoredPreset {
 }
 
 function storage(): Storage | null {
-  try { return typeof window === 'undefined' ? null : window.localStorage; } catch { return null; }
+  try {
+    return typeof window === 'undefined' ? null : window.localStorage;
+  } catch {
+    return null;
+  }
 }
 
 function parse<T>(key: string, fallback: T): T {
   try {
     const value = storage()?.getItem(key);
-    return value ? JSON.parse(value) as T : fallback;
-  } catch { return fallback; }
+    return value ? (JSON.parse(value) as T) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export function readDraft(): CoverDraft | null {
@@ -76,23 +82,42 @@ export function readDraft(): CoverDraft | null {
 }
 
 export function writeDraft(draft: CoverDraft): boolean {
-  try { storage()?.setItem(COVER_DRAFT_KEY, JSON.stringify({ ...draft, version: COVER_STORAGE_VERSION })); return true; } catch { return false; }
+  try {
+    storage()?.setItem(COVER_DRAFT_KEY, JSON.stringify({ ...draft, version: COVER_STORAGE_VERSION }));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function readPresets(): StoredPreset[] {
   const presets = parse<StoredPreset[]>(COVER_PRESETS_KEY, []);
-  return Array.isArray(presets) ? presets.filter((preset) => preset?.state?.version === COVER_STORAGE_VERSION && typeof preset.name === 'string') : [];
+  return Array.isArray(presets)
+    ? presets.filter((preset) => preset?.state?.version === COVER_STORAGE_VERSION && typeof preset.name === 'string')
+    : [];
 }
 
 export function writePreset(name: string, state: CoverDraft): StoredPreset[] {
-  const preset: StoredPreset = { name: name.trim() || '未命名预设', createdAt: Date.now(), state: { ...state, version: COVER_STORAGE_VERSION } };
+  const preset: StoredPreset = {
+    name: name.trim() || '未命名预设',
+    createdAt: Date.now(),
+    state: { ...state, version: COVER_STORAGE_VERSION },
+  };
   const next = [preset, ...readPresets().filter((item) => item.name !== preset.name)].slice(0, 20);
-  try { storage()?.setItem(COVER_PRESETS_KEY, JSON.stringify(next)); } catch { /* localStorage 不可用时不阻塞编辑 */ }
+  try {
+    storage()?.setItem(COVER_PRESETS_KEY, JSON.stringify(next));
+  } catch {
+    /* localStorage 不可用时不阻塞编辑 */
+  }
   return next;
 }
 
 export function deletePreset(name: string): StoredPreset[] {
   const next = readPresets().filter((preset) => preset.name !== name);
-  try { storage()?.setItem(COVER_PRESETS_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  try {
+    storage()?.setItem(COVER_PRESETS_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
   return next;
 }

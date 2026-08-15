@@ -32,12 +32,14 @@ const MAX_ANNOTATION_TITLE_CHARS = 200;
  * @param {string} value
  * @returns {string}
  */
-const sanitizeLogValue = (value) => String(value)
-  // \r \n 与 \u2028 \u2029 全部折叠为空格（Actions 注解与普通日志均按行解析）。
-  .replace(/[\r\n\u2028\u2029]/g, ' ')
-  // 其余 C0 控制字符（除 \t 保留用于对齐）替换为空格。
-  .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ')
-  .trim();
+const sanitizeLogValue = (value) =>
+  String(value)
+    // \r \n 与 \u2028 \u2029 全部折叠为空格（Actions 注解与普通日志均按行解析）。
+    .replace(/[\r\n\u2028\u2029]/g, ' ')
+    // 其余 C0 控制字符（除 \t 保留用于对齐）替换为空格。
+    // eslint-disable-next-line no-control-regex -- 日志净化：有意剔除 C0 控制字符
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ')
+    .trim();
 
 /**
  * 把附加字段（对象/数组）格式化为 key=value 追加串。
@@ -174,9 +176,9 @@ export const createActionLogger = (scope) => {
       }
       const header = `| ${columns.join(' | ')} |`;
       const divider = `| ${columns.map(() => '---').join(' | ')} |`;
-      const body = safeRows.map((row) => (
-        `| ${columns.map((col) => sanitizeLogValue(row[col] ?? '')).join(' | ')} |`
-      )).join('\n');
+      const body = safeRows
+        .map((row) => `| ${columns.map((col) => sanitizeLogValue(row[col] ?? '')).join(' | ')} |`)
+        .join('\n');
       const markdown = `### ${sanitizeLogValue(title)}\n\n${header}\n${divider}\n${body}\n`;
       try {
         fs.appendFileSync(summaryPath, markdown, 'utf8');
@@ -184,7 +186,7 @@ export const createActionLogger = (scope) => {
         // Summary 写入失败不影响主流程：回退为普通日志。
         base('warn', `Failed to write step summary: ${error instanceof Error ? error.message : String(error)}`);
       }
-    }
+    },
   };
 };
 

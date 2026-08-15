@@ -1,0 +1,29 @@
+# 构建产物与生成数据
+dist/
+dist-ssr/
+generated/
+coverage/
+public/
+
+# 依赖与本地工具目录
+node_modules/
+dsh-plugins/
+.zcode/
+.trash/
+.vscode/
+
+# 锁文件（npm 自身格式，不参与格式化）
+package-lock.json
+
+# 内容文件（博客文章/友链/说说，非代码，不格式化）
+posts/
+friends/
+shuoshuo/
+
+# 仓库文档（保持原样，避免大范围 diff）
+README.md
+# GitHub Actions 工作流与站点配置（prettier 无 YAML 解析器）
+.github/
+.pages.yml
+# DSH Harness 会话扫描产物
+.dsh-*.cjs

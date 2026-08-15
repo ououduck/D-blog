@@ -1,6 +1,10 @@
 import {
-  BACKGROUND_IMAGE_MAX_BYTES, FONT_EXTENSIONS, FONT_MAX_BYTES, FONT_MIME_TYPES,
-  ICON_IMAGE_MAX_BYTES, IMAGE_MIME_TYPES
+  BACKGROUND_IMAGE_MAX_BYTES,
+  FONT_EXTENSIONS,
+  FONT_MAX_BYTES,
+  FONT_MIME_TYPES,
+  ICON_IMAGE_MAX_BYTES,
+  IMAGE_MIME_TYPES,
 } from './coverConstants';
 
 type ImageUploadKind = 'background' | 'icon';
@@ -43,7 +47,7 @@ interface LoadResourceOptions {
 function readBlob<T extends string | ArrayBuffer>(
   read: (reader: FileReader) => void,
   errorMessage: string,
-  options: LoadResourceOptions = {}
+  options: LoadResourceOptions = {},
 ): Promise<T> {
   const { timeoutMs = 8000, signal } = options;
   return new Promise((resolve, reject) => {
@@ -89,8 +93,9 @@ function readFileAsDataURL(file: Blob, options?: LoadResourceOptions): Promise<s
 }
 
 function readFileAsArrayBuffer(file: Blob, options?: LoadResourceOptions): Promise<ArrayBuffer> {
-  return readBlob<ArrayBuffer>((reader) => reader.readAsArrayBuffer(file), '读取字体文件', options)
-    .then((result) => result instanceof ArrayBuffer ? result : Promise.reject(new Error('读取字体文件失败，请重试')));
+  return readBlob<ArrayBuffer>((reader) => reader.readAsArrayBuffer(file), '读取字体文件', options).then((result) =>
+    result instanceof ArrayBuffer ? result : Promise.reject(new Error('读取字体文件失败，请重试')),
+  );
 }
 
 export function loadImage(source: string, options: LoadResourceOptions = {}): Promise<HTMLImageElement> {
@@ -136,7 +141,7 @@ export async function loadImageFile(file: File, kind: ImageUploadKind): Promise<
 export async function loadFontFile(
   file: File,
   family = 'CustomFont',
-  options: LoadResourceOptions = {}
+  options: LoadResourceOptions = {},
 ): Promise<FontFace> {
   validateFontFile(file);
   const font = new FontFace(family, await readFileAsArrayBuffer(file, options));

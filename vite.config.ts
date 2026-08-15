@@ -5,14 +5,15 @@ import path from 'path';
 const offlinePostAssetsPlugin = (): Plugin => ({
   name: 'offline-post-assets',
   generateBundle(_options, bundle) {
-    const routeChunks = ['Post.tsx', 'Favorites.tsx'].map((fileName) => (
-      Object.values(bundle).find((output) => (
-        output.type === 'chunk'
-        && Object.keys(output.modules).some((moduleId) => (
-          moduleId.replace(/\\/g, '/').endsWith(`/src/pages/${fileName}`)
-        ))
-      ))
-    ));
+    const routeChunks = ['Post.tsx', 'Favorites.tsx'].map((fileName) =>
+      Object.values(bundle).find(
+        (output) =>
+          output.type === 'chunk' &&
+          Object.keys(output.modules).some((moduleId) =>
+            moduleId.replace(/\\/g, '/').endsWith(`/src/pages/${fileName}`),
+          ),
+      ),
+    );
     if (routeChunks.some((chunk) => !chunk || chunk.type !== 'chunk')) {
       this.error('Unable to find the offline route chunks.');
       return;
@@ -26,10 +27,12 @@ const offlinePostAssetsPlugin = (): Plugin => ({
       assets.add(fileName);
       if (output.type === 'chunk') {
         output.imports.forEach(visit);
-        const metadata = output.viteMetadata as {
-          importedAssets?: Set<string>;
-          importedCss?: Set<string>;
-        } | undefined;
+        const metadata = output.viteMetadata as
+          | {
+              importedAssets?: Set<string>;
+              importedCss?: Set<string>;
+            }
+          | undefined;
         metadata?.importedAssets?.forEach((asset) => assets.add(asset));
         metadata?.importedCss?.forEach((asset) => assets.add(asset));
       }
@@ -37,10 +40,13 @@ const offlinePostAssetsPlugin = (): Plugin => ({
 
     Object.values(bundle).forEach((output) => {
       if (output.type !== 'chunk') return;
-      if (output.isEntry || Object.keys(output.modules).some((moduleId) => {
-        const normalizedId = moduleId.replace(/\\/g, '/');
-        return normalizedId.includes('/posts/') && normalizedId.includes('.md?raw');
-      })) {
+      if (
+        output.isEntry ||
+        Object.keys(output.modules).some((moduleId) => {
+          const normalizedId = moduleId.replace(/\\/g, '/');
+          return normalizedId.includes('/posts/') && normalizedId.includes('.md?raw');
+        })
+      ) {
         visit(output.fileName);
       }
     });
@@ -50,9 +56,9 @@ const offlinePostAssetsPlugin = (): Plugin => ({
     this.emitFile({
       type: 'asset',
       fileName: 'offline-post-assets.json',
-      source: JSON.stringify({ version: 1, assets: [...assets].sort() })
+      source: JSON.stringify({ version: 1, assets: [...assets].sort() }),
     });
-  }
+  },
 });
 
 /**
@@ -67,6 +73,72 @@ const offlinePostAssetsPlugin = (): Plugin => ({
  * - 模板快照（dist-ssr/index.template.html）取自构建后的 dist/index.html，
  *   SSG 全量静态化时该 preload 会随模板保留到每个页面。
  */
+/**
+ * KaTeX 字体冗余裁剪（性能优化）。
+ *
+ * katex.min.css 为每个字重声明三种格式：woff2 / woff / ttf，其中 ttf 仅供
+ * 不识别 woff/woff2 的极旧浏览器使用，纯属冗余体积（20 个文件约 514KB）。
+ * 本插件在 generateBundle 阶段只处理 KaTeX 字体资产：
+ * 1. 重写 KaTeX CSS 的 @font-face：src 列表删除 truetype 条目，保留 woff2
+ *    （现代浏览器首选）+ woff（旧浏览器兜底），数学公式渲染不受影响；
+ * 2. 收集全部 CSS 中仍被 url() 引用的字体文件名，删除不再被引用的 KaTeX
+ *    ttf 字体文件（bundle 内不会残留对已删文件的引用，避免 404）。
+ * 不触碰 favicon / logo / PWA 图标 / 封面图等其他任何资产。
+ */
+const trimKatexFonts = (): Plugin => {
+  // 匹配 src 列表末尾的 ttf 条目：,url(fonts/xxx.ttf) format("truetype")
+  // 兼容单/双引号与缺失 format 的写法（cssnano 压缩产物可能改写引号风格）。
+  const TTF_ENTRY = /,\s*url\((?:"[^"]*"|'[^']*'|[^)'"]*?)\.ttf\)\s*format\(["']truetype["']\)/g;
+  const TTF_ENTRY_BARE = /,\s*url\((?:"[^"]*"|'[^']*'|[^)'"]*?)\.ttf\)/g;
+  return {
+    name: 'trim-katex-fonts',
+    apply: 'build',
+    generateBundle(_options, bundle) {
+      const katexCssAssets = Object.values(bundle).filter(
+        (output): output is Extract<typeof output, { type: 'asset' }> =>
+          output.type === 'asset' && /(^|\/)katex-[^/]*\.css$/.test(output.fileName),
+      );
+      if (katexCssAssets.length === 0) {
+        return;
+      }
+
+      // 1. 重写 KaTeX CSS 的 @font-face，仅删除 ttf 条目（woff2/woff 原样保留）。
+      for (const asset of katexCssAssets) {
+        const source = asset.source.toString();
+        asset.source = source.replace(/@font-face\s*\{[^}]*\}/g, (block) => {
+          if (!/font-family\s*:\s*KaTeX_/.test(block)) {
+            return block;
+          }
+          return block.replace(TTF_ENTRY, '').replace(TTF_ENTRY_BARE, '');
+        });
+      }
+
+      // 2. 重写后再收集所有 CSS 的实际引用（此时 ttf 已从 src 移除），
+      //    删除未被引用的 KaTeX ttf 字体文件。
+      const referencedFonts = new Set<string>();
+      for (const output of Object.values(bundle)) {
+        if (output.type !== 'asset' || !output.fileName.endsWith('.css')) {
+          continue;
+        }
+        for (const match of output.source.toString().matchAll(/url\(([^)]+)\)/g)) {
+          const url = match[1].replace(/["']/g, '').split(/[?#]/)[0];
+          if (url) {
+            referencedFonts.add(path.posix.basename(url));
+          }
+        }
+      }
+      for (const fileName of Object.keys(bundle)) {
+        if (!fileName.endsWith('.ttf')) {
+          continue;
+        }
+        if (/KaTeX|katex/i.test(fileName) && !referencedFonts.has(path.posix.basename(fileName))) {
+          delete bundle[fileName];
+        }
+      }
+    },
+  };
+};
+
 const injectEntryCssPreload = (): Plugin => {
   let base = '/';
   return {
@@ -81,17 +153,13 @@ const injectEntryCssPreload = (): Plugin => {
         if (ctx.server || !ctx.bundle) {
           return;
         }
-        const entryChunk = Object.values(ctx.bundle).find(
-          (output) => output.type === 'chunk' && output.isEntry
-        );
+        const entryChunk = Object.values(ctx.bundle).find((output) => output.type === 'chunk' && output.isEntry);
         const importedCss = entryChunk?.type === 'chunk' ? entryChunk.viteMetadata?.importedCss : undefined;
         if (!importedCss || importedCss.size === 0) {
           return;
         }
         const cssFileName = [...importedCss][0];
-        const href = base === './'
-          ? cssFileName
-          : `${base.replace(/\/+$/, '')}/${cssFileName}`.replace(/\/+/g, '/');
+        const href = base === './' ? cssFileName : `${base.replace(/\/+$/, '')}/${cssFileName}`.replace(/\/+/g, '/');
         // 直接返回 HtmlTagDescriptor[]：Vite 将其注入原始 HTML（head-prepend），
         // 与返回 { html, tags } 的对象形式行为一致且满足 IndexHtmlTransformResult 类型。
         return [
@@ -137,12 +205,15 @@ export default defineConfig(({ command, mode }) => {
   const appBase = normalizeBasePath(env.VITE_BASE_PATH);
 
   return {
-    plugins: [react(), injectEntryCssPreload(), offlinePostAssetsPlugin()],
+    plugins: [react({ babel: { plugins: [] } }), injectEntryCssPreload(), offlinePostAssetsPlugin(), trimKatexFonts()],
     base: appBase,
-    esbuild: command === 'build' ? {
-      // BUILD_KEEP_CONSOLE=1 时保留 console（调试 hydration 警告等），默认构建仍移除。
-      drop: process.env.BUILD_KEEP_CONSOLE === '1' ? [] : ['console', 'debugger'],
-    } : undefined,
+    esbuild:
+      command === 'build'
+        ? {
+            // BUILD_KEEP_CONSOLE=1 时保留 console（调试 hydration 警告等），默认构建仍移除。
+            drop: process.env.BUILD_KEEP_CONSOLE === '1' ? [] : ['console', 'debugger'],
+          }
+        : undefined,
     css: {
       postcss: path.resolve(__dirname, './config/postcss.config.js'),
     },

@@ -27,12 +27,7 @@
  */
 
 import fs from 'node:fs';
-import {
-  fetchWithRetry,
-  createTimeoutSignal,
-  readResponseText,
-  RetryableHttpError
-} from './lib/http.mjs';
+import { fetchWithRetry, createTimeoutSignal, readResponseText, RetryableHttpError } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
 const logger = createActionLogger('akismet');
@@ -52,14 +47,16 @@ const GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql';
 const AKISMET_VERDICTS = Object.freeze({
   SPAM: 'spam',
   HAM: 'ham',
-  UNDETERMINED: 'undetermined'
+  UNDETERMINED: 'undetermined',
 });
 
 /** 非法字符裁剪：Akismet 对部分控制字符敏感，提交前净化。 */
-const sanitizeForAkismet = (value) => String(value ?? '')
-  .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ')
-  .trim()
-  .slice(0, 100000); // Akismet 单字段建议上限，防超大正文拒绝服务。
+const sanitizeForAkismet = (value) =>
+  String(value ?? '')
+    // eslint-disable-next-line no-control-regex -- 有意剔除 Akismet 敏感的控制字符
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ')
+    .trim()
+    .slice(0, 100000); // Akismet 单字段建议上限，防超大正文拒绝服务。
 
 /* ------------------------------------------------------------------ */
 /* 事件载荷读取（GITHUB_EVENT_PATH 为 Actions 自动写入的 JSON 文件）    */
@@ -110,23 +107,28 @@ const checkWithAkismet = async (input) => {
 
   const { signal, cleanup } = createTimeoutSignal(AKISMET_TIMEOUT_MS);
   try {
-    const response = await fetchWithRetry(`https://${apiKey}.rest.akismet.com/1.1/comment-check`, {
-      method: 'POST',
-      signal,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'D-blog Akismet Action/2.0'
+    const response = await fetchWithRetry(
+      `https://${apiKey}.rest.akismet.com/1.1/comment-check`,
+      {
+        method: 'POST',
+        signal,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'D-blog Akismet Action/2.0',
+        },
+        body: params,
       },
-      body: params
-    }, {
-      retries: AKISMET_RETRIES,
-      signal,
-      onRetry: (info) => logger.warn('Retrying Akismet request', {
-        attempt: info.attempt,
-        status: info.status ?? 'network',
-        delayMs: info.delayMs
-      })
-    });
+      {
+        retries: AKISMET_RETRIES,
+        signal,
+        onRetry: (info) =>
+          logger.warn('Retrying Akismet request', {
+            attempt: info.attempt,
+            status: info.status ?? 'network',
+            delayMs: info.delayMs,
+          }),
+      },
+    );
 
     // Phase 4 修复：先检查 HTTP 状态。Akismet 5xx（服务端故障/过载）时
     // 响应体是错误页而非 verdict —— 按"无法判定"处理，不误读为 legitimate。
@@ -146,7 +148,7 @@ const checkWithAkismet = async (input) => {
     // 未知 verdict（Akismet 返回 invalid 等业务错误码）：无法判定，放行 + 告警。
     logger.warn('Akismet returned an unrecognized verdict; treating as undetermined', {
       status: response.status,
-      raw: raw.slice(0, 200)
+      raw: raw.slice(0, 200),
     });
     return { verdict: AKISMET_VERDICTS.UNDETERMINED, raw, status: response.status };
   } finally {
@@ -182,28 +184,33 @@ const deleteDiscussionComment = async (commentNodeId) => {
 
   const { signal, cleanup } = createTimeoutSignal(GRAPHQL_TIMEOUT_MS);
   try {
-    const response = await fetchWithRetry(GITHUB_GRAPHQL_URL, {
-      method: 'POST',
-      signal,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'D-blog Akismet Action/2.0',
-        'X-GitHub-Api-Version': '2022-11-28'
+    const response = await fetchWithRetry(
+      GITHUB_GRAPHQL_URL,
+      {
+        method: 'POST',
+        signal,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'D-blog Akismet Action/2.0',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify({
+          query: DELETE_COMMENT_MUTATION,
+          variables: { commentId: commentNodeId },
+        }),
       },
-      body: JSON.stringify({
-        query: DELETE_COMMENT_MUTATION,
-        variables: { commentId: commentNodeId }
-      })
-    }, {
-      retries: GRAPHQL_RETRIES,
-      signal,
-      onRetry: (info) => logger.warn('Retrying GraphQL delete', {
-        attempt: info.attempt,
-        status: info.status ?? 'network',
-        delayMs: info.delayMs
-      })
-    });
+      {
+        retries: GRAPHQL_RETRIES,
+        signal,
+        onRetry: (info) =>
+          logger.warn('Retrying GraphQL delete', {
+            attempt: info.attempt,
+            status: info.status ?? 'network',
+            delayMs: info.delayMs,
+          }),
+      },
+    );
 
     // 响应体限量读取后解析（防 GraphQL 错误页为超大 HTML 时 JSON.parse 崩溃）。
     const raw = await readResponseText(response, { maxBytes: 65536 });
@@ -219,14 +226,14 @@ const deleteDiscussionComment = async (commentNodeId) => {
       // GraphQL 层错误（如权限不足、节点不存在）：不重试，仅记录。
       logger.warn('GraphQL delete failed', {
         status: response.status,
-        errors: result.errors || result.message || 'unknown'
+        errors: result.errors || result.message || 'unknown',
       });
       return;
     }
     logger.info('Spam comment deleted via GraphQL', { commentId: commentNodeId });
   } catch (error) {
     logger.warn('Failed to delete spam comment (will remain visible)', {
-      error: formatError(error)
+      error: formatError(error),
     });
   } finally {
     cleanup();
@@ -269,13 +276,13 @@ const main = async () => {
       comment_type: 'comment',
       comment_author: commentAuthor,
       comment_author_url: comment.user?.html_url || '',
-      comment_content: commentBody
+      comment_content: commentBody,
     });
 
     if (result.verdict === AKISMET_VERDICTS.HAM) {
       logger.info('Akismet marked the comment as legitimate', {
         status: result.status,
-        verdict: result.raw
+        verdict: result.raw,
       });
       return;
     }
@@ -285,21 +292,21 @@ const main = async () => {
       // 方便站主排查 Akismet 侧故障（配额耗尽、key 失效、服务中断）。
       logger.error('Akismet check was inconclusive; comment left visible', {
         status: result.status,
-        raw: result.raw.slice(0, 300)
+        raw: result.raw.slice(0, 300),
       });
       return;
     }
 
     logger.warn('Akismet marked the comment as spam; deleting', {
       comment: comment.html_url || 'unknown',
-      status: result.status
+      status: result.status,
     });
     await deleteDiscussionComment(comment.node_id);
   } catch (error) {
     // 请求彻底失败（重试耗尽）：无法判定，放行 + 告警（不误删）。
     logger.error('Akismet check failed after retries; comment left visible', {
       error: formatError(error),
-      retryable: error instanceof RetryableHttpError
+      retryable: error instanceof RetryableHttpError,
     });
   } finally {
     logger.endGroup();

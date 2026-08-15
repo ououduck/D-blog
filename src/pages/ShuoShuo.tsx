@@ -17,7 +17,8 @@ import { stripMarkdown } from '@/utils/markdownText';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { staggerContainer } from '@/utils/motion';
 
-const SHUOSHUO_DESCRIPTION = 'D-blog 说说：类似朋友圈的短动态分享，用一句话、一张图记录当下的想法与生活片段，Markdown 书写，随性更新。';
+const SHUOSHUO_DESCRIPTION =
+  'D-blog 说说：类似朋友圈的短动态分享，用一句话、一张图记录当下的想法与生活片段，Markdown 书写，随性更新。';
 
 /** URL 定位参数名：/shuoshuo?id=<说说 id> 打开页面后自动滚动定位到该条说说（旧版分享链接兼容）。 */
 const LOCATE_PARAM = 'id';
@@ -51,7 +52,6 @@ export const ShuoShuo = () => {
     let cancelled = false;
     let attempt = 0;
     let timeoutId: number | undefined;
-    let rafId: number | undefined;
 
     const scrollToTarget = () => {
       if (cancelled) return;
@@ -76,7 +76,7 @@ export const ShuoShuo = () => {
       }
     };
 
-    rafId = window.requestAnimationFrame(scrollToTarget);
+    const rafId = window.requestAnimationFrame(scrollToTarget);
 
     return () => {
       cancelled = true;
@@ -125,8 +125,8 @@ export const ShuoShuo = () => {
             isPartOf: {
               '@type': 'WebSite',
               name: siteConfig.title,
-              url: absoluteSiteUrl('/', siteConfig.url)
-            }
+              url: absoluteSiteUrl('/', siteConfig.url),
+            },
           },
           // ItemList：枚举每条说说的独立页 URL，帮助爬虫从集合页发现所有子页面。
           {
@@ -138,10 +138,14 @@ export const ShuoShuo = () => {
             itemListElement: allItems.map((item, index) => ({
               '@type': 'ListItem',
               position: index + 1,
-              name: stripMarkdown(item.content).split('\n').map((line) => line.trim()).find((line) => line.length > 0) || item.date,
-              url: absoluteSiteUrl(`/shuoshuo/${item.id}`, siteConfig.url)
-            }))
-          }
+              name:
+                stripMarkdown(item.content)
+                  .split('\n')
+                  .map((line) => line.trim())
+                  .find((line) => line.length > 0) || item.date,
+              url: absoluteSiteUrl(`/shuoshuo/${item.id}`, siteConfig.url),
+            })),
+          },
         ]}
       />
 
@@ -150,12 +154,16 @@ export const ShuoShuo = () => {
           <MessageCircle size={14} aria-hidden="true" />
           ShuoShuo · Moments
         </p>
-        <h1 className="font-serif text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">说说</h1>
+        <h1 className="font-serif text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
+          说说
+        </h1>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400 md:text-base">
           这里是一块类似PLDDUCK朋友圈的短动态小天地
         </p>
         {allItems.length > 0 && (
-          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">共 {allItems.length} 条 · 内容通过 PagesCMS 发布</p>
+          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+            共 {allItems.length} 条 · 内容通过 PagesCMS 发布
+          </p>
         )}
       </header>
 

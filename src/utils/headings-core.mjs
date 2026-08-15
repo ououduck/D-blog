@@ -4,7 +4,7 @@ const INLINE_MARKDOWN_PATTERNS = [
   [/`([^`]*)`/g, '$1'],
   [/<[^>]+>/g, ''],
   [/(\*\*|__|\*|_|~~)/g, ''],
-  [/\\([\\`*_[\]{}()#+\-.!>])/g, '$1']
+  [/\\([\\`*_[\]{}()#+\-.!>])/g, '$1'],
 ];
 const MARKDOWN_HEADING_PATTERN = /^(?: {0,3}(#{1,3})(?:[ \t]+(.*)|[ \t]*)| {0,3}([^\r\n]+)\r?\n {0,3}(=+|-+)[ \t]*)$/gm;
 
@@ -88,26 +88,27 @@ const HTML_ENTITY_REPLACEMENTS = {
   ensp: ' ',
   emsp: ' ',
   thinsp: ' ',
-  shy: ''
+  shy: '',
 };
 
-const isValidCodePoint = (value) => Number.isInteger(value) && value >= 0 && value <= 0x10FFFF;
+const isValidCodePoint = (value) => Number.isInteger(value) && value >= 0 && value <= 0x10ffff;
 
-const decodeHtmlEntities = (text) => text.replace(/&(#x[\da-f]+|#\d+|[a-z][a-z\d]+);/gi, (entity, value) => {
-  const normalized = value.toLowerCase();
-  if (normalized.startsWith('#x')) {
-    const codePoint = Number.parseInt(normalized.slice(2), 16);
-    return isValidCodePoint(codePoint) ? String.fromCodePoint(codePoint) : entity;
-  }
-  if (normalized.startsWith('#')) {
-    const codePoint = Number.parseInt(normalized.slice(1), 10);
-    return isValidCodePoint(codePoint) ? String.fromCodePoint(codePoint) : entity;
-  }
-  // 先按原始大小写查表（&Dagger; → ‡、&Prime; → ″、&Omega; → Ω 等大写键），
-  // 再退回小写（HTML 实体名大小写不敏感，但表中同时存在 dagger/Dagger 时
-  // 直接小写会把 &Dagger; 错解成 †）。
-  return HTML_ENTITY_REPLACEMENTS[value] ?? HTML_ENTITY_REPLACEMENTS[normalized] ?? entity;
-});
+const decodeHtmlEntities = (text) =>
+  text.replace(/&(#x[\da-f]+|#\d+|[a-z][a-z\d]+);/gi, (entity, value) => {
+    const normalized = value.toLowerCase();
+    if (normalized.startsWith('#x')) {
+      const codePoint = Number.parseInt(normalized.slice(2), 16);
+      return isValidCodePoint(codePoint) ? String.fromCodePoint(codePoint) : entity;
+    }
+    if (normalized.startsWith('#')) {
+      const codePoint = Number.parseInt(normalized.slice(1), 10);
+      return isValidCodePoint(codePoint) ? String.fromCodePoint(codePoint) : entity;
+    }
+    // 先按原始大小写查表（&Dagger; → ‡、&Prime; → ″、&Omega; → Ω 等大写键），
+    // 再退回小写（HTML 实体名大小写不敏感，但表中同时存在 dagger/Dagger 时
+    // 直接小写会把 &Dagger; 错解成 †）。
+    return HTML_ENTITY_REPLACEMENTS[value] ?? HTML_ENTITY_REPLACEMENTS[normalized] ?? entity;
+  });
 
 /** Mask fenced and indented code while preserving line breaks for diagnostics and heading parsing. */
 export const maskFencedCodeBlocks = (markdown) => {
@@ -118,47 +119,57 @@ export const maskFencedCodeBlocks = (markdown) => {
   const lines = withoutComments.split(/(?<=\n)/);
   let fence = null;
   let indentedCode = false;
-  return lines.map((line) => {
-    const opening = line.match(/^ {0,3}(`{3,}|~{3,})(?:[^`~\r\n]*)?(?:\r?\n|$)/);
-    if (fence) {
-      const closing = line.match(/^ {0,3}([`~]+)[ \t]*(?:\r?\n|$)/);
-      if (closing && closing[1][0] === fence.character && closing[1].length >= fence.length) {
-        fence = null;
+  return lines
+    .map((line) => {
+      const opening = line.match(/^ {0,3}(`{3,}|~{3,})(?:[^`~\r\n]*)?(?:\r?\n|$)/);
+      if (fence) {
+        const closing = line.match(/^ {0,3}([`~]+)[ \t]*(?:\r?\n|$)/);
+        if (closing && closing[1][0] === fence.character && closing[1].length >= fence.length) {
+          fence = null;
+        }
+        return line.replace(/[^\r\n]/g, ' ');
       }
-      return line.replace(/[^\r\n]/g, ' ');
-    }
-    if (opening) {
-      fence = { character: opening[1][0], length: opening[1].length };
-      return line.replace(/[^\r\n]/g, ' ');
-    }
+      if (opening) {
+        fence = { character: opening[1][0], length: opening[1].length };
+        return line.replace(/[^\r\n]/g, ' ');
+      }
 
-    const isIndented = /^(?: {4}|\t)/.test(line);
-    if (isIndented) {
-      indentedCode = true;
-      return line.replace(/[^\r\n]/g, ' ');
-    }
-    if (indentedCode && (/^\s*$/.test(line) || /^(?: {4}|\t)/.test(line))) {
-      return line.replace(/[^\r\n]/g, ' ');
-    }
-    indentedCode = false;
-    return line;
-  }).join('');
+      const isIndented = /^(?: {4}|\t)/.test(line);
+      if (isIndented) {
+        indentedCode = true;
+        return line.replace(/[^\r\n]/g, ' ');
+      }
+      if (indentedCode && (/^\s*$/.test(line) || /^(?: {4}|\t)/.test(line))) {
+        return line.replace(/[^\r\n]/g, ' ');
+      }
+      indentedCode = false;
+      return line;
+    })
+    .join('');
 };
 
-export const stripInlineMarkdown = (text) => decodeHtmlEntities(INLINE_MARKDOWN_PATTERNS.reduce(
-  (result, [pattern, replacement]) => result.replace(pattern, replacement),
+export const stripInlineMarkdown = (text) =>
+  decodeHtmlEntities(
+    INLINE_MARKDOWN_PATTERNS.reduce((result, [pattern, replacement]) => result.replace(pattern, replacement), text),
+  )
+    .replace(/\s+#+\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+export const slugifyHeading = (text) =>
+  stripInlineMarkdown(text)
+    .toLowerCase()
+    .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const stripEmojiFromHeadingText = (text) =>
   text
-)).replace(/\s+#+\s*$/, '').replace(/\s+/g, ' ').trim();
-
-export const slugifyHeading = (text) => stripInlineMarkdown(text)
-  .toLowerCase()
-  .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
-  .replace(/^-+|-+$/g, '');
-
-const stripEmojiFromHeadingText = (text) => text
-  .replace(/[\p{Extended_Pictographic}\p{Emoji_Modifier}\uFE0F\u200D\u20E3]/gu, '')
-  .replace(/\s{2,}/g, ' ')
-  .trim();
+    // 拆分字符类：Emoji 修饰符/变体选择器/ZWJ/Keycap 与 Pictographic 类组合会被
+    // no-misleading-character-class 判定为误导性序列，分开替换语义等价且规则友好。
+    .replace(/[\p{Extended_Pictographic}\p{Emoji_Modifier}]/gu, '')
+    .replace(/\uFE0F|\u200D|\u20E3/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 
 const createUniqueHeadingId = (baseId, seenIds) => {
   const normalizedBaseId = baseId || 'section';
@@ -174,7 +185,7 @@ export const extractMarkdownHeadings = (content) => {
   for (const match of contentWithoutCodeBlocks.matchAll(MARKDOWN_HEADING_PATTERN)) {
     const isSetext = Boolean(match[3]);
     const level = isSetext ? (match[4][0] === '=' ? 1 : 2) : (match[1]?.length ?? 1);
-    const rawText = stripInlineMarkdown(isSetext ? match[3] : match[2] ?? '');
+    const rawText = stripInlineMarkdown(isSetext ? match[3] : (match[2] ?? ''));
     const text = stripEmojiFromHeadingText(rawText) || rawText;
     const id = createUniqueHeadingId(slugifyHeading(rawText) || slugifyHeading(text), seenIds);
     headings.push({ id, level, rawText, text });

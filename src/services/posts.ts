@@ -3,7 +3,7 @@ import { getOfflinePost } from './offlinePosts';
 
 const generatedPostModules = import.meta.glob<PostMetadata[]>('../../generated/posts.json', {
   eager: true,
-  import: 'default'
+  import: 'default',
 });
 const initialPosts = Object.values(generatedPostModules)[0] ?? [];
 let postsSearchIndexCache: SearchIndexEntry[] | null = null;
@@ -24,12 +24,7 @@ const stripFrontmatter = (rawContent: string) => {
   return normalized.replace(/^---[\s\S]*?---[\r\n]*/, '');
 };
 
-const normalizeSearchText = (value: string) =>
-  value
-    .normalize('NFKC')
-    .toLocaleLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ');
+const normalizeSearchText = (value: string) => value.normalize('NFKC').toLocaleLowerCase().trim().replace(/\s+/g, ' ');
 
 const splitSearchTerms = (value: string) => normalizeSearchText(value).split(' ').filter(Boolean);
 
@@ -61,7 +56,7 @@ const buildSearchIndex = (posts: Array<PostMetadata & { searchText?: string }>):
     excerpt: normalizeSearchText(post.excerpt),
     category: normalizeSearchText(post.category),
     content: normalizeSearchText(searchText ?? ''),
-    tags: post.tags.map((tag) => normalizeSearchText(String(tag)))
+    tags: post.tags.map((tag) => normalizeSearchText(String(tag))),
   }));
 
 const loadPostsSearchIndex = async (): Promise<SearchIndexEntry[]> => {
@@ -74,7 +69,7 @@ const loadPostsSearchIndex = async (): Promise<SearchIndexEntry[]> => {
   return postsSearchIndexCache;
 };
 
-const getFieldMatchScore = (value: string, terms: string[], fullQuery: string, weight: number) => {
+export const getFieldMatchScore = (value: string, terms: string[], fullQuery: string, weight: number) => {
   if (!value) {
     return 0;
   }
@@ -127,7 +122,7 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
         const rawContent = (await loader()) as string;
         return {
           ...meta,
-          content: stripFrontmatter(rawContent)
+          content: stripFrontmatter(rawContent),
         };
       } catch (error) {
         console.warn('Failed to load bundled Markdown, trying offline copy.', error);
@@ -175,7 +170,7 @@ const SEARCH_FIELD_LABELS: Record<PostSearchField, string> = {
   category: '分类',
   excerpt: '摘要',
   content: '正文',
-  tags: '标签'
+  tags: '标签',
 };
 
 const setSearchCache = (key: string, value: PostSearchResult[]) => {
@@ -193,7 +188,12 @@ const setSearchCache = (key: string, value: PostSearchResult[]) => {
   }
 };
 
-const createSearchSnippet = (rawValue: string, normalizedValue: string, terms: string[], field: PostSearchField): PostSearchMatch | undefined => {
+const createSearchSnippet = (
+  rawValue: string,
+  normalizedValue: string,
+  terms: string[],
+  field: PostSearchField,
+): PostSearchMatch | undefined => {
   if (!rawValue) {
     return undefined;
   }
@@ -216,7 +216,7 @@ const createSearchSnippet = (rawValue: string, normalizedValue: string, terms: s
     field,
     label: SEARCH_FIELD_LABELS[field],
     snippet: `${prefix}${rawValue.slice(start, end).replace(/\s+/g, ' ').trim()}${suffix}`,
-    terms: matchedTerms
+    terms: matchedTerms,
   };
 };
 
@@ -227,7 +227,7 @@ const getSearchableFields = (entry: SearchIndexEntry, scope: PostSearchScope) =>
     case 'content':
       return [
         { key: 'excerpt', value: entry.excerpt, weight: 2 },
-        { key: 'content', value: entry.content, weight: 1 }
+        { key: 'content', value: entry.content, weight: 1 },
       ] as const;
     case 'title':
       return [{ key: 'title', value: entry.title, weight: 8 }] as const;
@@ -237,7 +237,7 @@ const getSearchableFields = (entry: SearchIndexEntry, scope: PostSearchScope) =>
         { key: 'title', value: entry.title, weight: 8 },
         { key: 'category', value: entry.category, weight: 4 },
         { key: 'excerpt', value: entry.excerpt, weight: 2 },
-        { key: 'content', value: entry.content, weight: 1 }
+        { key: 'content', value: entry.content, weight: 1 },
       ] as const;
   }
 };
@@ -246,14 +246,14 @@ const getBestSearchMatch = (
   entry: SearchIndexEntry,
   terms: string[],
   fields: ReadonlyArray<{ key: PostSearchField; value: string; weight: number }>,
-  includeTags: boolean
+  includeTags: boolean,
 ): PostSearchMatch | undefined => {
   const rawValues: Record<PostSearchField, string> = {
     title: entry.rawTitle,
     category: entry.rawCategory,
     excerpt: entry.rawExcerpt,
     content: entry.rawContent,
-    tags: entry.rawTags.join('、')
+    tags: entry.rawTags.join('、'),
   };
 
   const candidates = includeTags
@@ -274,7 +274,7 @@ const getBestSearchMatch = (
 
 export const searchPosts = async (
   query: string,
-  options: { scope?: PostSearchScope } = {}
+  options: { scope?: PostSearchScope } = {},
 ): Promise<PostSearchResult[]> => {
   const normalizedQuery = normalizeSearchText(query);
   const scope = options.scope ?? 'all';
@@ -337,7 +337,7 @@ export const searchPosts = async (
         ...entry.post,
         searchMatch: getBestSearchMatch(entry, searchTerms, searchableFields, scope === 'all'),
         score,
-        dateTimestamp: entry.dateTimestamp
+        dateTimestamp: entry.dateTimestamp,
       });
     }
   });

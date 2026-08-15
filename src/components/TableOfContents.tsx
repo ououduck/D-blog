@@ -15,27 +15,29 @@ import {
   findTocNodeById,
   getAncestorIds,
   getRootBranchId,
-  type TocNode
+  type TocNode,
 } from '@/utils/toc';
 
 const formatIndex = (value: number) => String(value).padStart(2, '0');
 const MOBILE_TOC_TRIGGER_STYLE = {
-  bottom: 'max(calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + env(safe-area-inset-bottom, 0px) + 8.5rem), calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 8.5rem))'
+  bottom:
+    'max(calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + env(safe-area-inset-bottom, 0px) + 8.5rem), calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 8.5rem))',
 } as const;
 const DESKTOP_TOC_TRIGGER_STYLE = {
-  bottom: 'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 9rem)'
+  bottom: 'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 9rem)',
 } as const;
 const DESKTOP_TOC_POPOVER_STYLE = {
   right: '1.5rem',
-  bottom: 'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 12.5rem)'
+  bottom: 'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 12.5rem)',
 } as const;
 const MOBILE_TOC_SHEET_STYLE = {
   left: 'env(safe-area-inset-left, 0px)',
   right: 'env(safe-area-inset-right, 0px)',
-  bottom: 'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + env(safe-area-inset-bottom, 0px))'
+  bottom:
+    'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + env(safe-area-inset-bottom, 0px))',
 } as const;
 const MOBILE_SCROLL_STYLE = {
-  WebkitOverflowScrolling: 'touch' as const
+  WebkitOverflowScrolling: 'touch' as const,
 };
 const HEADING_SCROLL_OFFSET = 104;
 
@@ -45,19 +47,11 @@ const getHeadingById = (id: string) => document.getElementById(id) as HTMLElemen
 
 const getHeadingScrollTop = (element: HTMLElement) => Math.max(0, getHeadingTop(element) - HEADING_SCROLL_OFFSET);
 
-
-
-
-
 export const TableOfContents: React.FC<{
   headings: MarkdownHeading[];
   mobileShowTrigger?: boolean;
   desktopShowTrigger?: boolean;
-}> = ({
-  headings,
-  mobileShowTrigger = true,
-  desktopShowTrigger = true
-}) => {
+}> = ({ headings, mobileShowTrigger = true, desktopShowTrigger = true }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(headings[0]?.id ?? null);
@@ -83,7 +77,7 @@ export const TableOfContents: React.FC<{
     isOpen: isMobileDialogOpen,
     onClose: closeTableOfContents,
     initialFocusRef: mobileSearchInputRef,
-    containerRef: mobileSheetRef
+    containerRef: mobileSheetRef,
   });
 
   useEffect(() => {
@@ -207,18 +201,12 @@ export const TableOfContents: React.FC<{
     };
   }, [headings]);
 
-  const activeAncestorIds = useMemo(
-    () => getAncestorIds(activeHeadingId, parentMap),
-    [activeHeadingId, parentMap]
-  );
+  const activeAncestorIds = useMemo(() => getAncestorIds(activeHeadingId, parentMap), [activeHeadingId, parentMap]);
   const activeBranchIds = useMemo(
     () => new Set(activeHeadingId ? [activeHeadingId, ...activeAncestorIds] : activeAncestorIds),
-    [activeAncestorIds, activeHeadingId]
+    [activeAncestorIds, activeHeadingId],
   );
-  const activeRootBranchId = useMemo(
-    () => getRootBranchId(activeHeadingId, parentMap),
-    [activeHeadingId, parentMap]
-  );
+  const activeRootBranchId = useMemo(() => getRootBranchId(activeHeadingId, parentMap), [activeHeadingId, parentMap]);
 
   useEffect(() => {
     if (!activeHeadingId) {
@@ -250,7 +238,14 @@ export const TableOfContents: React.FC<{
 
       return nextState;
     });
-  }, [activeAncestorIds, activeHeadingId, activeRootBranchId, collapseInactiveRootBranches, headingTree, isMobileViewport]);
+  }, [
+    activeAncestorIds,
+    activeHeadingId,
+    activeRootBranchId,
+    collapseInactiveRootBranches,
+    headingTree,
+    isMobileViewport,
+  ]);
 
   useEffect(() => {
     const navElement = navRef.current;
@@ -267,7 +262,7 @@ export const TableOfContents: React.FC<{
 
     navElement.scrollTo({
       top: Math.max(0, targetScrollTop),
-      behavior: shouldReduceMotion ? 'auto' : 'smooth'
+      behavior: shouldReduceMotion ? 'auto' : 'smooth',
     });
   }, [activeHeadingId, expandedMap, isOpen, shouldReduceMotion]);
 
@@ -302,7 +297,7 @@ export const TableOfContents: React.FC<{
 
     window.scrollTo({
       top: getHeadingScrollTop(element),
-      behavior: shouldReduceMotion ? 'auto' : 'smooth'
+      behavior: shouldReduceMotion ? 'auto' : 'smooth',
     });
 
     if (typeof window !== 'undefined') {
@@ -317,20 +312,21 @@ export const TableOfContents: React.FC<{
   const toggleNode = (id: string) => {
     setExpandedMap((current) => ({
       ...current,
-      [id]: !(current[id] ?? false)
+      [id]: !(current[id] ?? false),
     }));
   };
 
-  if (headings.length === 0) {
-    return null;
-  }
-
   const renderNodes = (nodes: TocNode[], depth = 0) => {
     return (
-      <ol className={depth === 0 ? 'space-y-1.5' : 'mt-1.5 space-y-1.5 border-l border-zinc-200/80 pl-3.5 dark:border-zinc-800'}>
+      <ol
+        className={
+          depth === 0 ? 'space-y-1.5' : 'mt-1.5 space-y-1.5 border-l border-zinc-200/80 pl-3.5 dark:border-zinc-800'
+        }
+      >
         {nodes.map((item) => {
           const hasChildren = item.children.length > 0;
-          const isExpanded = shouldForceExpandFilteredTree || (expandedMap[item.id] ?? false) || activeAncestorIds.includes(item.id);
+          const isExpanded =
+            shouldForceExpandFilteredTree || (expandedMap[item.id] ?? false) || activeAncestorIds.includes(item.id);
           const isSubLevel = item.level > 1;
           const isActive = activeHeadingId === item.id;
           const isInActiveBranch = activeBranchIds.has(item.id);
@@ -425,7 +421,6 @@ export const TableOfContents: React.FC<{
     );
   };
 
-
   const handleSheetTouchStart = (event: React.TouchEvent<HTMLElement>) => {
     if (navRef.current?.contains(event.target as Node)) {
       touchStartYRef.current = null;
@@ -470,7 +465,7 @@ export const TableOfContents: React.FC<{
         if (matchesKeyword || filteredChildren.length > 0) {
           result.push({
             ...node,
-            children: filteredChildren
+            children: filteredChildren,
           });
         }
 
@@ -482,12 +477,14 @@ export const TableOfContents: React.FC<{
   }, [headingTree, searchQuery]);
   const rootHeadingsCount = headingTree.length;
   const visibleHeadingsCount = filteredHeadingTree.reduce((count, node) => {
-    const countNodes = (items: TocNode[]): number => items.reduce((total, current) => total + 1 + countNodes(current.children), 0);
+    const countNodes = (items: TocNode[]): number =>
+      items.reduce((total, current) => total + 1 + countNodes(current.children), 0);
     return count + countNodes([node]);
   }, 0);
   const shouldForceExpandFilteredTree = searchQuery.trim().length > 0;
   const currentHeadingIndex = headings.findIndex((h) => h.id === activeHeadingId);
-  const readingProgressDisplay = headings.length > 0 ? Math.round(((currentHeadingIndex + 1) / headings.length) * 100) : 0;
+  const readingProgressDisplay =
+    headings.length > 0 ? Math.round(((currentHeadingIndex + 1) / headings.length) * 100) : 0;
 
   const panelContent = (
     <div className="relative flex h-full flex-col overflow-hidden rounded-overlay border border-zinc-300 bg-paper p-4 shadow-none dark:border-zinc-700 dark:bg-void sm:p-[1.125rem]">
@@ -508,7 +505,12 @@ export const TableOfContents: React.FC<{
               <List size={17} />
             </span>
             <div className="min-w-0">
-              <h3 id={isMobileDialogOpen ? 'mobile-toc-title' : undefined} className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">文章目录</h3>
+              <h3
+                id={isMobileDialogOpen ? 'mobile-toc-title' : undefined}
+                className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100"
+              >
+                文章目录
+              </h3>
               <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">
                 {rootHeadingsCount} 个主章节 · 共 {headings.length} 节
               </p>
@@ -562,7 +564,9 @@ export const TableOfContents: React.FC<{
         style={MOBILE_SCROLL_STYLE}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-1 no-scrollbar"
       >
-        {filteredHeadingTree.length > 0 ? renderNodes(filteredHeadingTree) : (
+        {filteredHeadingTree.length > 0 ? (
+          renderNodes(filteredHeadingTree)
+        ) : (
           <div className="flex h-full min-h-[9rem] items-center justify-center border border-dashed border-zinc-200 bg-zinc-50 px-4 text-center text-sm text-zinc-400 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-500">
             没有找到匹配的目录标题
           </div>
@@ -614,10 +618,12 @@ export const TableOfContents: React.FC<{
                   initial={shouldReduceMotion ? false : { opacity: 0, y: 28 }}
                   animate={{ opacity: 1, y: shouldReduceMotion ? 0 : dragOffsetY }}
                   exit={shouldReduceMotion ? undefined : { opacity: 0, y: 28 }}
-                  transition={shouldReduceMotion || dragOffsetY > 0 ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }}
+                  transition={
+                    shouldReduceMotion || dragOffsetY > 0 ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }
+                  }
                   style={{
                     ...MOBILE_TOC_SHEET_STYLE,
-                    touchAction: 'pan-y'
+                    touchAction: 'pan-y',
                   }}
                   className="fixed z-nav-panel h-[min(72vh,38rem)] supports-[height:100dvh]:h-[min(72dvh,38rem)] lg:hidden"
                 >
@@ -626,7 +632,7 @@ export const TableOfContents: React.FC<{
               </>
             ) : null}
           </AnimatePresence>,
-          document.body
+          document.body,
         )
       : null;
 
@@ -647,7 +653,7 @@ export const TableOfContents: React.FC<{
               {headings.length}
             </span>
           </button>,
-          document.body
+          document.body,
         )
       : null;
 
@@ -669,7 +675,7 @@ export const TableOfContents: React.FC<{
               </motion.aside>
             ) : null}
           </AnimatePresence>,
-          document.body
+          document.body,
         )
       : null;
 
@@ -691,9 +697,13 @@ export const TableOfContents: React.FC<{
               {headings.length}
             </span>
           </button>,
-          document.body
+          document.body,
         )
       : null;
+
+  if (headings.length === 0) {
+    return null;
+  }
 
   return (
     <>
@@ -705,4 +715,3 @@ export const TableOfContents: React.FC<{
     </>
   );
 };
-

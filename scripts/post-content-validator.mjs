@@ -15,7 +15,7 @@ const DEFAULT_STATIC_ROUTES = new Set([
   '/about',
   '/cover',
   '/watermark',
-  '/sponsor'
+  '/sponsor',
 ]);
 
 const maskFencedCode = maskFencedCodeBlocks;
@@ -98,7 +98,7 @@ const parseMarkdownTokens = (markdown) => {
       rawTarget: originalParsed.rawTarget,
       line: markdown.slice(0, index).split('\n').length,
       start: index,
-      end: destinationEnd + 1
+      end: destinationEnd + 1,
     };
 
     if (isImage) {
@@ -106,7 +106,6 @@ const parseMarkdownTokens = (markdown) => {
     } else {
       links.push(token);
     }
-
   }
 
   return { images, links };
@@ -201,7 +200,14 @@ const lineError = (file, line, reason) => `Content validation failed in ${file}:
 
 const validateId = (id) => {
   if (typeof id !== 'string' || !id.trim()) return 'id must be a non-empty string';
-  if (id !== id.trim() || /\s|[\\/?#%"'<>]/.test(id) || id === '.' || id === '..' || id.includes('/./') || id.includes('/../')) {
+  if (
+    id !== id.trim() ||
+    /\s|[\\/?#%"'<>]/.test(id) ||
+    id === '.' ||
+    id === '..' ||
+    id.includes('/./') ||
+    id.includes('/../')
+  ) {
     return `id "${id}" contains characters that are unsafe in a post URL`;
   }
   return undefined;
@@ -241,10 +247,10 @@ export const validatePostContent = (post, context = {}) => {
     imageRoot = path.resolve('posts-img'),
     publishedPosts = new Map(),
     staticRoutes = DEFAULT_STATIC_ROUTES,
-    allPosts = publishedPosts,
+
     lineOffset = 0,
     skipFrontMatter = false,
-    getImageDimensions
+    getImageDimensions,
   } = context;
   const errors = [];
   const data = post.data || post;
@@ -287,20 +293,45 @@ export const validatePostContent = (post, context = {}) => {
   const { images, links } = parseMarkdownTokens(content);
   images.forEach((image) => {
     if (typeof image.alt !== 'string' || !image.alt.trim()) {
-      errors.push(lineError(filename, image.line + lineOffset, `image alt text must be non-empty (target: ${image.rawTarget || image.target || '<empty>'})`));
+      errors.push(
+        lineError(
+          filename,
+          image.line + lineOffset,
+          `image alt text must be non-empty (target: ${image.rawTarget || image.target || '<empty>'})`,
+        ),
+      );
     }
     const target = image.target;
     if (target.startsWith('//')) {
-      errors.push(lineError(filename, image.line + lineOffset, `image target "${image.rawTarget}": protocol-relative URLs are not allowed`));
+      errors.push(
+        lineError(
+          filename,
+          image.line + lineOffset,
+          `image target "${image.rawTarget}": protocol-relative URLs are not allowed`,
+        ),
+      );
     } else if (URI_SCHEME_PATTERN.test(target)) {
       const reason = validateExternalUrl(target, { allowMailto: false });
-      if (reason) errors.push(lineError(filename, image.line + lineOffset, `image target "${image.rawTarget}": ${reason}`));
+      if (reason)
+        errors.push(lineError(filename, image.line + lineOffset, `image target "${image.rawTarget}": ${reason}`));
     } else {
       const resolved = resolveLocalImageTarget(target, { imageRoot });
       if (!resolved?.exists) {
-        errors.push(lineError(filename, image.line + lineOffset, `local image "${image.rawTarget}" does not resolve to a file inside posts-img`));
+        errors.push(
+          lineError(
+            filename,
+            image.line + lineOffset,
+            `local image "${image.rawTarget}" does not resolve to a file inside posts-img`,
+          ),
+        );
       } else if (getImageDimensions && !getImageDimensions(resolved.url, resolved.filePath)) {
-        errors.push(lineError(filename, image.line + lineOffset, `local image "${image.rawTarget}" has unreadable or invalid dimensions`));
+        errors.push(
+          lineError(
+            filename,
+            image.line + lineOffset,
+            `local image "${image.rawTarget}" has unreadable or invalid dimensions`,
+          ),
+        );
       }
     }
   });
@@ -312,12 +343,19 @@ export const validatePostContent = (post, context = {}) => {
       return;
     }
     if (target.startsWith('//')) {
-      errors.push(lineError(filename, link.line + lineOffset, `link target "${link.rawTarget}": protocol-relative URLs are not allowed`));
+      errors.push(
+        lineError(
+          filename,
+          link.line + lineOffset,
+          `link target "${link.rawTarget}": protocol-relative URLs are not allowed`,
+        ),
+      );
       return;
     }
     if (URI_SCHEME_PATTERN.test(target)) {
       const reason = validateExternalUrl(target);
-      if (reason) errors.push(lineError(filename, link.line + lineOffset, `link target "${link.rawTarget}": ${reason}`));
+      if (reason)
+        errors.push(lineError(filename, link.line + lineOffset, `link target "${link.rawTarget}": ${reason}`));
       return;
     }
 
@@ -329,7 +367,14 @@ export const validatePostContent = (post, context = {}) => {
     const pathname = route.pathname || '/';
     if (pathname.startsWith('/posts-img/')) {
       const resolved = resolveLocalImageTarget(pathname, { imageRoot });
-      if (!resolved?.exists) errors.push(lineError(filename, link.line + lineOffset, `local link "${link.rawTarget}" does not resolve to a file inside posts-img`));
+      if (!resolved?.exists)
+        errors.push(
+          lineError(
+            filename,
+            link.line + lineOffset,
+            `local link "${link.rawTarget}" does not resolve to a file inside posts-img`,
+          ),
+        );
       return;
     }
 
@@ -339,23 +384,39 @@ export const validatePostContent = (post, context = {}) => {
       try {
         targetId = decodeURIComponent(pathname.slice('/post/'.length));
       } catch {
-        errors.push(lineError(filename, link.line + lineOffset, `link "${link.rawTarget}" contains an invalid encoded article ID`));
+        errors.push(
+          lineError(
+            filename,
+            link.line + lineOffset,
+            `link "${link.rawTarget}" contains an invalid encoded article ID`,
+          ),
+        );
         return;
       }
       targetPost = publishedPosts.get?.(targetId);
       if (!targetPost) {
-        errors.push(lineError(filename, link.line + lineOffset, `link "${link.rawTarget}" targets a missing or draft article`));
+        errors.push(
+          lineError(filename, link.line + lineOffset, `link "${link.rawTarget}" targets a missing or draft article`),
+        );
         return;
       }
     } else if (!staticRoutes.has(pathname) && !/^\/shuoshuo\/[^/]+$/.test(pathname)) {
-      errors.push(lineError(filename, link.line + lineOffset, `link "${link.rawTarget}" targets an unknown site route`));
+      errors.push(
+        lineError(filename, link.line + lineOffset, `link "${link.rawTarget}" targets an unknown site route`),
+      );
       return;
     }
 
     if (route.anchor && targetPost) {
       const headings = targetPost.headingIds || [];
       if (!headings.includes(route.anchor)) {
-        errors.push(lineError(filename, link.line + lineOffset, `link "${link.rawTarget}" targets a missing heading anchor "#${route.anchor}"`));
+        errors.push(
+          lineError(
+            filename,
+            link.line + lineOffset,
+            `link "${link.rawTarget}" targets a missing heading anchor "#${route.anchor}"`,
+          ),
+        );
       }
     }
   });

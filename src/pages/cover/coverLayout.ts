@@ -46,7 +46,7 @@ export function clamp(value: number, min: number, max: number): number {
 
 export function getCanvasSize(ratio: Pick<CoverRatio, 'w' | 'h'>, width = BASE_CANVAS_WIDTH): CanvasSize {
   if (ratio.w <= 0 || ratio.h <= 0 || width <= 0) throw new Error('画布比例和宽度必须大于 0');
-  return { width: Math.round(width), height: Math.round(width * ratio.h / ratio.w) };
+  return { width: Math.round(width), height: Math.round((width * ratio.h) / ratio.w) };
 }
 
 export function getEffectiveLayout(layout: LayoutMode, showIcon: boolean, hasIcon = true): LayoutMode {
@@ -69,8 +69,16 @@ export function getSubtitleFontWeight(weight: number): number {
   return normalizeFontWeight(weight - 200);
 }
 
+/** Windows/跨平台文件名非法字符（含 C0 控制字符）→ 短横线。 */
+// eslint-disable-next-line no-control-regex -- 文件名净化：有意剔除 C0 控制字符
+const INVALID_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001f]/g;
+
 export function getExportFilename(name: string, format: 'png' | 'jpeg', scale = 1): string {
-  const safeName = name.trim().replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-').replace(/[. ]+$/g, '') || 'cover';
+  const safeName =
+    name
+      .trim()
+      .replace(INVALID_FILENAME_CHARS, '-')
+      .replace(/[. ]+$/g, '') || 'cover';
   return `${safeName}${scale > 1 ? `@${scale}x` : ''}.${format === 'jpeg' ? 'jpg' : 'png'}`;
 }
 
@@ -116,7 +124,7 @@ function wrapText(text: string, maxWidth: number, fontSize: number, measure: Tex
     }
     const paragraphLines = [''];
     for (const token of tokenizeText(paragraph)) appendToken(paragraphLines, token, maxWidth, fontSize, measure);
-    lines.push(...paragraphLines.map(line => line.trim()).filter(Boolean));
+    lines.push(...paragraphLines.map((line) => line.trim()).filter(Boolean));
   }
   return lines.filter(Boolean);
 }
@@ -156,13 +164,13 @@ export function calculateLayoutMetrics(options: LayoutMetricsOptions): LayoutMet
   const mainLines = options.maxTextLines ?? (effectiveLayout === 'text-only' ? 3 : 2);
   const mainLineHeight = options.fontSize * 1.2;
   const subLineHeight = options.subFontSize * 1.2;
-  const contentHeight = (hasText ? mainLineHeight * mainLines : 0)
-    + (options.subText.trim() ? subLineHeight * 2 : 0)
-    + (options.showIcon && options.hasIcon && effectiveLayout !== 'text-only' ? options.iconSize : 0)
-    + options.subSpacing * 2;
-  const contentWidth = effectiveLayout === 'icon-split'
-    ? options.iconSize + options.spacing * 2 + availableWidth * 0.6
-    : availableWidth;
+  const contentHeight =
+    (hasText ? mainLineHeight * mainLines : 0) +
+    (options.subText.trim() ? subLineHeight * 2 : 0) +
+    (options.showIcon && options.hasIcon && effectiveLayout !== 'text-only' ? options.iconSize : 0) +
+    options.subSpacing * 2;
+  const contentWidth =
+    effectiveLayout === 'icon-split' ? options.iconSize + options.spacing * 2 + availableWidth * 0.6 : availableWidth;
   const scale = Math.min(1, availableWidth / Math.max(1, contentWidth), availableHeight / Math.max(1, contentHeight));
   const safeScale = Math.max(0.35, scale);
   const scaled = safeScale < 0.999;

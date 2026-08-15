@@ -150,9 +150,13 @@ export const jitter = (upperBound) => Math.floor(Math.random() * upperBound);
  * @param {number} maxDelayMs 退避上限。
  * @returns {number}
  */
-export const computeBackoffDelay = (attempt, baseDelayMs = DEFAULT_BASE_DELAY_MS, maxDelayMs = DEFAULT_MAX_DELAY_MS) => {
+export const computeBackoffDelay = (
+  attempt,
+  baseDelayMs = DEFAULT_BASE_DELAY_MS,
+  maxDelayMs = DEFAULT_MAX_DELAY_MS,
+) => {
   const exponent = Math.min(attempt, 10); // 2^10=1024 之后指数爆炸无意义，钳制。
-  const cap = Math.min(baseDelayMs * (2 ** exponent), maxDelayMs);
+  const cap = Math.min(baseDelayMs * 2 ** exponent, maxDelayMs);
   return jitter(cap);
 };
 
@@ -184,7 +188,7 @@ export const createTimeoutSignal = (timeoutMs, externalSignal) => {
     cleanup() {
       clearTimeout(timer);
       externalSignal?.removeEventListener('abort', onExternalAbort);
-    }
+    },
   };
 };
 
@@ -243,7 +247,7 @@ export const parseRateLimitHeaders = (headers) => {
   return {
     limit: Number.isFinite(limit) ? limit : undefined,
     remaining: Number.isFinite(remaining) ? remaining : undefined,
-    reset: Number.isFinite(reset) ? reset : undefined
+    reset: Number.isFinite(reset) ? reset : undefined,
   };
 };
 
@@ -333,7 +337,7 @@ export const lookupWithTimeout = async (hostname, timeoutMs = DEFAULT_DNS_TIMEOU
       dns.lookup(hostname, { all: true, verbatim: true }),
       new Promise((resolve) => {
         timer = setTimeout(() => resolve([]), timeoutMs);
-      })
+      }),
     ]);
   } catch {
     // 解析失败（NXDOMAIN / 服务器异常）：fail-closed，返回空数组由调用方判定。
@@ -409,23 +413,24 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
         // 默认用户代理：GitHub 拒绝无 UA 的 API 请求，Akismet 也要求合法 UA。
         headers: {
           'User-Agent': 'D-blog-Automation/2.0',
-          ...(options.headers || {})
-        }
+          ...(options.headers || {}),
+        },
       });
       lastStatus = response.status;
 
       // 可重试状态码：在未耗尽重试次数时退避重试。
       if (RETRYABLE_STATUS_CODES.has(response.status) && attempt < retries) {
         const retryAfterSeconds = parseRetryAfter(response.headers);
-        const delayMs = retryAfterSeconds !== undefined
-          ? Math.min(retryAfterSeconds * 1000, maxDelayMs)
-          : computeBackoffDelay(attempt + 1, baseDelayMs, maxDelayMs);
+        const delayMs =
+          retryAfterSeconds !== undefined
+            ? Math.min(retryAfterSeconds * 1000, maxDelayMs)
+            : computeBackoffDelay(attempt + 1, baseDelayMs, maxDelayMs);
         config.onRetry?.({
           attempt: attempt + 1,
           status: response.status,
           error: null,
           delayMs,
-          url
+          url,
         });
         // 读取（并丢弃）body 以释放连接，避免滞留 socket；失败不影响重试。
         await response.text().catch(() => {});
@@ -443,7 +448,7 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
           `request failed after ${retries + 1} attempts: ${url} (status ${response.status})`,
           response.status,
           retries + 1,
-          lastBody
+          lastBody,
         );
       }
 
@@ -477,13 +482,18 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
       throw new RetryableHttpError(
         `request failed after ${retries + 1} attempts: ${url} (network error: ${error.message})`,
         0,
-        retries + 1
+        retries + 1,
       );
     }
   }
 
   // 理论不可达（循环内必然 return 或 throw）；保留防御性兜底以防未来修改破坏不变量。
-  throw new RetryableHttpError(`request failed after ${retries + 1} attempts: ${url}`, lastStatus ?? 0, retries + 1, lastBody);
+  throw new RetryableHttpError(
+    `request failed after ${retries + 1} attempts: ${url}`,
+    lastStatus ?? 0,
+    retries + 1,
+    lastBody,
+  );
 };
 
 /* ------------------------------------------------------------------ */
@@ -528,7 +538,7 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
     signal,
     onRetry,
     onPage,
-    fetchOptions = {}
+    fetchOptions = {},
   } = options;
 
   if (!token) {
@@ -549,8 +559,8 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
       Authorization: `Bearer ${token}`,
       'X-GitHub-Api-Version': GITHUB_API_VERSION,
       ...(fetchOptions.headers || {}),
-      ...(options.headers || {})
-    }
+      ...(options.headers || {}),
+    },
   };
 
   const buildUrl = (page) => {
@@ -598,7 +608,7 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
           throw new RateLimitError(
             `GitHub secondary rate limit exceeded after ${error.attempts} attempts: ${url}`,
             60,
-            0
+            0,
           );
         }
         throw error;
@@ -638,12 +648,16 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
         throw new RateLimitError(
           `GitHub rate limit exceeded: ${url}`,
           parsedRateLimit.reset ? Math.max(0, Math.ceil(parsedRateLimit.reset - Date.now() / 1000)) : 60,
-          maxRateLimitWaitMs
+          maxRateLimitWaitMs,
         );
       }
       // 其余 4xx/5xx：限量读取响应体后抛出带状态码的普通错误（重试已在 fetchWithRetry 耗尽）。
       const bodyText = await readResponseText(response, { maxBytes: 4096 }).catch(() => '');
-      throw new HttpStatusError(`GitHub API HTTP ${response.status}: ${bodyText.slice(0, 500)}`, response.status, bodyText);
+      throw new HttpStatusError(
+        `GitHub API HTTP ${response.status}: ${bodyText.slice(0, 500)}`,
+        response.status,
+        bodyText,
+      );
     }
 
     onPage?.({ page, rateLimit });
@@ -665,9 +679,9 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
       // strictPagination：达到上限且仍存在下一页 → fail-closed，禁止静默截断。
       if (strictPagination && link.next && pages >= maxPages) {
         throw new PaginationLimitError(
-          `Pagination limit reached (${maxPages} pages) but more pages exist; refusing to silently truncate: ${url}`,
+          `Pagination limit reached (${maxPages} pages) but more pages exist; refusing to silently truncate: ${baseUrl}${buildUrl(page)}`,
           pages,
-          link.next
+          link.next,
         );
       }
       break;
@@ -680,6 +694,6 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
     headers: lastResponse.headers,
     rateLimit,
     pages,
-    lastLink: link
+    lastLink: link,
   };
 };

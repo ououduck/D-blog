@@ -13,7 +13,13 @@ function parseColor(value: string): RgbColor | null {
   const hex = input.match(/^#([\da-f]{3,8})$/i);
   if (hex) {
     const raw = hex[1];
-    const expanded = raw.length <= 4 ? raw.split('').map((char) => char + char).join('') : raw;
+    const expanded =
+      raw.length <= 4
+        ? raw
+            .split('')
+            .map((char) => char + char)
+            .join('')
+        : raw;
     if (expanded.length < 6) return null;
     return {
       r: Number.parseInt(expanded.slice(0, 2), 16),
@@ -24,7 +30,9 @@ function parseColor(value: string): RgbColor | null {
   const rgb = input.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
   if (rgb) return { r: clampChannel(Number(rgb[1])), g: clampChannel(Number(rgb[2])), b: clampChannel(Number(rgb[3])) };
   const named: Record<string, RgbColor> = {
-    black: { r: 0, g: 0, b: 0 }, white: { r: 255, g: 255, b: 255 }, transparent: { r: 255, g: 255, b: 255 },
+    black: { r: 0, g: 0, b: 0 },
+    white: { r: 255, g: 255, b: 255 },
+    transparent: { r: 255, g: 255, b: 255 },
   };
   return named[input] ?? null;
 }
@@ -57,7 +65,13 @@ export function chooseTextColor(background: RgbColor | null, fallback: string): 
   return { color: whiteContrast >= darkContrast ? '#ffffff' : '#1a1a2e', contrast, lowContrast: contrast < 4.5 };
 }
 
-export function sampleRegion(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): RgbColor | null {
+export function sampleRegion(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): RgbColor | null {
   try {
     const canvasWidth = ctx.canvas.width;
     const canvasHeight = ctx.canvas.height;
@@ -67,11 +81,17 @@ export function sampleRegion(ctx: CanvasRenderingContext2D, x: number, y: number
     const bottom = Math.min(canvasHeight, Math.ceil(y + height));
     if (right <= left || bottom <= top) return null;
     const data = ctx.getImageData(left, top, right - left, bottom - top).data;
-    let r = 0; let g = 0; let b = 0; let count = 0;
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    let count = 0;
     for (let index = 0; index < data.length; index += 4) {
       const alpha = data[index + 3] / 255;
       if (alpha < 0.05) continue;
-      r += data[index] * alpha; g += data[index + 1] * alpha; b += data[index + 2] * alpha; count += alpha;
+      r += data[index] * alpha;
+      g += data[index + 1] * alpha;
+      b += data[index + 2] * alpha;
+      count += alpha;
     }
     return count ? { r: r / count, g: g / count, b: b / count } : null;
   } catch {
