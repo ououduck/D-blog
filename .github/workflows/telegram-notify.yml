@@ -58,7 +58,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        # v5：v4 目标 Node 20 已被弃用（2025-09 起强制跑 Node 24），升级消除弃用警告。
+        uses: actions/checkout@v5
 
       - name: Send Telegram notification
         env:

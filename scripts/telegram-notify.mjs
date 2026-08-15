@@ -334,6 +334,28 @@ const ensureSafeLength = (text) => {
 };
 
 /**
+ * Telegram 常见业务错误码 → 排障提示。
+ * 403（bot can't send messages to the bot / chat not found 等）多为
+ * TELEGRAM_CHAT_ID 配置错误：getMe 返回的是「机器人自身 id」，不是你的 chat id；
+ * 机器人之间无法互发消息，且机器人必须先被对方（或加入的群组）主动对话/添加过。
+ */
+const TELEGRAM_ERROR_HINTS = Object.freeze({
+  401: 'Bot token 无效：检查 TELEGRAM_BOT_TOKEN 是否抄错或已被 BotFather 重置。',
+  403: '机器人无权向该 chat 发消息：TELEGRAM_CHAT_ID 疑似指向机器人自身（getMe 的 id 是机器人不是你的 chat id），' +
+    '或机器人从未加入该群组/频道。先用你自己的账号向机器人发一条消息，' +
+    '再用 @userinfobot 或 getUpdates 确认 chat id（私聊为正数用户 id，群组为负数 id，频道用 @频道名）。',
+  400: '请求参数错误：常见于 TELEGRAM_CHAT_ID 不存在（chat not found）、' +
+    'TELEGRAM_TOPIC_ID 与消息线程不匹配、或消息内容超长。'
+});
+
+/** 把 Telegram 错误 JSON 转为带排障提示的报错文案。 */
+const buildTelegramError = (json) => {
+  const base = `Telegram API error: ${json.description || 'unknown'} (error_code=${json.error_code ?? '?'})`;
+  const hint = TELEGRAM_ERROR_HINTS[json.error_code];
+  return hint ? `${base} — ${hint}` : base;
+};
+
+/**
  * 调用 Telegram Bot API sendMessage 发送消息。
  * 注意：Telegram 业务错误（chat 不存在、parse_mode 非法等）以 HTTP 200 +
  * ok:false 返回，必须检查 JSON 体而非只看 HTTP 状态码。
@@ -392,7 +414,7 @@ const sendTelegramMessage = async (text) => {
     throw new Error(`Telegram API returned non-JSON response (HTTP ${response.status}): ${bodyText.slice(0, 200)}`);
   }
   if (json.ok !== true) {
-    throw new Error(`Telegram API error: ${json.description || 'unknown'} (error_code=${json.error_code ?? '?'})`);
+    throw new Error(buildTelegramError(json));
   }
   return json.result || {};
 };
