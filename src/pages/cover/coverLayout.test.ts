@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   clamp,
+  fitText,
   getCanvasSize,
   getEffectiveLayout,
   getExportFilename,
@@ -8,6 +9,9 @@ import {
   getSubtitleFontWeight,
   normalizeFontWeight,
 } from './coverLayout';
+
+// 简化测量：按字符数 × 字号估算宽度（每个字符占 fontSize 宽）。
+const measure = (text: string, fontSize: number) => Array.from(text).length * fontSize;
 
 describe('clamp', () => {
   it('边界裁剪', () => {
@@ -86,5 +90,48 @@ describe('getExportFilename', () => {
   it('全为点号/空格时回退 cover', () => {
     expect(getExportFilename('....', 'png')).toBe('cover.png');
     expect(getExportFilename('   ', 'png')).toBe('cover.png');
+  });
+});
+
+describe('fitText', () => {
+  it('短文本单行容纳不截断', () => {
+    const result = fitText('短文本', { maxWidth: 300, maxLines: 2, fontSize: 48 }, measure);
+    expect(result.lines).toEqual(['短文本']);
+    expect(result.truncated).toBe(false);
+    expect(result.fontSize).toBe(48);
+  });
+
+  it('超宽文本按 maxWidth 换行', () => {
+    // 10 字符 × 24px = 240px 一行；maxWidth=100 → 每行最多 4 字符
+    const result = fitText('一二三四五六七八九十', { maxWidth: 100, maxLines: 10, fontSize: 24 }, measure);
+    expect(result.lines.length).toBeGreaterThan(1);
+    expect(result.lines[0].length).toBeLessThanOrEqual(4);
+  });
+
+  it('行数超限时缩小字号', () => {
+    const result = fitText(
+      '一二三四五六七八九十甲乙丙丁戊己庚辛壬癸',
+      { maxWidth: 80, maxLines: 2, fontSize: 40, minFontSize: 20 },
+      measure,
+    );
+    // minFontSize=20 时每行最多 4 字符，20 字符至少 5 行 → 截断为 2 行
+    expect(result.truncated).toBe(true);
+    expect(result.lines.length).toBeLessThanOrEqual(2);
+  });
+
+  it('截断时末行加省略号', () => {
+    const result = fitText('这是一个非常长的标题需要被截断处理', { maxWidth: 60, maxLines: 1, fontSize: 30 }, measure);
+    expect(result.truncated).toBe(true);
+    expect(result.lines[0]).toMatch(/…$/);
+  });
+
+  it('空文本返回空行', () => {
+    const result = fitText('', { maxWidth: 300, maxLines: 2, fontSize: 48 }, measure);
+    expect(result.lines).toEqual([]);
+  });
+
+  it('保留多段落结构', () => {
+    const result = fitText('第一段\n\n第二段', { maxWidth: 500, maxLines: 5, fontSize: 24 }, measure);
+    expect(result.lines.length).toBeGreaterThanOrEqual(2);
   });
 });
