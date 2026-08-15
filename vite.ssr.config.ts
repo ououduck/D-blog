@@ -15,11 +15,16 @@ export default defineConfig(({ mode }) => {
     if (!trimmed) {
       return '/';
     }
-    if (trimmed === '.' || trimmed === './') {
+    // 与 vite.config.ts 保持一致：Git Bash 会把 URL 形态的环境变量值
+    // （如 "/repo/"）改写成 MSYS 安装路径，SSR 与客户端 base 必须同源，
+    // 否则 getSiteBasePath() 两端不一致会导致水合期资源路径错乱。
+    const msysGitPath = trimmed.match(/^[a-z]:\//i) ? trimmed.match(/\/git\/(.+)$/i) : null;
+    const normalized = msysGitPath?.[1] ? `/${msysGitPath[1]}` : trimmed;
+    if (normalized === '.' || normalized === './') {
       return './';
     }
-    const normalized = trimmed.replace(/^\/+|\/+$/g, '');
-    return normalized ? `/${normalized}/` : '/';
+    const clean = normalized.replace(/^\/+|\/+$/g, '');
+    return clean ? `/${clean}/` : '/';
   };
 
   return {
