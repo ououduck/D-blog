@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { parseBatchText } from './coverBatch';
+import { describe, it, expect, vi } from 'vitest';
+import { createBatchZip, parseBatchText } from './coverBatch';
 
 describe('parseBatchText — JSON 输入', () => {
   it('解析数组对象并使用 title/name 字段', () => {
@@ -73,5 +73,38 @@ describe('parseBatchText — slug 去重', () => {
       'input.json',
     );
     expect(result.items.map((item) => item.slug)).toEqual(['same', 'same-2', 'same-2-2']);
+  });
+});
+
+describe('createBatchZip', () => {
+  const makeResult = (filename: string) => ({
+    filename,
+    blob: new Blob([filename], { type: 'image/png' }),
+  });
+
+  it('打包全部画布并触发进度回调', async () => {
+    const onProgress = vi.fn();
+    const blob = await createBatchZip([makeResult('a.png'), makeResult('b.png')], onProgress);
+    expect(blob).toBeInstanceOf(Blob);
+    expect(onProgress).toHaveBeenNthCalledWith(1, 1);
+    expect(onProgress).toHaveBeenNthCalledWith(2, 2);
+  });
+
+  it('abort 信号触发时抛错', async () => {
+    const controller = new AbortController();
+    const generator = (async function* () {
+      yield makeResult('a.png');
+      controller.abort();
+      yield makeResult('b.png');
+    })();
+    await expect(createBatchZip(generator, undefined, controller.signal)).rejects.toThrow('批量生成已取消');
+  });
+
+  it('支持异步迭代器输入', async () => {
+    const generator = (async function* () {
+      yield makeResult('x.png');
+    })();
+    const blob = await createBatchZip(generator);
+    expect(blob).toBeInstanceOf(Blob);
   });
 });
