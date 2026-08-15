@@ -1,3 +1,9 @@
+/**
+ * build-logger.mjs — 构建阶段的结构化日志器（start/step/done/warn/error/summary）。
+ * 统一 [scope] 前缀、汇总 warnings 计数并输出耗时，供 build/ssg/audit 等脚本复用；
+ * 与 GitHub Actions 日志器（lib/gh-actions-logger.mjs）职责互补（构建期 vs 自动化脚本）。
+ */
+
 // detail 按字符串设计，但调用方可能传入对象（如 { path, error }）。
 // 对象直接模板拼接会变成 "[object Object]" 丢失数据，这里统一序列化。
 const formatDetail = (detail) => {
