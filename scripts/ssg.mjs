@@ -15,6 +15,21 @@ const __dirname = path.dirname(__filename);
 const DIST_DIR = path.join(__dirname, '../dist');
 const DIST_SSR_DIR = path.join(__dirname, '../dist-ssr');
 const POSTS_FILE = path.join(__dirname, '../generated/posts.json');
+const SHUOSHUO_FILE = path.join(__dirname, '../generated/shuoshuo.json');
+
+/**
+ * 读取 generated/shuoshuo.json（已含正文 content）。
+ * 缺失/损坏时返回空数组：说说为可选内容，站点无说说时列表页已有空态展示，
+ * 不阻塞整站 SSG（posts.json 缺失仍 fail-closed，见前置依赖检查）。
+ */
+const loadShuoShuoItems = () => {
+  try {
+    const items = JSON.parse(fs.readFileSync(SHUOSHUO_FILE, 'utf-8'));
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+};
 
 const siteConfig = loadSiteConfig({ logger });
 const SITE_URL = siteConfig.url;
@@ -353,6 +368,7 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
 
   const { renderApp } = await import(pathToFileURL(path.join(ssrDir, 'entry-server.js')).href);
   const posts = loadPostsWithContent();
+  const shuoshuoItems = loadShuoShuoItems();
 
   logger.start('Static site generation');
 
@@ -429,6 +445,26 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
     }
   }
   logger.step('Generated post pages', `count=${posts.length} failed=${failedPages.length} skipped=${skippedPages.length}`);
+
+  // 1.5 说说详情页：每条说说一个独立可索引页面 /shuoshuo/<id>（SSG 静态 HTML）。
+  // 与文章页一致，正文随首帧 HTML 输出，爬虫/智能体无需执行 JS 即可读取。
+  // 首图 preload 的 imagesizes 与 ShuoShuoItem 单图断点一致（"(max-width: 640px) 80vw, 384px"）。
+  for (const item of shuoshuoItems) {
+    if (budgetExceeded()) {
+      skippedPages.push(`/shuoshuo/${item.id}`);
+      continue;
+    }
+    const firstImage = Array.isArray(item.images) ? item.images[0] : undefined;
+    const extraHead = firstImage
+      ? createImagePreload(toAbsoluteUrl(firstImage, SITE_URL, BASE_PATH), '(max-width: 640px) 80vw, 384px')
+      : '';
+    try {
+      await writePage(`/shuoshuo/${item.id}`, `shuoshuo/${item.id}`, extraHead);
+    } catch (error) {
+      failedPages.push({ url: `/shuoshuo/${item.id}`, error: formatError(error) });
+    }
+  }
+  logger.step('Generated shuoshuo pages', `count=${shuoshuoItems.length} failed=${failedPages.filter((entry) => entry.url.startsWith('/shuoshuo/')).length} skipped=${skippedPages.filter((entry) => entry.startsWith('/shuoshuo/')).length}`);
 
   // 2. 静态页面：SSR 渲染 + 附加结构化数据。
   for (const page of staticPages) {
@@ -507,13 +543,15 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   if (skippedPages.length > 0) {
     logger.warn('Pages skipped due to total SSG budget', { count: skippedPages.length, firstFew: skippedPages.slice(0, 10) });
   }
+  const totalPages = posts.length + staticPages.length + shuoshuoItems.length + 3;
   if (failedPages.length > 0) {
     for (const failed of failedPages) {
       logger.error('Page generation failed', `${failed.url}: ${failed.error}`);
     }
     logger.summary({
-      pages: posts.length + staticPages.length + 3,
+      pages: totalPages,
       posts: posts.length,
+      shuoshuo: shuoshuoItems.length,
       static: staticPages.length,
       failed: failedPages.length,
       skipped: skippedPages.length,
@@ -523,8 +561,9 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   }
 
   logger.summary({
-    pages: posts.length + staticPages.length + 3,
+    pages: totalPages,
     posts: posts.length,
+    shuoshuo: shuoshuoItems.length,
     static: staticPages.length,
     skipped: skippedPages.length,
     siteUrl: SITE_URL

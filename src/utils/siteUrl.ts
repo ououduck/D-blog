@@ -6,6 +6,7 @@ const RELATIVE_BASE_ROUTE_MARKERS = [
   '/tags',
   '/stats',
   '/friends',
+  '/shuoshuo',
   '/about',
   '/cover',
   '/watermark',

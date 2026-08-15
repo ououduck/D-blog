@@ -786,7 +786,28 @@ const generateSitemap = () => {
 </urlset>`;
   fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap-images.xml'), imagesXml);
 
-  // 4. sitemap index：聚合三个子 sitemap，robots.txt 指向该 index。
+  // 4. 说说 sitemap：每条说说一个独立可索引页 /shuoshuo/<id>，
+  //    lastmod 用内容日期（稳定，不随构建抖动）。图片说说仅收 URL 本身，
+  //    配图已出现在页面 <img> 与 og:image 中，Google 可据此索引。
+  const shuoshuoUrl = (item) => siteAbsoluteUrl(`/shuoshuo/${item.id}`);
+  const shuoshuoXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  ${shuoshuo
+    .map(
+      (item) => `
+  <url>
+    <loc>${xmlEscape(shuoshuoUrl(item))}</loc>
+    <lastmod>${item.date}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>`
+    )
+    .join('')}
+</urlset>`;
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap-shuoshuo.xml'), shuoshuoXml);
+
+  // 5. sitemap index：聚合四个子 sitemap，robots.txt 指向该 index。
+  const latestShuoShuoDate = shuoshuo.length > 0 ? shuoshuo[0].date : latestPostDate;
   const sitemapIndexXml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
@@ -800,6 +821,10 @@ const generateSitemap = () => {
   <sitemap>
     <loc>${xmlEscape(siteAbsoluteUrl('/sitemap-images.xml'))}</loc>
     <lastmod>${latestPostDate}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>${xmlEscape(siteAbsoluteUrl('/sitemap-shuoshuo.xml'))}</loc>
+    <lastmod>${latestShuoShuoDate}</lastmod>
   </sitemap>
 </sitemapindex>`;
   fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap-index.xml'), sitemapIndexXml);
@@ -845,7 +870,7 @@ const generateSitemap = () => {
     ''
   ].join('\r\n');
   fs.writeFileSync(path.join(PUBLIC_DIR, 'robots.txt'), robotsTxt);
-  logger.step('Generated sitemaps', `pages=${staticPages.length} posts=${posts.length} imageSitemap=1 index=1`);
+  logger.step('Generated sitemaps', `pages=${staticPages.length} posts=${posts.length} shuoshuo=${shuoshuo.length} imageSitemap=1 index=1`);
 };
 
 const generateRss = () => {
@@ -870,6 +895,11 @@ const generateLlmsTxt = () => {
   const postLines = sortedPosts.map(
     (post) => `- [${post.title}](${siteAbsoluteUrl(`/post/${post.id}`)}): ${post.excerpt.replace(/\n+/g, ' ').trim()}`
   );
+  // 说说为短动态，直接把剥离后的纯文本附在链接后，便于智能体直接读取内容。
+  const shuoshuoLines = shuoshuo.map((item) => {
+    const snippet = markdownToSearchText(item.content).slice(0, 60) || '图片/纯动态';
+    return `- [说说：${snippet}](${siteAbsoluteUrl(`/shuoshuo/${item.id}`)}): ${snippet}`;
+  });
 
   const content = [
     `# ${SITE_TITLE}`,
@@ -894,11 +924,15 @@ const generateLlmsTxt = () => {
     '## 文章',
     '',
     ...postLines,
+    '',
+    '## 说说',
+    '',
+    ...shuoshuoLines,
     ''
   ].join('\n');
 
   fs.writeFileSync(path.join(PUBLIC_DIR, 'llms.txt'), content);
-  logger.step('Generated llms.txt', `posts=${posts.length}`);
+  logger.step('Generated llms.txt', `posts=${posts.length} shuoshuo=${shuoshuo.length}`);
 };
 
 try {

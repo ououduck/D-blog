@@ -197,6 +197,8 @@ images:
 今天也是元气满满的一天 🎉
 ```
 
+每条说说构建时会生成独立静态页 `/shuoshuo/<id>`（与文章页同级：完整 SSR 正文、title/description/canonical/OG 标签、SocialMediaPosting + BreadcrumbList 结构化数据），并收录进 `sitemap-shuoshuo.xml`（挂载在 `sitemap-index.xml`）与 `llms.txt`，使单条说说可被搜索引擎单独收录与搜索命中。列表页每张卡片带「永久链接」入口，分享链接也指向该独立页；旧的 `?id=` 定位链接仍兼容。
+
 ### 留言板
 
 `/guestbook` 留言板页通过 Giscus `mapping=number` 固定指向仓库的「D-blog 留言板」Discussion（[discussions/9](https://github.com/ououduck/D-blog/discussions/9)，「留言板」分类），所有留言汇聚到同一线程；配置位于 `config/site.config.ts` 的 `guestbook.discussionId`。留言数据存于本仓库 Discussions，与文章评论共用 Akismet 反垃圾（`akismet-discussion-comment-check.yml`），并叠加自建关键词过滤（`comment-keyword-filter.yml`，关键词配置见 `config/comment-keywords.json`）作为审核层。
