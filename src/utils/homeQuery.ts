@@ -1,6 +1,6 @@
-export type HomeSortOrder = 'newest' | 'oldest';
+type HomeSortOrder = 'newest' | 'oldest';
 
-export interface HomeQueryState {
+interface HomeQueryState {
   sortOrder: HomeSortOrder;
   page: number;
 }

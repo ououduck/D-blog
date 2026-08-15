@@ -1,21 +1,20 @@
 import type { PostMetadata } from '../../types';
 import { formatDate, getDateTimestamp } from '../../utils/date';
 
-export interface MonthGroup {
+interface MonthGroup {
   month: string;
   monthNum: number;
   total: number;
   posts: PostMetadata[];
 }
 
-export interface ArchiveGroup {
+interface ArchiveGroup {
   year: string;
   total: number;
-  categories: string[];
   months: MonthGroup[];
 }
 
-export interface ArchiveExpansion {
+interface ArchiveExpansion {
   years: Set<string>;
   months: Set<string>;
 }
@@ -36,14 +35,11 @@ export const buildArchiveGroups = (posts: PostMetadata[]): ArchiveGroup[] => {
       let yearGroup = groups.get(year);
 
       if (!yearGroup) {
-        yearGroup = { year, total: 0, categories: [], months: [] };
+        yearGroup = { year, total: 0, months: [] };
         groups.set(year, yearGroup);
       }
 
       yearGroup.total += 1;
-      if (!yearGroup.categories.includes(post.category)) {
-        yearGroup.categories.push(post.category);
-      }
 
       let monthGroup = yearGroup.months.find((month) => month.monthNum === monthNum);
       if (!monthGroup) {
@@ -58,7 +54,6 @@ export const buildArchiveGroups = (posts: PostMetadata[]): ArchiveGroup[] => {
   return Array.from(groups.values())
     .map((group) => ({
       ...group,
-      categories: group.categories.sort(),
       months: group.months.sort((a, b) => b.monthNum - a.monthNum)
     }))
     .sort((a, b) => Number(b.year) - Number(a.year));

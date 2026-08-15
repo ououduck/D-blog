@@ -57,7 +57,10 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       const nextPercentage = Math.round(nextProgress * 100);
       const currentPercentage = Math.round(progressRef.current * 100);
       const visibilityRect = endRect ?? rect;
-      const nextVisible = visibilityRect.bottom > window.innerHeight * READING_PROGRESS_END_RATIO || nextProgress >= 1;
+      // 正文末尾仍位于视口下半区（即尚未滚过正文）时显示徽章；
+      // 滚过正文末尾（进入评论区/推荐区）后隐藏。不附加 nextProgress >= 1：
+      // 进度被 clamp 在 1 后该条件恒真，会让隐藏分支永远不可达。
+      const nextVisible = visibilityRect.bottom > window.innerHeight * READING_PROGRESS_END_RATIO;
 
       if (nextPercentage !== currentPercentage) {
         progressRef.current = nextProgress;

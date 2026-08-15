@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type PaginationItem = number | 'ellipsis-start' | 'ellipsis-end';
 
-export const getPaginationItems = (currentPage: number, totalPages: number): PaginationItem[] => {
+const getPaginationItems = (currentPage: number, totalPages: number): PaginationItem[] => {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
   }
@@ -83,7 +83,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
           onBlur={submitPageInput}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
-              submitPageInput();
+              // 失焦触发 onBlur 统一提交，避免与 onKeyDown 重复调用 submitPageInput。
               event.currentTarget.blur();
             }
           }}

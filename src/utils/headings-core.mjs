@@ -8,13 +8,87 @@ const INLINE_MARKDOWN_PATTERNS = [
 ];
 const MARKDOWN_HEADING_PATTERN = /^(?: {0,3}(#{1,3})(?:[ \t]+(.*)|[ \t]*)| {0,3}([^\r\n]+)\r?\n {0,3}(=+|-+)[ \t]*)$/gm;
 
+// 常用 HTML 命名实体 → 字符。与浏览器/remark 渲染侧的解码保持一致：
+// 缺失的实体会导致 TOC 提取的标题文本与 DOM 渲染文本不一致，锚点 id 错位。
+// （数字字符引用 &#...; 与 &#x...; 走通用逻辑，不在此表。）
 const HTML_ENTITY_REPLACEMENTS = {
   amp: '&',
   apos: "'",
   gt: '>',
   lt: '<',
   nbsp: ' ',
-  quot: '"'
+  quot: '"',
+  // 标点与符号
+  copy: '©',
+  reg: '®',
+  trade: '™',
+  deg: '°',
+  plusmn: '±',
+  times: '×',
+  divide: '÷',
+  middot: '·',
+  bull: '•',
+  hellip: '…',
+  mdash: '—',
+  ndash: '–',
+  lsquo: '‘',
+  rsquo: '’',
+  ldquo: '“',
+  rdquo: '”',
+  laquo: '«',
+  raquo: '»',
+  sect: '§',
+  para: '¶',
+  dagger: '†',
+  Dagger: '‡',
+  permil: '‰',
+  prime: '′',
+  Prime: '″',
+  larr: '←',
+  uarr: '↑',
+  rarr: '→',
+  darr: '↓',
+  harr: '↔',
+  spades: '♠',
+  clubs: '♣',
+  hearts: '♥',
+  diams: '♦',
+  check: '✓',
+  cross: '✗',
+  star: '★',
+  // 数学
+  frac12: '½',
+  frac13: '⅓',
+  frac14: '¼',
+  frac23: '⅔',
+  frac34: '¾',
+  sup2: '²',
+  sup3: '³',
+  micro: 'µ',
+  infin: '∞',
+  ne: '≠',
+  le: '≤',
+  ge: '≥',
+  sum: '∑',
+  prod: '∏',
+  radic: '√',
+  int: '∫',
+  alpha: 'α',
+  beta: 'β',
+  gamma: 'γ',
+  delta: 'δ',
+  pi: 'π',
+  Omega: 'Ω',
+  // 货币
+  cent: '¢',
+  pound: '£',
+  yen: '¥',
+  euro: '€',
+  // 空白
+  ensp: ' ',
+  emsp: ' ',
+  thinsp: ' ',
+  shy: ''
 };
 
 const isValidCodePoint = (value) => Number.isInteger(value) && value >= 0 && value <= 0x10FFFF;

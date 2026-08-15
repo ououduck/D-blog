@@ -1,9 +1,9 @@
 // 阅读进度区间：正文首行进入视口上部 18% 记为 0%，正文最后一行进入视口中间（50%）
 // 记为 100%。正文之后的许可协议/作者/导航/推荐/评论等区块不参与文章长度计算。
-export const READING_PROGRESS_START_RATIO = 0.18;
+const READING_PROGRESS_START_RATIO = 0.18;
 export const READING_PROGRESS_END_RATIO = 0.5;
 // 进度四舍五入显示为 100% 时即视为已读完，避免主页出现“已读 100%”却仍在继续阅读卡中。
-export const READING_PROGRESS_COMPLETION_THRESHOLD = 0.995;
+const READING_PROGRESS_COMPLETION_THRESHOLD = 0.995;
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
@@ -42,8 +42,7 @@ const getReadingScrollRange = (input: ReadingProgressInput): ReadingScrollRange 
 export const getReadingProgress = (input: ReadingProgressInput) => {
   const { startScrollTop, endScrollTop, documentMaxScrollTop } = getReadingScrollRange(input);
 
-  // Without any document-level scroll range there is no evidence that the
-  // article has been read, even when its end is already inside the viewport.
+  // 文档没有可滚动区间时，即使文章末尾已在视口内，也没有证据表明文章被读过。
   if (documentMaxScrollTop <= 0) {
     return 0;
   }

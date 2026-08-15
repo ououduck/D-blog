@@ -9,7 +9,7 @@ export type WatermarkPosition =
   | 'bottom-center'
   | 'bottom-right';
 
-export type WatermarkRenderOptions = {
+type WatermarkRenderOptions = {
   text: string;
   fontSize: number;
   opacity: number;

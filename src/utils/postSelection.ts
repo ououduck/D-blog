@@ -2,7 +2,7 @@ import type { PostMetadata } from '@/types';
 
 type FeaturedPostFields = Pick<PostMetadata, 'featured' | 'featured-top'>;
 
-export const isFeaturedPost = (post: Pick<PostMetadata, 'featured'>) => post.featured === true;
+const isFeaturedPost = (post: Pick<PostMetadata, 'featured'>) => post.featured === true;
 
 export const isPinnedFeaturedPost = (post: FeaturedPostFields) => (
   isFeaturedPost(post) && post['featured-top'] !== undefined

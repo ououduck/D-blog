@@ -38,8 +38,8 @@ export const ArchivePage = () => {
   const [loading, setLoading] = useState(initialPosts.length === 0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
-  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
+  const [expandedYears, setExpandedYears] = useState<Set<string>>(() => getInitialExpansion(buildArchiveGroups(initialPosts), null).years);
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(() => getInitialExpansion(buildArchiveGroups(initialPosts), null).months);
   const shouldReduceMotion = useReducedMotion();
   const initializedRef = useRef(false);
   const searchStartedRef = useRef<string | null>(null);
@@ -122,19 +122,30 @@ export const ArchivePage = () => {
     }
   }, [queryFromUrl, searchQuery, setSearchQuery]);
 
-  // 仅初始化一次，避免用户全部折叠后被默认状态反弹。
+  // 仅初始化一次：SSR/水合首帧由 useState 惰性初始化展开最新年份；
+  // 仅当 URL 显式指定年份时，水合后再展开对应年份+首月，避免用户全部折叠后被默认状态反弹。
   useEffect(() => {
     if (!initializedRef.current && groups.length > 0 && !isSearching) {
-      const initial = getInitialExpansion(groups, yearFromUrl);
-      setExpandedYears(initial.years);
-      setExpandedMonths(initial.months);
       initializedRef.current = true;
+      if (yearFromUrl) {
+        const initial = getInitialExpansion(groups, yearFromUrl);
+        setExpandedYears(initial.years);
+        setExpandedMonths(initial.months);
+      }
     }
   }, [groups, isSearching, yearFromUrl]);
 
-  // URL year 变化时始终确保对应年份展开。
+  // URL year 变化时始终确保对应年份展开；不存在的年份参数则从 URL 中移除。
   useEffect(() => {
     if (!initializedRef.current || !yearFromUrl) {
+      return;
+    }
+    if (!groups.some((group) => group.year === yearFromUrl)) {
+      setSearchParams((previous) => {
+        const nextParams = new URLSearchParams(previous);
+        nextParams.delete('year');
+        return nextParams;
+      }, { replace: true });
       return;
     }
     setExpandedYears((previous) => ensureYearExpanded(groups, previous, yearFromUrl));
@@ -165,35 +176,42 @@ export const ArchivePage = () => {
 
   // 切换年份展开状态
   const toggleYear = (year: string) => {
-    setExpandedYears(prev => {
-      const next = new Set(prev);
-      if (next.has(year)) {
+    // 用闭包中的当前展开状态决定分支，副作用统一放在 updater 之外，
+    // 避免在状态更新器内执行 setSearchParams/setExpandedMonths（StrictMode 下会重复执行）。
+    const isExpanded = expandedYears.has(year);
+    if (isExpanded) {
+      setExpandedYears((prev) => {
+        const next = new Set(prev);
         next.delete(year);
-        setSearchParams((previous) => {
-          const nextParams = new URLSearchParams(previous);
-          if (nextParams.get('year') === year) {
-            nextParams.delete('year');
-          }
-          return nextParams;
-        }, { replace: true });
-        // 折叠年份时，同时折叠该年份下的所有月份
-        setExpandedMonths(prevMonths => {
-          const nextMonths = new Set(prevMonths);
-          groups.find(g => g.year === year)?.months.forEach(m => {
-            nextMonths.delete(getMonthKey(year, m.monthNum));
-          });
-          return nextMonths;
+        return next;
+      });
+      // 折叠年份时，同时折叠该年份下的所有月份
+      setExpandedMonths((prevMonths) => {
+        const nextMonths = new Set(prevMonths);
+        groups.find((g) => g.year === year)?.months.forEach((m) => {
+          nextMonths.delete(getMonthKey(year, m.monthNum));
         });
-      } else {
+        return nextMonths;
+      });
+      setSearchParams((previous) => {
+        const nextParams = new URLSearchParams(previous);
+        if (nextParams.get('year') === year) {
+          nextParams.delete('year');
+        }
+        return nextParams;
+      }, { replace: true });
+    } else {
+      setExpandedYears((prev) => {
+        const next = new Set(prev);
         next.add(year);
-        setSearchParams((previous) => {
-          const nextParams = new URLSearchParams(previous);
-          nextParams.set('year', year);
-          return nextParams;
-        }, { replace: true });
-      }
-      return next;
-    });
+        return next;
+      });
+      setSearchParams((previous) => {
+        const nextParams = new URLSearchParams(previous);
+        nextParams.set('year', year);
+        return nextParams;
+      }, { replace: true });
+    }
   };
 
   // 切换月份展开状态

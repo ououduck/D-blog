@@ -152,9 +152,9 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
 };
 
 export type PostSearchScope = 'all' | 'category' | 'content' | 'title';
-export type PostSearchField = 'title' | 'category' | 'excerpt' | 'content' | 'tags';
+type PostSearchField = 'title' | 'category' | 'excerpt' | 'content' | 'tags';
 
-export interface PostSearchMatch {
+interface PostSearchMatch {
   field: PostSearchField;
   label: string;
   snippet: string;

@@ -1,11 +1,11 @@
-export const FRIEND_LINK_FIELDS = ['name', 'description', 'avatar', 'url', 'friendPageUrl', 'contact'] as const;
-export type FriendLinkField = (typeof FRIEND_LINK_FIELDS)[number];
+const FRIEND_LINK_FIELDS = ['name', 'description', 'avatar', 'url', 'friendPageUrl', 'contact'] as const;
+type FriendLinkField = (typeof FRIEND_LINK_FIELDS)[number];
 
 export interface FriendLinkApplicationValues extends Record<FriendLinkField, string> {
   reciprocalLinkConfirmed: boolean;
 }
 
-export interface FriendLinkApplicationErrors {
+interface FriendLinkApplicationErrors {
   name?: string;
   description?: string;
   avatar?: string;
@@ -16,13 +16,13 @@ export interface FriendLinkApplicationErrors {
   reciprocalLinkConfirmed?: string;
 }
 
-export interface FriendLinkApplicationResult {
+interface FriendLinkApplicationResult {
   filename: string;
   issueUrl: string;
   values: FriendLinkApplicationValues;
 }
 
-export const FRIEND_LINK_ISSUE_TITLE_PREFIX = '[Friend Link]';
+const FRIEND_LINK_ISSUE_TITLE_PREFIX = '[Friend Link]';
 
 const FILENAME_PATTERN = /^[A-Za-z0-9_-]+(?:\.json)?$/;
 
@@ -45,13 +45,13 @@ const isHttpUrl = (value: string) => {
   }
 };
 
-export const normalizeFriendLinkFilename = (filename: string) => {
+const normalizeFriendLinkFilename = (filename: string) => {
   const trimmed = filename.trim();
   const stem = trimmed.toLowerCase().endsWith('.json') ? trimmed.slice(0, -5) : trimmed;
   return `${stem}.json`;
 };
 
-export const validateFriendLinkFilename = (filename: string): string | null => {
+const validateFriendLinkFilename = (filename: string): string | null => {
   const trimmed = filename.trim();
   if (!trimmed) {
     return '请输入文件名。';
@@ -92,7 +92,7 @@ export const validateFriendLinkApplication = (values: FriendLinkApplicationValue
   return errors;
 };
 
-export const buildFriendLinkIssueBody = (values: FriendLinkApplicationValues, filename: string) => {
+const buildFriendLinkIssueBody = (values: FriendLinkApplicationValues, filename: string) => {
   const trimmed = trimValues(values);
   return [
     '## Friend Link Application',
@@ -108,7 +108,7 @@ export const buildFriendLinkIssueBody = (values: FriendLinkApplicationValues, fi
   ].join('\n');
 };
 
-export const buildFriendLinkIssueUrl = (values: FriendLinkApplicationValues, filename: string, repoUrl: string) => {
+const buildFriendLinkIssueUrl = (values: FriendLinkApplicationValues, filename: string, repoUrl: string) => {
   const trimmed = trimValues(values);
   const params = new URLSearchParams({
     title: `${FRIEND_LINK_ISSUE_TITLE_PREFIX} ${trimmed.name}`,

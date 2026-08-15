@@ -1,6 +1,6 @@
 import { getSiteBasePath } from '@/utils/siteUrl';
 
-export type ServiceWorkerStatus =
+type ServiceWorkerStatus =
   | 'idle'
   | 'unsupported'
   | 'registering'
@@ -15,7 +15,7 @@ export interface ServiceWorkerState {
   readonly registration?: ServiceWorkerRegistration;
 }
 
-export type ServiceWorkerStateListener = (state: ServiceWorkerState) => void;
+type ServiceWorkerStateListener = (state: ServiceWorkerState) => void;
 
 const listeners = new Set<ServiceWorkerStateListener>();
 let state: ServiceWorkerState = { status: 'idle' };
@@ -36,9 +36,9 @@ const setState = (status: ServiceWorkerStatus, nextRegistration = registration) 
   });
 };
 
-export const getState = (): ServiceWorkerState => state;
+const getState = (): ServiceWorkerState => state;
 
-export const subscribe = (listener: ServiceWorkerStateListener): (() => void) => {
+const subscribe = (listener: ServiceWorkerStateListener): (() => void) => {
   listeners.add(listener);
   return () => listeners.delete(listener);
 };
@@ -53,8 +53,8 @@ const warn = (message: string, error?: unknown) => {
 
 const getBaseUrl = () => {
   const configuredBase = import.meta.env.BASE_URL || '/';
-  // Resolve relative Vite builds from the inferred deployment directory rather
-  // than the current article URL (for example /repo/post/id -> /repo/).
+  // 相对路径的 Vite 构建从推断出的部署目录解析，而非当前文章 URL
+  // （例如 /repo/post/id → /repo/）。
   const basePath = getSiteBasePath(window.location.pathname);
   const baseUrl = new URL(
     configuredBase === '.' || configuredBase === './' ? basePath : configuredBase,
@@ -152,7 +152,7 @@ export const registerServiceWorker = (): Promise<ServiceWorkerRegistration | und
   return registrationPromise;
 };
 
-export const applyUpdate = (): boolean => {
+const applyUpdate = (): boolean => {
   const waitingWorker = registration?.waiting;
   if (!waitingWorker) {
     return false;
@@ -169,7 +169,7 @@ export const applyUpdate = (): boolean => {
   }
 };
 
-// Descriptive aliases keep the small public API convenient for consumers.
+// 语义化别名让小型公共 API 更便于调用方使用。
 export const subscribeToServiceWorker = subscribe;
 export const getServiceWorkerState = getState;
 export const applyServiceWorkerUpdate = applyUpdate;

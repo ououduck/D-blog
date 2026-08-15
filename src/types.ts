@@ -6,7 +6,7 @@ export interface PostAuthor {
   url?: string;
 }
 
-export interface ImageDimensions {
+interface ImageDimensions {
   width: number;
   height: number;
 }

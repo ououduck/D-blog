@@ -20,7 +20,7 @@ import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { NotFoundState } from '@/components/NotFoundState';
 import { IssueSubscriptionCard } from '@/components/IssueSubscriptionCard';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
-import { extractMarkdownHeadings, extractTextFromReactNode, slugifyHeading } from '@/utils/headings';
+import { extractMarkdownHeadings, extractTextFromReactNode, slugifyHeading, stripInlineMarkdown } from '@/utils/headings';
 import type { MarkdownHeading } from '@/utils/headings';
 import { formatDate } from '@/utils/date';
 import { stripMarkdown } from '@/utils/markdownText';
@@ -51,12 +51,15 @@ type MermaidRenderer = {
 
 type MermaidStatus = 'idle' | 'loading' | 'ready' | 'error';
 
+// 标题锚点滚动时预留的顶部偏移（与 TableOfContents 保持一致），避免标题被固定头部遮挡。
+const HEADING_SCROLL_OFFSET = 104;
+
 const getIsDarkTheme = () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 
 const getMermaidConfig = (isDark: boolean) => ({
   startOnLoad: false,
   securityLevel: 'strict',
-  // Keep labels in SVG text nodes so DOMPurify's SVG profile preserves them.
+  // 标签保留在 SVG 文本节点中，DOMPurify 的 SVG 配置才能保留它们。
   htmlLabels: false,
   theme: 'base',
   flowchart: { htmlLabels: false, curve: 'basis', padding: 16, useMaxWidth: true },
@@ -460,6 +463,7 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
   const mermaidIdRef = useRef<string | null>(null);
   const dragRef = useRef({ pointerId: -1, startX: 0, startY: 0, startPositionX: 0, startPositionY: 0 });
   const diagramRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const scaleRef = useRef(scale);
 
@@ -479,6 +483,8 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
     setPosition({ x: 0, y: 0 });
   };
 
+  // 缩放/平移使用 scaleRef.current 作为增量基准：快速滚轮或键盘连按时，
+  // React 闭包中的 scale 状态可能尚未提交，直接计算会丢步。
   const zoomTo = (nextScale: number) => {
     const clampedScale = clampMermaidScale(nextScale);
     setScale(clampedScale);
@@ -487,7 +493,9 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
     }
   };
 
-  const toggleZoom = () => zoomTo(scale > MERMAID_MIN_SCALE ? MERMAID_MIN_SCALE : 2);
+  const zoomBy = (delta: number) => zoomTo(scaleRef.current + delta);
+
+  const toggleZoom = () => zoomTo(scaleRef.current > MERMAID_MIN_SCALE ? MERMAID_MIN_SCALE : 2);
 
   useEffect(() => {
     setSvg('');
@@ -568,11 +576,24 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
     }
   }, [scale]);
 
-  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-    if (!svg || (scale <= MERMAID_MIN_SCALE && !event.ctrlKey && !event.metaKey)) return;
+  // 滚轮缩放使用原生非 passive 监听器：React 19 的 onWheel 注册为 passive，
+  // preventDefault 无效，缩放图表时页面会同步滚动。缩放基于 scaleRef.current，
+  // 避免快速滚轮时闭包中的 scale 过期导致丢步。
+  const handleWheel = (event: WheelEvent) => {
+    if (!svg || (scaleRef.current <= MERMAID_MIN_SCALE && !event.ctrlKey && !event.metaKey)) return;
     event.preventDefault();
-    zoomTo(scale + (event.deltaY > 0 ? -MERMAID_ZOOM_STEP : MERMAID_ZOOM_STEP));
+    zoomBy(event.deltaY > 0 ? -MERMAID_ZOOM_STEP : MERMAID_ZOOM_STEP);
   };
+
+  // 原生非 passive wheel 监听：preventDefault 才能阻止页面随图表缩放同步滚动。
+  useEffect(() => {
+    const element = viewportRef.current;
+    if (!element) {
+      return;
+    }
+    element.addEventListener('wheel', handleWheel, { passive: false });
+    return () => element.removeEventListener('wheel', handleWheel);
+  }, [svg, handleWheel]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (scale <= MERMAID_MIN_SCALE || event.button !== 0) return;
@@ -613,14 +634,14 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === '+' || event.key === '=') {
       event.preventDefault();
-      zoomTo(scale + MERMAID_ZOOM_STEP);
+      zoomBy(MERMAID_ZOOM_STEP);
     } else if (event.key === '-' || event.key === '_') {
       event.preventDefault();
-      zoomTo(scale - MERMAID_ZOOM_STEP);
+      zoomBy(-MERMAID_ZOOM_STEP);
     } else if (event.key === '0') {
       event.preventDefault();
       resetView();
-    } else if (scale > MERMAID_MIN_SCALE && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+    } else if (scaleRef.current > MERMAID_MIN_SCALE && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
       event.preventDefault();
       const distance = event.shiftKey ? 48 : 24;
       const xDelta = event.key === 'ArrowLeft' ? distance * -1 : event.key === 'ArrowRight' ? distance : 0;
@@ -657,11 +678,11 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
       <div className="mermaid-toolbar" role="toolbar" aria-label="Mermaid 图表工具">
         <span className="mermaid-toolbar-label">图表缩放</span>
         <div className="mermaid-toolbar-actions">
-          <button type="button" className="mermaid-action-btn" onClick={() => zoomTo(scale - MERMAID_ZOOM_STEP)} disabled={scale <= MERMAID_MIN_SCALE} aria-label="缩小 Mermaid 图表" title="缩小">
+          <button type="button" className="mermaid-action-btn" onClick={() => zoomBy(-MERMAID_ZOOM_STEP)} disabled={scale <= MERMAID_MIN_SCALE} aria-label="缩小 Mermaid 图表" title="缩小">
             <Minus size={15} aria-hidden="true" />
           </button>
           <span className="mermaid-scale" aria-live="polite">{scaleLabel}</span>
-          <button type="button" className="mermaid-action-btn" onClick={() => zoomTo(scale + MERMAID_ZOOM_STEP)} disabled={scale >= MERMAID_MAX_SCALE} aria-label="放大 Mermaid 图表" title="放大">
+          <button type="button" className="mermaid-action-btn" onClick={() => zoomBy(MERMAID_ZOOM_STEP)} disabled={scale >= MERMAID_MAX_SCALE} aria-label="放大 Mermaid 图表" title="放大">
             <Plus size={15} aria-hidden="true" />
           </button>
           <button type="button" className="mermaid-action-btn" onClick={resetView} aria-label="重置 Mermaid 图表视图" title="重置">
@@ -670,11 +691,11 @@ function MermaidBlock({ children, renderer, theme }: { children: string; rendere
         </div>
       </div>
       <div
+        ref={viewportRef}
         className={`mermaid-viewport ${scale > MERMAID_MIN_SCALE ? 'is-zoomed' : ''} ${isDragging ? 'is-dragging' : ''}`}
         tabIndex={0}
         role="application"
         aria-label="Mermaid 图表，可缩放和拖动"
-        onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerEnd}
@@ -765,13 +786,15 @@ const createMarkdownComponents = (
   mermaidTheme: 'light' | 'dark',
   imageDimensions: PostMetadata['imageDimensions'],
   headings: MarkdownHeading[],
+  shouldReduceMotion: boolean,
 ): Components => {
   let headingCursor = 0;
   const fallbackHeadingIds = new Map<string, number>();
 
   const resolveHeadingId = (level: number, children: React.ReactNode) => {
-    const rawText = extractTextFromReactNode(children);
-    const text = rawText.trim();
+    // 与构建期 TOC 相同的归一化：折叠空白、解码实体、移除尾部 #。
+    // 渲染侧文本与 headings 数组的 rawText 因此保持一致，避免锚点 id 错位。
+    const text = stripInlineMarkdown(extractTextFromReactNode(children));
 
     for (let index = headingCursor; index < headings.length; index += 1) {
       const heading = headings[index];
@@ -886,8 +909,37 @@ const createMarkdownComponents = (
 
       // 站内链接保持 SPA 的同页导航；只有真正的 HTTP(S) 外链才新开标签。
       // 这样文章内锚点不会意外打开新页面，键盘和浏览器历史行为也与普通站内链接一致。
-      const isInternalLink = normalizedHref.startsWith('#')
-        || normalizedHref.startsWith('/')
+      // 页内锚点（#heading）用原生 <a> + 手动滚动：react-router 的 <Link> 对 hash-only
+      // 变化不触发滚动（App 路由 effect 直接返回），原生 <a> 则由浏览器默认跳转到锚点。
+      if (normalizedHref.startsWith('#')) {
+        return (
+          <a
+            href={normalizedHref}
+            onClick={(event) => {
+              // 手动滚动并让浏览器更新 hash（默认行为已覆盖跳转，这里仅保持滚动位置一致，
+              // 避免浏览器默认定位到元素顶部时被固定头部遮挡）。
+              const targetId = normalizedHref.slice(1);
+              const target = targetId ? document.getElementById(targetId) : null;
+              if (!target) {
+                return;
+              }
+              event.preventDefault();
+              window.scrollTo({
+                top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - HEADING_SCROLL_OFFSET),
+                behavior: shouldReduceMotion ? 'auto' : 'smooth'
+              });
+              const url = new URL(window.location.href);
+              url.hash = targetId;
+              window.history.replaceState({}, '', url.toString());
+            }}
+            {...props}
+          >
+            {children}
+          </a>
+        );
+      }
+
+      const isInternalLink = normalizedHref.startsWith('/')
         || normalizedHref.startsWith('./')
         || normalizedHref.startsWith('../');
       if (isInternalLink) {
@@ -1009,6 +1061,9 @@ export const Post = () => {
   const articleBodyRef = useRef<HTMLDivElement>(null);
   const readingEndRef = useRef<HTMLDivElement>(null);
   const lastReadingSaveRef = useRef(0);
+  // hash 深链跳转 / 阅读位置恢复触发的程序化滚动标记：此类滚动不应被视为
+  // 真实阅读进度（否则 hash 打开会覆盖历史中更高的继续阅读记录）。
+  const programmaticScrollRef = useRef(false);
   // 阅读进度保存的会话状态。必须放在组件级 ref 中：relatedPosts 等异步数据加载会
   // 触发保存 effect 重跑，若用 effect 内局部变量保存“已读完”等标记，重跑后会被重置，
   // 导致读完后再滚回上方时重新写入部分进度、让主页“继续阅读”卡片复活。
@@ -1065,7 +1120,7 @@ export const Post = () => {
     setLoading(true);
     setPost(null);
     setLoadError(null);
-    // Do not expose the previous article's navigation while the next article is loading.
+    // 加载下一篇文章期间不暴露上一篇文章的导航。
     setAdjacentPosts({ prev: null, next: null });
     setSeriesNavigation(null);
     setRelatedPosts([]);
@@ -1225,7 +1280,7 @@ export const Post = () => {
     try {
       hashId = decodeURIComponent(window.location.hash.slice(1));
     } catch {
-      // Ignore malformed URL fragments instead of interrupting article rendering.
+      // 忽略格式非法的 URL 片段，不中断文章渲染。
       return;
     }
 
@@ -1240,9 +1295,17 @@ export const Post = () => {
         return;
       }
 
+      // 标记为程序化滚动：hash 深链跳转不是用户阅读行为，不得计入阅读进度。
+      programmaticScrollRef.current = true;
       window.scrollTo({
         top: Math.max(0, element.getBoundingClientRect().top + window.scrollY - 104),
         behavior: 'auto'
+      });
+      // 双 rAF 后清除标记：与恢复逻辑保持一致，等待程序化滚动完全落定。
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          programmaticScrollRef.current = false;
+        });
       });
     };
 
@@ -1357,12 +1420,13 @@ export const Post = () => {
         documentHeight
       }, savedEntry.progress);
       programmaticScroll = true;
+      programmaticScrollRef.current = true;
       window.scrollTo({ top, behavior: 'auto' });
       if (resetProgrammaticFrame) window.cancelAnimationFrame(resetProgrammaticFrame);
       resetProgrammaticFrame = window.requestAnimationFrame(() => {
-        resetProgrammaticFrame = window.requestAnimationFrame(() => { programmaticScroll = false; });
+        resetProgrammaticFrame = window.requestAnimationFrame(() => { programmaticScroll = false; programmaticScrollRef.current = false; });
       });
-      // Re-apply after layout settles (images, syntax highlighting, and math can resize the article).
+      // 布局稳定后重新应用（图片、代码高亮、数学公式会改变文章高度）。
       if (stableFrames < 2) scheduleRestore();
     };
     const resizeObserver = typeof ResizeObserver !== 'undefined'
@@ -1420,7 +1484,9 @@ export const Post = () => {
     let hasProgressSnapshot = false;
     lastReadingSaveRef.current = 0;
     const saveLatestProgress = () => {
-      if (!hasProgressSnapshot || state.completed || latestProgress <= 0 || isReadingComplete(latestProgress)) return;
+      // 仅真实用户滚动后才允许落库：程序化滚动（hash 深链/位置恢复）期间的
+      // 进度快照不得覆盖既有的继续阅读记录。
+      if (!hasProgressSnapshot || !state.hasScrolled || state.completed || latestProgress <= 0 || isReadingComplete(latestProgress)) return;
       const percent = Math.round(latestProgress * 100);
       if (percent === state.lastWrittenPercent) return;
       state.lastWrittenPercent = percent;
@@ -1441,9 +1507,8 @@ export const Post = () => {
       latestProgress = progress;
       hasProgressSnapshot = true;
       const now = Date.now();
-      // The first measurement is only a baseline. Reaching the end counts as
-      // complete after a real scroll event, preventing short posts from being
-      // completed merely because their initial page has no scroll range.
+      // 首次测量仅为基线：仅在真实滚动事件后到达结尾才判定读完，
+      // 避免短文章因首页没有滚动区间而被误判为已完成。
       if (state.hasScrolled && isReadingComplete(progress)) {
         if (!state.completed) {
           // 读完即视为结束：删除“继续阅读”记录；本次会话内不再写任何部分进度，
@@ -1459,8 +1524,9 @@ export const Post = () => {
       if (state.completed) {
         return;
       }
-      // 进度为 0（正文尚未进入阅读区，或滚回页面顶部）时不写入，避免覆盖既有记录。
-      if (progress <= 0 || isReadingComplete(progress) || now - lastReadingSaveRef.current < 1000) return;
+      // 进度为 0（正文尚未进入阅读区，或滚回页面顶部）时不写入，避免覆盖既有记录；
+      // 未发生真实用户滚动（仅程序化 hash/恢复滚动）时同样不写入。
+      if (!state.hasScrolled || progress <= 0 || isReadingComplete(progress) || now - lastReadingSaveRef.current < 1000) return;
       const percent = Math.round(progress * 100);
       if (percent === state.lastWrittenPercent) return;
       state.lastWrittenPercent = percent;
@@ -1471,6 +1537,11 @@ export const Post = () => {
       if (!animationFrame) animationFrame = window.requestAnimationFrame(updateReadingHistory);
     };
     const handleScroll = () => {
+      // 程序化滚动（hash 深链跳转、阅读位置恢复）不代表用户阅读行为，
+      // 不标记 hasScrolled，也不触发进度测量写入。
+      if (programmaticScrollRef.current) {
+        return;
+      }
       state.hasScrolled = true;
       scheduleUpdate();
     };
@@ -1516,8 +1587,8 @@ export const Post = () => {
   }, [previewImage, shareModalOpen, adjacentPosts, navigate]);
 
   const markdownComponents = useMemo(
-    () => createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, mermaidTheme, post?.imageDimensions, headings),
-    [mermaidRenderer, mermaidTheme, post?.id, post?.imageDimensions, headings]
+    () => createMarkdownComponents((image) => setPreviewImage(image), mermaidRenderer, mermaidTheme, post?.imageDimensions, headings, shouldReduceMotion),
+    [mermaidRenderer, mermaidTheme, post?.id, post?.imageDimensions, headings, shouldReduceMotion]
   );
 
   if (loading) {

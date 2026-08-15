@@ -1,7 +1,7 @@
 import { isReadingComplete } from '@/utils/readingProgress';
 
-export const READING_HISTORY_STORAGE_KEY = 'd-blog-reading-history-v1';
-export const READING_HISTORY_EVENT = 'd-blog:reading-history-change';
+const READING_HISTORY_STORAGE_KEY = 'd-blog-reading-history-v1';
+const READING_HISTORY_EVENT = 'd-blog:reading-history-change';
 
 export interface ReadingHistoryEntry {
   postId: string;
@@ -48,7 +48,7 @@ const writeEntries = (entries: ReadingHistoryEntry[]) => {
     window.localStorage.setItem(READING_HISTORY_STORAGE_KEY, JSON.stringify(entries));
     notify();
   } catch {
-    // Reading history is optional; private browsing or quota limits should not break reading.
+    // 阅读历史为可选能力：隐私模式或配额限制不应影响阅读。
   }
 };
 

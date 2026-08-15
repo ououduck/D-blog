@@ -1,8 +1,8 @@
 import { BASE_CANVAS_WIDTH, CANVAS_SAFE_MARGIN } from './coverConstants';
 import type { BackgroundFit, CanvasSize, CoverRatio, FittedText, LayoutMode } from './coverTypes';
 
-export type TextMeasure = (text: string, fontSize: number) => number;
-export interface FitTextOptions {
+type TextMeasure = (text: string, fontSize: number) => number;
+interface FitTextOptions {
   maxWidth: number;
   maxLines: number;
   fontSize: number;
@@ -10,7 +10,7 @@ export interface FitTextOptions {
   lineHeight?: number;
 }
 
-export interface LayoutMetricsOptions {
+interface LayoutMetricsOptions {
   size: CanvasSize;
   layout: LayoutMode;
   leftText: string;
@@ -27,7 +27,7 @@ export interface LayoutMetricsOptions {
   minFontSize?: number;
 }
 
-export interface LayoutMetrics {
+interface LayoutMetrics {
   scale: number;
   scaled: boolean;
   overflow: boolean;

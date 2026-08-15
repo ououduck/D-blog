@@ -1,6 +1,6 @@
 import type { CoverRatio } from '../pages/cover/coverTypes';
 
-export interface CoverSizePreset extends CoverRatio {
+interface CoverSizePreset extends CoverRatio {
   id: string;
   description: string;
 }

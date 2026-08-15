@@ -33,7 +33,7 @@ const inferRelativeBasePath = (currentPath: string): string => {
   return cleanDirectory === '/' ? '/' : `${cleanDirectory}/`;
 };
 
-export const normalizeBasePath = (value?: string, currentPath?: string): string => {
+const normalizeBasePath = (value?: string, currentPath?: string): string => {
   const raw = value?.trim().replace(/\\/g, '/');
 
   if (!raw || raw === '/') {
@@ -66,7 +66,7 @@ const splitSuffix = (value: string) => {
 
 const trimLeadingSlash = (value: string) => value.replace(/^\/+/, '');
 
-export const withBasePath = (value: string, basePath = getSiteBasePath()): string => {
+const withBasePath = (value: string, basePath = getSiteBasePath()): string => {
   if (!value || isExternalUrl(value) || value.startsWith('#')) {
     return value;
   }

@@ -10,5 +10,3 @@ const initialShuoShuo = Object.values(generatedShuoShuoModules)[0] ?? [];
 
 /** 同步读取构建期内联的说说列表（SSG / 首帧渲染用），已按日期倒序。 */
 export const getInitialShuoShuo = (): ShuoShuo[] => initialShuoShuo;
-
-export const getShuoShuo = async (): Promise<ShuoShuo[]> => initialShuoShuo;

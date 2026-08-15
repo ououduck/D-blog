@@ -1,6 +1,6 @@
-export type RgbColor = { r: number; g: number; b: number };
+type RgbColor = { r: number; g: number; b: number };
 
-export interface ColorDecision {
+interface ColorDecision {
   color: '#ffffff' | '#1a1a2e';
   contrast: number;
   lowContrast: boolean;

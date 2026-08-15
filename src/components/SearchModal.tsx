@@ -54,7 +54,7 @@ const writeSearchHistory = (history: string[]) => {
   try {
     localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
   } catch {
-    // Search history is optional and should not block navigation.
+    // 搜索历史为可选能力，不应阻塞导航。
   }
 };
 

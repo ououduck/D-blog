@@ -97,7 +97,7 @@ const ThemeToggle = () => {
         effectiveTheme = saved;
       }
     } catch {
-      // Theme persistence is optional when browser storage is unavailable.
+      // 浏览器存储不可用时，主题持久化为可选能力。
     }
 
     const applyTheme = (nextTheme: Theme) => {
@@ -149,7 +149,7 @@ const ThemeToggle = () => {
     try {
       localStorage.setItem('theme', effectiveTheme);
     } catch {
-      // Theme persistence is optional when browser storage is unavailable.
+      // 浏览器存储不可用时，主题持久化为可选能力。
     }
 
     const detachSystemListener = attachSystemListener();
@@ -197,7 +197,7 @@ const ThemeToggle = () => {
 
 type MobileNavPhase = 'closed' | 'opening' | 'open' | 'closing';
 
-export const MOBILE_NAV_ANIMATION_DURATION_MS = 340;
+const MOBILE_NAV_ANIMATION_DURATION_MS = 340;
 
 export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
   const [mobileNavPhase, setMobileNavPhase] = useState<MobileNavPhase>('closed');
@@ -324,7 +324,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     afterCloseActionRef.current = null;
 
     if (!afterCloseAction) {
-      // Wait for the trigger to leave its disabled animation state before restoring focus.
+      // 等触发按钮离开禁用动画状态后再恢复焦点。
       window.requestAnimationFrame(() => {
         const focusTarget = previousActiveElementRef.current ?? mobileNavMenuButtonRef.current;
         focusTarget?.focus();
@@ -422,7 +422,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     requestCloseMobileNav(() => navigate(path));
   }, [isMobileNavAnimating, location.pathname, navigate, requestCloseMobileNav]);
 
-  // Swipe-to-close gesture handlers
+  // 滑动关闭手势处理
   // iOS 上 React 合成的 touchmove 监听是 passive 的，无法 preventDefault：
   // 手势进行中如果不阻止原生滚动，菜单内的滚动容器会同时橡皮筋回弹/滚动，
   // 与面板的 transform 位移叠加，造成“双拖”卡顿。因此在确认进入拖拽后，
@@ -495,7 +495,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     touchCurrentYRef.current = currentY;
     touchCurrentXRef.current = currentX;
 
-    // Only drag for a predominantly downward gesture from the top of the scrollable menu.
+    // 仅当从可滚动菜单顶部开始、以向下为主的手势才触发拖拽。
     const isAtScrollTop = Boolean(mobileNavScrollRef.current && mobileNavScrollRef.current.scrollTop <= 1);
     if (deltaY <= 0 || deltaY <= Math.abs(deltaX) || !canStartSwipeRef.current || !isAtScrollTop) {
       return;
@@ -508,7 +508,7 @@ export const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       engageNativeSwipeCapture(panel);
       panel.dataset.swiping = 'true';
       panel.style.transform = `translate3d(0, ${deltaY}px, 0)`;
-      // Dim backdrop proportionally
+      // 按位移比例调暗背景遮罩
       const backdrop = panel.parentElement?.querySelector('.mobile-nav-backdrop') as HTMLElement | null;
       if (backdrop) {
         const panelHeight = panel.offsetHeight || 1;
@@ -952,7 +952,7 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
   const routeVariants = prefersReducedMotion
     ? { initial: { opacity: 1 }, animate: { opacity: 1 }, exit: { opacity: 1 } }
     : routeShellVariants;
-  // Keep query-only changes mounted so typing in search does not restart the home animation.
+  // 仅 query 变化时保持组件挂载，避免搜索输入导致首页动画重启。
   const routeContentKey = location.pathname;
 
   useEffect(() => {

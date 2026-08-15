@@ -1,17 +1,17 @@
 import type { Post, PostMetadata } from '../types';
 import { assetUrl, routeUrl } from '@/utils/siteUrl';
 
-export const OFFLINE_POSTS_DB_NAME = 'd-blog-offline-posts';
-export const OFFLINE_POSTS_DB_VERSION = 2;
-export const OFFLINE_POSTS_STORE_NAME = 'posts';
-export const OFFLINE_POSTS_TOMBSTONE_STORE_NAME = 'tombstones';
-export const OFFLINE_POSTS_SCHEMA = 'd-blog-offline-post';
-export const OFFLINE_POSTS_SCHEMA_VERSION = 1;
-export const OFFLINE_POSTS_STORAGE_KEY = 'd-blog-offline-posts-v1';
-export const OFFLINE_POSTS_SYNC_KEY = `${OFFLINE_POSTS_STORAGE_KEY}:sync`;
-export const OFFLINE_POSTS_TOMBSTONES_KEY = `${OFFLINE_POSTS_STORAGE_KEY}:tombstones`;
-export const OFFLINE_POSTS_EVENT_NAME = 'd-blog:offline-posts-change';
-export const OFFLINE_POSTS_CHANNEL_NAME = 'd-blog-offline-posts';
+const OFFLINE_POSTS_DB_NAME = 'd-blog-offline-posts';
+const OFFLINE_POSTS_DB_VERSION = 2;
+const OFFLINE_POSTS_STORE_NAME = 'posts';
+const OFFLINE_POSTS_TOMBSTONE_STORE_NAME = 'tombstones';
+const OFFLINE_POSTS_SCHEMA = 'd-blog-offline-post';
+const OFFLINE_POSTS_SCHEMA_VERSION = 1;
+const OFFLINE_POSTS_STORAGE_KEY = 'd-blog-offline-posts-v1';
+const OFFLINE_POSTS_SYNC_KEY = `${OFFLINE_POSTS_STORAGE_KEY}:sync`;
+const OFFLINE_POSTS_TOMBSTONES_KEY = `${OFFLINE_POSTS_STORAGE_KEY}:tombstones`;
+const OFFLINE_POSTS_EVENT_NAME = 'd-blog:offline-posts-change';
+const OFFLINE_POSTS_CHANNEL_NAME = 'd-blog-offline-posts';
 
 export type OfflinePost = PostMetadata & {
   savedAt: number;
@@ -21,8 +21,8 @@ export type OfflinePost = PostMetadata & {
 };
 
 export type OfflinePostInput = PostMetadata | Post;
-export type OfflinePostsListener = () => void;
-export type OfflinePostTombstones = Record<string, number>;
+type OfflinePostsListener = () => void;
+type OfflinePostTombstones = Record<string, number>;
 
 type UnknownRecord = Record<string, unknown>;
 type OfflinePostTombstone = { id: string; deletedAt: number };

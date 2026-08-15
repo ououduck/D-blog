@@ -1,11 +1,11 @@
 import type { PostMetadata } from '@/types';
 
-export interface StatCountItem {
+interface StatCountItem {
   name: string;
   count: number;
 }
 
-export interface SiteStatsPostSummary extends Pick<PostMetadata, 'id' | 'title' | 'excerpt' | 'date' | 'updatedAt' | 'category' | 'tags' | 'coverImage' | 'readTime'> {
+interface SiteStatsPostSummary extends Pick<PostMetadata, 'id' | 'title' | 'excerpt' | 'date' | 'updatedAt' | 'category' | 'tags' | 'coverImage' | 'readTime'> {
   wordCount?: number;
   imageCount?: number;
 }

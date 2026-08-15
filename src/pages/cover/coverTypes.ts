@@ -24,20 +24,20 @@ export interface ShadowConfig {
   opacity: number;
 }
 
-export interface StrokeConfig {
+interface StrokeConfig {
   enabled: boolean;
   width: number;
   color: string;
 }
 
-export interface OverlayConfig {
+interface OverlayConfig {
   enabled: boolean;
   blur: number;
   opacity: number;
   color: string;
 }
 
-export interface BackgroundImageConfig {
+interface BackgroundImageConfig {
   image: CanvasImageSource;
   x: number;
   y: number;
@@ -49,7 +49,7 @@ export interface BackgroundImageConfig {
   flipY: boolean;
 }
 
-export interface IconConfig {
+interface IconConfig {
   show: boolean;
   source: string | CanvasImageSource | null;
   size: number;
@@ -57,7 +57,7 @@ export interface IconConfig {
   backgroundEnabled: boolean;
 }
 
-export interface DecorationConfig {
+interface DecorationConfig {
   showCorners: boolean;
   cornerColor: string;
   cornerOpacity: number;
@@ -66,7 +66,7 @@ export interface DecorationConfig {
   separatorOpacity: number;
 }
 
-export interface RenderDiagnostics {
+interface RenderDiagnostics {
   scaled: boolean;
   truncated: boolean;
   overflow: boolean;

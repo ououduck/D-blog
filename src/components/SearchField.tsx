@@ -2,9 +2,9 @@ import React, { forwardRef } from 'react';
 import { Search, X } from 'lucide-react';
 
 type SearchFieldSize = 'default' | 'large';
-export type SearchFieldVariant = 'default' | 'embedded' | 'subtle';
+type SearchFieldVariant = 'default' | 'embedded' | 'subtle';
 
-export interface SearchFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'type' | 'onChange'> {
+interface SearchFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'type' | 'onChange'> {
   size?: SearchFieldSize;
   variant?: SearchFieldVariant;
   onValueChange?: (value: string) => void;

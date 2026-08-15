@@ -5,7 +5,7 @@
  * "2026-03-14" 解析为 UTC 午夜，在 UTC+8 等东时区会倒退到前一天，
  * 导致文章排序与日期格式化出错。本地时区构造保证日历日始终正确。
  */
-export const parseISODate = (dateText: string) => {
+const parseISODate = (dateText: string) => {
   const [yearText, monthText, dayText] = dateText.split('-');
   const year = Number.parseInt(yearText, 10);
   const month = Number.parseInt(monthText, 10);

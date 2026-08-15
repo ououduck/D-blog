@@ -9,7 +9,7 @@ import {
   type OfflinePostInput
 } from '@/services/offlinePosts';
 
-export interface UseOfflinePostsResult {
+interface UseOfflinePostsResult {
   posts: OfflinePost[];
   /** 正在从本地存储读取当前文章/列表时的加载态。 */
   loading: boolean;

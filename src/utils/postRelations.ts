@@ -12,7 +12,7 @@ export interface SeriesNavigation {
 const comparePostsByDateAndId = (a: PostMetadata, b: PostMetadata) =>
   getDateTimestamp(b.date) - getDateTimestamp(a.date) || a.id.localeCompare(b.id);
 
-export const getSeriesPosts = (posts: PostMetadata[], post: PostMetadata) => {
+const getSeriesPosts = (posts: PostMetadata[], post: PostMetadata) => {
   if (!post.series || !post.seriesName) return [];
 
   return posts
@@ -36,7 +36,7 @@ export const getSeriesNavigation = (posts: PostMetadata[], post: PostMetadata): 
   };
 };
 
-export interface RelatedPostsOptions {
+interface RelatedPostsOptions {
   limit?: number;
   excludeIds?: Iterable<string>;
 }

@@ -48,7 +48,7 @@ export const CookieNotice: React.FC = () => {
     try {
       localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
     } catch {
-      // Consent persistence is best effort when browser storage is unavailable.
+      // 浏览器存储不可用时，同意状态的持久化为尽力而为。
     }
     setIsVisible(false);
   };

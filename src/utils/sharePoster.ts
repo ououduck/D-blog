@@ -8,7 +8,7 @@
  * 保证海报在任何网络/图床配置下都能生成。
  */
 
-export interface SharePosterOptions {
+interface SharePosterOptions {
   title: string;
   excerpt: string;
   url: string;
@@ -81,8 +81,10 @@ const wrapCanvasText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: n
   let currentLine = '';
   const tokens = tokenizeText(text.replace(/\s+/g, ' ').trim());
 
+  // 允许压入 maxLines + 1 行：最后一行作为“溢出哨兵”，
+  // 使下方 lines.length > maxLines 的截断加省略号逻辑得以触发。
   const pushLine = (line: string) => {
-    if (lines.length < maxLines) lines.push(line);
+    if (lines.length <= maxLines) lines.push(line);
   };
 
   for (const token of tokens) {

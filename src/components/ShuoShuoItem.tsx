@@ -18,7 +18,7 @@ const getImageGridClass = (count: number) => {
   return 'grid-cols-3';
 };
 
-export const ImageGrid: React.FC<{ images: string[]; onPreview: (src: string, alt?: string) => void }> = ({ images, onPreview }) => {
+const ImageGrid: React.FC<{ images: string[]; onPreview: (src: string, alt?: string) => void }> = ({ images, onPreview }) => {
   const count = images.length;
 
   return (
@@ -27,7 +27,7 @@ export const ImageGrid: React.FC<{ images: string[]; onPreview: (src: string, al
         <button
           key={`${src}-${index}`}
           type="button"
-          onClick={() => onPreview(src, `说说图片 ${index + 1}`)}
+          onClick={() => onPreview(assetUrl(src), `说说图片 ${index + 1}`)}
           className={`group relative block w-full overflow-hidden rounded-control border border-zinc-200 bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:focus-visible:outline-zinc-100 ${count === 1 ? 'aspect-[4/3]' : 'aspect-square'}`}
           aria-label={`查看图片 ${index + 1}`}
         >

@@ -3,7 +3,7 @@ import {
   ICON_IMAGE_MAX_BYTES, IMAGE_MIME_TYPES
 } from './coverConstants';
 
-export type ImageUploadKind = 'background' | 'icon';
+type ImageUploadKind = 'background' | 'icon';
 
 function assertFile(file: File | null | undefined): asserts file is File {
   if (!file) throw new Error('请选择要上传的文件');
@@ -30,7 +30,7 @@ function validateFontFile(file: File | null | undefined): File {
   return file;
 }
 
-export interface LoadResourceOptions {
+interface LoadResourceOptions {
   timeoutMs?: number;
   signal?: AbortSignal;
 }
