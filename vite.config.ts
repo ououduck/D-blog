@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { normalizeBasePath } from './config/basePath';
 
 const offlinePostAssetsPlugin = (): Plugin => ({
   name: 'offline-post-assets',
@@ -331,26 +332,6 @@ const collectRequestBody = (req: {
   });
 
 // Use loadEnv inside defineConfig so .env values are available during Vite config evaluation.
-const normalizeBasePath = (value?: string) => {
-  let trimmed = value?.trim().replace(/\\/g, '/');
-  if (!trimmed) {
-    return '/';
-  }
-
-  // Git Bash may rewrite /repo/ into its own filesystem path before npm runs.
-  const msysGitPath = trimmed.match(/^[a-z]:\//i) ? trimmed.match(/\/git\/(.+)$/i) : null;
-  if (msysGitPath?.[1]) {
-    trimmed = `/${msysGitPath[1]}`;
-  }
-
-  if (trimmed === '.' || trimmed === './') {
-    return './';
-  }
-
-  const normalized = trimmed.replace(/^\/+|\/+$/g, '');
-  return normalized ? `/${normalized}/` : '/';
-};
-
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   const appBase = normalizeBasePath(env.VITE_BASE_PATH);
