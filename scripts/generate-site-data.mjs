@@ -28,18 +28,21 @@ logger.start('Generate site data');
  * 本脚本主体为顶层同步逻辑，任何校验/解析 throw（如 front matter 校验失败）
  * 都会触发 uncaughtException。这里结构化记录错误并以非零码退出，
  * 替代 Node 默认的裸堆栈打印，便于在 Actions 日志中快速定位失败原因。
- * 注意：非零退出码由 build.mjs 阶段判定，行为不变（构建失败）。
+ * 注意：用 process.exitCode 而非 process.exit(1)——前者让事件循环自然收尾、
+ * stdout/stderr 日志完成 flush 后再退出（避免日志被截断）；脚本为顶层同步
+ * 逻辑，异常后没有挂起的异步工作，进程随即退出。非零码由 build.mjs 阶段
+ * 判定，构建失败行为不变。
  */
 process.on('uncaughtException', (error) => {
   logger.error('Site data generation failed', error instanceof Error ? error.stack : String(error));
-  process.exit(1);
+  process.exitCode = 1;
 });
 process.on('unhandledRejection', (reason) => {
   logger.error(
     'Unhandled promise rejection during site data generation',
     reason instanceof Error ? reason.stack : String(reason),
   );
-  process.exit(1);
+  process.exitCode = 1;
 });
 
 const siteConfig = loadSiteConfig({ logger });
@@ -132,18 +135,19 @@ const markdownToSearchText = (markdown) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-const countWords = (markdown) => {
+/** 统计 Markdown 的可读单元数：汉字按字、拉丁字符按词（countWords / calculateReadTime 共用同一口径）。 */
+const countReadingUnits = (markdown) => {
   const plainText = markdownToSearchText(markdown);
   const hanCharacters = (plainText.match(/[\u4e00-\u9fff]/g) || []).length;
   const latinWords = (plainText.replace(/[\u4e00-\u9fff]/g, ' ').match(/[A-Za-z0-9_]+/g) || []).length;
   return hanCharacters + latinWords;
 };
 
-const countImages = (markdown) => parseMarkdownImages(markdown).length;
+const countWords = (markdown) => countReadingUnits(markdown);
 
-// 外链图片（图床）无法在构建期读取尺寸：coverWidth/coverHeight 恒为空，
-// 由前端 CSS aspect-ratio 兜底；正文图片维度（imageDimensions）也一并停用。
-// 本地 posts-img/ 路径仍被 post-content-validator 校验（文件必须存在）。
+// 正文图片数量统计：外链图床图片无法在构建期读取尺寸（由前端 CSS aspect-ratio
+// 兜底）；本地 posts-img/ 路径仍被 post-content-validator 校验（文件必须存在）。
+const countImages = (markdown) => parseMarkdownImages(markdown).length;
 
 const generateSiteStats = (postsWithSearch) => {
   const totalPosts = postsWithSearch.length;
@@ -226,11 +230,7 @@ const generateSiteStats = (postsWithSearch) => {
 };
 
 const calculateReadTime = (markdown) => {
-  const plainText = markdownToSearchText(markdown);
-  const hanCharacters = (plainText.match(/[\u4e00-\u9fff]/g) || []).length;
-  const latinWords = (plainText.replace(/[\u4e00-\u9fff]/g, ' ').match(/[A-Za-z0-9_]+/g) || []).length;
-  const readingUnits = hanCharacters + latinWords;
-  const minutes = Math.max(1, Math.ceil(readingUnits / 300));
+  const minutes = Math.max(1, Math.ceil(countReadingUnits(markdown) / 300));
 
   return `${minutes}分钟阅读`;
 };
