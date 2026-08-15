@@ -67,6 +67,7 @@ import { ReadingModeToggle } from '@/components/ReadingModeToggle';
 import { GiscusComments } from '@/components/GiscusComments';
 import { useSsgRouteData } from '@/ssr/routeData';
 import { fillBusuanziSpans } from '@/services/busuanzi';
+import { HEADING_SCROLL_OFFSET } from '@/utils/scroll';
 
 type MarkdownImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   previewSrc?: string;
@@ -81,9 +82,6 @@ type MermaidRenderer = {
 };
 
 type MermaidStatus = 'idle' | 'loading' | 'ready' | 'error';
-
-// 标题锚点滚动时预留的顶部偏移（与 TableOfContents 保持一致），避免标题被固定头部遮挡。
-const HEADING_SCROLL_OFFSET = 104;
 
 const getIsDarkTheme = () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 

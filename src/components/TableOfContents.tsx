@@ -11,6 +11,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 import { siteConfig } from '@config/site.config';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
+import { HEADING_SCROLL_OFFSET } from '@/utils/scroll';
 import type { MarkdownHeading } from '@/utils/headings';
 import {
   buildHeadingTree,
@@ -43,7 +44,6 @@ const MOBILE_TOC_SHEET_STYLE = {
 const MOBILE_SCROLL_STYLE = {
   WebkitOverflowScrolling: 'touch' as const,
 };
-const HEADING_SCROLL_OFFSET = 104;
 
 const getHeadingTop = (element: HTMLElement) => element.getBoundingClientRect().top + window.scrollY;
 
