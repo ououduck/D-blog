@@ -1,3 +1,7 @@
+/**
+ * 文章目录：桌面悬浮 popover + 移动端底部 sheet，支持滚动高亮、搜索过滤、折叠/展开与进度条。
+ */
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';

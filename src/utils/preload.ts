@@ -1,3 +1,7 @@
+/**
+ * 路由级预加载：悬停时按需加载目标页面 chunk，受网络状态（saveData/2g）约束并去重。
+ */
+
 type ModuleLoader = () => Promise<{ default: React.ComponentType }>;
 
 type NetworkInformation = {

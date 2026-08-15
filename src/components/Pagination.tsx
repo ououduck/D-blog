@@ -1,3 +1,7 @@
+/**
+ * 分页组件：页码/上一页/下一页导航，支持 URL 参数同步与键盘可达性。
+ */
+
 import React, { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 

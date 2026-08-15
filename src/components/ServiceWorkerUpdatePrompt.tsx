@@ -1,3 +1,7 @@
+/**
+ * Service Worker 新版本提示条：检测到更新时提示「立即更新/稍后」，并同步底部悬浮控件的高度变量。
+ */
+
 import React, { useEffect, useState } from 'react';
 import {
   applyServiceWorkerUpdate,

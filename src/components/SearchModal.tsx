@@ -1,3 +1,7 @@
+/**
+ * 站内搜索弹层：防抖全文搜索、范围切换、搜索历史、键盘导航与结果高亮，集成共享弹层滚动锁。
+ */
+
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Box, Search, X, ExternalLink } from 'lucide-react';

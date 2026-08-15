@@ -1,3 +1,7 @@
+/**
+ * 文章图片预览弹层：滚轮/双指缩放、拖拽平移、双击切换与下载原图，经 createPortal 挂载到 body。
+ */
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';

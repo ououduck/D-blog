@@ -1,3 +1,7 @@
+/**
+ * Markdown 标题工具：从正文提取标题（含层级/锚点 id）、净化文本、slugify 与 React 节点文本提取，供 TOC 与锚点渲染共用。
+ */
+
 import React from 'react';
 import { extractMarkdownHeadings, slugifyHeading, stripInlineMarkdown } from './headings-core.mjs';
 

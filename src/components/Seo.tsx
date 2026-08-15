@@ -1,3 +1,7 @@
+/**
+ * SEO 元信息组件：基于 react-helmet-async 输出 title/description/canonical/OG/Twitter/JSON-LD，全站页面统一入口。
+ */
+
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';

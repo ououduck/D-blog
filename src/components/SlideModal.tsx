@@ -1,3 +1,7 @@
+/**
+ * 通用滑出弹层：移动端底部抽屉 / 桌面居中对话框，含焦点陷阱、滚动锁与退出动画。
+ */
+
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';

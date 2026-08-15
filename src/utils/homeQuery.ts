@@ -1,3 +1,7 @@
+/**
+ * 首页 URL 查询参数工具：sort/page 的解析、规范化与更新（canonical 防抖）。
+ */
+
 type HomeSortOrder = 'newest' | 'oldest';
 
 interface HomeQueryState {

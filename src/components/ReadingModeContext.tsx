@@ -1,3 +1,7 @@
+/**
+ * 阅读模式全局状态：开启/退出切换（路由离开自动退出），供文章页与导航栏联动。
+ */
+
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';

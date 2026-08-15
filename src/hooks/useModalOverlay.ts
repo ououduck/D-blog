@@ -1,3 +1,7 @@
+/**
+ * 弹层叠加管理 hook：栈式滚动锁、焦点陷阱（Tab 循环/初始聚焦/关闭还原）、Escape 关闭，供全部弹层/抽屉复用。
+ */
+
 import { useEffect, type RefObject, useRef } from 'react';
 
 interface UseModalOverlayOptions {

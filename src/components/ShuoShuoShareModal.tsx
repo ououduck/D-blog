@@ -1,3 +1,7 @@
+/**
+ * 说说分享弹层：为单条说说生成分享链接与海报。
+ */
+
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { X, Copy, Check, Link as LinkIcon } from 'lucide-react';
 import { SlideModal } from './SlideModal';

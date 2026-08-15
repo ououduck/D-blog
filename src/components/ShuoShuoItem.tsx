@@ -1,3 +1,7 @@
+/**
+ * 说说条目：正文、九宫格图片（可预览）、日期与分享入口。
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';

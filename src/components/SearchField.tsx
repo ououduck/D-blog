@@ -1,3 +1,7 @@
+/**
+ * 搜索输入框：放大镜图标 + 清除按钮 + 可选尾部操作（endAction），带 iOS 聚焦字号防放大处理。
+ */
+
 import React, { forwardRef } from 'react';
 import { Search, X } from 'lucide-react';
 

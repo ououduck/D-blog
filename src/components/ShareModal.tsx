@@ -1,3 +1,7 @@
+/**
+ * 分享弹层：复制链接 + 生成并下载分享海报（canvas 合成封面/二维码/头像）。
+ */
+
 import React, { useId, useRef, useState } from 'react';
 import { X, Copy, Check, Link as LinkIcon, Image as ImageIcon, Download, LoaderCircle, RefreshCw } from 'lucide-react';
 import { SlideModal } from './SlideModal';

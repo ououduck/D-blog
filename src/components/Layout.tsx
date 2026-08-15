@@ -1,3 +1,7 @@
+/**
+ * 全站布局壳：顶栏导航（含主题切换/移动端抽屉）、页脚、背景纹理与路由内容容器；提供页面级快捷键与不蒜子统计上报。
+ */
+
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {

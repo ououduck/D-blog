@@ -1,3 +1,7 @@
+/**
+ * 新文章订阅引导卡片：跳转 GitHub Issue 的 Subscribe 订阅入口，带外链安全属性。
+ */
+
 import { Bell, ExternalLink, Github } from 'lucide-react';
 
 export const ISSUE_SUBSCRIPTION_URL = 'https://github.com/ououduck/D-blog/issues/6';

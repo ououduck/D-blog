@@ -1,3 +1,7 @@
+/**
+ * 404 状态块：标题/描述/返回入口，可选 debugLabel 展示调试信息（404 与文章缺失页共用）。
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Compass } from 'lucide-react';

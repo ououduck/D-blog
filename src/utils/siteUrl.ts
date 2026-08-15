@@ -1,3 +1,7 @@
+/**
+ * 站点 URL 工具：base path 推断/归一化、路由与静态资源 URL 拼接、绝对站点 URL 生成（供 SEO 与 SW 注册共用）。
+ */
+
 const FALLBACK_BASE_PATH = '/';
 
 const RELATIVE_BASE_ROUTE_MARKERS = [

@@ -1,3 +1,7 @@
+/**
+ * 文章关联计算：相邻（上一篇/下一篇）、系列导航与相关文章（同分类/同标签权重评分）。
+ */
+
 import type { PostMetadata } from '../types';
 import { getDateTimestamp } from './date';
 

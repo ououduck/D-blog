@@ -1,3 +1,7 @@
+/**
+ * 文章列表排序纯函数：按发布时间升/降序，保持稳定。
+ */
+
 import type { PostMetadata } from '@/types';
 import { getDateTimestamp } from '@/utils/date';
 import { isPinnedFeaturedPost } from '@/utils/postSelection';

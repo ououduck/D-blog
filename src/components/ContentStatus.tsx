@@ -1,3 +1,7 @@
+/**
+ * 内容状态展示：空态/错误态提示（含操作按钮），配合 LoadingStatus 覆盖列表类页面的加载与结果态。
+ */
+
 import React from 'react';
 import { mergeClassName } from '@/utils/classNames';
 

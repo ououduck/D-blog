@@ -1,3 +1,7 @@
+/**
+ * 阅读模式切换开关：一键进入/退出专注阅读布局。
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Eye } from 'lucide-react';
 import { useReadingMode } from '@/components/ReadingModeContext';

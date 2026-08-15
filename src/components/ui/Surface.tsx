@@ -1,3 +1,7 @@
+/**
+ * 通用表面容器：card/panel/overlay 三种变体（圆角/边框/背景差异），供弹层、卡片与区块统一承载内容。
+ */
+
 import React, { forwardRef } from 'react';
 import { mergeClassName } from '@/utils/classNames';
 

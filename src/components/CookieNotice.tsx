@@ -1,3 +1,7 @@
+/**
+ * Cookie 同意提示条：localStorage 持久化选择，与弹层共享滚动锁，避免遮挡底部悬浮控件。
+ */
+
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';

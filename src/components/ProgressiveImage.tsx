@@ -1,3 +1,7 @@
+/**
+ * 渐进式图片：占位渐变 + 模糊层 + 淡入过渡，支持 aspectRatio 防 CLS、响应式 sources 与减弱动效降级。
+ */
+
 import React, { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { mergeClassName } from '@/utils/classNames';

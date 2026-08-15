@@ -1,3 +1,7 @@
+/**
+ * 阅读进度百分比徽标：滚动时实时更新文章阅读进度。
+ */
+
 import React, { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { createPortal } from 'react-dom';

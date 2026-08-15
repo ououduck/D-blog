@@ -1,3 +1,7 @@
+/**
+ * 目录树纯函数：从扁平标题构建树、祖先/根分支查询与初始展开状态计算，供 TableOfContents 消费。
+ */
+
 import type { MarkdownHeading } from './headings';
 
 export type TocNode = MarkdownHeading & {
