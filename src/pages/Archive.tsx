@@ -166,7 +166,7 @@ export const ArchivePage = () => {
       return;
     }
     setExpandedYears((previous) => ensureYearExpanded(groups, previous, yearFromUrl));
-  }, [groups, yearFromUrl]);
+  }, [groups, setSearchParams, yearFromUrl]);
 
   // 每个已完成的搜索只自动展开一次；之后用户手动折叠不会反弹。
   useEffect(() => {

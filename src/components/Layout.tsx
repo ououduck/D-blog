@@ -1,6 +1,30 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Sun, Moon, Github, Menu, X, Search, Heart, Monitor, Rss, BookOpen, Archive, Tag, BarChart3, Users, Info, Bookmark, Bell, ChevronDown, Mail, ExternalLink, Image as ImageIcon, MessageSquareText, MessageCircle } from 'lucide-react';
+import {
+  Sun,
+  Moon,
+  Github,
+  Menu,
+  X,
+  Search,
+  Heart,
+  Monitor,
+  Rss,
+  BookOpen,
+  Archive,
+  Tag,
+  BarChart3,
+  Users,
+  Info,
+  Bookmark,
+  Bell,
+  ChevronDown,
+  Mail,
+  ExternalLink,
+  Image as ImageIcon,
+  MessageSquareText,
+  MessageCircle,
+} from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { preloadPage } from '@/utils/preload';
 import { assetUrl } from '@/utils/siteUrl';
@@ -17,7 +41,6 @@ import { easeSmooth, routeTransition } from '@/utils/motion';
 const SearchModal = lazy(() => import('./SearchModal').then((m) => ({ default: m.SearchModal })));
 const BackToTop = lazy(() => import('./BackToTop').then((m) => ({ default: m.BackToTop })));
 
-
 const TEXT = {
   theme: '\u5916\u89c2',
   themeLight: '\u6d45\u8272',
@@ -33,7 +56,7 @@ const TEXT = {
   navSponsor: '\u8d5e\u52a9',
   navAbout: '\u5173\u4e8e',
   navFavorites: '\u6211\u7684\u6536\u85cf',
-  rssFeed: 'RSS \u8ba2\u9605'
+  rssFeed: 'RSS \u8ba2\u9605',
 };
 
 type NavIcon = typeof BookOpen;
@@ -41,7 +64,12 @@ type NavPathItem = { path: string; label: string; hint: string; icon: NavIcon; k
 type NavHrefItem = { href: string; label: string; hint: string; icon: NavIcon; key?: string };
 type NavItem = NavPathItem | NavHrefItem;
 
-const shuoshuoNavItem: NavPathItem = { path: '/shuoshuo', label: TEXT.navShuoShuo, hint: '\u670b\u53cb\u5708\u5f0f\u52a8\u6001', icon: MessageCircle };
+const shuoshuoNavItem: NavPathItem = {
+  path: '/shuoshuo',
+  label: TEXT.navShuoShuo,
+  hint: '\u670b\u53cb\u5708\u5f0f\u52a8\u6001',
+  icon: MessageCircle,
+};
 
 const navItems: NavPathItem[] = [
   { path: '/', label: TEXT.navPosts, hint: '\u6700\u65b0\u5185\u5bb9', icon: BookOpen },
@@ -52,17 +80,47 @@ const navItems: NavPathItem[] = [
   { path: '/friends', label: TEXT.navFriends, hint: '\u53cb\u60c5\u94fe\u63a5', icon: Users },
   { path: '/guestbook', label: TEXT.navGuestbook, hint: '\u7559\u8a00\u4e92\u52a8', icon: MessageSquareText },
   { path: '/sponsor', label: TEXT.navSponsor, hint: '\u8d5e\u52a9\u652f\u6301', icon: Heart },
-  { path: '/about', label: TEXT.navAbout, hint: '\u7ad9\u70b9\u4ecb\u7ecd', icon: Info }
+  { path: '/about', label: TEXT.navAbout, hint: '\u7ad9\u70b9\u4ecb\u7ecd', icon: Info },
 ];
 
 const moreNavItems: NavItem[] = [
-  { key: 'favorites', path: '/favorites', label: TEXT.navFavorites, hint: '\u672c\u5730\u79bb\u7ebf\u9605\u8bfb', icon: Bookmark },
-  { key: 'cover', path: '/cover', label: '\u5c01\u9762\u751f\u6210\u5668', hint: '\u5236\u4f5c\u6587\u7ae0\u5c01\u9762', icon: ImageIcon },
-  { key: 'watermark', path: '/watermark', label: '\u6c34\u5370\u5de5\u5177', hint: '\u7ed9\u56fe\u7247\u6dfb\u52a0\u6587\u5b57\u6c34\u5370', icon: ImageIcon },
+  {
+    key: 'favorites',
+    path: '/favorites',
+    label: TEXT.navFavorites,
+    hint: '\u672c\u5730\u79bb\u7ebf\u9605\u8bfb',
+    icon: Bookmark,
+  },
+  {
+    key: 'cover',
+    path: '/cover',
+    label: '\u5c01\u9762\u751f\u6210\u5668',
+    hint: '\u5236\u4f5c\u6587\u7ae0\u5c01\u9762',
+    icon: ImageIcon,
+  },
+  {
+    key: 'watermark',
+    path: '/watermark',
+    label: '\u6c34\u5370\u5de5\u5177',
+    hint: '\u7ed9\u56fe\u7247\u6dfb\u52a0\u6587\u5b57\u6c34\u5370',
+    icon: ImageIcon,
+  },
   { key: 'email', label: '\u90ae\u4ef6', hint: '\u8054\u7cfb\u4f5c\u8005', icon: Mail, href: siteConfig.social.email },
-  { key: 'github', label: 'GitHub', hint: '\u9879\u76ee\u4ed3\u5e93', icon: Github, href: siteConfig.friendsPage.repoUrl },
+  {
+    key: 'github',
+    label: 'GitHub',
+    hint: '\u9879\u76ee\u4ed3\u5e93',
+    icon: Github,
+    href: siteConfig.friendsPage.repoUrl,
+  },
   { key: 'rss', label: TEXT.rssFeed, hint: '\u8ba2\u9605\u66f4\u65b0', icon: Rss, href: assetUrl('/feed.xml') },
-  { key: 'issue-subscription', label: '\u8ba2\u9605', hint: '\u63a5\u6536\u6587\u7ae0\u63d0\u9192', icon: Bell, href: ISSUE_SUBSCRIPTION_URL }
+  {
+    key: 'issue-subscription',
+    label: '\u8ba2\u9605',
+    hint: '\u63a5\u6536\u6587\u7ae0\u63d0\u9192',
+    icon: Bell,
+    href: ISSUE_SUBSCRIPTION_URL,
+  },
 ];
 
 const isEditableTarget = (target: EventTarget | null) => {
@@ -73,8 +131,6 @@ const isEditableTarget = (target: EventTarget | null) => {
   const tagName = target.tagName.toLowerCase();
   return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
 };
-
-
 
 const ThemeToggle = () => {
   type Theme = 'light' | 'dark' | 'system';
@@ -174,7 +230,11 @@ const ThemeToggle = () => {
   const nextThemeLabel = theme === 'light' ? TEXT.themeDark : theme === 'dark' ? TEXT.themeSystem : TEXT.themeLight;
 
   return (
-    <button onClick={toggleTheme} className="group relative inline-flex h-11 w-11 items-center justify-center rounded-icon border border-zinc-300 bg-zinc-100 text-ink transition-colors hover:border-zinc-500 hover:bg-zinc-200 active:bg-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-500 dark:active:bg-zinc-700" aria-label={`切换外观主题，当前为${currentThemeLabel}，点击切换为${nextThemeLabel}`}>
+    <button
+      onClick={toggleTheme}
+      className="group relative inline-flex h-11 w-11 items-center justify-center rounded-icon border border-zinc-300 bg-zinc-100 text-ink transition-colors hover:border-zinc-500 hover:bg-zinc-200 active:bg-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-500 dark:active:bg-zinc-700"
+      aria-label={`切换外观主题，当前为${currentThemeLabel}，点击切换为${nextThemeLabel}`}
+    >
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={theme}
@@ -235,53 +295,61 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     setDesktopMoreMenuActiveIndex(index);
     window.setTimeout(() => desktopMoreMenuItemRefs.current[index]?.focus(), 0);
   }, []);
-  const handleDesktopMoreMenuButtonKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === 'Escape' && isMoreMenuOpen) {
-      event.preventDefault();
-      closeDesktopMoreMenu(true);
-      return;
-    }
+  const handleDesktopMoreMenuButtonKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (event.key === 'Escape' && isMoreMenuOpen) {
+        event.preventDefault();
+        closeDesktopMoreMenu(true);
+        return;
+      }
 
-    if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      setIsMoreMenuOpen(true);
-      focusDesktopMoreMenuItem(0);
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setIsMoreMenuOpen(true);
-      focusDesktopMoreMenuItem(moreNavItems.length - 1);
-    }
-  }, [closeDesktopMoreMenu, focusDesktopMoreMenuItem, isMoreMenuOpen]);
-  const handleDesktopMoreMenuItemKeyDown = useCallback((event: React.KeyboardEvent<HTMLElement>, index: number) => {
-    const lastIndex = moreNavItems.length - 1;
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Home' || event.key === 'End') {
-      event.preventDefault();
-      const nextIndex = event.key === 'Home'
-        ? 0
-        : event.key === 'End'
-          ? lastIndex
-          : (index + (event.key === 'ArrowDown' ? 1 : -1) + moreNavItems.length) % moreNavItems.length;
-      focusDesktopMoreMenuItem(nextIndex);
-      return;
-    }
+      if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        setIsMoreMenuOpen(true);
+        focusDesktopMoreMenuItem(0);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setIsMoreMenuOpen(true);
+        focusDesktopMoreMenuItem(moreNavItems.length - 1);
+      }
+    },
+    [closeDesktopMoreMenu, focusDesktopMoreMenuItem, isMoreMenuOpen],
+  );
+  const handleDesktopMoreMenuItemKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>, index: number) => {
+      const lastIndex = moreNavItems.length - 1;
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Home' || event.key === 'End') {
+        event.preventDefault();
+        const nextIndex =
+          event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? lastIndex
+              : (index + (event.key === 'ArrowDown' ? 1 : -1) + moreNavItems.length) % moreNavItems.length;
+        focusDesktopMoreMenuItem(nextIndex);
+        return;
+      }
 
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      closeDesktopMoreMenu(true);
-    } else if (event.key === 'Tab') {
-      setIsMoreMenuOpen(false);
-    }
-  }, [closeDesktopMoreMenu, focusDesktopMoreMenuItem]);
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeDesktopMoreMenu(true);
+      } else if (event.key === 'Tab') {
+        setIsMoreMenuOpen(false);
+      }
+    },
+    [closeDesktopMoreMenu, focusDesktopMoreMenuItem],
+  );
   const isMobileNavAnimating = mobileNavPhase === 'opening' || mobileNavPhase === 'closing';
-  const isNavItemActive = (path: string) => location.pathname === path || (path === '/' && location.pathname.startsWith('/post/'));
+  const isNavItemActive = (path: string) =>
+    location.pathname === path || (path === '/' && location.pathname.startsWith('/post/'));
   const mobileQuickActions = [
     {
       key: 'search',
       label: '搜索',
       hint: '快速找内容',
       icon: Search,
-      onClick: () => requestCloseMobileNav(() => onSearchClick())
-    }
+      onClick: () => requestCloseMobileNav(() => onSearchClick()),
+    },
   ];
   const navItemVariants = {
     hidden: { opacity: 0, y: -6 },
@@ -290,9 +358,9 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       y: 0,
       transition: {
         duration: 0.25,
-        ease: easeSmooth
-      }
-    }
+        ease: easeSmooth,
+      },
+    },
   };
 
   const clearAnimationFrame = useCallback(() => {
@@ -335,34 +403,37 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     afterCloseAction?.();
   }, [clearAnimationFrame, clearTransitionTimer]);
 
-  const requestCloseMobileNav = useCallback((afterClose?: () => void) => {
-    afterCloseActionRef.current = afterClose ?? null;
+  const requestCloseMobileNav = useCallback(
+    (afterClose?: () => void) => {
+      afterCloseActionRef.current = afterClose ?? null;
 
-    if (!isMobileNavMounted && mobileNavPhase === 'closed') {
-      const immediateAction = afterCloseActionRef.current;
-      afterCloseActionRef.current = null;
-      immediateAction?.();
-      return;
-    }
+      if (!isMobileNavMounted && mobileNavPhase === 'closed') {
+        const immediateAction = afterCloseActionRef.current;
+        afterCloseActionRef.current = null;
+        immediateAction?.();
+        return;
+      }
 
-    if (mobileNavPhase === 'opening' || mobileNavPhase === 'closing') {
-      return;
-    }
+      if (mobileNavPhase === 'opening' || mobileNavPhase === 'closing') {
+        return;
+      }
 
-    clearAnimationFrame();
-    clearTransitionTimer();
+      clearAnimationFrame();
+      clearTransitionTimer();
 
-    if (mobileNavDuration <= 1) {
-      finalizeClose();
-      return;
-    }
+      if (mobileNavDuration <= 1) {
+        finalizeClose();
+        return;
+      }
 
-    setMobileNavPhase('closing');
-    transitionTimerRef.current = window.setTimeout(() => {
-      transitionTimerRef.current = null;
-      finalizeClose();
-    }, mobileNavDuration);
-  }, [clearAnimationFrame, clearTransitionTimer, finalizeClose, isMobileNavMounted, mobileNavDuration, mobileNavPhase]);
+      setMobileNavPhase('closing');
+      transitionTimerRef.current = window.setTimeout(() => {
+        transitionTimerRef.current = null;
+        finalizeClose();
+      }, mobileNavDuration);
+    },
+    [clearAnimationFrame, clearTransitionTimer, finalizeClose, isMobileNavMounted, mobileNavDuration, mobileNavPhase],
+  );
 
   const openMobileNav = useCallback(() => {
     if (isMobileNavMounted || mobileNavPhase === 'opening' || mobileNavPhase === 'open') {
@@ -409,18 +480,21 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     openMobileNav();
   }, [isMobileNavAnimating, isMobileNavOpen, openMobileNav, requestCloseMobileNav]);
 
-  const handleMobileNavItemSelect = useCallback((path: string) => {
-    if (isMobileNavAnimating) {
-      return;
-    }
+  const handleMobileNavItemSelect = useCallback(
+    (path: string) => {
+      if (isMobileNavAnimating) {
+        return;
+      }
 
-    if (location.pathname === path) {
-      requestCloseMobileNav();
-      return;
-    }
+      if (location.pathname === path) {
+        requestCloseMobileNav();
+        return;
+      }
 
-    requestCloseMobileNav(() => navigate(path));
-  }, [isMobileNavAnimating, location.pathname, navigate, requestCloseMobileNav]);
+      requestCloseMobileNav(() => navigate(path));
+    },
+    [isMobileNavAnimating, location.pathname, navigate, requestCloseMobileNav],
+  );
 
   // 滑动关闭手势处理
   // iOS 上 React 合成的 touchmove 监听是 passive 的，无法 preventDefault：
@@ -466,57 +540,63 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     detachNativeSwipeCapture();
   }, [detachNativeSwipeCapture]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (mobileNavPhase !== 'open') {
-      return;
-    }
-
-    const touch = e.touches[0];
-    touchStartYRef.current = touch.clientY;
-    touchCurrentYRef.current = touch.clientY;
-    touchStartXRef.current = touch.clientX;
-    touchCurrentXRef.current = touch.clientX;
-    touchStartTimeRef.current = Date.now();
-    mobileNavScrollRef.current = mobileNavPanelRef.current?.querySelector<HTMLElement>('.mobile-nav-scroll') ?? null;
-    canStartSwipeRef.current = Boolean(mobileNavScrollRef.current && mobileNavScrollRef.current.scrollTop <= 1);
-    isSwipingRef.current = false;
-  }, [mobileNavPhase]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (mobileNavPhase !== 'open') {
-      return;
-    }
-
-    const touch = e.touches[0];
-    const currentY = touch.clientY;
-    const currentX = touch.clientX;
-    const deltaY = currentY - touchStartYRef.current;
-    const deltaX = currentX - touchStartXRef.current;
-    touchCurrentYRef.current = currentY;
-    touchCurrentXRef.current = currentX;
-
-    // 仅当从可滚动菜单顶部开始、以向下为主的手势才触发拖拽。
-    const isAtScrollTop = Boolean(mobileNavScrollRef.current && mobileNavScrollRef.current.scrollTop <= 1);
-    if (deltaY <= 0 || deltaY <= Math.abs(deltaX) || !canStartSwipeRef.current || !isAtScrollTop) {
-      return;
-    }
-
-    isSwipingRef.current = true;
-    const panel = mobileNavPanelRef.current;
-    if (panel) {
-      // 阻止原生滚动继续，避免面板位移与内部滚动叠加抖动。
-      engageNativeSwipeCapture(panel);
-      panel.dataset.swiping = 'true';
-      panel.style.transform = `translate3d(0, ${deltaY}px, 0)`;
-      // 按位移比例调暗背景遮罩
-      const backdrop = panel.parentElement?.querySelector('.mobile-nav-backdrop') as HTMLElement | null;
-      if (backdrop) {
-        const panelHeight = panel.offsetHeight || 1;
-        const progress = Math.min(deltaY / panelHeight, 1);
-        backdrop.style.opacity = String(1 - progress * 0.6);
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (mobileNavPhase !== 'open') {
+        return;
       }
-    }
-  }, [mobileNavPhase]);
+
+      const touch = e.touches[0];
+      touchStartYRef.current = touch.clientY;
+      touchCurrentYRef.current = touch.clientY;
+      touchStartXRef.current = touch.clientX;
+      touchCurrentXRef.current = touch.clientX;
+      touchStartTimeRef.current = Date.now();
+      mobileNavScrollRef.current = mobileNavPanelRef.current?.querySelector<HTMLElement>('.mobile-nav-scroll') ?? null;
+      canStartSwipeRef.current = Boolean(mobileNavScrollRef.current && mobileNavScrollRef.current.scrollTop <= 1);
+      isSwipingRef.current = false;
+    },
+    [mobileNavPhase],
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (mobileNavPhase !== 'open') {
+        return;
+      }
+
+      const touch = e.touches[0];
+      const currentY = touch.clientY;
+      const currentX = touch.clientX;
+      const deltaY = currentY - touchStartYRef.current;
+      const deltaX = currentX - touchStartXRef.current;
+      touchCurrentYRef.current = currentY;
+      touchCurrentXRef.current = currentX;
+
+      // 仅当从可滚动菜单顶部开始、以向下为主的手势才触发拖拽。
+      const isAtScrollTop = Boolean(mobileNavScrollRef.current && mobileNavScrollRef.current.scrollTop <= 1);
+      if (deltaY <= 0 || deltaY <= Math.abs(deltaX) || !canStartSwipeRef.current || !isAtScrollTop) {
+        return;
+      }
+
+      isSwipingRef.current = true;
+      const panel = mobileNavPanelRef.current;
+      if (panel) {
+        // 阻止原生滚动继续，避免面板位移与内部滚动叠加抖动。
+        engageNativeSwipeCapture(panel);
+        panel.dataset.swiping = 'true';
+        panel.style.transform = `translate3d(0, ${deltaY}px, 0)`;
+        // 按位移比例调暗背景遮罩
+        const backdrop = panel.parentElement?.querySelector('.mobile-nav-backdrop') as HTMLElement | null;
+        if (backdrop) {
+          const panelHeight = panel.offsetHeight || 1;
+          const progress = Math.min(deltaY / panelHeight, 1);
+          backdrop.style.opacity = String(1 - progress * 0.6);
+        }
+      }
+    },
+    [engageNativeSwipeCapture, mobileNavPhase],
+  );
 
   const handleTouchEnd = useCallback(() => {
     if (mobileNavPhase !== 'open') {
@@ -533,7 +613,11 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     // 手势关闭：距离足够（>80px）直接关闭；距离不足但快速甩动（>40px 且速度 >0.11px/ms）也视为有意关闭。
     const elapsed = touchStartTimeRef.current > 0 ? Date.now() - touchStartTimeRef.current : 0;
     const velocity = elapsed > 0 ? deltaY / elapsed : 0;
-    const shouldDismiss = isSwipingRef.current && isAtScrollTop && deltaY > Math.abs(deltaX) && (deltaY > 80 || (deltaY > 40 && velocity > 0.11));
+    const shouldDismiss =
+      isSwipingRef.current &&
+      isAtScrollTop &&
+      deltaY > Math.abs(deltaX) &&
+      (deltaY > 80 || (deltaY > 40 && velocity > 0.11));
 
     if (shouldDismiss) {
       requestCloseMobileNav();
@@ -575,7 +659,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       'textarea:not([disabled])',
       'input:not([disabled])',
       'select:not([disabled])',
-      '[tabindex]:not([tabindex="-1"])'
+      '[tabindex]:not([tabindex="-1"])',
     ].join(',');
 
     const focusPanel = window.setTimeout(() => {
@@ -600,7 +684,9 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
         return;
       }
 
-      const focusableElements = Array.from(panel.querySelectorAll<HTMLElement>(focusableSelector)).filter((element) => element.offsetParent !== null || element === document.activeElement);
+      const focusableElements = Array.from(panel.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+        (element) => element.offsetParent !== null || element === document.activeElement,
+      );
       if (focusableElements.length === 0) {
         event.preventDefault();
         panel.focus();
@@ -653,14 +739,17 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     setIsMoreMenuOpen(false);
   }, [clearAnimationFrame, clearTransitionTimer, isMobileNavMounted, locationKey, resetMobileNavDragStyles]);
 
-  useEffect(() => () => {
-    clearAnimationFrame();
-    clearTransitionTimer();
-    detachNativeSwipeCapture();
-  }, [clearAnimationFrame, clearTransitionTimer, detachNativeSwipeCapture]);
+  useEffect(
+    () => () => {
+      clearAnimationFrame();
+      clearTransitionTimer();
+      detachNativeSwipeCapture();
+    },
+    [clearAnimationFrame, clearTransitionTimer, detachNativeSwipeCapture],
+  );
 
   const mobileNavStyle = {
-    '--mobile-nav-duration': `${mobileNavDuration}ms`
+    '--mobile-nav-duration': `${mobileNavDuration}ms`,
   } as React.CSSProperties;
   const mobileNavPanelStyle = {
     ...mobileNavStyle,
@@ -668,21 +757,37 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
     // 避免在 iPhone 上重复累加两次 inset 造成大面积空白。
     paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     paddingLeft: 'env(safe-area-inset-left, 0px)',
-    paddingRight: 'env(safe-area-inset-right, 0px)'
+    paddingRight: 'env(safe-area-inset-right, 0px)',
   } as React.CSSProperties;
 
   return (
     <>
-      <nav className={`site-navbar fixed left-0 right-0 top-0 ${isMobileNavMounted ? 'z-nav-panel' : 'z-nav'} border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void`}>
+      <nav
+        className={`site-navbar fixed left-0 right-0 top-0 ${isMobileNavMounted ? 'z-nav-panel' : 'z-nav'} border-b border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:border-transparent lg:bg-paper lg:dark:border-transparent lg:dark:bg-void`}
+      >
         {/* 顶部导航：内联 paddingTop 承接刘海/灵动岛的 safe-area-inset-top
             （viewport-fit=cover 下固定顶部元素会贴进屏幕缺口），高度由 min-h 兜底，
             内容在可用区域内保持垂直居中。 */}
-        <motion.div initial={false} className="mx-auto flex min-h-14 max-w-7xl items-center justify-between px-3 sm:min-h-16 sm:px-6 md:min-h-16" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <motion.div
+          initial={false}
+          className="mx-auto flex min-h-14 max-w-7xl items-center justify-between px-3 sm:min-h-16 sm:px-6 md:min-h-16"
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        >
           <Link to="/" className="group z-50 flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
             {/* 站标仅 96px，非 LCP 元素：显式 fetchPriority=auto，
                 避免与文章封面/首图竞争 high 优先级拖慢 LCP */}
-            <ProgressiveImage src={assetUrl(siteConfig.logoSmall)} alt={`${siteConfig.title} 站点标志`} fetchPriority="auto" width={96} height={96} wrapperClassName="h-8 w-8 bg-white sm:h-9 sm:w-9" className="h-8 w-8 object-cover sm:h-9 sm:w-9" />
-            <span className="max-w-[calc(100vw-9.5rem)] truncate font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:max-w-none sm:text-2xl">{siteConfig.title}</span>
+            <ProgressiveImage
+              src={assetUrl(siteConfig.logoSmall)}
+              alt={`${siteConfig.title} 站点标志`}
+              fetchPriority="auto"
+              width={96}
+              height={96}
+              wrapperClassName="h-8 w-8 bg-white sm:h-9 sm:w-9"
+              className="h-8 w-8 object-cover sm:h-9 sm:w-9"
+            />
+            <span className="max-w-[calc(100vw-9.5rem)] truncate font-serif text-lg font-bold tracking-tight text-ink dark:text-white sm:max-w-none sm:text-2xl">
+              {siteConfig.title}
+            </span>
           </Link>
 
           <div className="hidden min-w-0 shrink items-center gap-4 lg:flex">
@@ -733,33 +838,70 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                   onKeyDown={handleDesktopMoreMenuButtonKeyDown}
                 >
                   <span>更多</span>
-                  <ChevronDown size={14} className={`transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`}
+                    aria-hidden="true"
+                  />
                 </button>
-                <div id="desktop-more-menu" role="menu" data-open={isMoreMenuOpen} className="nav-more-menu-panel absolute right-0 top-full z-popover w-64 max-w-[calc(100vw-2rem)] rounded-surface border border-zinc-200 bg-paper p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
+                <div
+                  id="desktop-more-menu"
+                  role="menu"
+                  data-open={isMoreMenuOpen}
+                  className="nav-more-menu-panel absolute right-0 top-full z-popover w-64 max-w-[calc(100vw-2rem)] rounded-surface border border-zinc-200 bg-paper p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-950"
+                >
                   {moreNavItems.map((item, index) => {
                     const Icon = item.icon;
-                    const content = <><Icon size={15} aria-hidden="true" className="shrink-0" /><span className="shrink-0 whitespace-nowrap">{item.label}</span><span className="min-w-0 flex-1 truncate text-right text-[10px] font-normal text-zinc-400">{item.hint}</span></>;
+                    const content = (
+                      <>
+                        <Icon size={15} aria-hidden="true" className="shrink-0" />
+                        <span className="shrink-0 whitespace-nowrap">{item.label}</span>
+                        <span className="min-w-0 flex-1 truncate text-right text-[10px] font-normal text-zinc-400">
+                          {item.hint}
+                        </span>
+                      </>
+                    );
                     const itemProps = {
-                      ref: (element: HTMLElement | null) => { desktopMoreMenuItemRefs.current[index] = element; },
+                      ref: (element: HTMLElement | null) => {
+                        desktopMoreMenuItemRefs.current[index] = element;
+                      },
                       role: 'menuitem' as const,
                       tabIndex: isMoreMenuOpen && index === desktopMoreMenuActiveIndex ? 0 : -1,
-                      onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => handleDesktopMoreMenuItemKeyDown(event, index),
+                      onKeyDown: (event: React.KeyboardEvent<HTMLElement>) =>
+                        handleDesktopMoreMenuItemKeyDown(event, index),
                       onClick: () => closeDesktopMoreMenu(),
-                      className: 'flex min-h-11 min-w-0 items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white'
+                      className:
+                        'flex min-h-11 min-w-0 items-center gap-2 rounded-control px-2.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-ink dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white',
                     };
                     if ('path' in item) {
-                      return <Link key={item.key} {...itemProps} to={item.path} onMouseEnter={() => preloadPage(item.path)}>{content}</Link>;
+                      return (
+                        <Link key={item.key} {...itemProps} to={item.path} onMouseEnter={() => preloadPage(item.path)}>
+                          {content}
+                        </Link>
+                      );
                     }
-                    return <a key={item.key} {...itemProps} href={item.href} target="_blank" rel="noopener noreferrer">{content}<ExternalLink size={11} className="shrink-0" aria-hidden="true" /></a>;
+                    return (
+                      <a key={item.key} {...itemProps} href={item.href} target="_blank" rel="noopener noreferrer">
+                        {content}
+                        <ExternalLink size={11} className="shrink-0" aria-hidden="true" />
+                      </a>
+                    );
                   })}
                 </div>
               </motion.div>
             </motion.div>
 
             <div className="flex shrink-0 items-center gap-2 border-l border-zinc-300 pl-4 dark:border-zinc-700">
-              <motion.button variants={navItemVariants} onClick={onSearchClick} className="group flex h-11 items-center gap-2 rounded-control border border-zinc-300 bg-zinc-100 px-3 text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-200 active:bg-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:active:bg-zinc-700" aria-label="打开站内搜索">
+              <motion.button
+                variants={navItemVariants}
+                onClick={onSearchClick}
+                className="group flex h-11 items-center gap-2 rounded-control border border-zinc-300 bg-zinc-100 px-3 text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-200 active:bg-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:active:bg-zinc-700"
+                aria-label="打开站内搜索"
+              >
                 <Search size={16} />
-                <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">Ctrl+K</span>
+                <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">
+                  Ctrl+K
+                </span>
               </motion.button>
               <motion.div variants={navItemVariants}>
                 <ThemeToggle />
@@ -771,14 +913,28 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             <button onClick={onSearchClick} className="editorial-icon-button h-11 w-11" aria-label="打开站内搜索">
               <Search size={18} />
             </button>
-            <button ref={mobileNavMenuButtonRef} onClick={handleToggleMobileNav} disabled={isMobileNavAnimating} className={`z-50 inline-flex h-11 w-11 items-center justify-center rounded-icon border shadow-none transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 ${
-              isMobileNavOpen
-                ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950'
-                : 'border-zinc-300 bg-paper text-zinc-700 hover:border-zinc-500 hover:bg-zinc-100 hover:text-ink dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white'
-            }`} aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation-panel">
+            <button
+              ref={mobileNavMenuButtonRef}
+              onClick={handleToggleMobileNav}
+              disabled={isMobileNavAnimating}
+              className={`z-50 inline-flex h-11 w-11 items-center justify-center rounded-icon border shadow-none transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 ${
+                isMobileNavOpen
+                  ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950'
+                  : 'border-zinc-300 bg-paper text-zinc-700 hover:border-zinc-500 hover:bg-zinc-100 hover:text-ink dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white'
+              }`}
+              aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'}
+              aria-expanded={isMobileNavOpen}
+              aria-controls="mobile-navigation-panel"
+            >
               <div className="relative flex h-[18px] w-[18px] items-center justify-center">
-                <Menu size={18} className={`absolute transition-[opacity,transform] duration-300 ${isMobileNavOpen ? 'rotate-90 scale-50 opacity-0' : 'rotate-0 scale-100 opacity-100'}`} />
-                <X size={18} className={`absolute transition-[opacity,transform] duration-300 ${isMobileNavOpen ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-50 opacity-0'}`} />
+                <Menu
+                  size={18}
+                  className={`absolute transition-[opacity,transform] duration-300 ${isMobileNavOpen ? 'rotate-90 scale-50 opacity-0' : 'rotate-0 scale-100 opacity-100'}`}
+                />
+                <X
+                  size={18}
+                  className={`absolute transition-[opacity,transform] duration-300 ${isMobileNavOpen ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-50 opacity-0'}`}
+                />
               </div>
             </button>
           </div>
@@ -823,7 +979,9 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
             <div className="mobile-nav-scroll flex flex-col overflow-y-auto px-3.5 pb-4 pt-1 no-scrollbar sm:px-4">
               <div className="flex items-center justify-between border-b border-zinc-200 px-1 pb-4 dark:border-zinc-800">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-500">Navigation</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-500">
+                    Navigation
+                  </p>
                   <h3 className="mt-1 font-serif text-xl font-bold text-ink dark:text-white">{siteConfig.title}</h3>
                 </div>
                 <ThemeToggle />
@@ -848,9 +1006,19 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                       }`}
                       aria-current={isActive ? 'page' : undefined}
                     >
-                      <Icon size={17} strokeWidth={1.8} className={isActive ? 'shrink-0 text-zinc-900 dark:text-zinc-100' : 'shrink-0 text-zinc-400 dark:text-zinc-500'} />
+                      <Icon
+                        size={17}
+                        strokeWidth={1.8}
+                        className={
+                          isActive
+                            ? 'shrink-0 text-zinc-900 dark:text-zinc-100'
+                            : 'shrink-0 text-zinc-400 dark:text-zinc-500'
+                        }
+                      />
                       <span className="min-w-0 flex-1 truncate text-sm font-semibold">{item.label}</span>
-                      <span className="min-w-0 max-w-[50%] truncate text-right text-xs text-zinc-400 dark:text-zinc-500">{item.hint}</span>
+                      <span className="min-w-0 max-w-[50%] truncate text-right text-xs text-zinc-400 dark:text-zinc-500">
+                        {item.hint}
+                      </span>
                     </button>
                   );
                 })}
@@ -865,22 +1033,60 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                   aria-expanded={isMoreMenuOpen}
                   aria-controls="mobile-more-menu"
                 >
-                  <ChevronDown size={17} className={`shrink-0 transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                  <ChevronDown
+                    size={17}
+                    className={`shrink-0 transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`}
+                    aria-hidden="true"
+                  />
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold">更多</span>
-                  <span className="min-w-0 max-w-[50%] truncate text-right text-xs text-zinc-400 dark:text-zinc-500">收藏、工具与订阅</span>
+                  <span className="min-w-0 max-w-[50%] truncate text-right text-xs text-zinc-400 dark:text-zinc-500">
+                    收藏、工具与订阅
+                  </span>
                 </button>
                 <div id="mobile-more-menu" data-open={isMoreMenuOpen} className="mobile-more-menu-panel">
                   <div className="min-h-0 overflow-hidden">
                     <nav className="divide-y divide-zinc-200 dark:divide-zinc-800" aria-label="移动端工具与订阅">
-                      {isMoreMenuOpen && moreNavItems.map((item) => {
-                        const Icon = item.icon;
-                        const className = 'flex w-full min-w-0 items-center gap-3 rounded-control px-1 py-3 text-left text-sm font-semibold text-zinc-600 transition-colors hover:text-ink dark:text-zinc-300 dark:hover:text-white';
-                        const content = <><Icon size={16} aria-hidden="true" className="shrink-0" /><span className="min-w-0 flex-1 truncate">{item.label}</span><span className="min-w-0 max-w-[50%] truncate text-right text-xs font-normal text-zinc-400 dark:text-zinc-500">{item.hint}</span></>;
-                        if ('path' in item) {
-                          return <button key={item.key} type="button" onClick={() => handleMobileNavItemSelect(item.path)} disabled={isMobileNavAnimating} className={className}>{content}</button>;
-                        }
-                        return <a key={item.key} href={item.href} target="_blank" rel="noopener noreferrer" onClick={() => requestCloseMobileNav()} className={className}>{content}<ExternalLink size={12} aria-hidden="true" className="shrink-0" /></a>;
-                      })}
+                      {isMoreMenuOpen &&
+                        moreNavItems.map((item) => {
+                          const Icon = item.icon;
+                          const className =
+                            'flex w-full min-w-0 items-center gap-3 rounded-control px-1 py-3 text-left text-sm font-semibold text-zinc-600 transition-colors hover:text-ink dark:text-zinc-300 dark:hover:text-white';
+                          const content = (
+                            <>
+                              <Icon size={16} aria-hidden="true" className="shrink-0" />
+                              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                              <span className="min-w-0 max-w-[50%] truncate text-right text-xs font-normal text-zinc-400 dark:text-zinc-500">
+                                {item.hint}
+                              </span>
+                            </>
+                          );
+                          if ('path' in item) {
+                            return (
+                              <button
+                                key={item.key}
+                                type="button"
+                                onClick={() => handleMobileNavItemSelect(item.path)}
+                                disabled={isMobileNavAnimating}
+                                className={className}
+                              >
+                                {content}
+                              </button>
+                            );
+                          }
+                          return (
+                            <a
+                              key={item.key}
+                              href={item.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => requestCloseMobileNav()}
+                              className={className}
+                            >
+                              {content}
+                              <ExternalLink size={12} aria-hidden="true" className="shrink-0" />
+                            </a>
+                          );
+                        })}
                     </nav>
                   </div>
                 </div>
@@ -889,9 +1095,25 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
               <div className="mt-3 grid grid-cols-1 gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
                 {mobileQuickActions.map((action) => {
                   const Icon = action.icon;
-                  const className = 'flex min-h-11 items-center justify-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2.5 text-xs font-semibold text-zinc-600 shadow-none transition-colors hover:border-zinc-500 hover:text-zinc-950 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-white dark:active:bg-zinc-800';
-                  const content = <><Icon size={15} /><span>{action.label}</span></>;
-                  return <button key={action.key} type="button" onClick={action.onClick} className={className} disabled={isMobileNavAnimating}>{content}</button>;
+                  const className =
+                    'flex min-h-11 items-center justify-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2.5 text-xs font-semibold text-zinc-600 shadow-none transition-colors hover:border-zinc-500 hover:text-zinc-950 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-white dark:active:bg-zinc-800';
+                  const content = (
+                    <>
+                      <Icon size={15} />
+                      <span>{action.label}</span>
+                    </>
+                  );
+                  return (
+                    <button
+                      key={action.key}
+                      type="button"
+                      onClick={action.onClick}
+                      className={className}
+                      disabled={isMobileNavAnimating}
+                    >
+                      {content}
+                    </button>
+                  );
                 })}
               </div>
             </div>
@@ -907,15 +1129,25 @@ const Footer = () => {
     <footer className="site-footer mt-8 hidden border-t border-zinc-200/90 dark:border-zinc-800/90 md:mt-12 lg:block">
       <div className="mx-auto max-w-7xl px-3 py-8 sm:px-6 md:py-10">
         <div className="max-w-xl">
-          <Link to="/" className="font-serif text-lg font-bold tracking-tight text-ink transition-colors hover:text-zinc-600 dark:text-white dark:hover:text-zinc-300">
+          <Link
+            to="/"
+            className="font-serif text-lg font-bold tracking-tight text-ink transition-colors hover:text-zinc-600 dark:text-white dark:hover:text-zinc-300"
+          >
             {siteConfig.title}
           </Link>
           <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{siteConfig.description}</p>
         </div>
 
         <div className="mt-7 flex flex-col gap-2 border-t border-zinc-200/70 pt-5 text-xs text-zinc-600 dark:border-zinc-800/70 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>{siteConfig.footerText} · {siteConfig.author.name}</p>
-          <a href={siteConfig.beian.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center transition-colors hover:text-ink dark:hover:text-white">
+          <p>
+            {siteConfig.footerText} · {siteConfig.author.name}
+          </p>
+          <a
+            href={siteConfig.beian.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center transition-colors hover:text-ink dark:hover:text-white"
+          >
             {siteConfig.beian.text}
           </a>
         </div>
@@ -925,11 +1157,8 @@ const Footer = () => {
 };
 
 const Background = () => {
-  return (
-    <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden bg-paper dark:bg-void" />
-  );
+  return <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden bg-paper dark:bg-void" />;
 };
-
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -991,7 +1220,10 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
   }, [location.pathname]);
 
   return (
-    <div className={`relative flex min-h-screen flex-col ${isReadingMode ? 'reading-mode-shell' : ''}`} data-reading-mode={isReadingMode ? 'true' : undefined}>
+    <div
+      className={`relative flex min-h-screen flex-col ${isReadingMode ? 'reading-mode-shell' : ''}`}
+      data-reading-mode={isReadingMode ? 'true' : undefined}
+    >
       <Background />
       {!isReadingMode && <Navbar onSearchClick={openSearch} />}
       {hasOpenedSearch && (
@@ -1001,9 +1233,15 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
       )}
       {/* 非阅读模式：main 顶部内边距 = 导航栏高度 + 呼吸间距，并补偿导航栏
           因 safe-area-inset-top 增高的部分，避免内容被顶高的导航遮挡。 */}
-      <main className={`relative min-w-0 w-full flex-grow px-3 sm:px-6 ${isReadingMode ? 'pt-6 sm:pt-8 md:pt-10' : 'pt-[calc(5rem+env(safe-area-inset-top,0px))] sm:pt-[calc(6rem+env(safe-area-inset-top,0px))] md:pt-[calc(6rem+env(safe-area-inset-top,0px))]'}`}>
+      <main
+        className={`relative min-w-0 w-full flex-grow px-3 sm:px-6 ${isReadingMode ? 'pt-6 sm:pt-8 md:pt-10' : 'pt-[calc(5rem+env(safe-area-inset-top,0px))] sm:pt-[calc(6rem+env(safe-area-inset-top,0px))] md:pt-[calc(6rem+env(safe-area-inset-top,0px))]'}`}
+      >
         {hasViewTransition ? (
-          <div key={routeContentKey} style={{ viewTransitionName: 'route-content' }} className="mx-auto min-w-0 w-full max-w-7xl">
+          <div
+            key={routeContentKey}
+            style={{ viewTransitionName: 'route-content' }}
+            className="mx-auto min-w-0 w-full max-w-7xl"
+          >
             {children}
           </div>
         ) : (
@@ -1012,7 +1250,14 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
             initial={false}
             onExitComplete={() => window.scrollTo({ top: 0, behavior: 'auto' as ScrollBehavior })}
           >
-            <motion.div key={routeContentKey} variants={routeVariants} initial="initial" animate="animate" exit="exit" className="mx-auto min-w-0 w-full max-w-7xl">
+            <motion.div
+              key={routeContentKey}
+              variants={routeVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="mx-auto min-w-0 w-full max-w-7xl"
+            >
               {children}
             </motion.div>
           </AnimatePresence>
@@ -1033,4 +1278,3 @@ export const Layout: React.FC<LayoutProps> = (props) => (
     <LayoutShell {...props} />
   </ReadingModeProvider>
 );
-

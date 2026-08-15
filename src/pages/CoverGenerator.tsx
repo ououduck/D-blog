@@ -124,7 +124,6 @@ export const CoverGenerator: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [renderWarnings, setRenderWarnings] = useState<string[]>([]);
-  const customFontFaceRef = useRef<FontFace | null>(null);
   // 会话内上传过的全部自定义字体：换字体/卸载时逐一从 document.fonts 移除，
   // 避免只清理最后一个导致此前上传的 FontFace 永久泄漏。
   const customFontFacesRef = useRef<FontFace[]>([]);
@@ -561,13 +560,18 @@ export const CoverGenerator: React.FC = () => {
 
   useEffect(() => {
     if (!historyReadyRef.current) return;
+    const serialized = JSON.stringify(serializableDraft);
     if (restoringDraftRef.current) {
-      // 恢复提交：本 commit 的 serializableDraft 仍是恢复前的旧状态，
-      // 不能作为基线或写入存储；直接跳过，等待恢复值提交后再走常规路径。
+      // 恢复提交（挂载恢复/撤销/重做/加载预设）：撤销栈的入栈与出栈已由
+      // undo/redo 各自处理，此处不得再把恢复前的状态压入 past；但基线必须
+      // 同步为恢复后的值并持久化，否则刷新会恢复旧状态、后续编辑也会把
+      // 过期的基线压入撤销栈（跳错状态）。
       restoringDraftRef.current = false;
+      const hasBaseline = lastDraftRef.current !== null;
+      lastDraftRef.current = serialized;
+      if (hasBaseline) writeDraft(serializableDraft);
       return;
     }
-    const serialized = JSON.stringify(serializableDraft);
     if (lastDraftRef.current && lastDraftRef.current !== serialized) {
       historyRef.current.past = [...historyRef.current.past, JSON.parse(lastDraftRef.current) as CoverDraft].slice(-50);
       historyRef.current.future = [];
@@ -821,7 +825,6 @@ export const CoverGenerator: React.FC = () => {
       customFontFacesRef.current.forEach((face) => document.fonts.delete(face));
       customFontFacesRef.current = [fontFace];
       document.fonts.add(fontFace);
-      customFontFaceRef.current = fontFace;
       setCustomFont(fontFace.family);
       setFeedback({ kind: 'success', message: '自定义字体已加载' });
     } catch (error) {
@@ -1199,17 +1202,7 @@ export const CoverGenerator: React.FC = () => {
     } finally {
       setIsExporting(false);
     }
-  }, [
-    canvasSize,
-    downloadCanvas,
-    exportFilename,
-    exportFormat,
-    exportScale,
-    isExporting,
-    isGenerating,
-    jpegQuality,
-    renderCanvas,
-  ]);
+  }, [canvasSize, exportFilename, exportFormat, exportScale, isExporting, isGenerating, jpegQuality, renderCanvas]);
 
   const copyToClipboard = useCallback(async () => {
     if (isGenerating || isExporting) return;

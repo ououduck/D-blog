@@ -164,10 +164,18 @@ export function calculateLayoutMetrics(options: LayoutMetricsOptions): LayoutMet
   const mainLines = options.maxTextLines ?? (effectiveLayout === 'text-only' ? 3 : 2);
   const mainLineHeight = options.fontSize * 1.2;
   const subLineHeight = options.subFontSize * 1.2;
+  // icon-split 布局中图标与主文字左右并排，垂直高度取两者最大值（与
+  // coverRenderer 的 groupHeight 口径一致）；其余带图标布局为上下堆叠，直接相加。
+  const iconHeight =
+    options.showIcon && options.hasIcon && effectiveLayout !== 'text-only'
+      ? effectiveLayout === 'icon-split'
+        ? Math.max(options.iconSize, hasText ? mainLineHeight * mainLines : 0)
+        : options.iconSize
+      : 0;
   const contentHeight =
     (hasText ? mainLineHeight * mainLines : 0) +
     (options.subText.trim() ? subLineHeight * 2 : 0) +
-    (options.showIcon && options.hasIcon && effectiveLayout !== 'text-only' ? options.iconSize : 0) +
+    iconHeight +
     options.subSpacing * 2;
   const contentWidth =
     effectiveLayout === 'icon-split' ? options.iconSize + options.spacing * 2 + availableWidth * 0.6 : availableWidth;

@@ -33,9 +33,9 @@
 
 - **Markdown 驱动**：Front Matter 元数据、多作者、分类白名单与草稿过滤均在构建时校验
 - **增强渲染**：代码高亮（diff 行高亮、文件名、折叠、行号复制、换行开关）、KaTeX 公式、Mermaid 图表、GFM 表格、图片预览、DOMPurify 净化，按正文内容按需懒加载
-- **全文搜索**：构建时生成索引，多维度权重评分，支持范围筛选与搜索历史
+- **全文搜索**：构建时生成索引，多维度权重评分，支持范围筛选与搜索历史；独立搜索页 `/search` 与首页/弹窗搜索共用同一套评分逻辑
 - **阅读体验**：目录导航、阅读进度恢复、专注阅读模式、深色模式图片柔和降亮、CC BY-SA 4.0 声明、标题锚点复制链接
-- **分享与互动**：分享弹窗、竖版分享海报（Canvas 本地绘制）；Giscus 评论区懒加载；独立留言板（`/guestbook`）；每条说说有独立页（`/shuoshuo/<id>`）与链接分享
+- **分享与互动**：分享弹窗、竖版分享海报（Canvas 本地绘制）；Giscus 评论区懒加载，文章卡片展示评论数（构建期快照）；独立留言板（`/guestbook`）；每条说说有独立页（`/shuoshuo/<id>`）与链接分享；文章页可直接跳转 GitHub 编辑源文件
 - **内置工具箱**：封面生成器（`/cover`）、水印工具（`/watermark`，图片不离开浏览器）
 - **文章导航**：上一篇/下一篇（`Alt + ←/→`）、系列文章、面包屑、相关推荐
 - **主题系统**：浅色/深色/跟随系统，CSS View Transitions 过渡
@@ -66,6 +66,7 @@ npm install
 cp .env.example .env          # 可选：覆盖站点 URL 与子路径
 npm run check                 # 数据生成校验 + 类型检查
 npm run dev                   # 本地开发（http://localhost:3000）
+npm run test                  # 单元测试
 npm run build                 # 生产构建（SSG 全量静态化）
 npm run preview               # 预览构建产物
 ```
@@ -211,6 +212,7 @@ images:
 | `npm run dev` | 启动开发服务器（端口 3000），自动执行 `gen:data` |
 | `npm run build` | 生产构建：数据 → 客户端 → SSR → SSG → 审计 |
 | `npm run build:verbose` | 详细模式构建，保留 Vite 完整输出 |
+| `npm run build:ssr` | 仅构建 SSR bundle（`dist-ssr/`） |
 | `npm run preview` | 预览生产构建结果 |
 | `npm run migrate:images` | 批量迁移本地图片至图床（支持 `--dry-run`） |
 | `npm run gen:data` | 数据生成 + 全量校验 |
@@ -218,7 +220,7 @@ images:
 | `npm run audit:build` | 构建产物完整性审计（HTML / 标签 / 体积，已接入 build） |
 | `npm run audit:seo` | 全站 SEO 清单审计（已接入 build） |
 | `npm run typecheck` / `check` | TypeScript 类型检查 / 数据生成校验 + 类型检查 |
-| `npm run test` / `test:coverage` | 数据生成 + vitest 单元测试 / 附带覆盖率报告 |
+| `npm run test` / `test:watch` / `test:coverage` | vitest 单元测试 / 监听模式 / 附带覆盖率报告（均先执行 `gen:data`） |
 | `npm run lint` / `lint:fix` | ESLint 检查 / 自动修复 |
 | `npm run format` / `format:check` | Prettier 格式化 / 格式检查 |
 

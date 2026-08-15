@@ -19,9 +19,11 @@ generated/
 
 # Environment files
 .env
-.env.local
-.env.production
-.env.*.local
+.env.*
+!.env.example
+
+# DSH Harness 会话扫描产物（与 .prettierignore / eslint 保持一致）
+.dsh-*.cjs
 
 # Editor directories
 .vscode/*

@@ -14,7 +14,8 @@ type CachedBusuanziResponse = { pageUrl: string; data: BusuanziResponse };
 
 // 最近一次拿到的计数，供页面组件挂载时立即回填（路由切换时 Ping 通常先于
 // 新页面 span 挂载完成，组件挂载后从缓存补一次即可即时显示，无需再次上报）。
-// page_pv/page_uv 属于当前路由，缓存必须绑定 URL，禁止把上一篇文章的计数填进新文章。
+// busuanzi_page_*（页面级计数）属于当前路由，缓存必须绑定 URL，
+// 禁止把上一篇文章的计数填进新文章。
 let lastResponse: CachedBusuanziResponse | null = null;
 
 const getPageUrl = (): string => {
@@ -65,7 +66,7 @@ export const pingBusuanzi = (signal?: AbortSignal): void => {
     method: 'POST',
     // 不设 Content-Type：保持 simple request，避免 CORS 预检（与不蒜子官方脚本一致）。
     body: JSON.stringify({ url: pageUrl, referrer: document.referrer }),
-    signal
+    signal,
   })
     .then((response) => response.json())
     .then((data: BusuanziResponse) => {

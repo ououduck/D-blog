@@ -5,8 +5,8 @@ const imageCache = new Map<string, Promise<HTMLImageElement>>();
 export function loadCachedImage(source: string): Promise<HTMLImageElement> {
   const cached = imageCache.get(source);
   if (cached) return cached;
-  // 缓存 rejected promise：预览期间的重复渲染不会为同一失效资源反复发请求，
-  // 会话内一直使用占位图兜底（封面生成器每次打开即为新会话）。
+  // 缓存 rejected promise：预览期间的重复渲染不会为同一失效资源反复发请求。
+  // 加载失败时的占位兜底（回退站点 Logo）由 coverRenderer 的 drawIcon 负责。
   const promise = loadImage(source);
   imageCache.set(source, promise);
   return promise;

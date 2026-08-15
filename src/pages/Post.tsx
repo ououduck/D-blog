@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
@@ -619,15 +619,15 @@ function MermaidBlock({
 
   // 缩放/平移使用 scaleRef.current 作为增量基准：快速滚轮或键盘连按时，
   // React 闭包中的 scale 状态可能尚未提交，直接计算会丢步。
-  const zoomTo = (nextScale: number) => {
+  const zoomTo = useCallback((nextScale: number) => {
     const clampedScale = clampMermaidScale(nextScale);
     setScale(clampedScale);
     if (clampedScale <= MERMAID_MIN_SCALE) {
       setPosition({ x: 0, y: 0 });
     }
-  };
+  }, []);
 
-  const zoomBy = (delta: number) => zoomTo(scaleRef.current + delta);
+  const zoomBy = useCallback((delta: number) => zoomTo(scaleRef.current + delta), [zoomTo]);
 
   const toggleZoom = () => zoomTo(scaleRef.current > MERMAID_MIN_SCALE ? MERMAID_MIN_SCALE : 2);
 
@@ -713,21 +713,20 @@ function MermaidBlock({
   // 滚轮缩放使用原生非 passive 监听器：React 19 的 onWheel 注册为 passive，
   // preventDefault 无效，缩放图表时页面会同步滚动。缩放基于 scaleRef.current，
   // 避免快速滚轮时闭包中的 scale 过期导致丢步。
-  const handleWheel = (event: WheelEvent) => {
-    if (!svg || (scaleRef.current <= MERMAID_MIN_SCALE && !event.ctrlKey && !event.metaKey)) return;
-    event.preventDefault();
-    zoomBy(event.deltaY > 0 ? -MERMAID_ZOOM_STEP : MERMAID_ZOOM_STEP);
-  };
-
-  // 原生非 passive wheel 监听：preventDefault 才能阻止页面随图表缩放同步滚动。
   useEffect(() => {
     const element = viewportRef.current;
     if (!element) {
       return;
     }
+    const handleWheel = (event: WheelEvent) => {
+      if (!svg || (scaleRef.current <= MERMAID_MIN_SCALE && !event.ctrlKey && !event.metaKey)) return;
+      event.preventDefault();
+      zoomBy(event.deltaY > 0 ? -MERMAID_ZOOM_STEP : MERMAID_ZOOM_STEP);
+    };
+    // 原生非 passive wheel 监听：preventDefault 才能阻止页面随图表缩放同步滚动。
     element.addEventListener('wheel', handleWheel, { passive: false });
     return () => element.removeEventListener('wheel', handleWheel);
-  }, [svg, handleWheel]);
+  }, [svg, zoomBy]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (scale <= MERMAID_MIN_SCALE || event.button !== 0) return;
@@ -1717,7 +1716,7 @@ export const Post = () => {
       if (restoreDelay) window.clearTimeout(restoreDelay);
       if (resetProgrammaticFrame) window.cancelAnimationFrame(resetProgrammaticFrame);
     };
-  }, [post?.id, headings.length]);
+  }, [post, headings.length]);
 
   useEffect(() => {
     const target = articleBodyRef.current;
@@ -1823,7 +1822,7 @@ export const Post = () => {
       if (animationFrame) window.cancelAnimationFrame(animationFrame);
       saveLatestProgress();
     };
-  }, [post?.id, post?.content, relatedPosts.length]);
+  }, [post, relatedPosts.length]);
 
   useEffect(() => {
     if (isReadingMode && shareModalOpen) {
@@ -1870,7 +1869,7 @@ export const Post = () => {
         headings,
         shouldReduceMotion,
       ),
-    [mermaidRenderer, mermaidTheme, post?.id, post?.imageDimensions, headings, shouldReduceMotion],
+    [mermaidRenderer, mermaidTheme, post?.imageDimensions, headings, shouldReduceMotion],
   );
 
   if (loading) {

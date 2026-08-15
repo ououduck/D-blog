@@ -151,7 +151,7 @@ const filterAndSortPosts = (posts: PostMetadata[], selectedCategory: string, sor
   return sortPosts(filteredPosts, sortOrder);
 };
 
-export interface PostCardProps {
+interface PostCardProps {
   post: PostMetadata;
   index: number;
   featured?: boolean;

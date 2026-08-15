@@ -5,7 +5,8 @@ import type { Variants } from 'framer-motion';
  *
  * easeOut — 强减速（0.16, 1, 0.3, 1）：入场末段极缓，适合卡片/列表显隐。
  * easeSmooth — 柔和过渡（0.22, 1, 0.36, 1）：比 easeOut 更平缓，适合路由切换与
- * 状态过渡。两者均为「超射后回弹」型曲线，无位移动画，减少重排感。
+ * 状态过渡。两者均为标准 ease-out（y 控制点不越过 1，无回弹），配合无位移动画，
+ * 减少重排感。
  */
 export const easeOut = [0.16, 1, 0.3, 1] as const;
 export const easeSmooth = [0.22, 1, 0.36, 1] as const;
@@ -42,4 +43,3 @@ export const routeTransition = {
     transition: { duration: 0.14, ease: easeSmooth },
   },
 } as const;
-

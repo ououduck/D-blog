@@ -62,18 +62,6 @@ const offlinePostAssetsPlugin = (): Plugin => ({
 });
 
 /**
- * 构建时注入入口 CSS 的 <link rel="preload">。
- *
- * 入口样式表使用内容哈希文件名（assets/index-<hash>.css），名称只在构建完成
- * 后可知，无法在 index.html 模板里硬编码。这里在 build 阶段的 transformIndexHtml
- * 中读取输出 bundle：入口 chunk 的 viteMetadata.importedCss 即 Vite 即将注入的
- * 入口样式表，返回带 crossorigin 的 preload tag，由 Vite 与正式 stylesheet link
- * 一同渲染进产物 index.html：
- * - preload 与正式请求共享同一 URL，跨域属性保持一致，避免被判定为两个请求而重复下载。
- * - 模板快照（dist-ssr/index.template.html）取自构建后的 dist/index.html，
- *   SSG 全量静态化时该 preload 会随模板保留到每个页面。
- */
-/**
  * KaTeX 字体冗余裁剪（性能优化）。
  *
  * katex.min.css 为每个字重声明三种格式：woff2 / woff / ttf，其中 ttf 仅供
@@ -139,6 +127,18 @@ const trimKatexFonts = (): Plugin => {
   };
 };
 
+/**
+ * 构建时注入入口 CSS 的 <link rel="preload">。
+ *
+ * 入口样式表使用内容哈希文件名（assets/index-<hash>.css），名称只在构建完成
+ * 后可知，无法在 index.html 模板里硬编码。这里在 build 阶段的 transformIndexHtml
+ * 中读取输出 bundle：入口 chunk 的 viteMetadata.importedCss 即 Vite 即将注入的
+ * 入口样式表，返回带 crossorigin 的 preload tag，由 Vite 与正式 stylesheet link
+ * 一同渲染进产物 index.html：
+ * - preload 与正式请求共享同一 URL，跨域属性保持一致，避免被判定为两个请求而重复下载。
+ * - 模板快照（dist-ssr/index.template.html）取自构建后的 dist/index.html，
+ *   SSG 全量静态化时该 preload 会随模板保留到每个页面。
+ */
 const injectEntryCssPreload = (): Plugin => {
   let base = '/';
   return {
