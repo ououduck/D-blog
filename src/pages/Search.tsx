@@ -8,7 +8,7 @@ import { saveOfflinePost, removeOfflinePost } from '@/services/offlinePosts';
 import { useOfflinePosts } from '@/hooks/useOfflinePosts';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { PostMetadata } from '../types';
-import { Seo } from '../components/Seo';
+import { Seo, buildSiteSchemas } from '../components/Seo';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';
 import { siteConfig } from '@config/site.config';
@@ -102,16 +102,35 @@ export const Search = () => {
 
   const activeScopeHint = SEARCH_SCOPE_HINTS[searchScope];
 
+  // 与 SSG 的 schemaFromSeo 标记配套：/search 的页面级 schema 由 Seo 组件输出
+  // （SSG 不再注入），与归档/标签/说说等页面模式一致。
+  const searchPageDescription = hasSearchQuery
+    ? `在 D-blog 中搜索「${searchQuery}」的结果页，按相关度排序展示匹配文章。`
+    : '在 D-blog 全站搜索文章：支持按标题、分类、标签、摘要与正文内容检索，快速定位感兴趣的技术分享。';
+  const searchStructuredData = [
+    ...buildSiteSchemas(searchPageDescription),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: hasSearchQuery ? `搜索：${searchQuery} - ${siteConfig.title}` : `搜索 - ${siteConfig.title}`,
+      description: searchPageDescription,
+      url: absoluteSiteUrl('/search', siteConfig.url),
+      inLanguage: 'zh-CN',
+      isPartOf: {
+        '@type': 'WebSite',
+        name: siteConfig.title,
+        url: absoluteSiteUrl('/', siteConfig.url),
+      },
+    },
+  ];
+
   return (
     <div className="pb-8 md:pb-14">
       {/* 带 q 参数时 Seo 组件自动输出 noindex（与首页内联搜索一致）；无 q 时正常索引 */}
       <Seo
         title={hasSearchQuery ? `搜索：${searchQuery}` : '搜索'}
-        description={
-          hasSearchQuery
-            ? `在 D-blog 中搜索「${searchQuery}」的结果页，按相关度排序展示匹配文章。`
-            : '在 D-blog 全站搜索文章：支持按标题、分类、标签、摘要与正文内容检索，快速定位感兴趣的技术分享。'
-        }
+        description={searchPageDescription}
+        structuredData={searchStructuredData}
       />
 
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-zinc-200 pb-5 dark:border-zinc-800 md:pb-6">

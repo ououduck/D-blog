@@ -89,8 +89,10 @@ for (const filePath of htmlFiles) {
   if (!isOfflineFallback && !/<meta\b[^>]*\bname=["']description["'][^>]*>/i.test(html)) errors.push(`${relativePath}: missing description`);
   if (!isOfflineFallback && !/<meta\b[^>]*\bname=["']robots["'][^>]*>/i.test(html)) errors.push(`${relativePath}: missing robots`);
   if (canonicalCount > 1) errors.push(`${relativePath}: duplicate canonical tags (${canonicalCount})`);
-  if (jsonLdTags.length === 0) warnings.push(`${relativePath}: missing JSON-LD`);
-  if (rootContent === '') warnings.push(`${relativePath}: static HTML has an empty root; content remains client-rendered`);
+  // offline.html 是独立的应用壳兜底页（客户端渲染、无 SEO 需求），
+  // 不要求 JSON-LD 与 SSG 正文，避免误报。
+  if (!isOfflineFallback && jsonLdTags.length === 0) warnings.push(`${relativePath}: missing JSON-LD`);
+  if (!isOfflineFallback && rootContent === '') warnings.push(`${relativePath}: static HTML has an empty root; content remains client-rendered`);
   if (!isOfflineFallback && rootContent.length < 64) warnings.push(`${relativePath}: root content looks too thin (${rootContent.length} chars); SSG may not have rendered body content`);
 
   for (const tag of jsonLdTags) {
