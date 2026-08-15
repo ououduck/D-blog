@@ -1,4 +1,6 @@
-const SW_VERSION = 'dblog-v8';
+// v9：SPA 路由模式补全 /shuoshuo /guestbook /search（v8 缺失时离线导航
+// 这些路由会退回 offline.html 而非应用壳），并简化 networkFirst 冗余查询。
+const SW_VERSION = 'dblog-v9';
 const CORE_CACHE = `${SW_VERSION}-core`;
 const PAGE_CACHE = `${SW_VERSION}-pages`;
 const ASSET_CACHE = `${SW_VERSION}-assets`;
