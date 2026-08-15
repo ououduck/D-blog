@@ -43,8 +43,8 @@ const run = async () => {
 
   const logoHeight = Math.round(LOGO_TARGET_WIDTH * (metadata.height / metadata.width));
 
-  // 生成品牌化分享卡片：从 logo 中心取最大内接正方形，
-  // 缩放为期望尺寸后叠加到纸张渐变背景中央，输出 1200×630 PNG。
+  // 生成品牌化分享卡片：logo 等比缩放为期望宽度（高度按原比例），
+  // 叠加到纸张渐变背景中央，输出 1200×630 PNG。
   const svgBackground = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">`,
     `<defs>`,
