@@ -64,7 +64,7 @@ git clone https://github.com/ououduck/D-blog.git
 cd D-blog
 npm install
 cp .env.example .env          # 可选：覆盖站点 URL 与子路径
-npm run check                 # 类型检查 + 数据生成校验
+npm run check                 # 数据生成校验 + 类型检查
 npm run dev                   # 本地开发（http://localhost:3000）
 npm run build                 # 生产构建（SSG 全量静态化）
 npm run preview               # 预览构建产物
@@ -217,7 +217,7 @@ images:
 | `npm run ssg` | 仅执行 SSG 预渲染（需先完成两端构建） |
 | `npm run audit:build` | 构建产物完整性审计（HTML / 标签 / 体积，已接入 build） |
 | `npm run audit:seo` | 全站 SEO 清单审计（已接入 build） |
-| `npm run typecheck` / `check` | TypeScript 类型检查 / 类型检查 + 数据校验 |
+| `npm run typecheck` / `check` | TypeScript 类型检查 / 数据生成校验 + 类型检查 |
 
 ## 部署
 

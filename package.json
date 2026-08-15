@@ -15,7 +15,7 @@
     "audit:build": "node scripts/audit-build.mjs",
     "audit:seo": "node scripts/seo-audit.mjs",
     "typecheck": "tsc -p config/tsconfig.json --noEmit",
-    "check": "npm run typecheck && npm run gen:data",
+    "check": "npm run gen:data && npm run typecheck",
     "dev": "npm run gen:data && vite",
     "build": "node scripts/build.mjs",
     "build:verbose": "node scripts/build.mjs --verbose",
