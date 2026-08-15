@@ -60,6 +60,41 @@ describe('buildArchiveGroups', () => {
     const groups = buildArchiveGroups([makePost('a', 'garbage')]);
     expect(groups.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('多篇同月无效日期文章不产生 NaN 月分组，且月份回退为 1 月', () => {
+    const groups = buildArchiveGroups([makePost('a', 'garbage'), makePost('b', 'garbage')]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].months).toHaveLength(1);
+    expect(groups[0].months[0].monthNum).toBe(1);
+    expect(groups[0].months[0].month).toBe('1月');
+    expect(groups[0].months[0].total).toBe(2);
+    expect(groups[0].months[0].posts.map((post) => post.id)).toEqual(['a', 'b']);
+  });
+
+  it('混合有效与无效日期：有效月份分组不受 NaN 影响', () => {
+    const groups = buildArchiveGroups([
+      makePost('a', '2026-03-01'),
+      makePost('b', 'bad-date'),
+      makePost('c', '2026-01-01'),
+    ]);
+    expect(groups.map((group) => group.year)).toEqual(['2026年', 'bad-date']);
+    const validYear = groups.find((group) => group.year === '2026年');
+    expect(validYear?.months.map((month) => month.monthNum)).toEqual([3, 1]);
+  });
+
+  it('未知年份分组排序稳定（排在有效年份之后）', () => {
+    const groups = buildArchiveGroups([makePost('a', '2026-03-01'), makePost('b', 'garbage')]);
+    expect(groups.map((group) => group.year)).toEqual(['2026年', 'garbage']);
+  });
+
+  it('年份排序按真实年份倒序（不依赖插入顺序）', () => {
+    const groups = buildArchiveGroups([
+      makePost('a', '2024-05-01'),
+      makePost('b', '2026-03-01'),
+      makePost('c', '2025-01-01'),
+    ]);
+    expect(groups.map((group) => group.year)).toEqual(['2026年', '2025年', '2024年']);
+  });
 });
 
 describe('getAllExpansion / getInitialExpansion / isAllVisibleExpanded / ensureYearExpanded', () => {

@@ -1,3 +1,9 @@
+/**
+ * 归档分组状态：把文章按「年份 → 月份」聚合，供 /archive 时间线渲染与
+ * 展开/折叠状态管理使用。构建期数据日期通常合法，但模块对无效日期承诺
+ * 「不抛错」：月份解析失败时回退为 1 月（避免产生多个「NaN月」分组且
+ * 排序不稳定），未知年份在排序时固定排在最后。
+ */
 import type { PostMetadata } from '../../types';
 import { formatDate, getDateTimestamp } from '../../utils/date';
 
@@ -21,6 +27,22 @@ interface ArchiveExpansion {
 
 const formatMonth = (dateText: string) => formatDate(dateText, 'zh-CN', { month: 'numeric' });
 
+/** 解析「N月」文案为月份数字；无效日期时回退 1，杜绝 NaN 分组。 */
+const parseMonthNumber = (dateText: string): number => {
+  const monthNum = Number.parseInt(formatMonth(dateText).replace('月', ''), 10);
+  return Number.isInteger(monthNum) && monthNum >= 1 && monthNum <= 12 ? monthNum : 1;
+};
+
+/** 年份倒序比较：从「2026年」等本地化文案提取数字；未知年份固定排在最后。 */
+const compareYearDesc = (a: string, b: string) => {
+  const yearA = Number.parseInt(a, 10);
+  const yearB = Number.parseInt(b, 10);
+  if (Number.isNaN(yearA) && Number.isNaN(yearB)) return 0;
+  if (Number.isNaN(yearA)) return 1;
+  if (Number.isNaN(yearB)) return -1;
+  return yearB - yearA;
+};
+
 export const getMonthKey = (year: string, monthNum: number) => `${year}-${monthNum}`;
 
 export const buildArchiveGroups = (posts: PostMetadata[]): ArchiveGroup[] => {
@@ -31,7 +53,7 @@ export const buildArchiveGroups = (posts: PostMetadata[]): ArchiveGroup[] => {
     .sort((a, b) => getDateTimestamp(b.date) - getDateTimestamp(a.date))
     .forEach((post) => {
       const year = formatDate(post.date, 'zh-CN', { year: 'numeric' });
-      const monthNum = Number.parseInt(formatMonth(post.date).replace('月', ''), 10);
+      const monthNum = parseMonthNumber(post.date);
       let yearGroup = groups.get(year);
 
       if (!yearGroup) {
@@ -56,7 +78,7 @@ export const buildArchiveGroups = (posts: PostMetadata[]): ArchiveGroup[] => {
       ...group,
       months: group.months.sort((a, b) => b.monthNum - a.monthNum),
     }))
-    .sort((a, b) => Number(b.year) - Number(a.year));
+    .sort((a, b) => compareYearDesc(a.year, b.year));
 };
 
 export const getAllExpansion = (groups: ArchiveGroup[]): ArchiveExpansion => ({

@@ -148,9 +148,15 @@ export const ArchivePage = () => {
         const initial = getInitialExpansion(groups, yearFromUrl);
         setExpandedYears(initial.years);
         setExpandedMonths(initial.months);
+      } else if (expandedYears.size === 0) {
+        // 首帧 eager 数据缺失、数据异步加载完成后才首次分组：补一次默认展开
+        // （最新年份首月），避免出现"全部折叠"的空白时间线。
+        const initial = getInitialExpansion(groups, null);
+        setExpandedYears(initial.years);
+        setExpandedMonths(initial.months);
       }
     }
-  }, [groups, isSearching, yearFromUrl]);
+  }, [expandedYears.size, groups, isSearching, yearFromUrl]);
 
   // URL year 变化时始终确保对应年份展开；不存在的年份参数则从 URL 中移除。
   useEffect(() => {
