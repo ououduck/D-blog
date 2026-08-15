@@ -12,9 +12,13 @@ const CORE_ASSET_PATHS = [
   'feed.xml',
 ];
 const FAVORITES_PATH = 'favorites';
+// SPA 路由模式：离线导航时用应用壳（首页）兜底而非离线页。
+// 需与 src/App.tsx 的路由表保持同步（post 详情、归档/标签/统计/友链/
+// 关于/封面/水印/赞助/收藏、说说（含详情）、留言板、搜索）。
 const SPA_ROUTE_PATTERNS = [
   /^\/post(?:\/|$)/,
   /^\/(?:archive|tags|stats|friends|about|cover|watermark|sponsor|favorites)(?:\/|$)/,
+  /^\/(?:shuoshuo|guestbook|search)(?:\/|$)/,
   /^\/$/
 ];
 
@@ -69,7 +73,7 @@ const cacheSuccessfulResponse = async (cache, request, response) => {
     try {
       await cache.put(request, response.clone());
     } catch {
-      // Caching is best effort; never replace a successful network response.
+      // 缓存写入尽力而为：失败绝不能用旧缓存替换成功的新响应。
     }
   }
   return response;
@@ -80,7 +84,7 @@ const cacheCoreAssets = async () => {
   try {
     cache = await caches.open(CORE_CACHE);
   } catch {
-    // Cache Storage may be disabled; the worker can still serve the network.
+    // Cache Storage 可能被禁用，此时回退为纯网络请求即可。
     return;
   }
 
@@ -90,7 +94,7 @@ const cacheCoreAssets = async () => {
         const response = await fetch(url);
         await cacheSuccessfulResponse(cache, url, response);
       } catch {
-        // A missing optional core asset must not prevent the worker installing.
+        // 单个可选核心资源失败不应阻塞整个 Service Worker 安装。
       }
     }),
   );
@@ -107,7 +111,7 @@ const cacheCoreAssets = async () => {
       ]);
     }
   } catch {
-    // Route chunks are refreshed when an article is explicitly saved offline.
+    // 路由级 chunk 在用户显式保存文章离线时再补充缓存。
   }
 
   try {
@@ -116,14 +120,14 @@ const cacheCoreAssets = async () => {
     const response = await fetch(favoriteUrl);
     await cacheSuccessfulResponse(pages, favoriteUrl, response);
   } catch {
-    // The favorites route is optional during installation.
+    // 收藏页在安装阶段属于可选资源，失败不影响安装。
   }
 };
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     cacheCoreAssets().then(() => {
-      // Take control on the first install; leave later versions waiting for the user.
+      // 首次安装立即接管页面；后续版本等待用户触发更新。
       if (!self.registration.active) {
         return self.skipWaiting();
       }
@@ -199,7 +203,7 @@ const handleNavigationRequest = async (request) => {
       const cache = await caches.open(PAGE_CACHE);
       await cacheSuccessfulResponse(cache, request, response);
     } catch {
-      // Cache Storage failures must not hide a successful navigation response.
+      // 缓存写入失败不能掩盖一次成功的网络响应。
     }
     return response;
   } catch {
@@ -259,7 +263,7 @@ const staleWhileRevalidate = async (request, cacheName) => {
     .catch(() => undefined);
 
   if (cachedResponse) {
-    // Keep the response fast while allowing a later request to see fresh content.
+    // 优先返回缓存保证速度，后台拉取的新响应供后续请求使用。
     void networkPromise;
     return cachedResponse;
   }
@@ -283,7 +287,7 @@ const networkFirst = async (request, cacheName) => {
     const response = await fetch(request);
     return cacheSuccessfulResponse(cache, request, response);
   } catch {
-    return (await cache.match(request)) || (await caches.match(request)) || Response.error();
+    return (await caches.match(request)) || Response.error();
   }
 };
 
