@@ -17,8 +17,9 @@ const toHtml = (markdown: string) =>
 describe('remarkCodeMeta', () => {
   it('把围栏代码块 info 字符串透传为 data-meta 属性', () => {
     const html = toHtml('```ts title="app.ts"\nconst a = 1;\n```');
-    // remark-parse 的 code.meta 为 info 字符串中语言名之后的部分（title="app.ts"）
-    expect(html).toContain('data-meta="title=&quot;app.ts&quot;"');
+    // remark-parse 的 code.meta 为 info 字符串中语言名之后的部分（title="app.ts"）；
+    // rehype-stringify 将引号转义为 &#x22;
+    expect(html).toContain('data-meta="title=&#x22;app.ts&#x22;"');
   });
 
   it('无 meta 的代码块不添加 data-meta', () => {
@@ -39,7 +40,7 @@ describe('remarkCodeMeta', () => {
 
   it('多个代码块各自携带自己的 meta', () => {
     const html = toHtml('```ts title="a.ts"\nconst a = 1;\n```\n\n```py title="b.py"\nprint(1)\n```');
-    expect(html).toContain('data-meta="title=&quot;a.ts&quot;"');
-    expect(html).toContain('data-meta="title=&quot;b.py&quot;"');
+    expect(html).toContain('data-meta="title=&#x22;a.ts&#x22;"');
+    expect(html).toContain('data-meta="title=&#x22;b.py&#x22;"');
   });
 });
