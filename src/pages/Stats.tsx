@@ -150,7 +150,7 @@ const BusuanziCard = ({ className = '' }: { className?: string }) => {
   return (
     <Surface className={`relative flex h-full min-w-0 flex-col p-5 sm:p-6 ${className}`}>
       <a
-        href="https://www.busuanzi.cc/count.php?search=blog.pldduck.com"
+        href={`https://www.busuanzi.cc/count.php?search=${siteDomain}`}
         title="不蒜子统计"
         target="_blank"
         rel="noopener noreferrer"

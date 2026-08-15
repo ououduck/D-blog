@@ -610,10 +610,10 @@ export const Friends = () => {
       <p className="mb-12 text-sm text-zinc-500 dark:text-zinc-400">
         如果有任何疑问，请联系邮箱{' '}
         <a
-          href="mailto:i@pldduck.com"
+          href={siteConfig.social.email}
           className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition-colors hover:text-zinc-950 hover:decoration-zinc-500 dark:text-zinc-300 dark:decoration-zinc-700 dark:hover:text-white dark:hover:decoration-zinc-400"
         >
-          i@pldduck.com
+          {siteConfig.social.rawEmail}
         </a>
       </p>
 
