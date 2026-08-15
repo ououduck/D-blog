@@ -1,0 +1,26 @@
+# 统一换行符：仓库内一律 LF（Windows 检出时由 Git 转换，避免跨平台 diff 噪声）。
+* text=auto
+
+# 代码与配置类文件强制 LF（防止 Windows 环境误提交 CRLF）。
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.html text eol=lf
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.svg text eol=lf
+*.woff binary
+*.woff2 binary
+*.ttf binary
