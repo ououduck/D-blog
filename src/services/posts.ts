@@ -4,8 +4,9 @@
  * （generated/posts-search.json）首次使用时懒加载并缓存。
  * 提供全文搜索的多维权重评分（searchPosts）与结果 LRU 缓存。
  */
-import { Post, PostMetadata } from '../types';
+import type { Post, PostMetadata } from '../types';
 import { getOfflinePost } from './offlinePosts';
+import { stripFrontmatter } from '@/utils/markdown-core.mjs';
 
 const generatedPostModules = import.meta.glob<PostMetadata[]>('../../generated/posts.json', {
   eager: true,
@@ -24,11 +25,6 @@ const postFiles = import.meta.glob('../../posts/*.md', { query: '?raw', import: 
 const loadPostsSearchData = async (): Promise<Array<PostMetadata & { searchText?: string }>> => {
   const data = await import('../../generated/posts-search.json');
   return data.default as Array<PostMetadata & { searchText?: string }>;
-};
-
-const stripFrontmatter = (rawContent: string) => {
-  const normalized = rawContent.charCodeAt(0) === 0xfeff ? rawContent.slice(1) : rawContent;
-  return normalized.replace(/^---[\s\S]*?---[\r\n]*/, '');
 };
 
 const normalizeSearchText = (value: string) => value.normalize('NFKC').toLocaleLowerCase().trim().replace(/\s+/g, ' ');
