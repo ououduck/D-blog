@@ -88,5 +88,8 @@
   "lint-staged": {
     "*.{ts,tsx,js,mjs}": "eslint --fix",
     "*.{ts,tsx,js,mjs,json,md,css}": "prettier --write"
+  },
+  "overrides": {
+    "nanoid": "^3.3.18"
   }
 }
