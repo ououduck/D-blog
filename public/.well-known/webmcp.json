@@ -10,7 +10,7 @@
   },
   "discovery": {
     "llmsTxt": "https://blog.pldduck.com/llms.txt",
-    "sitemap": "https://blog.pldduck.com/sitemap.xml",
+    "sitemap": "https://blog.pldduck.com/sitemap-index.xml",
     "robots": "https://blog.pldduck.com/robots.txt",
     "feed": "https://blog.pldduck.com/feed.xml"
   },
