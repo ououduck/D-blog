@@ -37,7 +37,7 @@ const pageLoaders: Record<string, ModuleLoader> = {
 
 export { pageLoaders };
 
-/** Preload a page module on hover */
+/** 悬停时预加载目标页面模块（受网络状况与省流量偏好约束）。 */
 export const preloadPage = (path: string) => {
   if (!canPreload() || preloadedPaths.has(path)) {
     return;

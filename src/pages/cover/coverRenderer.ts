@@ -320,8 +320,8 @@ export async function renderCover(ctx: CanvasRenderingContext2D, options: CoverR
   const centerX = width / 2;
   const centerY = height / 2;
   const fallbackIconSource = options.fallbackIconSource;
-  // `calculateLayoutMetrics` already returns physical canvas units. Reusing those values
-  // avoids applying the export scale twice and preserves the minimum-size protection.
+  // calculateLayoutMetrics 返回的是物理画布单位：直接复用这些值，避免导出缩放被
+  // 应用两次，并保留最小字号保护逻辑。
   const iconSize = metrics.iconSize;
   const mainSize = metrics.mainFontSize;
   const subSize = metrics.subFontSize;

@@ -113,7 +113,7 @@ const decodeHtmlEntities = (text) =>
     return HTML_ENTITY_REPLACEMENTS[value] ?? HTML_ENTITY_REPLACEMENTS[normalized] ?? entity;
   });
 
-/** Mask fenced and indented code while preserving line breaks for diagnostics and heading parsing. */
+/** 遮蔽围栏/缩进代码块，同时保留换行与列位（供诊断输出与标题解析使用）。 */
 export const maskFencedCodeBlocks = (markdown) => {
   // HTML 多行注释内可能出现 # 开头的行（草稿/临时注释），会被误当成真实标题
   // 提取进 TOC/锚点。先整体遮蔽注释区（保留换行与列位），再逐行处理代码块；

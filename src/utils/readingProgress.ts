@@ -28,9 +28,7 @@ const getReadingScrollRange = (input: ReadingProgressInput): ReadingScrollRange 
   const startOffset = viewportHeight * READING_PROGRESS_START_RATIO;
   const endOffset = viewportHeight * READING_PROGRESS_END_RATIO;
   const articleTop = rect.top + scrollY;
-  const readingEnd = input.endRect
-    ? input.endRect.top + scrollY
-    : articleTop + rect.height;
+  const readingEnd = input.endRect ? input.endRect.top + scrollY : articleTop + rect.height;
   const startScrollTop = articleTop - startOffset;
   const documentMaxScrollTop = Math.max(documentHeight - viewportHeight, 0);
   const articleEndScrollTop = readingEnd - endOffset;
@@ -49,8 +47,7 @@ export const getReadingProgress = (input: ReadingProgressInput) => {
 
   const totalScrollable = endScrollTop - startScrollTop;
 
-  // A short article may not create any scrollable range. Treat the initial
-  // measurement as unknown instead of marking it complete at scroll position 0.
+  // 短文章可能不产生可滚动区间：把初始测量视为未知，而不是在滚动位置 0 就标记为已读完。
   if (totalScrollable <= 0) {
     return 0;
   }

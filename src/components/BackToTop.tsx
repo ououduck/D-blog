@@ -46,7 +46,7 @@ export const BackToTop = () => {
 
   return (
     <>
-      {/* Visibility sentinel observed by IntersectionObserver. */}
+      {/* 可见性哨兵：由 IntersectionObserver 观察，控制按钮的显隐与焦点可达性。 */}
       <div
         ref={sentinelRef}
         aria-hidden="true"

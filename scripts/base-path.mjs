@@ -5,8 +5,8 @@ const normalizeBasePath = (value, { relativeFallback = '/' } = {}) => {
     .trim()
     .replace(/\\/g, '/');
 
-  // Git Bash on Windows rewrites URL-like environment values such as
-  // "/repo/" into the MSYS installation path before launching npm.
+  // Windows 上的 Git Bash 会把 URL 形态的环境变量值（如 "/repo/"）
+  // 改写成 MSYS 安装路径后再传给 npm，需要识别并还原。
   const msysGitPath = raw.match(/^[a-z]:\//i) ? raw.match(/\/git\/(.+)$/i) : null;
   if (msysGitPath?.[1]) {
     raw = `/${msysGitPath[1]}`;
@@ -16,8 +16,8 @@ const normalizeBasePath = (value, { relativeFallback = '/' } = {}) => {
     return DEFAULT_BASE_PATH;
   }
 
-  // Vite supports a relative base for builds that are served from any directory.
-  // Absolute SEO URLs cannot represent that directory, so use the site root.
+  // Vite 支持相对 base（产物可部署到任意目录）；但绝对 SEO URL 无法表示该目录，
+  // 因此相对部署时回退到站点根路径。
   if (raw === '.' || raw === './') {
     return relativeFallback;
   }
