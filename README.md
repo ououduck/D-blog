@@ -85,7 +85,7 @@ D-blog/
 ├── functions/               # Pages 边缘函数（img-proxy 同源图片代理）
 ├── .github/workflows/       # 部署、友链审核、评论检查、更新通知
 └── src/
-    ├── components/          # Layout、Seo、TableOfContents、SearchModal、ImageViewer 等（effects/、ui/ 为动效与基础组件）
+    ├── components/          # Layout、PostCard、Seo、TableOfContents、SearchModal、ImageViewer 等（effects/、ui/ 为动效与基础组件）
     ├── pages/               # 页面组件（懒加载）；cover/、watermark/、archive/、friends/ 为模块集
     ├── config/              # 封面生成器配置：coverTemplates / coverPresets
     ├── services/            # posts / friends / shuoshuo / offlinePosts / readingHistory 等
