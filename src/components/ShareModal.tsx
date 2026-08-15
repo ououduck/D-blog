@@ -65,6 +65,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   React.useEffect(() => {
     if (!isOpen) {
       clearResetTimer();
+      // 使在途的海报生成结果失效（旧会话不得写入新会话状态）。
+      posterGenerationRef.current += 1;
       setCopiedType(null);
       setCopyError(null);
       setPosterDataUrl(null);
@@ -99,8 +101,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     }
   };
 
+  // 海报生成代际：关闭弹窗后重新打开时，在途的旧生成结果不得覆盖新会话
+  // （否则会显示上一篇文章的海报）。
+  const posterGenerationRef = useRef(0);
+
   const handleGeneratePoster = async () => {
     if (isGeneratingPoster) return;
+    const generationId = ++posterGenerationRef.current;
     setIsGeneratingPoster(true);
     setPosterError(null);
     try {
@@ -116,12 +123,16 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         siteUrl,
         logo,
       });
+      if (generationId !== posterGenerationRef.current) return;
       setPosterDataUrl(dataUrl);
     } catch (error) {
+      if (generationId !== posterGenerationRef.current) return;
       console.error('分享海报生成失败:', error);
       setPosterError('海报生成失败，请重试。');
     } finally {
-      setIsGeneratingPoster(false);
+      if (generationId === posterGenerationRef.current) {
+        setIsGeneratingPoster(false);
+      }
     }
   };
 

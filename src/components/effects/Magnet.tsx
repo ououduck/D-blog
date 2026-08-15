@@ -54,29 +54,36 @@ export const Magnet: React.FC<MagnetProps> = ({
       setPosition({ x: 0, y: 0 });
     };
 
+    let frame = 0;
     const handleMouseMove = (event: MouseEvent) => {
-      const element = magnetRef.current;
-      if (!element) {
-        return;
-      }
+      // rAF 节流：mousemove 频率可能高于帧率，同帧内多次移动合并为一次
+      // setState，避免高频重渲染。
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        const element = magnetRef.current;
+        if (!element) {
+          return;
+        }
 
-      const { left, top, width, height } = element.getBoundingClientRect();
-      const centerX = left + width / 2;
-      const centerY = top + height / 2;
+        const { left, top, width, height } = element.getBoundingClientRect();
+        const centerX = left + width / 2;
+        const centerY = top + height / 2;
 
-      const distanceX = Math.abs(centerX - event.clientX);
-      const distanceY = Math.abs(centerY - event.clientY);
+        const distanceX = Math.abs(centerX - event.clientX);
+        const distanceY = Math.abs(centerY - event.clientY);
 
-      if (distanceX < width / 2 + padding && distanceY < height / 2 + padding) {
-        setIsActive(true);
-        setPosition({
-          x: (event.clientX - centerX) / magnetStrength,
-          y: (event.clientY - centerY) / magnetStrength,
-        });
-      } else {
-        setIsActive(false);
-        setPosition({ x: 0, y: 0 });
-      }
+        if (distanceX < width / 2 + padding && distanceY < height / 2 + padding) {
+          setIsActive(true);
+          setPosition({
+            x: (event.clientX - centerX) / magnetStrength,
+            y: (event.clientY - centerY) / magnetStrength,
+          });
+        } else {
+          setIsActive(false);
+          setPosition({ x: 0, y: 0 });
+        }
+      });
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -87,6 +94,9 @@ export const Magnet: React.FC<MagnetProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', reset);
       window.removeEventListener('blur', reset);
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
     };
   }, [effectiveDisabled, magnetStrength, padding]);
 

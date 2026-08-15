@@ -1,3 +1,8 @@
+/**
+ * 全站共享数据类型：文章（Post/PostMetadata/PostAuthor）、友链（Friend）
+ * 与说说（ShuoShuo）。数据源为构建期生成的 JSON（generated/*），
+ * 客户端数据层（services/*）按本文件契约读写。
+ */
 export interface PostAuthor {
   name: string;
   avatar?: string;
