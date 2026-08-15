@@ -31,6 +31,10 @@ on:
   issues:
     types: [opened]
   workflow_run:
+    # workflows 为必填键（缺失时 GitHub 拒绝解析，报 "does not reference any workflows"）。
+    # "**" 为 glob 通配：匹配仓库内全部 workflow —— 通知 workflow 自身的运行结果
+    # 由脚本按名称（GITHUB_WORKFLOW）跳过，不会自循环；新增 workflow 无需维护白名单。
+    workflows: ["**"]
     types: [completed]
   workflow_dispatch:
     inputs:
