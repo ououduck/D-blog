@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Box, Search, X } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Box, Search, X, ExternalLink } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { usePostSearch } from '@/hooks/usePostSearch';
@@ -16,21 +16,21 @@ const TEXT = {
   close: '关闭',
   notFoundPrefix: '没有找到与',
   notFoundSuffix: '相关的内容',
-  resultsSuffix: '条结果'
+  resultsSuffix: '条结果',
 };
 
 const SEARCH_SCOPE_OPTIONS: Array<{ value: PostSearchScope; label: string }> = [
   { value: 'all', label: '全部' },
   { value: 'category', label: '分类' },
   { value: 'content', label: '正文内容' },
-  { value: 'title', label: '仅标题' }
+  { value: 'title', label: '仅标题' },
 ];
 
 const SEARCH_SCOPE_HINTS: Record<PostSearchScope, string> = {
   all: '支持按标题、标签、分类、摘要与正文搜索',
   category: '仅搜索文章分类名称，适合快速缩小到专题目录',
   content: '只在摘要和正文内容中搜索，不匹配标题和分类',
-  title: '只匹配文章标题，适合按标题关键字快速定位'
+  title: '只匹配文章标题，适合按标题关键字快速定位',
 };
 
 const SEARCH_HISTORY_KEY = 'searchHistory';
@@ -42,9 +42,7 @@ const readSearchHistory = (): string[] => {
 
   try {
     const value: unknown = JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || '[]');
-    return Array.isArray(value)
-      ? value.filter((item): item is string => typeof item === 'string')
-      : [];
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
   } catch {
     return [];
   }
@@ -70,17 +68,16 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   const [searchHistory, setSearchHistory] = useState<string[]>(readSearchHistory);
   const [isOverlayActive, setIsOverlayActive] = useState(isOpen);
   const { searchQuery, isSearching, searchError, results, handleSearch, clearSearch, hasSearchQuery } = usePostSearch({
-    scope: searchScope
+    scope: searchScope,
   });
   const visibleResults = results.slice(0, 8);
   const searchResultsListboxId = 'site-search-results';
   const isResultsListboxOpen = !isSearching && !searchError && visibleResults.length > 0;
-  const activeResultId = isResultsListboxOpen && visibleResults[activeResultIndex]
-    ? `site-search-result-${visibleResults[activeResultIndex].id}`
-    : undefined;
-  const searchResultStatus = !isSearching && hasSearchQuery
-    ? `找到 ${results.length} ${TEXT.resultsSuffix}`
-    : '';
+  const activeResultId =
+    isResultsListboxOpen && visibleResults[activeResultIndex]
+      ? `site-search-result-${visibleResults[activeResultIndex].id}`
+      : undefined;
+  const searchResultStatus = !isSearching && hasSearchQuery ? `找到 ${results.length} ${TEXT.resultsSuffix}` : '';
   const activeScopeHint = SEARCH_SCOPE_HINTS[searchScope];
   const prefersReducedMotion = useReducedMotion();
   const modalEase = easeSmooth;
@@ -89,7 +86,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     isOpen: isOverlayActive,
     onClose,
     initialFocusRef: inputRef,
-    containerRef: modalRef
+    containerRef: modalRef,
   });
 
   useEffect(() => {
@@ -100,14 +97,14 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
   const saveHistory = (query: string) => {
     if (!query.trim()) return;
-    const newHistory = [query, ...searchHistory.filter(q => q !== query)].slice(0, 5);
+    const newHistory = [query, ...searchHistory.filter((q) => q !== query)].slice(0, 5);
     setSearchHistory(newHistory);
     writeSearchHistory(newHistory);
   };
 
   const removeHistory = (query: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const newHistory = searchHistory.filter(q => q !== query);
+    const newHistory = searchHistory.filter((q) => q !== query);
     setSearchHistory(newHistory);
     writeSearchHistory(newHistory);
   };
@@ -172,10 +169,19 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       return text;
     }
 
-    const pattern = new RegExp(`(${normalizedTerms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
+    const pattern = new RegExp(
+      `(${normalizedTerms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+      'gi',
+    );
     return text.split(pattern).map((part, index) => {
       const isMatch = normalizedTerms.some((term) => part.toLocaleLowerCase() === term.toLocaleLowerCase());
-      return isMatch ? <mark key={`${part}-${index}`} className="bg-zinc-200 px-0.5 text-zinc-950 dark:bg-zinc-700 dark:text-zinc-100">{part}</mark> : part;
+      return isMatch ? (
+        <mark key={`${part}-${index}`} className="bg-zinc-200 px-0.5 text-zinc-950 dark:bg-zinc-700 dark:text-zinc-100">
+          {part}
+        </mark>
+      ) : (
+        part
+      );
     });
   };
 
@@ -183,9 +189,31 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     <AnimatePresence onExitComplete={() => setIsOverlayActive(false)}>
       {isOpen && (
         <div className="fixed inset-0 z-modal flex items-end justify-center sm:items-center sm:px-4 sm:py-8">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: prefersReducedMotion ? 0 : 0.16, ease: modalEase }} onClick={onClose} className="absolute inset-0 bg-void/55" aria-hidden="true" />
-          <motion.div ref={modalRef} tabIndex={-1} initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }} transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: modalEase }} className="relative z-10 flex max-h-[100vh] w-full max-w-2xl flex-col overflow-hidden editorial-sheet border border-b-0 border-zinc-300 bg-paper pb-[env(safe-area-inset-bottom,0px)] shadow-none supports-[height:100dvh]:max-h-[100dvh] dark:border-zinc-700 dark:bg-void sm:max-h-[80vh] sm:rounded-overlay sm:border-b sm:pb-0 supports-[height:100dvh]:sm:max-h-[80dvh]" role="dialog" aria-modal="true" aria-labelledby="site-search-title" aria-describedby="site-search-desc">
-            <h2 id="site-search-title" className="sr-only">站内搜索</h2>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.16, ease: modalEase }}
+            onClick={onClose}
+            className="absolute inset-0 bg-void/55"
+            aria-hidden="true"
+          />
+          <motion.div
+            ref={modalRef}
+            tabIndex={-1}
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: modalEase }}
+            className="relative z-10 flex max-h-[100vh] w-full max-w-2xl flex-col overflow-hidden editorial-sheet border border-b-0 border-zinc-300 bg-paper pb-[env(safe-area-inset-bottom,0px)] shadow-none supports-[height:100dvh]:max-h-[100dvh] dark:border-zinc-700 dark:bg-void sm:max-h-[80vh] sm:rounded-overlay sm:border-b sm:pb-0 supports-[height:100dvh]:sm:max-h-[80dvh]"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="site-search-title"
+            aria-describedby="site-search-desc"
+          >
+            <h2 id="site-search-title" className="sr-only">
+              站内搜索
+            </h2>
             {/* 横屏 iPhone 刘海位于左右两侧：标题栏与滚动区都需避开 safe-area，
                 否则关闭按钮会被刘海遮挡 */}
             <div className="flex items-center border-b border-zinc-100 p-4 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] dark:border-zinc-800">
@@ -205,13 +233,19 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 aria-expanded={isResultsListboxOpen}
                 aria-activedescendant={activeResultId}
               />
-              <button onClick={onClose} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-600 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:text-zinc-300 dark:hover:bg-zinc-800" aria-label="关闭站内搜索">
+              <button
+                onClick={onClose}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-600 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:text-zinc-300 dark:hover:bg-zinc-800"
+                aria-label="关闭站内搜索"
+              >
                 <X size={20} />
               </button>
             </div>
 
             <div className="border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-700 dark:text-zinc-300">{TEXT.searchScopeLabel}</div>
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-700 dark:text-zinc-300">
+                {TEXT.searchScopeLabel}
+              </div>
               <div className="flex flex-wrap gap-2">
                 {SEARCH_SCOPE_OPTIONS.map((option) => (
                   <button
@@ -232,31 +266,44 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               <p className="mt-2 text-xs text-zinc-700 dark:text-zinc-300">{activeScopeHint}</p>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)] sm:max-h-[60vh] supports-[height:100dvh]:sm:max-h-[60dvh]" aria-busy={isSearching}>
-              <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{searchResultStatus}</div>
+            <div
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)] sm:max-h-[60vh] supports-[height:100dvh]:sm:max-h-[60dvh]"
+              aria-busy={isSearching}
+            >
+              <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+                {searchResultStatus}
+              </div>
               {isSearching ? (
                 <div className="p-12 text-center text-zinc-600 dark:text-zinc-300" role="status" aria-live="polite">
-                  <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-zinc-900 border-t-transparent dark:border-zinc-100" aria-hidden="true" />
+                  <div
+                    className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-zinc-900 border-t-transparent dark:border-zinc-100"
+                    aria-hidden="true"
+                  />
                   <span className="sr-only">正在搜索</span>
                 </div>
               ) : searchError ? (
                 <div className="p-12 text-center" role="alert">
                   <p className="font-semibold text-zinc-900 dark:text-zinc-100">搜索暂时不可用</p>
                   <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{searchError}</p>
-                  <button type="button" onClick={clearSearch} className="editorial-button mt-4">清除搜索</button>
+                  <button type="button" onClick={clearSearch} className="editorial-button mt-4">
+                    清除搜索
+                  </button>
                 </div>
               ) : visibleResults.length > 0 ? (
                 <div id={searchResultsListboxId} className="p-2" role="listbox" aria-label="搜索结果">
                   <div className="px-3 pt-3 text-xs font-medium uppercase tracking-[0.2em] text-zinc-700 dark:text-zinc-300">
                     <span aria-hidden="true">
-                      共 {results.length} {TEXT.resultsSuffix}{results.length > visibleResults.length ? `，展示前 ${visibleResults.length} 条` : ''}
+                      共 {results.length} {TEXT.resultsSuffix}
+                      {results.length > visibleResults.length ? `，展示前 ${visibleResults.length} 条` : ''}
                     </span>
                   </div>
                   {visibleResults.map((post, index) => {
                     const isActive = index === activeResultIndex;
                     return (
                       <button
-                        ref={(element) => { resultRefs.current[index] = element; }}
+                        ref={(element) => {
+                          resultRefs.current[index] = element;
+                        }}
                         key={post.id}
                         id={`site-search-result-${post.id}`}
                         role="option"
@@ -264,14 +311,20 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                         onMouseEnter={() => setActiveResultIndex(index)}
                         onClick={() => handleSelect(post.id)}
                         className={`group block w-full p-4 text-left transition-colors ${
-                          isActive ? 'border-l-2 border-zinc-900 bg-zinc-100 dark:border-zinc-100 dark:bg-zinc-800/80' : 'border-l-2 border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                          isActive
+                            ? 'border-l-2 border-zinc-900 bg-zinc-100 dark:border-zinc-100 dark:bg-zinc-800/80'
+                            : 'border-l-2 border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
                         }`}
                         aria-label={`打开文章：${post.title}`}
                       >
                         <div className="mb-1 flex items-center gap-2">
-                          <span className="border border-zinc-200 bg-zinc-100 px-1.5 py-0.5 text-xs font-bold text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">{post.category}</span>
+                          <span className="border border-zinc-200 bg-zinc-100 px-1.5 py-0.5 text-xs font-bold text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
+                            {post.category}
+                          </span>
                           {post.searchMatch && (
-                            <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">命中{post.searchMatch.label}</span>
+                            <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
+                              命中{post.searchMatch.label}
+                            </span>
                           )}
                         </div>
                         <h4 className="text-lg font-semibold text-ink transition-colors group-hover:text-zinc-700 dark:text-gray-100 dark:group-hover:text-zinc-300">
@@ -295,12 +348,29 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 </div>
               ) : searchHistory.length > 0 ? (
                 <div className="p-4">
-                  <div className="mb-3 px-2 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">搜索历史</div>
+                  <div className="mb-3 px-2 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
+                    搜索历史
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {searchHistory.map((query) => (
-                      <div key={query} className="group flex min-h-11 min-w-0 max-w-full items-center rounded-control border border-zinc-200 bg-zinc-50 pl-3 pr-0.5 text-sm text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-800">
-                        <button type="button" className="mr-1 min-h-11 min-w-0 truncate hover:text-zinc-900 dark:hover:text-white" title={query} onClick={() => handleSearch(query)}>{query}</button>
-                        <button type="button" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 active:scale-[0.98] dark:hover:bg-zinc-700 dark:hover:text-zinc-200" onClick={(e) => removeHistory(query, e)} aria-label={`删除搜索历史：${query}`}>
+                      <div
+                        key={query}
+                        className="group flex min-h-11 min-w-0 max-w-full items-center rounded-control border border-zinc-200 bg-zinc-50 pl-3 pr-0.5 text-sm text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-800"
+                      >
+                        <button
+                          type="button"
+                          className="mr-1 min-h-11 min-w-0 truncate hover:text-zinc-900 dark:hover:text-white"
+                          title={query}
+                          onClick={() => handleSearch(query)}
+                        >
+                          {query}
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 active:scale-[0.98] dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
+                          onClick={(e) => removeHistory(query, e)}
+                          aria-label={`删除搜索历史：${query}`}
+                        >
                           <X size={12} />
                         </button>
                       </div>
@@ -315,11 +385,26 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               )}
             </div>
 
-            <span id="site-search-desc" className="sr-only">使用方向键浏览结果，按 Enter 打开文章，按 Escape 关闭搜索。</span>
+            {hasSearchQuery && (
+              <div className="border-t border-zinc-100 px-4 py-3 text-center dark:border-zinc-800">
+                <Link
+                  to={`/search?q=${encodeURIComponent(searchQuery)}`}
+                  onClick={onClose}
+                  className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-zinc-700 underline decoration-zinc-300 underline-offset-4 transition-colors hover:text-zinc-900 dark:text-zinc-300 dark:decoration-zinc-700 dark:hover:text-white"
+                >
+                  在搜索页查看全部结果 <ExternalLink size={13} aria-hidden="true" />
+                </Link>
+              </div>
+            )}
+            <span id="site-search-desc" className="sr-only">
+              使用方向键浏览结果，按 Enter 打开文章，按 Escape 关闭搜索。
+            </span>
             <div className="hidden items-center justify-between border-t border-zinc-100 bg-zinc-50 p-3 text-xs text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300 sm:flex">
               <span>使用方向键浏览结果，按 Enter 打开文章</span>
               <div className="flex items-center gap-2">
-                <kbd className="rounded-control border border-zinc-200 bg-white px-2 py-0.5 font-mono dark:border-zinc-700 dark:bg-zinc-800">esc</kbd>
+                <kbd className="rounded-control border border-zinc-200 bg-white px-2 py-0.5 font-mono dark:border-zinc-700 dark:bg-zinc-800">
+                  esc
+                </kbd>
                 <span>{TEXT.close}</span>
               </div>
             </div>
@@ -329,4 +414,3 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     </AnimatePresence>
   );
 };
-

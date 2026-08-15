@@ -91,17 +91,17 @@ const buildSiteSchemas = (description: string): Array<Record<string, unknown>> =
       url: toAbsoluteUrl('/'),
       logo: {
         '@type': 'ImageObject',
-        url: toAbsoluteUrl(siteConfig.logo)
-      }
+        url: toAbsoluteUrl(siteConfig.logo),
+      },
     },
     potentialAction: {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: `${toAbsoluteUrl('/')}?q={search_term_string}`
+        urlTemplate: `${toAbsoluteUrl('/search')}?q={search_term_string}`,
       },
-      'query-input': 'required name=search_term_string'
-    }
+      'query-input': 'required name=search_term_string',
+    },
   },
   {
     '@context': 'https://schema.org',
@@ -111,11 +111,11 @@ const buildSiteSchemas = (description: string): Array<Record<string, unknown>> =
     url: toAbsoluteUrl('/'),
     logo: {
       '@type': 'ImageObject',
-      url: toAbsoluteUrl(siteConfig.logo)
+      url: toAbsoluteUrl(siteConfig.logo),
     },
     email: siteConfig.social.rawEmail,
-    sameAs: [siteConfig.social.github]
-  }
+    sameAs: [siteConfig.social.github],
+  },
 ];
 
 const withBaseUrls = (value: unknown): unknown => {
@@ -127,20 +127,23 @@ const withBaseUrls = (value: unknown): unknown => {
     return value;
   }
 
-  return Object.fromEntries(Object.entries(value).map(([key, entry]) => [
-    key,
-    ['url', 'image', 'logo', 'mainEntityOfPage', 'item'].includes(key) && typeof entry === 'string'
-      ? toAbsoluteUrl(entry)
-      : withBaseUrls(entry)
-  ]));
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [
+      key,
+      ['url', 'image', 'logo', 'mainEntityOfPage', 'item'].includes(key) && typeof entry === 'string'
+        ? toAbsoluteUrl(entry)
+        : withBaseUrls(entry),
+    ]),
+  );
 };
 
-const stringifyJsonLd = (value: StructuredData | Record<string, unknown>) => JSON.stringify(value)
-  .replace(/</g, '\\u003c')
-  .replace(/>/g, '\\u003e')
-  .replace(/&/g, '\\u0026')
-  .replace(/\u2028/g, '\\u2028')
-  .replace(/\u2029/g, '\\u2029');
+const stringifyJsonLd = (value: StructuredData | Record<string, unknown>) =>
+  JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 
 export { buildSiteSchemas };
 export const Seo: React.FC<SeoProps> = ({
@@ -158,23 +161,23 @@ export const Seo: React.FC<SeoProps> = ({
   tags = [],
   keywords,
   structuredData,
-  noindex = false
+  noindex = false,
 }) => {
   const location = useLocation();
   const resolvedUrl = url ?? location.pathname + location.search;
   // 首页使用带关键词的站点级标题（大厂站标配：品牌 + 一句话定位），
   // 其余页面统一为「页面名 - D-blog」格式。
-  const fullTitle = title === siteConfig.title
-    ? (siteConfig.seoHomeTitle || siteConfig.title)
-    : `${title} - ${siteConfig.title}`;
-  const fullDescription = title === siteConfig.title && siteConfig.seoHomeDescription
-    ? siteConfig.seoHomeDescription
-    : description;
+  const fullTitle =
+    title === siteConfig.title ? siteConfig.seoHomeTitle || siteConfig.title : `${title} - ${siteConfig.title}`;
+  const fullDescription =
+    title === siteConfig.title && siteConfig.seoHomeDescription ? siteConfig.seoHomeDescription : description;
   const isSearchVariant = hasSearchParam(resolvedUrl);
   const canonicalUrl = toAbsoluteUrl(buildCanonicalPath(resolvedUrl || '/'));
   const imageUrl = toAbsoluteUrl(image);
   const schema = structuredData
-    ? (Array.isArray(structuredData) ? structuredData : [structuredData]).map(withBaseUrls) as Array<Record<string, unknown>>
+    ? ((Array.isArray(structuredData) ? structuredData : [structuredData]).map(withBaseUrls) as Array<
+        Record<string, unknown>
+      >)
     : buildSiteSchemas(fullDescription);
 
   return (
@@ -182,14 +185,23 @@ export const Seo: React.FC<SeoProps> = ({
       <title>{fullTitle}</title>
       <meta name="description" content={fullDescription} />
       <meta name="author" content={siteConfig.author.name} />
-      <meta key="robots" name="robots" content={noindex || isSearchVariant ? 'noindex,follow' : 'index,follow,max-image-preview:large'} />
+      <meta
+        key="robots"
+        name="robots"
+        content={noindex || isSearchVariant ? 'noindex,follow' : 'index,follow,max-image-preview:large'}
+      />
       {keywords && <meta name="keywords" content={keywords} />}
       <link key="canonical" rel="canonical" href={canonicalUrl} />
       {/* hreflang 自引用：声明页面语言目标（zh-CN），谷歌据此处理语言与地区意图。
           全站单语言站点按 Google 官方建议加 x-default 与语言自引用。 */}
       <link rel="alternate" hrefLang="zh-CN" href={canonicalUrl} />
       <link rel="alternate" hrefLang="x-default" href={canonicalUrl} />
-      <link rel="alternate" type="application/rss+xml" title={`${siteConfig.title} RSS`} href={toAbsoluteUrl('/feed.xml')} />
+      <link
+        rel="alternate"
+        type="application/rss+xml"
+        title={`${siteConfig.title} RSS`}
+        href={toAbsoluteUrl('/feed.xml')}
+      />
 
       <meta property="og:locale" content="zh_CN" />
       <meta property="og:site_name" content={siteConfig.title} />
@@ -221,4 +233,3 @@ export const Seo: React.FC<SeoProps> = ({
     </Helmet>
   );
 };
-

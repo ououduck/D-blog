@@ -59,15 +59,23 @@ const TOTAL_BUDGET_MS = Number(process.env.SSG_TOTAL_BUDGET_MS) || 10 * 60 * 100
  * framer-motion 等组件在 SSR 时会把 initial={{ opacity: 0 }} 写为内联样式。
  * 禁用 JS（或不执行 JS 的爬虫读取时）时强制可见，不影响启用 JS 的正常用户。
  */
-const NOSCRIPT_FALLBACK = '\n    <noscript><style>[style*="opacity: 0"], [style*="opacity:0"]{opacity:1!important}</style></noscript>';
+const NOSCRIPT_FALLBACK =
+  '\n    <noscript><style>[style*="opacity: 0"], [style*="opacity:0"]{opacity:1!important}</style></noscript>';
 
-const escapeHtmlAttribute = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-const escapeJsonForHtml = (value) => JSON.stringify(value)
-  .replace(/</g, '\\u003c')
-  .replace(/>/g, '\\u003e')
-  .replace(/&/g, '\\u0026')
-  .replace(/\u2028/g, '\\u2028')
-  .replace(/\u2029/g, '\\u2029');
+const escapeHtmlAttribute = (value) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+const escapeJsonForHtml = (value) =>
+  JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 
 /**
  * 把渲染完成的 HTML 中的 Suspense 边界“展平”为最终静态内容。
@@ -136,7 +144,7 @@ const flattenSuspenseBoundaries = (html) => {
     return {
       content: source.slice(contentStart, contentEnd),
       start: openTagStart,
-      end: contentEnd + '</div>'.length
+      end: contentEnd + '</div>'.length,
     };
   };
 
@@ -220,9 +228,9 @@ const createStaticPageSchema = ({ path: pagePath, title, description, schemaType
     isPartOf: {
       '@type': 'WebSite',
       name: siteConfig.title,
-      url: siteAbsoluteUrl('/')
+      url: siteAbsoluteUrl('/'),
     },
-    inLanguage: 'zh-CN'
+    inLanguage: 'zh-CN',
   };
   return `\n    <script type="application/ld+json">${escapeJsonForHtml(structuredData)}</script>`;
 };
@@ -312,7 +320,10 @@ const formatError = (error) => {
   return String(error);
 };
 
-export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, ssrDir = process.env.SSG_SSR_DIR || DIST_SSR_DIR } = {}) => {
+export const runSsg = async ({
+  distDir = process.env.SSG_DIST_DIR || DIST_DIR,
+  ssrDir = process.env.SSG_SSR_DIR || DIST_SSR_DIR,
+} = {}) => {
   if (!fs.existsSync(distDir)) {
     logger.error('dist directory not found', 'Run "vite build" before SSG.');
     return false;
@@ -350,17 +361,19 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   // SSG_DIST_DIR 指向独立调试产物目录的场景），其次取 ssrDir（生产构建流程的备份）。
   // 两者都缺失时回退到 distDir/index.html，但若它已被注入过（含 data-rh 标记），
   // 说明是重复运行且无干净模板，直接报错提示先跑完整构建。
-  const templateSnapshot = [
-    path.join(distDir, 'index.template.html'),
-    path.join(ssrDir, 'index.template.html'),
-  ].find((candidate) => fs.existsSync(candidate));
+  const templateSnapshot = [path.join(distDir, 'index.template.html'), path.join(ssrDir, 'index.template.html')].find(
+    (candidate) => fs.existsSync(candidate),
+  );
   let template;
   if (templateSnapshot) {
     template = fs.readFileSync(templateSnapshot, 'utf-8');
   } else {
     const fallback = fs.readFileSync(indexHtmlPath, 'utf-8');
     if (fallback.includes('data-rh="true"')) {
-      logger.error('dist/index.html has already been SSG-injected and no clean template snapshot exists', 'Run "npm run build" to regenerate a clean template before running SSG.');
+      logger.error(
+        'dist/index.html has already been SSG-injected and no clean template snapshot exists',
+        'Run "npm run build" to regenerate a clean template before running SSG.',
+      );
       return false;
     }
     template = fallback;
@@ -407,16 +420,85 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   };
 
   const staticPages = [
-    { path: 'archive', title: `归档 - ${siteConfig.title}`, description: 'D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评与折腾记录，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。', schemaType: 'CollectionPage', schemaFromSeo: true },
-    { path: 'tags', title: `标签 - ${siteConfig.title}`, description: 'D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。', schemaType: 'CollectionPage', schemaFromSeo: true },
-    { path: 'stats', title: `统计 - ${siteConfig.title}`, description: 'D-blog 站点数据统计面板，展示文章总数、累计字数、分类与标签分布、图片与代码规模等核心内容数据。', schemaType: 'WebPage' },
-    { path: 'about', title: `关于 - ${siteConfig.title}`, description: '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。', schemaType: 'ProfilePage', schemaFromSeo: true },
-    { path: 'friends', title: `友链 - ${siteConfig.title}`, description: 'D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链，一起分享交流与成长。', schemaType: 'CollectionPage', schemaFromSeo: true },
-    { path: 'shuoshuo', title: `说说 - ${siteConfig.title}`, description: 'D-blog 说说：类似朋友圈的短动态分享，用一句话、一张图记录当下的想法与生活片段，Markdown 书写，随性更新。', schemaType: 'CollectionPage', schemaFromSeo: true },
-    { path: 'guestbook', title: `留言板 - ${siteConfig.title}`, description: '在 D-blog 留言板留下你的足迹：闲聊、建议、问题反馈都可以，登录 GitHub 账号即可留言。', schemaType: 'WebPage', schemaFromSeo: true },
-    { path: 'cover', title: `封面生成 - ${siteConfig.title}`, description: '在线免费生成精美博客文章封面图片，支持自定义文字、图标与渐变背景，适配多种社交分享比例，开箱即用无需登录。', schemaType: 'WebApplication' },
-    { path: 'watermark', title: `水印工具 - ${siteConfig.title}`, description: '在浏览器中免费为图片添加文字水印，支持自定义文字样式、实时预览与本地导出，无需上传文件，保护图片版权。', schemaType: 'WebApplication' },
-    { path: 'sponsor', title: `赞助 - ${siteConfig.title}`, description: '支持 D-blog 的多种方式：贡献代码、投稿原创文章或通过赞助链接，帮助博客持续输出高质量内容，感谢每一位支持者。', schemaType: 'WebPage' }
+    {
+      path: 'archive',
+      title: `归档 - ${siteConfig.title}`,
+      description:
+        'D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评与折腾记录，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。',
+      schemaType: 'CollectionPage',
+      schemaFromSeo: true,
+    },
+    {
+      path: 'tags',
+      title: `标签 - ${siteConfig.title}`,
+      description:
+        'D-blog 标签导航页，按主题标签筛选全部文章，快速定位前端开发、后端运维、AI 工具与效率软件等感兴趣内容。',
+      schemaType: 'CollectionPage',
+      schemaFromSeo: true,
+    },
+    {
+      path: 'stats',
+      title: `统计 - ${siteConfig.title}`,
+      description: 'D-blog 站点数据统计面板，展示文章总数、累计字数、分类与标签分布、图片与代码规模等核心内容数据。',
+      schemaType: 'WebPage',
+    },
+    {
+      path: 'about',
+      title: `关于 - ${siteConfig.title}`,
+      description: '关于跑路的duck：前端开发者，热爱探索 Web 技术，致力于构建极致性能与优秀交互的静态页面体验。',
+      schemaType: 'ProfilePage',
+      schemaFromSeo: true,
+    },
+    {
+      path: 'friends',
+      title: `友链 - ${siteConfig.title}`,
+      description: 'D-blog 友情链接汇集优秀技术博客与趣味网站，欢迎通过 GitHub PR 申请交换友链，一起分享交流与成长。',
+      schemaType: 'CollectionPage',
+      schemaFromSeo: true,
+    },
+    {
+      path: 'shuoshuo',
+      title: `说说 - ${siteConfig.title}`,
+      description:
+        'D-blog 说说：类似朋友圈的短动态分享，用一句话、一张图记录当下的想法与生活片段，Markdown 书写，随性更新。',
+      schemaType: 'CollectionPage',
+      schemaFromSeo: true,
+    },
+    {
+      path: 'guestbook',
+      title: `留言板 - ${siteConfig.title}`,
+      description: '在 D-blog 留言板留下你的足迹：闲聊、建议、问题反馈都可以，登录 GitHub 账号即可留言。',
+      schemaType: 'WebPage',
+      schemaFromSeo: true,
+    },
+    {
+      path: 'cover',
+      title: `封面生成 - ${siteConfig.title}`,
+      description:
+        '在线免费生成精美博客文章封面图片，支持自定义文字、图标与渐变背景，适配多种社交分享比例，开箱即用无需登录。',
+      schemaType: 'WebApplication',
+    },
+    {
+      path: 'watermark',
+      title: `水印工具 - ${siteConfig.title}`,
+      description:
+        '在浏览器中免费为图片添加文字水印，支持自定义文字样式、实时预览与本地导出，无需上传文件，保护图片版权。',
+      schemaType: 'WebApplication',
+    },
+    {
+      path: 'sponsor',
+      title: `赞助 - ${siteConfig.title}`,
+      description:
+        '支持 D-blog 的多种方式：贡献代码、投稿原创文章或通过赞助链接，帮助博客持续输出高质量内容，感谢每一位支持者。',
+      schemaType: 'WebPage',
+    },
+    {
+      path: 'search',
+      title: `搜索 - ${siteConfig.title}`,
+      description: '在 D-blog 全站搜索文章：按标题、分类、标签、摘要与正文内容检索，快速定位感兴趣的技术分享。',
+      schemaType: 'WebPage',
+      schemaFromSeo: true,
+    },
   ];
 
   /**
@@ -454,16 +536,17 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
       skippedPages.push(`/post/${post.id}`);
       continue;
     }
-    const extraHead = post.coverImage
-      ? createImagePreload(toAbsoluteUrl(post.coverImage, SITE_URL, BASE_PATH))
-      : '';
+    const extraHead = post.coverImage ? createImagePreload(toAbsoluteUrl(post.coverImage, SITE_URL, BASE_PATH)) : '';
     try {
       await writePage(`/post/${post.id}`, `post/${post.id}`, extraHead);
     } catch (error) {
       failedPages.push({ url: `/post/${post.id}`, error: formatError(error) });
     }
   }
-  logger.step('Generated post pages', `count=${posts.length} failed=${failedPages.length} skipped=${skippedPages.length}`);
+  logger.step(
+    'Generated post pages',
+    `count=${posts.length} failed=${failedPages.length} skipped=${skippedPages.length}`,
+  );
 
   // 1.5 说说详情页：每条说说一个独立可索引页面 /shuoshuo/<id>（SSG 静态 HTML）。
   // 与文章页一致，正文随首帧 HTML 输出，爬虫/智能体无需执行 JS 即可读取。
@@ -474,16 +557,17 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
       continue;
     }
     const firstImage = Array.isArray(item.images) ? item.images[0] : undefined;
-    const extraHead = firstImage
-      ? createImagePreload(toAbsoluteUrl(firstImage, SITE_URL, BASE_PATH))
-      : '';
+    const extraHead = firstImage ? createImagePreload(toAbsoluteUrl(firstImage, SITE_URL, BASE_PATH)) : '';
     try {
       await writePage(`/shuoshuo/${item.id}`, `shuoshuo/${item.id}`, extraHead);
     } catch (error) {
       failedPages.push({ url: `/shuoshuo/${item.id}`, error: formatError(error) });
     }
   }
-  logger.step('Generated shuoshuo pages', `count=${shuoshuoItems.length} failed=${failedPages.filter((entry) => entry.url.startsWith('/shuoshuo/')).length} skipped=${skippedPages.filter((entry) => entry.startsWith('/shuoshuo/')).length}`);
+  logger.step(
+    'Generated shuoshuo pages',
+    `count=${shuoshuoItems.length} failed=${failedPages.filter((entry) => entry.url.startsWith('/shuoshuo/')).length} skipped=${skippedPages.filter((entry) => entry.startsWith('/shuoshuo/')).length}`,
+  );
 
   // 2. 静态页面：SSR 渲染 + 附加结构化数据。
   for (const page of staticPages) {
@@ -501,7 +585,10 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
     }
   }
   const staticSkipped = staticPages.filter((page) => skippedPages.includes(`/${page.path}`)).length;
-  logger.step('Generated static pages', `count=${staticPages.length} failed=${failedPages.filter((item) => staticPages.some((page) => item.url === `/${page.path}`)).length} skipped=${staticSkipped}`);
+  logger.step(
+    'Generated static pages',
+    `count=${staticPages.length} failed=${failedPages.filter((item) => staticPages.some((page) => item.url === `/${page.path}`)).length} skipped=${staticSkipped}`,
+  );
 
   // 3. 首页。
   const homeHeroPost = (() => {
@@ -522,7 +609,10 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
       let homePage = injectRootContent(template, homeHtml);
       homePage = flattenSuspenseBoundaries(homePage);
       if (homeRouteDataScript) {
-        homePage = homePage.replace(/<div\b[^>]*\bid=["']root["'][^>]*>/i, (match) => `${homeRouteDataScript}\n    ${match}`);
+        homePage = homePage.replace(
+          /<div\b[^>]*\bid=["']root["'][^>]*>/i,
+          (match) => `${homeRouteDataScript}\n    ${match}`,
+        );
       }
       writeStandaloneHtml('index.html', mergeHead(homePage, homeHead, `${homeExtraHead}${NOSCRIPT_FALLBACK}`));
       logger.step('Generated home page');
@@ -552,7 +642,10 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
       const notFoundPage = injectRootContent(template, notFoundHtml);
       const flattenedNotFoundPage = flattenSuspenseBoundaries(notFoundPage);
       const mergedNotFoundPage = mergeHead(flattenedNotFoundPage, notFoundHead, NOSCRIPT_FALLBACK);
-      writeStandaloneHtml('404.html', mergedNotFoundPage.replace(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\/?\s*>/i, ''));
+      writeStandaloneHtml(
+        '404.html',
+        mergedNotFoundPage.replace(/<link\b(?=[^>]*\brel\s*=\s*["']canonical["'])[^>]*\/?\s*>/i, ''),
+      );
       logger.step('Generated 404 page');
     } catch (error) {
       failedPages.push({ url: '/__missing__', error: formatError(error) });
@@ -562,7 +655,10 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
   // 汇总：任何页面失败都视为构建失败（但已生成页面保留供排查）；
   // skipped 仅因总预算截断，单独提示。
   if (skippedPages.length > 0) {
-    logger.warn('Pages skipped due to total SSG budget', { count: skippedPages.length, firstFew: skippedPages.slice(0, 10) });
+    logger.warn('Pages skipped due to total SSG budget', {
+      count: skippedPages.length,
+      firstFew: skippedPages.slice(0, 10),
+    });
   }
   const totalPages = posts.length + staticPages.length + shuoshuoItems.length + 3;
   if (failedPages.length > 0) {
@@ -576,7 +672,7 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
       static: staticPages.length,
       failed: failedPages.length,
       skipped: skippedPages.length,
-      siteUrl: SITE_URL
+      siteUrl: SITE_URL,
     });
     return false;
   }
@@ -587,19 +683,21 @@ export const runSsg = async ({ distDir = process.env.SSG_DIST_DIR || DIST_DIR, s
     shuoshuo: shuoshuoItems.length,
     static: staticPages.length,
     skipped: skippedPages.length,
-    siteUrl: SITE_URL
+    siteUrl: SITE_URL,
   });
 
   return true;
 };
 
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
-  runSsg().then((ok) => {
-    if (!ok) process.exitCode = 1;
-  }).catch((error) => {
-    // 顶层兜底：runSsg 内部任何未捕获异常都结构化记录后以非零码退出，
-    // 避免未处理 rejection 以裸堆栈崩溃（原实现的隐患）。
-    logger.error('SSG generation failed', formatError(error));
-    process.exitCode = 1;
-  });
+  runSsg()
+    .then((ok) => {
+      if (!ok) process.exitCode = 1;
+    })
+    .catch((error) => {
+      // 顶层兜底：runSsg 内部任何未捕获异常都结构化记录后以非零码退出，
+      // 避免未处理 rejection 以裸堆栈崩溃（原实现的隐患）。
+      logger.error('SSG generation failed', formatError(error));
+      process.exitCode = 1;
+    });
 }

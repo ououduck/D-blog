@@ -11,13 +11,12 @@ const RELATIVE_BASE_ROUTE_MARKERS = [
   '/cover',
   '/watermark',
   '/sponsor',
-  '/favorites'
+  '/favorites',
 ] as const;
 
 const inferRelativeBasePath = (currentPath: string): string => {
   const normalizedPath = currentPath.replace(/\\/g, '/').split(/[?#]/, 1)[0] || '/';
-  const marker = RELATIVE_BASE_ROUTE_MARKERS
-    .map((route) => ({ route, index: normalizedPath.indexOf(route) }))
+  const marker = RELATIVE_BASE_ROUTE_MARKERS.map((route) => ({ route, index: normalizedPath.indexOf(route) }))
     .filter(({ index }) => index >= 0)
     .sort((a, b) => a.index - b.index)[0];
 
@@ -80,7 +79,10 @@ const withBasePath = (value: string, basePath = getSiteBasePath()): string => {
   const baseWithoutTrailing = normalizedBase === '/' ? '' : normalizedBase.replace(/\/$/, '');
   const normalizedPath = pathname.startsWith('/') ? pathname : `/${pathname}`;
 
-  if (baseWithoutTrailing && (normalizedPath === baseWithoutTrailing || normalizedPath.startsWith(`${baseWithoutTrailing}/`))) {
+  if (
+    baseWithoutTrailing &&
+    (normalizedPath === baseWithoutTrailing || normalizedPath.startsWith(`${baseWithoutTrailing}/`))
+  ) {
     return `${normalizedPath}${suffix}`;
   }
 
@@ -89,10 +91,16 @@ const withBasePath = (value: string, basePath = getSiteBasePath()): string => {
 };
 
 export const routeUrl = (route: string, basePath = getSiteBasePath()): string =>
-  withBasePath(isExternalUrl(route) || route.startsWith('#') ? route : (route.startsWith('/') ? route : `/${route}`), basePath);
+  withBasePath(
+    isExternalUrl(route) || route.startsWith('#') ? route : route.startsWith('/') ? route : `/${route}`,
+    basePath,
+  );
 
 export const assetUrl = (asset: string, basePath = getSiteBasePath()): string =>
-  withBasePath(isExternalUrl(asset) || asset.startsWith('#') ? asset : (asset.startsWith('/') ? asset : `/${asset}`), basePath);
+  withBasePath(
+    isExternalUrl(asset) || asset.startsWith('#') ? asset : asset.startsWith('/') ? asset : `/${asset}`,
+    basePath,
+  );
 
 export const absoluteSiteUrl = (value: string | undefined, siteUrl: string, basePath = getSiteBasePath()): string => {
   if (!value) {
@@ -108,7 +116,7 @@ export const absoluteSiteUrl = (value: string | undefined, siteUrl: string, base
       }
       return new URL(
         withBasePath(`${candidate.pathname}${candidate.search}${candidate.hash}`, basePath),
-        `${siteUrl.replace(/\/+$/, '')}/`
+        `${siteUrl.replace(/\/+$/, '')}/`,
       ).toString();
     } catch {
       return value;
