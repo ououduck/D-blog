@@ -74,7 +74,7 @@ Node.js >= 20，npm >= 10。
 
 ## 构建流程
 
-`npm run build` 依次执行：数据生成 → OG 卡生成 → 客户端构建 → SSR 构建 → SSG 预渲染 → 产物审计 → SEO 审计，最终输出 `dist/`。各阶段独立超时并汇总耗时，任一阶段失败立即终止流水线并在日志中标明失败阶段（[N/M] 前缀）。
+`npm run build` 依次执行：数据生成 → OG 卡生成 → 客户端构建 → SSR 构建 → 模板快照 → SSG 预渲染 → 产物审计 → SEO 审计，最终输出 `dist/`。各阶段独立超时并汇总耗时，任一阶段失败立即终止流水线并在日志中标明失败阶段（[N/M] 前缀）。
 
 - **数据生成**（`gen:data`）：校验 Front Matter、文章 ID、图片与链接，生成 `generated/` 索引、Sitemap、RSS、`llms.txt`、`robots.txt`
 - **SSG 预渲染**（`ssg`）：用 SSR bundle 按路由渲染全站静态 HTML，注入 SEO meta / JSON-LD 与封面 preload
@@ -85,7 +85,7 @@ Node.js >= 20，npm >= 10。
 
 ```text
 D-blog/
-├── config/                  # site.config.json / content.config.json / ads.config.ts / tsconfig / tailwind / postcss
+├── config/                  # site.config.json(+site.config.ts 类型) / content.config.json / ads.config.ts / comment-keywords.json / tsconfig / tailwind / postcss
 ├── posts/                   # Markdown 文章
 ├── friends/                 # 友链数据（JSON，PagesCMS 直接读写）
 ├── shuoshuo/                # 说说（短动态）Markdown 内容
@@ -218,6 +218,9 @@ images:
 | `npm run audit:build` | 构建产物完整性审计（HTML / 标签 / 体积，已接入 build） |
 | `npm run audit:seo` | 全站 SEO 清单审计（已接入 build） |
 | `npm run typecheck` / `check` | TypeScript 类型检查 / 数据生成校验 + 类型检查 |
+| `npm run test` / `test:coverage` | 数据生成 + vitest 单元测试 / 附带覆盖率报告 |
+| `npm run lint` / `lint:fix` | ESLint 检查 / 自动修复 |
+| `npm run format` / `format:check` | Prettier 格式化 / 格式检查 |
 
 ## 部署
 
