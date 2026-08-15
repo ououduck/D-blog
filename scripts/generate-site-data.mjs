@@ -1,3 +1,7 @@
+/**
+ * 站点数据生成：解析 posts/shuoshuo/friends 内容并输出 generated/posts.json、搜索索引、sitemap、llms.txt 等全部构建期数据。
+ */
+
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';

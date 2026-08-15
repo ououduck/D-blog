@@ -1,3 +1,7 @@
+/**
+ * 构建产物审计：对 dist 下所有 HTML 检查初始 JS/CSS 体积与必备标签，作为 npm run build 的最后一道门禁（缺失 title/description/robots 即失败）。
+ */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { createBuildLogger } from './build-logger.mjs';

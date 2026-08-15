@@ -1,3 +1,7 @@
+/**
+ * RSS/Atom 源生成：把文章元数据与 Markdown 正文转为 feed.xml（含站点级元信息与最新 N 篇内容）。
+ */
+
 import { withBasePath } from './base-path.mjs';
 import { markdownToFeedHtml } from './feed-markdown.mjs';
 

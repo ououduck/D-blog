@@ -1,3 +1,7 @@
+/**
+ * Markdown → RSS 正文 HTML 转换：unified 管道（GFM + 图片路径处理 + 代码围栏净化），供 feed-generator 使用。
+ */
+
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';

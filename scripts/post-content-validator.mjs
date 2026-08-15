@@ -1,3 +1,7 @@
+/**
+ * 文章内容校验：检查 front matter 字段、正文中的站内链接与本地图片引用有效性，供 gen:data 阶段快速失败。
+ */
+
 import fs from 'fs';
 import path from 'path';
 import { maskFencedCodeBlocks } from '../src/utils/headings-core.mjs';

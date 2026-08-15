@@ -1,3 +1,7 @@
+/**
+ * 站点配置加载器：从 config/site.config.json 读取并校验配置（含环境变量覆盖），供全部构建脚本共用。
+ */
+
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

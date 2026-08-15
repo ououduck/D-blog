@@ -1,3 +1,7 @@
+/**
+ * 脚本侧 base path 工具：环境变量/URL 的 base path 归一化与静态资源 URL 拼接（Node 直跑环境，TS 侧等价实现见 config/basePath.ts）。
+ */
+
 const DEFAULT_BASE_PATH = '/';
 
 const normalizeBasePath = (value, { relativeFallback = '/' } = {}) => {

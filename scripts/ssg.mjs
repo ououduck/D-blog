@@ -1,3 +1,7 @@
+/**
+ * SSG 全量静态化：用 SSR bundle 渲染每个页面的完整 HTML（正文/SEO head/路由数据内联），输出到 dist 并汇总失败页。
+ */
+
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
