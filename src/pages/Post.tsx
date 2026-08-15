@@ -33,10 +33,6 @@ import { useSsgRouteData } from '@/ssr/routeData';
 import { fillBusuanziSpans } from '@/services/busuanzi';
 
 
-type BlockCodeProps = {
-  isBlock?: boolean;
-};
-
 type MarkdownImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   previewSrc?: string;
   node?: unknown;
@@ -351,13 +347,6 @@ const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<R
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
   };
 
-  const childrenWithProps = React.Children.map(children, (child) => {
-    if (React.isValidElement(child)) {
-      return React.cloneElement(child as React.ReactElement<BlockCodeProps>, { isBlock: true });
-    }
-    return child;
-  });
-
   if (isMermaidBlock || lang?.toLowerCase() === 'mermaid') {
     return <>{children}</>;
   }
@@ -408,7 +397,7 @@ const PreBlock = ({ children, node: _node, ...props }: React.DetailedHTMLProps<R
             ))}
           </div>
           <pre {...props} className={`${props.className || ''} !my-0 !min-w-max !bg-transparent !p-3.5 !leading-6 md:!p-5`}>
-            {childrenWithProps}
+            {children}
           </pre>
         </div>
         {needsExpand && !isExpanded && (
@@ -1005,8 +994,7 @@ const createMarkdownComponents = (
       </div>
     ),
     code: ({ className, children, node: _node, ...props }) => {
-      const { isBlock, ...restProps } = props as React.HTMLAttributes<HTMLElement> & BlockCodeProps;
-      const isBlockCode = Boolean(isBlock) || /language-(\w+)/.test(className || '');
+      const isBlockCode = /language-(\w+)/.test(className || '');
 
       if (className?.includes('language-mermaid')) {
         return <MermaidBlock renderer={mermaidRenderer} theme={mermaidTheme}>{String(children)}</MermaidBlock>;
@@ -1014,14 +1002,14 @@ const createMarkdownComponents = (
 
       if (isBlockCode) {
         return (
-          <code className={className} {...restProps}>
+          <code className={className} {...props}>
             {children}
           </code>
         );
       }
 
       return (
-        <code className="rounded-none bg-zinc-100 px-1.5 py-0.5 font-bold text-zinc-900 before:content-none after:content-none dark:bg-zinc-900 dark:text-zinc-100" {...restProps}>
+        <code className="rounded-none bg-zinc-100 px-1.5 py-0.5 font-bold text-zinc-900 before:content-none after:content-none dark:bg-zinc-900 dark:text-zinc-100" {...props}>
           {children}
         </code>
       );
