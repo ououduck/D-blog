@@ -179,6 +179,8 @@ const BusuanziCard = ({ className = '' }: { className?: string }) => {
           alt="不蒜子统计"
           width="85"
           height="25"
+          loading="lazy"
+          decoding="async"
           className="h-[25px] w-[85px]"
         />
       </a>
