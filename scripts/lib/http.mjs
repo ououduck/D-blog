@@ -504,7 +504,10 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
  * 带鉴权、限流等待、退避重试与自动分页的 GitHub REST API 请求。
  * 支持非 GET 方法：method/body/自定义 headers 通过 fetchOptions 透传。
  *
- * @param {string} endpoint 相对端点，如 '/issues?state=open' 或 '/issues'。
+ * @param {string} endpoint 相对端点，如 '/repos/{owner}/{repo}/issues?state=open' 或
+ *        '/repos/{owner}/{repo}/issues/{number}/comments'。注意：仓库内资源必须带
+ *        /repos/{owner}/{repo} 前缀；裸 '/issues'（List issues assigned to the
+ *        authenticated user）等用户级端点在 GITHUB_TOKEN（仓库级令牌）下会返回 404。
  * @param {object} options
  * @param {string} options.token GitHub Token（必填；缺失时抛出明确错误）。
  * @param {string} [options.baseUrl='https://api.github.com'] API 基地址（可测注入）。

@@ -37,6 +37,13 @@
  * 9. 【缺省头像落地】avatar 缺失时写入站点 logo 占位 —— 修复"注释声称占位
  *    但未实现"的问题：原实现写空字符串，构建端因 avatar 必填而静默丢弃
  *    已被接受的友链，导致"审核通过但永不显示"。
+ * 10. 【仓库级 API 端点】全部 GitHub REST 端点改为 /repos/{owner}/{repo} 前缀：
+ *     - 拉取 open issues 原用裸 GET /issues（"List issues assigned to the
+ *       authenticated user"）—— 该用户级端点对 Actions 的仓库级 GITHUB_TOKEN
+ *       返回 404，导致 review 模式一启动即 Fatal；
+ *     - 评论/关闭 issue 原用 /issues/{number}、/issues/{number}/comments ——
+ *       REST API 根本不存在这两个路径（同样 404），opened 模式一启动即 Fatal。
+ *     现统一改为 /repos/{owner}/{repo}/issues[...]（有据可查的仓库级端点）。
  *
  * 运行环境要求：GITHUB_TOKEN / GITHUB_REPOSITORY / ISSUE_PAYLOAD（opened 模式）。
  */
@@ -55,7 +62,7 @@ import {
   sleep,
   RateLimitError,
   readResponseText,
-  GITHUB_API_VERSION
+  GITHUB_API_VERSION,
 } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
@@ -108,7 +115,7 @@ const MAX_MAILTO_BODY_CHARS = 4000;
 const FIELD_LIMITS = {
   name: 100,
   description: 500,
-  contact: 200
+  contact: 200,
 };
 
 /** 申请字段总长度预算（name+description+contact），防字段合计超限。 */
@@ -141,12 +148,13 @@ const api = async (endpoint, options = {}) => {
   const result = await fetchGithubJson(endpoint, {
     token,
     ...options,
-    onRetry: (info) => logger.warn('Retrying GitHub API request', {
-      endpoint: endpoint.split('?')[0],
-      attempt: info.attempt,
-      status: info.status ?? 'network',
-      delayMs: info.delayMs
-    })
+    onRetry: (info) =>
+      logger.warn('Retrying GitHub API request', {
+        endpoint: endpoint.split('?')[0],
+        attempt: info.attempt,
+        status: info.status ?? 'network',
+        delayMs: info.delayMs,
+      }),
   });
   return result;
 };
@@ -205,7 +213,7 @@ const parseApplication = (body = '') => {
     avatar: values['avatar url'] || '',
     description: values['short description'] || '',
     contact: values['your name / contact'] || '',
-    filename: values['filename'] || ''
+    filename: values['filename'] || '',
   };
   // 核心字段（除 avatar 外）必须全部非空，否则视为无效申请。
   const { avatar: _avatar, ...coreFields } = application;
@@ -264,7 +272,7 @@ const privateIpv4BlockList = new net.BlockList();
   ['127.0.0.0', 8],
   ['169.254.0.0', 16],
   ['172.16.0.0', 12],
-  ['192.168.0.0', 16]
+  ['192.168.0.0', 16],
 ].forEach(([subnet, prefix]) => privateIpv4BlockList.addSubnet(subnet, prefix, 'ipv4'));
 
 const privateIpv6BlockList = new net.BlockList();
@@ -272,7 +280,7 @@ const privateIpv6BlockList = new net.BlockList();
   ['::', 128],
   ['::1', 128],
   ['fc00::', 7],
-  ['fe80::', 10]
+  ['fe80::', 10],
 ].forEach(([subnet, prefix]) => privateIpv6BlockList.addSubnet(subnet, prefix, 'ipv6'));
 
 /** 把 IPv4-mapped/兼容的 IPv6 地址解包为点分 IPv4；非此类形式返回 undefined。 */
@@ -348,11 +356,12 @@ const isSafePublicHttpUrl = async (value) => {
  * @param {string} value
  * @returns {string}
  */
-const sanitizeMailtoBody = (value) => String(value ?? '')
-  .replace(/\r\n?/g, ' ')
-  .replace(/\n/g, ' ')
-  .replace(/\s+/g, ' ')
-  .trim();
+const sanitizeMailtoBody = (value) =>
+  String(value ?? '')
+    .replace(/\r\n?/g, ' ')
+    .replace(/\n/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 /**
  * 抓取公开页面全文（带重定向链、整体超时、退避重试与体积上限）。
@@ -371,23 +380,28 @@ const fetchPublicPage = async (value) => {
     // 单一总超时信号覆盖 fetch 与 body 读取全程，防慢速连接无限挂起。
     const { signal, cleanup } = createTimeoutSignal(PAGE_FETCH_TIMEOUT_MS);
     try {
-      const response = await fetchWithRetry(current, {
-        redirect: 'manual',
-        signal,
-        headers: {
-          'User-Agent': 'D-blogFriendLinkBot/2.0',
-          Accept: 'text/html,application/xhtml+xml'
-        }
-      }, {
-        retries: 3,
-        signal,
-        onRetry: (info) => logger.warn('Retrying friend-page fetch', {
-          url: current,
-          attempt: info.attempt,
-          status: info.status ?? 'network',
-          delayMs: info.delayMs
-        })
-      });
+      const response = await fetchWithRetry(
+        current,
+        {
+          redirect: 'manual',
+          signal,
+          headers: {
+            'User-Agent': 'D-blogFriendLinkBot/2.0',
+            Accept: 'text/html,application/xhtml+xml',
+          },
+        },
+        {
+          retries: 3,
+          signal,
+          onRetry: (info) =>
+            logger.warn('Retrying friend-page fetch', {
+              url: current,
+              attempt: info.attempt,
+              status: info.status ?? 'network',
+              delayMs: info.delayMs,
+            }),
+        },
+      );
 
       if (response.status >= 300 && response.status < 400) {
         const location = response.headers.get('location');
@@ -431,17 +445,17 @@ const containsBacklink = (html) => {
 /* ------------------------------------------------------------------ */
 
 const postComment = (number, body) =>
-  api(`/issues/${number}/comments`, {
+  api(`/repos/${owner}/${repo}/issues/${number}/comments`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ body: body.slice(0, MAX_COMMENT_BODY_CHARS) })
+    body: JSON.stringify({ body: body.slice(0, MAX_COMMENT_BODY_CHARS) }),
   });
 
 const closeIssue = (number, reason) =>
-  api(`/issues/${number}`, {
+  api(`/repos/${owner}/${repo}/issues/${number}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ state: 'closed', state_reason: reason })
+    body: JSON.stringify({ state: 'closed', state_reason: reason }),
   });
 
 /**
@@ -460,23 +474,28 @@ const dispatchDeploy = async () => {
   const payload = JSON.stringify({ repository: { ref: TARGET_BRANCH } });
   const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(DEPLOY_WORKFLOW)}/dispatches`;
   try {
-    const response = await fetchWithRetry(url, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${token}`,
-        'X-GitHub-Api-Version': GITHUB_API_VERSION,
-        'Content-Type': 'application/json'
+    const response = await fetchWithRetry(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${token}`,
+          'X-GitHub-Api-Version': GITHUB_API_VERSION,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ref: TARGET_BRANCH, inputs: { payload } }),
       },
-      body: JSON.stringify({ ref: TARGET_BRANCH, inputs: { payload } })
-    }, {
-      retries: 2,
-      onRetry: (info) => logger.warn('Retrying deploy workflow dispatch', {
-        attempt: info.attempt,
-        status: info.status ?? 'network',
-        delayMs: info.delayMs
-      })
-    });
+      {
+        retries: 2,
+        onRetry: (info) =>
+          logger.warn('Retrying deploy workflow dispatch', {
+            attempt: info.attempt,
+            status: info.status ?? 'network',
+            delayMs: info.delayMs,
+          }),
+      },
+    );
     if (!response.ok) {
       const bodyText = await readResponseText(response, { maxBytes: 4096 }).catch(() => '');
       throw new Error(`deploy dispatch returned HTTP ${response.status}: ${bodyText.slice(0, 300)}`);
@@ -487,7 +506,7 @@ const dispatchDeploy = async () => {
     logger.warn('Failed to dispatch deploy workflow; friend file is committed and will appear on next manual deploy', {
       workflow: DEPLOY_WORKFLOW,
       ref: TARGET_BRANCH,
-      error: formatError(error)
+      error: formatError(error),
     });
     return false;
   }
@@ -499,7 +518,7 @@ const dispatchDeploy = async () => {
  * @returns {Promise<Array<{ body?: string }>>}
  */
 const listIssueComments = async (number) => {
-  const result = await api(`/issues/${number}/comments`, { params: { per_page: 100 } });
+  const result = await api(`/repos/${owner}/${repo}/issues/${number}/comments`, { params: { per_page: 100 } });
   return result.data;
 };
 
@@ -510,9 +529,9 @@ const listIssueComments = async (number) => {
  * @returns {Promise<Array<Record<string, unknown>>>}
  */
 const listOpenIssues = async () => {
-  const result = await api('/issues', {
+  const result = await api(`/repos/${owner}/${repo}/issues`, {
     params: { state: 'open', per_page: 100 },
-    strictPagination: true
+    strictPagination: true,
   });
   if (result.pages >= 10) {
     logger.warn('Open issues near pagination limit', { pages: result.pages });
@@ -575,8 +594,10 @@ const validateApplication = async (application) => {
   }
 
   // 3. 字段合计预算（防三个字段各自未超限但合计膨胀）。
-  const totalChars = ['name', 'description', 'contact']
-    .reduce((sum, field) => sum + (application[field]?.length || 0), 0);
+  const totalChars = ['name', 'description', 'contact'].reduce(
+    (sum, field) => sum + (application[field]?.length || 0),
+    0,
+  );
   if (totalChars > MAX_TOTAL_FIELD_CHARS) {
     return `申请字段合计超过上限（${MAX_TOTAL_FIELD_CHARS} 字符）。`;
   }
@@ -584,10 +605,13 @@ const validateApplication = async (application) => {
   // 4. 三个 URL 均须为安全的公开 HTTP(S) 地址（含私网 IP 拒绝）。
   if (!(await isSafePublicHttpUrl(application.url))) return '站点地址不是安全的公开 HTTP(S) 地址。';
   if (!(await isSafePublicHttpUrl(application.friendPageUrl))) return '友链页地址不是安全的公开 HTTP(S) 地址。';
-  if (application.avatar && !(await isSafePublicHttpUrl(application.avatar))) return '头像地址不是安全的公开 HTTP(S) 地址。';
+  if (application.avatar && !(await isSafePublicHttpUrl(application.avatar)))
+    return '头像地址不是安全的公开 HTTP(S) 地址。';
 
   // 5. 文件名占用检查。
-  const filename = application.filename.toLowerCase().endsWith('.json') ? application.filename : `${application.filename}.json`;
+  const filename = application.filename.toLowerCase().endsWith('.json')
+    ? application.filename
+    : `${application.filename}.json`;
   try {
     await fs.access(path.join('friends', filename));
     return '申请文件名已经被占用，请换一个文件名后重新提交。';
@@ -609,13 +633,15 @@ const validateApplication = async (application) => {
  * @returns {Promise<string>} 写入的文件路径。
  */
 const writeFriendFile = async (application) => {
-  const filename = application.filename.toLowerCase().endsWith('.json') ? application.filename : `${application.filename}.json`;
+  const filename = application.filename.toLowerCase().endsWith('.json')
+    ? application.filename
+    : `${application.filename}.json`;
   const filePath = path.join('friends', filename);
   const data = {
     name: application.name,
     description: application.description,
     avatar: application.avatar || DEFAULT_AVATAR_URL,
-    url: application.url
+    url: application.url,
   };
   await fs.writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
   return filePath;
@@ -669,14 +695,22 @@ const commitAndPushFriendFile = async (filePath, issueNumber) => {
   const staged = execFileSync('git', ['diff', '--cached', '--name-only'], {
     encoding: 'utf8',
     timeout: GIT_TIMEOUT_MS,
-    stdio: 'pipe'
+    stdio: 'pipe',
   }).trim();
   if (staged) {
-    execFileSync('git', [
-      '-c', 'user.name=github-actions[bot]',
-      '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
-      'commit', '-m', `feat: add friend link via issue #${issueNumber}`
-    ], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
+    execFileSync(
+      'git',
+      [
+        '-c',
+        'user.name=github-actions[bot]',
+        '-c',
+        'user.email=41898282+github-actions[bot]@users.noreply.github.com',
+        'commit',
+        '-m',
+        `feat: add friend link via issue #${issueNumber}`,
+      ],
+      { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' },
+    );
   }
 
   let lastError = null;
@@ -686,7 +720,7 @@ const commitAndPushFriendFile = async (filePath, issueNumber) => {
       return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
         encoding: 'utf8',
         timeout: GIT_TIMEOUT_MS,
-        stdio: 'pipe'
+        stdio: 'pipe',
       }).trim();
     } catch (error) {
       lastError = error;
@@ -733,7 +767,7 @@ const processOpened = async () => {
 
   await postComment(
     issue.number,
-    `${INITIAL_MARKER}\n\n## 友链申请已收到\n\n- **当前状态**：等待自动审核\n- **预计时间**：提交满 ${Math.round(WAIT_MS / 60000)} 分钟后开始检查，通常在 10 至 15 分钟内处理\n- **检查内容**：友链页是否公开可访问，并在静态 HTML 中包含 D-blog 反链\n\n审核通过后，友链会自动加入本站；如果检查失败，bot 会在此 Issue 中说明原因并关闭申请。`
+    `${INITIAL_MARKER}\n\n## 友链申请已收到\n\n- **当前状态**：等待自动审核\n- **预计时间**：提交满 ${Math.round(WAIT_MS / 60000)} 分钟后开始检查，通常在 10 至 15 分钟内处理\n- **检查内容**：友链页是否公开可访问，并在静态 HTML 中包含 D-blog 反链\n\n审核通过后，友链会自动加入本站；如果检查失败，bot 会在此 Issue 中说明原因并关闭申请。`,
   );
   logger.info('Posted initial confirmation', { issue: issue.number });
 };
@@ -763,14 +797,12 @@ const processIssue = async (issue) => {
   }
 
   const application = parseApplication(issue.body);
-  const error = application
-    ? await validateApplication(application)
-    : 'Issue 内容不完整，请使用本站生成的申请草稿。';
+  const error = application ? await validateApplication(application) : 'Issue 内容不完整，请使用本站生成的申请草稿。';
 
   if (error) {
     await postComment(
       issueNumber,
-      `${REJECTED_MARKER}\n\n## 友链申请未通过\n\n- **审核结果**：未通过\n- **失败原因**：${error}\n- **Issue 状态**：已关闭\n\n你可以根据上面的原因修正友链页或申请资料，然后重新生成并提交新的 Issue。\n\n---\n\n${buildManualReviewSection(issue)}`
+      `${REJECTED_MARKER}\n\n## 友链申请未通过\n\n- **审核结果**：未通过\n- **失败原因**：${error}\n- **Issue 状态**：已关闭\n\n你可以根据上面的原因修正友链页或申请资料，然后重新生成并提交新的 Issue。\n\n---\n\n${buildManualReviewSection(issue)}`,
     );
     await closeIssue(issueNumber, 'not_planned');
     return 'rejected';
@@ -779,7 +811,7 @@ const processIssue = async (issue) => {
   if (await alreadyExists(application)) {
     await postComment(
       issueNumber,
-      `${ACCEPTED_MARKER}\n\n## 友链申请已处理\n\n- **审核结果**：站点已存在\n- **处理说明**：该站点已经在友链目录中，无需重复添加\n- **Issue 状态**：已关闭\n\n感谢申请。`
+      `${ACCEPTED_MARKER}\n\n## 友链申请已处理\n\n- **审核结果**：站点已存在\n- **处理说明**：该站点已经在友链目录中，无需重复添加\n- **Issue 状态**：已关闭\n\n感谢申请。`,
     );
     await closeIssue(issueNumber, 'completed');
     return 'exists';
@@ -791,7 +823,7 @@ const processIssue = async (issue) => {
   const sha = await commitAndPushFriendFile(filePath, issueNumber);
   await postComment(
     issueNumber,
-    `${ACCEPTED_MARKER}\n\n## 友链申请已通过\n\n- **审核结果**：通过\n- **反链检查**：已找到 D-blog 反链\n- **添加文件**：\`${filePath}\`\n- **Commit**：\`${sha}\`\n- **Issue 状态**：已关闭\n\n友链已写入仓库并自动触发部署，稍后即可在站点显示。感谢申请！`
+    `${ACCEPTED_MARKER}\n\n## 友链申请已通过\n\n- **审核结果**：通过\n- **反链检查**：已找到 D-blog 反链\n- **添加文件**：\`${filePath}\`\n- **Commit**：\`${sha}\`\n- **Issue 状态**：已关闭\n\n友链已写入仓库并自动触发部署，稍后即可在站点显示。感谢申请！`,
   );
   await closeIssue(issueNumber, 'completed');
   return 'accepted';
@@ -810,13 +842,11 @@ const processIssue = async (issue) => {
  */
 const processReview = async () => {
   let issues = await listOpenIssues();
-  let pending = issues.filter(
-    (item) => !item.pull_request && item.title?.startsWith(ISSUE_PREFIX)
-  );
+  let pending = issues.filter((item) => !item.pull_request && item.title?.startsWith(ISSUE_PREFIX));
   logger.info('Review cycle started', {
     openIssues: issues.length,
     friendLinkIssues: pending.length,
-    batchLimit: MAX_ISSUES_PER_BATCH
+    batchLimit: MAX_ISSUES_PER_BATCH,
   });
 
   // 事件驱动冷却等待：issues:opened 触发的 run 内，新申请提交未满 WAIT_MS 时
@@ -829,13 +859,11 @@ const processReview = async () => {
       logger.info('Waiting for application cooldown before review', {
         waitMs,
         cooldownMs: WAIT_MS,
-        capped: waitMs === MAX_COOLDOWN_WAIT_MS
+        capped: waitMs === MAX_COOLDOWN_WAIT_MS,
       });
       await sleep(waitMs);
       issues = await listOpenIssues();
-      pending = issues.filter(
-        (item) => !item.pull_request && item.title?.startsWith(ISSUE_PREFIX)
-      );
+      pending = issues.filter((item) => !item.pull_request && item.title?.startsWith(ISSUE_PREFIX));
     }
   }
 
@@ -855,14 +883,14 @@ const processReview = async () => {
       if (error instanceof RateLimitError) {
         logger.error('GitHub rate limit reached, pausing batch', {
           issue: issueNumber,
-          error: formatError(error)
+          error: formatError(error),
         });
         stats.failed += 1;
         break; // 限流：停止本批后续处理。
       }
       logger.error('Issue processing failed, continuing with next', {
         issue: issueNumber,
-        error: formatError(error)
+        error: formatError(error),
       });
       stats.failed += 1;
     }
@@ -878,7 +906,7 @@ const processReview = async () => {
 
   if (pending.length > batch.length) {
     logger.warn('More pending issues than batch limit, remaining queued for next cycle', {
-      remaining: pending.length - batch.length
+      remaining: pending.length - batch.length,
     });
   }
 
@@ -888,7 +916,7 @@ const processReview = async () => {
     rejected: stats.rejected,
     accepted: stats.accepted,
     exists: stats.exists,
-    failed: stats.failed
+    failed: stats.failed,
   });
   logger.summaryTable('Friend Link Bot Review', [
     { metric: 'processed', value: stats.processed },
@@ -896,7 +924,7 @@ const processReview = async () => {
     { metric: 'rejected', value: stats.rejected },
     { metric: 'accepted', value: stats.accepted },
     { metric: 'exists', value: stats.exists },
-    { metric: 'failed', value: stats.failed }
+    { metric: 'failed', value: stats.failed },
   ]);
 };
 
@@ -914,7 +942,7 @@ const main = async () => {
   if (!token || !owner || !repo) {
     logger.error('GitHub Actions environment is incomplete', {
       hasToken: Boolean(token),
-      repository: process.env.GITHUB_REPOSITORY || '(missing)'
+      repository: process.env.GITHUB_REPOSITORY || '(missing)',
     });
     process.exit(1);
   }
