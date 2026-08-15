@@ -186,7 +186,15 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   };
 
   return (
-    <AnimatePresence onExitComplete={() => setIsOverlayActive(false)}>
+    <AnimatePresence
+      onExitComplete={() => {
+        // 退出动画完成时若弹层已重新打开（关闭→立即重开的快速切换），
+        // 不得把 overlay 状态误置为 false（否则滚动锁/Escape 监听被提前清理）。
+        if (!isOpen) {
+          setIsOverlayActive(false);
+        }
+      }}
+    >
       {isOpen && (
         <div className="fixed inset-0 z-modal flex items-end justify-center sm:items-center sm:px-4 sm:py-8">
           <motion.div

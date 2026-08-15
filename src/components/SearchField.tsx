@@ -2,11 +2,9 @@ import React, { forwardRef } from 'react';
 import { Search, X } from 'lucide-react';
 
 type SearchFieldSize = 'default' | 'large';
-type SearchFieldVariant = 'default' | 'embedded' | 'subtle';
 
 interface SearchFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'type' | 'onChange'> {
   size?: SearchFieldSize;
-  variant?: SearchFieldVariant;
   onValueChange?: (value: string) => void;
   onClear?: () => void;
   clearLabel?: string;
@@ -14,20 +12,13 @@ interface SearchFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputEleme
   containerClassName?: string;
 }
 
-const variantClasses: Record<SearchFieldVariant, string> = {
-  default:
-    'border-zinc-300 bg-paper focus:border-zinc-900 dark:border-zinc-700 dark:bg-void dark:focus:border-zinc-100',
-  embedded:
-    'border-transparent bg-transparent focus:border-transparent dark:border-transparent dark:bg-transparent dark:focus:border-transparent',
-  subtle:
-    'border-zinc-200 bg-zinc-100/70 focus:border-zinc-400 focus:bg-paper dark:border-zinc-800 dark:bg-zinc-800/70 dark:focus:border-zinc-600 dark:focus:bg-zinc-900',
-};
+const variantClasses =
+  'border-zinc-300 bg-paper focus:border-zinc-900 dark:border-zinc-700 dark:bg-void dark:focus:border-zinc-100';
 
 export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
   (
     {
       size = 'default',
-      variant = 'default',
       value,
       onValueChange,
       onClear,
@@ -63,7 +54,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
           value={value}
           onChange={(event) => onValueChange?.(event.target.value)}
           disabled={disabled}
-          className={`w-full min-w-0 appearance-none rounded-control border pl-10 text-ink outline-none transition-[background-color,border-color,color,box-shadow] duration-150 placeholder:text-zinc-400 hover:border-zinc-400 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/15 disabled:cursor-not-allowed dark:text-white dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-100 dark:focus:ring-zinc-100/15 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-webkit-search-results-button]:hidden [&::-webkit-search-results-decoration]:hidden ${variantClasses[variant]} ${sizeClass} ${inputSpacing} ${className}`}
+          className={`w-full min-w-0 appearance-none rounded-control border pl-10 text-ink outline-none transition-[background-color,border-color,color,box-shadow] duration-150 placeholder:text-zinc-400 hover:border-zinc-400 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/15 disabled:cursor-not-allowed dark:text-white dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-100 dark:focus:ring-zinc-100/15 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-webkit-search-results-button]:hidden [&::-webkit-search-results-decoration]:hidden ${variantClasses} ${sizeClass} ${inputSpacing} ${className}`}
         />
         {(showClear || endAction) && (
           <div className="absolute inset-y-0 right-0 flex items-center">

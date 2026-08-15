@@ -15,6 +15,10 @@ const DEFAULT_EMPTY_RESULTS: PostMetadata[] = [];
  * 站内搜索 hook：对输入做 300ms 防抖后调用 searchPosts，自动处理竞态
  * （requestId 比对，旧查询的迟到结果被丢弃）；emptyResults 作为空查询时
  * 的兜底列表（首页/归档/标签页传入全量文章，实现"无查询显示全部"）。
+ *
+ * 注意：emptyResults 必须传稳定引用（组件 state / useMemo 结果）。若每次
+ * 渲染内联新建数组（如 emptyResults={posts} 而非 state），空查询 effect 会
+ * 因引用变化反复 setResults，形成渲染循环。
  */
 export const usePostSearch = ({
   emptyResults = DEFAULT_EMPTY_RESULTS,

@@ -1,4 +1,5 @@
 import React from 'react';
+import { mergeClassName } from '@/utils/classNames';
 
 type ContentStatusVariant = 'empty' | 'error';
 
@@ -10,8 +11,6 @@ interface ContentStatusProps {
   onAction?: () => void;
   className?: string;
 }
-
-const mergeClassName = (...values: Array<string | undefined | false>) => values.filter(Boolean).join(' ');
 
 export const ContentStatus: React.FC<ContentStatusProps> = ({
   title,

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { mergeClassName } from '@/utils/classNames';
 
 type ProgressiveImageRadius = 'none' | 'media' | 'icon' | 'surface' | 'overlay' | 'full';
 
@@ -16,8 +17,6 @@ interface ProgressiveImageProps extends React.ImgHTMLAttributes<HTMLImageElement
     sizes?: string;
   }>;
 }
-
-const mergeClassName = (...values: Array<string | undefined | false>) => values.filter(Boolean).join(' ');
 
 const radiusClasses: Record<ProgressiveImageRadius, string> = {
   none: 'rounded-none',

@@ -1,4 +1,5 @@
 import React, { forwardRef } from 'react';
+import { mergeClassName } from '@/utils/classNames';
 
 type SurfaceVariant = 'card' | 'panel' | 'overlay';
 
@@ -13,8 +14,6 @@ const surfaceVariantClasses: Record<SurfaceVariant, string> = {
   overlay:
     'rounded-overlay border border-zinc-300 bg-paper shadow-xl shadow-black/10 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/30',
 };
-
-const mergeClassName = (...values: Array<string | undefined | false>) => values.filter(Boolean).join(' ');
 
 export const Surface = forwardRef<HTMLDivElement, SurfaceProps>(({ variant = 'card', className, ...props }, ref) => (
   <div {...props} ref={ref} className={mergeClassName(surfaceVariantClasses[variant], className)} />
