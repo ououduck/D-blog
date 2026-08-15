@@ -725,6 +725,23 @@ const commitAndPushFriendFile = async (filePath, issueNumber) => {
     } catch (error) {
       lastError = error;
       if (attempt < PUSH_RETRIES) {
+        // push 非快进失败（远端有新提交，如 Pages CMS/人工推送恰好发生在审核窗口）：
+        // 先 fetch + rebase 吸收远端提交再重推，提高单次 run 内成功率。
+        // rebase 冲突/失败时 abort 恢复原状，保留本次失败结果由下次事件重试。
+        try {
+          execFileSync('git', ['fetch', 'origin', TARGET_BRANCH], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
+          execFileSync('git', ['rebase', `origin/${TARGET_BRANCH}`], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
+        } catch (rebaseError) {
+          try {
+            execFileSync('git', ['rebase', '--abort'], { timeout: GIT_TIMEOUT_MS, stdio: 'pipe' });
+          } catch {
+            // abort 失败（本就没有进行中的 rebase）可忽略。
+          }
+          logger.warn('git fetch/rebase failed, will retry push without rebase', {
+            attempt,
+            error: formatError(rebaseError),
+          });
+        }
         const delayMs = computeBackoffDelay(attempt, 2000, 10000);
         logger.warn('git push failed, retrying', { attempt, delayMs, error: formatError(error) });
         await sleep(delayMs);

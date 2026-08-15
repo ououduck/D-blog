@@ -40,6 +40,10 @@
     "repoFriendsUrl": "https://github.com/ououduck/D-blog/tree/main/friends",
     "repoFriendsDir": "friends"
   },
+  "content": {
+    "repoUrl": "https://github.com/ououduck/D-blog",
+    "defaultBranch": "main"
+  },
   "beian": {
     "text": "湘ICP备2025101669号",
     "url": "https://beian.miit.gov.cn"

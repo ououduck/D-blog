@@ -179,12 +179,16 @@ const injectEntryCssPreload = (): Plugin => {
   };
 };
 
+/** 与生产边缘函数一致的图床白名单（防开放代理）。 */
+const IMG_PROXY_ALLOWED_HOSTS = new Set(['img.pldduck.com']);
+
 /**
  * 开发环境 /img-proxy 中间件。
  *
  * 与生产环境的 Pages 边缘函数（functions/img-proxy.ts）行为一致：把图床图片
  * 经站点同源路径转发并附加 CORS 头，使本地开发也能生成包含封面图的分享海报
  * （img.pldduck.com 未开 CORS，浏览器 canvas 无法直接跨域读取）。
+ * 仅允许 https 且 host 在图床白名单内的目标，避免本地 dev server 沦为开放代理。
  */
 const devImgProxyMiddleware = (): Plugin => ({
   name: 'dev-img-proxy',
@@ -192,16 +196,29 @@ const devImgProxyMiddleware = (): Plugin => ({
   configureServer(server) {
     server.middlewares.use('/img-proxy', async (req, res) => {
       const target = new URL(req.url ?? '/', 'http://localhost').searchParams.get('url');
-      if (!target || !/^https:\/\//i.test(target)) {
+      if (!target) {
         res.statusCode = 400;
-        res.end('missing or invalid url');
+        res.end('missing url');
+        return;
+      }
+      let upstream: URL;
+      try {
+        upstream = new URL(target);
+      } catch {
+        res.statusCode = 400;
+        res.end('invalid url');
+        return;
+      }
+      if (upstream.protocol !== 'https:' || !IMG_PROXY_ALLOWED_HOSTS.has(upstream.hostname)) {
+        res.statusCode = 403;
+        res.end('forbidden');
         return;
       }
       try {
-        const upstream = await fetch(target);
-        const body = new Uint8Array(await upstream.arrayBuffer());
-        res.statusCode = upstream.status;
-        res.setHeader('content-type', upstream.headers.get('content-type') || 'application/octet-stream');
+        const upstreamResponse = await fetch(upstream.toString());
+        const body = new Uint8Array(await upstreamResponse.arrayBuffer());
+        res.statusCode = upstreamResponse.status;
+        res.setHeader('content-type', upstreamResponse.headers.get('content-type') || 'application/octet-stream');
         res.setHeader('access-control-allow-origin', '*');
         res.setHeader('cache-control', 'public, max-age=86400');
         res.end(body);

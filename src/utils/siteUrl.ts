@@ -2,6 +2,7 @@ const FALLBACK_BASE_PATH = '/';
 
 const RELATIVE_BASE_ROUTE_MARKERS = [
   '/post/',
+  '/search',
   '/archive',
   '/tags',
   '/stats',

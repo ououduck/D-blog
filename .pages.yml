@@ -163,6 +163,12 @@ content:
           - { name: repoUrl, label: 仓库地址, type: string }
           - { name: repoFriendsUrl, label: 友链目录地址, type: string }
           - { name: repoFriendsDir, label: 友链目录名, type: string }
+      - name: content
+        label: 文章内容仓库（"在 GitHub 上编辑此文"入口使用）
+        type: object
+        fields:
+          - { name: repoUrl, label: 内容仓库地址, type: string }
+          - { name: defaultBranch, label: 默认分支, type: string }
       - name: beian
         label: 备案信息
         type: object

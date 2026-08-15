@@ -1,5 +1,5 @@
 import { useInView, useMotionValue, useSpring } from 'framer-motion';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 /**
@@ -50,18 +50,23 @@ export const CountUp: React.FC<CountUpProps> = ({
   const reducedMotion = useReducedMotion();
   const maxDecimals = Math.max(getDecimalPlaces(from), getDecimalPlaces(to));
 
-  const formatValue = useCallback(
-    (latest: number) => {
-      const options: Intl.NumberFormatOptions = {
+  // 缓存 formatter：动画期间每个 tick 都要格式化，避免重复构造 Intl 实例。
+  const formatter = useMemo(
+    () =>
+      new Intl.NumberFormat('zh-CN', {
         useGrouping: Boolean(separator),
         minimumFractionDigits: maxDecimals > 0 ? maxDecimals : 0,
         maximumFractionDigits: maxDecimals > 0 ? maxDecimals : 0,
-      };
+      }),
+    [maxDecimals, separator],
+  );
 
-      const formatted = new Intl.NumberFormat('zh-CN', options).format(latest);
+  const formatValue = useCallback(
+    (latest: number) => {
+      const formatted = formatter.format(latest);
       return separator ? formatted.replace(/,/g, separator) : formatted;
     },
-    [maxDecimals, separator],
+    [formatter, separator],
   );
 
   const motionValue = useMotionValue(direction === 'down' ? to : from);
@@ -75,8 +80,9 @@ export const CountUp: React.FC<CountUpProps> = ({
       return;
     }
 
-    // 水合后先写回起始值：与 SSR 首帧的最终值不同，但仅在进入视口时
-    // 才真正可见（下方 isInView 触发滚动），视觉上就是“进入视口开始计数”。
+    // 水合后先写回起始值：首屏元素挂载即进入视口，用户会看到
+    // "SSR 最终值 → 起始值 → 进入视口滚动计数"的短暂跳变；视口外元素则
+    // 在滚动进入时才可见计数过程。减弱动效偏好下不写回，直接静态显示最终值。
     ref.current.textContent = formatValue(direction === 'down' ? to : from);
 
     const unsubscribe = springValue.on('change', (latest: number) => {

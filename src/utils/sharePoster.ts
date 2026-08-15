@@ -14,8 +14,6 @@
  * 全部失败才回退为品牌占位，保证海报始终能生成。
  */
 
-import { assetUrl } from './siteUrl';
-
 interface SharePosterOptions {
   title: string;
   excerpt: string;
@@ -201,7 +199,9 @@ const isSameOriginSrc = (src: string): boolean => {
   }
 };
 
-const toProxyUrl = (src: string): string => `${assetUrl('/img-proxy')}?url=${encodeURIComponent(src)}`;
+// 代理固定挂在站点根路径：Cloudflare/EdgeOne Pages 的边缘函数始终部署在域名根，
+// 不随 VITE_BASE_PATH 子路径移动，因此这里不能走 assetUrl（会拼上 base path）。
+const toProxyUrl = (src: string): string => `/img-proxy?url=${encodeURIComponent(src)}`;
 
 /** 多级加载：直连 → 同源去 crossOrigin 重试 → 跨域走同源代理。 */
 const loadImage = (src: string, timeoutMs = 8000): Promise<HTMLImageElement | null> => {

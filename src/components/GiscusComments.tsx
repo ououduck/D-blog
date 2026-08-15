@@ -14,7 +14,16 @@ const MAX_AUTO_RETRIES = 2;
 /** 自动重试间隔。 */
 const RETRY_DELAY_MS = 2500;
 /** giscus 脚本/iframe 来源：默认官方地址；自托管或镜像时通过 site.config.json comments.origin 覆盖。 */
-const GISCUS_ORIGIN = (siteConfig.comments.origin || 'https://giscus.app').replace(/\/+$/, '');
+const GISCUS_SOURCE = (siteConfig.comments.origin || 'https://giscus.app').replace(/\/+$/, '');
+/** 消息源校验用的纯 origin（scheme+host+port）：event.origin 永远不含路径，
+ *  自托管挂在子路径（如 https://example.com/giscus）时不能用带路径的来源直接比较。 */
+const GISCUS_ORIGIN = (() => {
+  try {
+    return new URL(GISCUS_SOURCE).origin;
+  } catch {
+    return 'https://giscus.app';
+  }
+})();
 
 interface GiscusCommentsProps {
   /** 文章 ID：pathname 映射下作为 effect 依赖；specific/number 映射下可不传。 */
@@ -31,6 +40,7 @@ interface GiscusCommentsProps {
 export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCommentsProps) => {
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [autoRetryCount, setAutoRetryCount] = useState(0);
@@ -78,6 +88,7 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
     const container = containerRef.current;
     if (!container || isOffline || !isNearViewport) return;
 
+    setIsLoaded(false);
     setLoadFailed(false);
 
     let retryTimer: number | undefined;
@@ -96,7 +107,7 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
     };
 
     const script = document.createElement('script');
-    script.src = `${GISCUS_ORIGIN}/client.js`;
+    script.src = `${GISCUS_SOURCE}/client.js`;
     script.async = true;
     script.crossOrigin = 'anonymous';
     script.dataset.repo = siteConfig.comments.repo;
@@ -140,7 +151,12 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
         return;
       }
 
+      // 成功消息到达：清除超时，并取消尚未触发的自动重试（避免"迟到的成功"后
+      // 重试定时器再把已正常加载的评论区销毁重载）。
       if (loadTimeout !== undefined) window.clearTimeout(loadTimeout);
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+      failed = true;
+      setIsLoaded(true);
       setLoadFailed(false);
     };
     const observer = new MutationObserver(syncTheme);
@@ -201,8 +217,9 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
             重新加载评论
           </button>
         </div>
-      ) : (
+      ) : isLoaded ? null : (
         // 未加载完成前的占位：保持区块高度，避免加载开始/结束时布局跳动。
+        // 加载成功后隐藏，避免"正在加载评论区…"常驻在评论区上方。
         <div
           role="status"
           aria-live="polite"

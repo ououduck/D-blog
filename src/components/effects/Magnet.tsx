@@ -45,8 +45,14 @@ export const Magnet: React.FC<MagnetProps> = ({
   useEffect(() => {
     if (effectiveDisabled) {
       setPosition({ x: 0, y: 0 });
+      setIsActive(false);
       return;
     }
+
+    const reset = () => {
+      setIsActive(false);
+      setPosition({ x: 0, y: 0 });
+    };
 
     const handleMouseMove = (event: MouseEvent) => {
       const element = magnetRef.current;
@@ -74,7 +80,14 @@ export const Magnet: React.FC<MagnetProps> = ({
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    // 光标移出浏览器窗口时复位，避免元素保持偏移（重新进入才复位）。
+    document.addEventListener('mouseleave', reset);
+    window.addEventListener('blur', reset);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseleave', reset);
+      window.removeEventListener('blur', reset);
+    };
   }, [effectiveDisabled, magnetStrength, padding]);
 
   return (

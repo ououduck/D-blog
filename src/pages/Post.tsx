@@ -312,6 +312,16 @@ const getCodeFileExtension = (lang?: string) => {
   return CODE_FILE_EXTENSIONS[lang.toLowerCase()] || 'txt';
 };
 
+/** 从阅读时长文案解析分钟数：优先「N分钟」，其次「N小时」×60，最后回退首个数字。 */
+const parseReadMinutes = (readTime: string): number => {
+  const minutesMatch = readTime.match(/(\d+(?:\.\d+)?)\s*分钟/);
+  if (minutesMatch) return Math.round(Number(minutesMatch[1]));
+  const hoursMatch = readTime.match(/(\d+(?:\.\d+)?)\s*小时/);
+  if (hoursMatch) return Math.round(Number(hoursMatch[1]) * 60);
+  const firstNumber = readTime.match(/\d+/);
+  return firstNumber ? Number(firstNumber[0]) : Number.NaN;
+};
+
 const getCodeText = (children: React.ReactNode) =>
   extractTextFromReactNode(children).replace(/\r\n?/g, '\n').replace(/\n$/, '');
 
@@ -348,6 +358,15 @@ const PreBlock = ({
   const code = getCodeText(children);
   const lineCount = Math.max(1, code ? code.split('\n').length : 1);
   const lineNumbers = Array.from({ length: lineCount }, (_, index) => index + 1);
+
+  // 给 <pre> 内的 <code> 子元素注入块级标记：无语言围栏块 / 缩进代码块没有
+  // language-* 类，仅靠 className 判定会被 code 组件误判为行内样式渲染。
+  const childrenWithBlockMark = React.Children.map(children, (child) => {
+    if (React.isValidElement(child)) {
+      return React.cloneElement(child as React.ReactElement<Record<string, unknown>>, { 'data-block-code': 'true' });
+    }
+    return child;
+  });
 
   useEffect(() => {
     setNeedsExpand(lineCount > MAX_CODE_LINES);
@@ -506,7 +525,7 @@ const PreBlock = ({
             {...props}
             className={`${props.className || ''} !my-0 !min-w-max !bg-transparent !p-3.5 !leading-6 md:!p-5`}
           >
-            {children}
+            {childrenWithBlockMark}
           </pre>
         </div>
         {needsExpand && !isExpanded && (
@@ -940,13 +959,18 @@ const getSourceFilePath = (filePath: string) =>
     .map((segment) => encodeURIComponent(segment))
     .join('/');
 
+/** 文章内容仓库与默认分支（"编辑此文"/查看源文件入口）：独立配置，缺省回退友链仓库。
+ *  不再复用 friendsPage.repoUrl 直拼，避免内容仓库与友链仓库分离时链接指向错误仓库。 */
+const CONTENT_REPO_URL = siteConfig.content?.repoUrl || siteConfig.friendsPage.repoUrl;
+const CONTENT_DEFAULT_BRANCH = siteConfig.content?.defaultBranch || 'main';
+
 /** 查看源文件（页尾"帮助改进本文"）。 */
-const getPostSourceUrl = (repoUrl: string, filePath: string) =>
-  `${normalizeRepoUrl(repoUrl)}/blob/main/${getSourceFilePath(filePath)}`;
+const getPostSourceUrl = (filePath: string) =>
+  `${normalizeRepoUrl(CONTENT_REPO_URL)}/blob/${CONTENT_DEFAULT_BRANCH}/${getSourceFilePath(filePath)}`;
 
 /** "在 GitHub 上编辑此文"：跳转到 Markdown 源文件的 GitHub 编辑页。 */
-const getPostEditUrl = (repoUrl: string, filePath: string) =>
-  `${normalizeRepoUrl(repoUrl)}/edit/main/${getSourceFilePath(filePath)}`;
+const getPostEditUrl = (filePath: string) =>
+  `${normalizeRepoUrl(CONTENT_REPO_URL)}/edit/${CONTENT_DEFAULT_BRANCH}/${getSourceFilePath(filePath)}`;
 
 const findImageDimensions = (imageDimensions: PostMetadata['imageDimensions'], src: string) => {
   if (!imageDimensions) {
@@ -1216,7 +1240,10 @@ const createMarkdownComponents = (
       </div>
     ),
     code: ({ className, children, node: _node, ...props }) => {
-      const isBlockCode = /language-(\w+)/.test(className || '');
+      // 块级代码判定：位于 <pre> 内（PreBlock 注入 data-block-code）或带 language-* 类。
+      // 无语言围栏块 / 缩进代码块只有前者，仅看 className 会被误判为行内样式。
+      const isBlockCode =
+        (props as Record<string, unknown>)['data-block-code'] === 'true' || /language-(\w+)/.test(className || '');
 
       if (className?.includes('language-mermaid')) {
         return (
@@ -1943,7 +1970,9 @@ export const Post = () => {
   const authorsLabel = authors.map((author) => author.name).join('\u3001');
   const postDescription = buildMetaDescription(post);
   // 阅读时长（分钟）：由 readTime 文案（如「7分钟阅读」）解析，用于 Article 的 timeRequired。
-  const readMinutes = Number(post.readTime.match(/\d+/)?.[0]);
+  // 优先匹配「N分钟」，其次「N小时」×60；不能直接取第一个数字——文案含多个数字
+  // （如"约 10 分钟（2 小时更新）"）或小时制时都会解析出错。
+  const readMinutes = parseReadMinutes(post.readTime);
   const postStructuredData = {
     '@context': 'https://schema.org',
     // BlogPosting 是 Article 的子类型，Google 对博客文章富结果更认可该类型。
@@ -2129,7 +2158,7 @@ export const Post = () => {
                 </span>
                 {post.filePath && (
                   <a
-                    href={getPostEditUrl(siteConfig.friendsPage.repoUrl, post.filePath)}
+                    href={getPostEditUrl(post.filePath)}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`在 GitHub 上编辑此文：${post.title}`}
@@ -2243,7 +2272,7 @@ export const Post = () => {
                     作者 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{authorsLabel}</span>
                   </p>
                   <a
-                    href={getPostSourceUrl(siteConfig.friendsPage.repoUrl, post.filePath)}
+                    href={getPostSourceUrl(post.filePath)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-zinc-500 underline decoration-zinc-300 underline-offset-4 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:decoration-zinc-700 dark:hover:text-zinc-100"

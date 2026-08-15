@@ -23,6 +23,10 @@ concurrency:
 
 permissions:
   contents: read
+  # 构建期拉取 Giscus 评论数（fetch-giscus-comments.mjs 调 GitHub GraphQL
+  # repository.discussions）需要 discussions 读取权限；缺失时评论数在 CI 构建中
+  # 会静默跳过（详见 scripts/fetch-giscus-comments.mjs）。
+  discussions: read
 
 jobs:
   # ── 快速门禁：类型检查 + 站点数据生成（含文章内容/链接校验）──

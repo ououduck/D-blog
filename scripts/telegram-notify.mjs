@@ -374,8 +374,9 @@ const sendTelegramMessage = async (text) => {
     parse_mode: 'HTML',
     disable_web_page_preview: true,
   };
+  // message_thread_id 必须为正整数：浮点值（如 "1.5"）会让 Telegram API 报错。
   const topicId = Number(process.env.TELEGRAM_TOPIC_ID);
-  if (Number.isFinite(topicId) && topicId > 0) {
+  if (Number.isInteger(topicId) && topicId > 0) {
     payload.message_thread_id = topicId;
   }
 

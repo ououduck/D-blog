@@ -57,6 +57,13 @@ export interface SiteFriendsPage {
   repoFriendsDir: string;
 }
 
+export interface SiteContent {
+  /** 文章源文件所在仓库（用于"在 GitHub 上编辑此文"跳转）。默认回退 friendsPage.repoUrl。 */
+  repoUrl?: string;
+  /** 文章源文件所在分支，默认 main。 */
+  defaultBranch?: string;
+}
+
 export interface SiteBeian {
   text: string;
   url: string;
@@ -85,6 +92,8 @@ export interface SiteConfig {
   comments: SiteComments;
   guestbook: SiteGuestbook;
   friendsPage: SiteFriendsPage;
+  /** 文章内容仓库（"在 GitHub 上编辑此文"/查看源文件入口使用）。 */
+  content?: SiteContent;
   beian: SiteBeian;
 }
 

@@ -16,6 +16,8 @@ const DEFAULT_STATIC_ROUTES = new Set([
   '/cover',
   '/watermark',
   '/sponsor',
+  '/search',
+  '/favorites',
 ]);
 
 const maskFencedCode = maskFencedCodeBlocks;

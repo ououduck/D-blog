@@ -190,7 +190,10 @@ const flattenSuspenseBoundaries = (html) => {
       // 其余序列化标记原样保留，浏览器仍能按未展平的方式水合该边界。
       const removeStart = scriptStart + match.index;
       result = result.slice(0, removeStart) + result.slice(removeStart + match[0].length);
-      searchFrom = removeStart + match[0].length;
+      // 回退到当前 script 开头重扫：同一 <script> 内可能还有后续 $RC 调用
+      // （React 19 可能在同一内联脚本写入多个调用），不能越过当前 script 的开标签，
+      // 否则剩余调用会被跳过、其边界保持未展平。
+      searchFrom = scriptStart;
       continue;
     }
 

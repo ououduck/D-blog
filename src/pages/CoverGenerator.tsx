@@ -482,6 +482,9 @@ export const CoverGenerator: React.FC = () => {
   const lastDraftRef = useRef<string | null>(null);
   const restoringDraftRef = useRef(false);
   const historyReadyRef = useRef(false);
+  // 挂载完成后置 true：用于区分「挂载首帧的恢复分支」（serialized 仍是默认状态）与
+  // 「撤销/重做/预设恢复」（serialized 已是恢复后的值）。
+  const mountedRef = useRef(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [presets, setPresets] = useState<StoredPreset[]>([]);
   // 撤销/重做历史版本号：仅作为变更 tick 触发重渲染（canUndo/canRedo 直接读取 historyRef），值本身不被消费。
@@ -562,14 +565,19 @@ export const CoverGenerator: React.FC = () => {
     if (!historyReadyRef.current) return;
     const serialized = JSON.stringify(serializableDraft);
     if (restoringDraftRef.current) {
-      // 恢复提交（挂载恢复/撤销/重做/加载预设）：撤销栈的入栈与出栈已由
-      // undo/redo 各自处理，此处不得再把恢复前的状态压入 past；但基线必须
-      // 同步为恢复后的值并持久化，否则刷新会恢复旧状态、后续编辑也会把
-      // 过期的基线压入撤销栈（跳错状态）。
+      // 恢复提交（撤销/重做/加载预设）：撤销栈的入栈与出栈已由 undo/redo 各自处理，
+      // 此处不得再把恢复前的状态压入 past；但基线必须同步为恢复后的值并持久化，
+      // 否则刷新会恢复旧状态、后续编辑也会把过期的基线压入撤销栈（跳错状态）。
+      // 挂载首帧例外：本 commit 的 serializableDraft 仍是恢复前的默认状态
+      // （applyDraft 的 setState 要到下一个 commit 才生效），此时同步基线会把
+      // 默认状态当作基线并覆写 localStorage，导致加载后 canUndo 误判为 true、
+      // 第一次 Ctrl+Z 跳回默认状态。
       restoringDraftRef.current = false;
-      const hasBaseline = lastDraftRef.current !== null;
-      lastDraftRef.current = serialized;
-      if (hasBaseline) writeDraft(serializableDraft);
+      if (mountedRef.current) {
+        const hasBaseline = lastDraftRef.current !== null;
+        lastDraftRef.current = serialized;
+        if (hasBaseline) writeDraft(serializableDraft);
+      }
       return;
     }
     if (lastDraftRef.current && lastDraftRef.current !== serialized) {
@@ -583,6 +591,12 @@ export const CoverGenerator: React.FC = () => {
     // 首次访问的默认状态不写入存储。
     if (hasBaseline) writeDraft(serializableDraft);
   }, [serializableDraft]);
+
+  // 挂载完成后标记：供恢复分支区分「挂载首帧」与「撤销/重做/预设恢复」。
+  // 声明在历史 effect 之后，保证挂载首帧的恢复分支运行时 mountedRef 仍为 false。
+  useEffect(() => {
+    mountedRef.current = true;
+  }, []);
 
   const undo = useCallback(() => {
     const previous = historyRef.current.past.pop();

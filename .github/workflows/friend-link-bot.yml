@@ -30,9 +30,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Check out repository
+        id: checkout
         uses: actions/checkout@v5
         with:
-          # 完整历史：commitAndPushFriendFile 的 push 需要本地 HEAD 与远端一致，
+          # 完整历史：commitAndFriendFile 的 push 需要本地 HEAD 与远端一致，
           # fetch-depth: 0 避免浅克隆 push 失败。
           fetch-depth: 0
 
@@ -45,8 +46,9 @@ jobs:
         run: node scripts/friend-link-bot.mjs opened
 
       - name: Review friend-link applications
-        # always()：即使上一步回执失败（如限流）也不阻断审核主流程。
-        if: always()
+        # 仅当检出成功且未被取消时执行：上一步回执失败（如限流）不阻断审核主流程，
+        # 但检出失败（网络抖动等）时 git 命令必然全部失败，继续空跑只会产生无意义的报错批次。
+        if: steps.checkout.outcome == 'success' && !cancelled()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}

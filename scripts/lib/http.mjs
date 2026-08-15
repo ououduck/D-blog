@@ -251,19 +251,50 @@ export const parseRateLimitHeaders = (headers) => {
   };
 };
 
+/** GitHub 权限类 403 的特征消息（区别于限流 403）。 */
+const PERMISSION_ERROR_PATTERNS = [
+  /resource not accessible by integration/i,
+  /resource not accessible/i,
+  /insufficient permissions/i,
+  /must have push/i,
+  /repository was archived/i,
+  /access blocked/i,
+];
+
+/**
+ * 判断 403 是否为"权限不足"而非限流。
+ * GITHUB_TOKEN 缺某项权限（如 issues:write / discussions:read）时 GitHub 返回
+ * 403 + "Resource not accessible by integration"；若把这类 403 一律当限流，
+ * 会先 sleep 到 reset、再补偿重试、最后抛 RateLimitError 让调用方"整批暂停"，
+ * 报错信息误导为限流而实际是权限配置问题。
+ * @param {Response} response
+ * @param {string} [bodyText] 已读取的响应体文本（未读取时传空串，仅凭状态码判断）。
+ * @returns {boolean}
+ */
+export const isPermissionDeniedResponse = (response, bodyText = '') => {
+  if (!response || response.status !== 403) return false;
+  return PERMISSION_ERROR_PATTERNS.some((pattern) => pattern.test(bodyText));
+};
+
 /**
  * 判断响应是否为"GitHub 限流响应"：
  * - 显式 x-ratelimit-remaining=0（主限流耗尽）；
- * - 403（GitHub 主限流/二次限流的经典返回码）；
+ * - 403（GitHub 主限流/二次限流的经典返回码）；但带权限类错误消息的 403 除外；
  * - 429（二次限流 Too Many Requests，可能不携带限流头）。
- * 三者任一命中即视为限流，由调用方决定等待 reset 或整批暂停。
+ * 命中即视为限流，由调用方决定等待 reset 或整批暂停。
  * @param {Response} response
+ * @param {string} [bodyText] 已读取的响应体文本（403 时用于排除权限错误）。
  * @returns {boolean}
  */
-export const isRateLimitResponse = (response) => {
+export const isRateLimitResponse = (response, bodyText = '') => {
   if (!response) return false;
   if (parseRateLimitHeaders(response.headers).remaining === 0) return true;
-  return response.status === 403 || response.status === 429;
+  if (response.status === 429) return true;
+  if (response.status === 403) {
+    // 带权限类错误消息的 403 不是限流：避免误判后整批暂停、误导排障。
+    return !isPermissionDeniedResponse(response, bodyText);
+  }
+  return false;
 };
 
 /**
@@ -622,11 +653,18 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
     // 发起请求；429/5xx 由 fetchWithRetry 自动退避重试。
     let response = await fetchPageRequest(retries);
 
+    // 403 且无显式限流头时，先读响应体以区分「权限不足」与「限流」：
+    // 权限类 403 不应按限流等待/整批暂停，应以普通错误抛出便于排障。
+    let responseBodyText = '';
+    if (response.status === 403 && parseRateLimitHeaders(response.headers).remaining !== 0) {
+      responseBodyText = await readResponseText(response, { maxBytes: 4096 }).catch(() => '');
+    }
+
     // 限流保护：429/403/remaining=0 时休眠到 reset（或 Retry-After），
     // 有上限（maxRateLimitWaitMs），超限直接抛 RateLimitError，绝不无限等待。
     // Phase 3 修复：isRateLimitResponse 覆盖 403 与 429 两种限流形态
     // （上一版只识别 403 && remaining===0，二次限流的 429 完全漏检）。
-    if (isRateLimitResponse(response)) {
+    if (isRateLimitResponse(response, responseBodyText)) {
       const parsedRateLimit = parseRateLimitHeaders(response.headers);
       const waitMs = parsedRateLimit.reset ? Math.max(0, parsedRateLimit.reset * 1000 - Date.now()) : 0;
       const retryAfterSeconds = parseRetryAfter(response.headers);
@@ -646,7 +684,7 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
 
     if (!response.ok) {
       // 限流且等待补偿后仍失败：抛 RateLimitError（调用方整批暂停）。
-      if (isRateLimitResponse(response)) {
+      if (isRateLimitResponse(response, responseBodyText)) {
         const parsedRateLimit = parseRateLimitHeaders(response.headers);
         throw new RateLimitError(
           `GitHub rate limit exceeded: ${url}`,
@@ -654,8 +692,9 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
           maxRateLimitWaitMs,
         );
       }
-      // 其余 4xx/5xx：限量读取响应体后抛出带状态码的普通错误（重试已在 fetchWithRetry 耗尽）。
-      const bodyText = await readResponseText(response, { maxBytes: 4096 }).catch(() => '');
+      // 其余 4xx/5xx：复用已读取的响应体（避免对已消费的流再次读取），
+      // 限量读取后抛出带状态码的普通错误（重试已在 fetchWithRetry 耗尽）。
+      const bodyText = responseBodyText || (await readResponseText(response, { maxBytes: 4096 }).catch(() => ''));
       throw new HttpStatusError(
         `GitHub API HTTP ${response.status}: ${bodyText.slice(0, 500)}`,
         response.status,

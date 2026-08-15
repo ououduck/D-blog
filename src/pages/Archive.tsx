@@ -44,6 +44,10 @@ export const ArchivePage = () => {
   const [initialExpansion] = useState(() => getInitialExpansion(buildArchiveGroups(initialPosts), null));
   const [expandedYears, setExpandedYears] = useState<Set<string>>(() => initialExpansion.years);
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(() => initialExpansion.months);
+  // 渲染期同步的最新展开状态：toggleYear 基于它判断分支，避免连点两次
+  // （第二次发生在重渲染前）都读到同一旧闭包值、净效果只切换一次。
+  const expandedYearsRef = useRef(expandedYears);
+  expandedYearsRef.current = expandedYears;
   const shouldReduceMotion = useReducedMotion();
   const initializedRef = useRef(false);
   const searchStartedRef = useRef<string | null>(null);
@@ -186,15 +190,15 @@ export const ArchivePage = () => {
   }, [groups, isSearching, searchQuery]);
 
   const toggleYear = (year: string) => {
-    // 用闭包中的当前展开状态决定分支，副作用统一放在 updater 之外，
-    // 避免在状态更新器内执行 setSearchParams/setExpandedMonths（StrictMode 下会重复执行）。
-    const isExpanded = expandedYears.has(year);
+    // 基于最新展开状态（ref 实时同步）决定分支：连点两次时第二次读到的是
+    // 第一次更新后的状态，行为与旧版函数式更新一致（折叠又展开）。
+    // 副作用（setSearchParams/setExpandedMonths）仍放在 updater 之外，
+    // 避免在状态更新器内执行（StrictMode 下会重复执行）。
+    const isExpanded = expandedYearsRef.current.has(year);
+    const nextYears = new Set(expandedYearsRef.current);
     if (isExpanded) {
-      setExpandedYears((prev) => {
-        const next = new Set(prev);
-        next.delete(year);
-        return next;
-      });
+      nextYears.delete(year);
+      setExpandedYears(nextYears);
       // 折叠年份时，同时折叠该年份下的所有月份
       setExpandedMonths((prevMonths) => {
         const nextMonths = new Set(prevMonths);
@@ -216,11 +220,8 @@ export const ArchivePage = () => {
         { replace: true },
       );
     } else {
-      setExpandedYears((prev) => {
-        const next = new Set(prev);
-        next.add(year);
-        return next;
-      });
+      nextYears.add(year);
+      setExpandedYears(nextYears);
       setSearchParams(
         (previous) => {
           const nextParams = new URLSearchParams(previous);
@@ -230,6 +231,7 @@ export const ArchivePage = () => {
         { replace: true },
       );
     }
+    expandedYearsRef.current = nextYears;
   };
 
   const toggleMonth = (year: string, monthNum: number) => {

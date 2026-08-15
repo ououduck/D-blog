@@ -10,8 +10,8 @@
 #   - discussion_comment: created（giscus 评论）；
 #   - discussion: created（新建讨论）；
 #   - issues: opened（新 Issue / 友链申请）；
-#   - workflow_run: completed（所有 workflow 的运行结果；通知 workflow 自身的
-#     运行结果由脚本按名称跳过，避免"通知自己"的无限循环，无需维护白名单）；
+#   - workflow_run: completed（白名单内 workflow 的运行结果；白名单不含本工作流自身，
+#     避免每次通知运行完成后又触发一次自身运行 —— 双倍 Actions 消耗）；
 #   - workflow_dispatch（手动测试；可配合 .pages.yml「🔔 测试 Telegram 通知」按钮）。
 #
 # 一次性配置（仓库 Settings → Secrets and variables → Actions）：
@@ -32,9 +32,18 @@ on:
     types: [opened]
   workflow_run:
     # workflows 为必填键（缺失时 GitHub 拒绝解析，报 "does not reference any workflows"）。
-    # "**" 为 glob 通配：匹配仓库内全部 workflow —— 通知 workflow 自身的运行结果
-    # 由脚本按名称（GITHUB_WORKFLOW）跳过，不会自循环；新增 workflow 无需维护白名单。
-    workflows: ["**"]
+    # 使用显式白名单（不含本工作流自身）：若用 "**" 通配，本工作流每次运行完成后
+    # 也会触发一次自身的 workflow_run（脚本虽按名称跳过发送，但运行本身照常创建，
+    # 每个事件产生 2 次运行、双倍 Actions 消耗）。新增 workflow 时在此补充即可。
+    workflows:
+      - "Akismet Discussion Comment Checker"
+      - "CI"
+      - "Comment Keyword Filter"
+      - "Comment Keyword Recheck"
+      - "Deploy to Cloudflare & EdgeOne"
+      - "Friend Link Bot"
+      - "Friend Link Health Check"
+      - "Notify Blog Post Update"
     types: [completed]
   workflow_dispatch:
     inputs:

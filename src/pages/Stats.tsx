@@ -42,6 +42,7 @@ const SummaryCard = ({
         渲染最终值，减弱动效偏好下静态显示。 */}
     <CountUp
       to={value}
+      separator=","
       className="mb-2 text-2xl font-bold leading-none tabular-nums text-zinc-900 dark:text-zinc-100 sm:text-3xl lg:text-4xl"
     />
     <div className="mt-auto text-xs leading-5 text-zinc-600 dark:text-zinc-400 sm:text-sm sm:leading-6">{detail}</div>
@@ -227,6 +228,11 @@ export const Stats = () => {
       if (!isMountedRef.current) return;
       setSiteStats(statsData);
       siteStatsLoadedRef.current = true;
+    } catch (error) {
+      // 防御性兜底：getSiteStats 目前不会 reject（缺失时返回 EMPTY_SITE_STATS），
+      // 但异步加载一旦出现异常不应产生未处理的 promise rejection，
+      // 页面保持初始空统计（全 0）即可，不再阻断渲染。
+      console.warn('Failed to load site stats:', error);
     } finally {
       if (isMountedRef.current) setSiteStatsLoading(false);
     }
