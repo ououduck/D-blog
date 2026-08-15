@@ -20,7 +20,7 @@ export const usePostSearch = ({
   emptyResults = DEFAULT_EMPTY_RESULTS,
   debounceMs = 300,
   scope = 'all',
-  initialQuery = ''
+  initialQuery = '',
 }: UsePostSearchOptions = {}) => {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [results, setResults] = useState<PostSearchResult[]>(emptyResults);
@@ -105,7 +105,6 @@ export const usePostSearch = ({
     handleSearch,
     setSearchQuery: handleSearch,
     clearSearch,
-    hasSearchQuery: searchQuery.trim().length > 0
+    hasSearchQuery: searchQuery.trim().length > 0,
   };
 };
-

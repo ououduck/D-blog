@@ -3,7 +3,7 @@ import {
   getReadingHistory,
   saveReadingHistory,
   subscribeReadingHistory,
-  type ReadingHistoryEntry
+  type ReadingHistoryEntry,
 } from '@/services/readingHistory';
 
 /**
@@ -24,6 +24,6 @@ export const useReadingHistory = () => {
     entries,
     latest: entries[0],
     save: saveReadingHistory,
-    refresh
+    refresh,
   };
 };
