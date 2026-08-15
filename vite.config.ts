@@ -230,6 +230,106 @@ const devImgProxyMiddleware = (): Plugin => ({
   },
 });
 
+/**
+ * giscus 同源代理路径白名单（与生产 functions/_middleware.ts / 根目录 middleware.ts
+ * 的 upstreamPath 保持一致；改动需同步三处）。
+ */
+const GISCUS_WIDGET_PATH_RE = /^\/[a-z]{2}(-[A-Z]{2})?\/widget$/;
+const GISCUS_API_PATHS = new Set([
+  '/api/discussions',
+  '/api/discussions/categories',
+  '/api/oauth/authorize',
+  '/api/oauth/authorized',
+  '/api/oauth/token',
+]);
+const giscusUpstreamPath = (pathname: string): string | null => {
+  if (pathname === '/giscus' || pathname.startsWith('/giscus/')) {
+    const rest = pathname.slice('/giscus'.length);
+    return rest === '' ? '/' : rest;
+  }
+  if (pathname === '/_next' || pathname.startsWith('/_next/')) return pathname;
+  if (pathname === '/themes' || pathname.startsWith('/themes/')) return pathname;
+  if (pathname === '/default.css') return pathname;
+  if (pathname === '/widget' || GISCUS_WIDGET_PATH_RE.test(pathname)) return pathname;
+  if (GISCUS_API_PATHS.has(pathname)) return pathname;
+  return null;
+};
+
+/**
+ * 开发环境 giscus 同源代理中间件。
+ *
+ * 与生产环境的 Pages 边缘函数（functions/_middleware.ts / middleware.ts）行为一致：
+ * 把 giscus.app 的 client.js、widget 页面、/_next 静态资源、主题 CSS 与相对 API
+ * 经本地 dev server 同源路径转发，使本地开发与生产同构（评论区走 /giscus 同源代理，
+ * 而非直连被污染的 giscus.app）。仅转发白名单路径到 https://giscus.app。
+ */
+const devGiscusProxyMiddleware = (): Plugin => ({
+  name: 'dev-giscus-proxy',
+  apply: 'serve',
+  configureServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      const url = new URL(req.url ?? '/', 'http://localhost');
+      const path = giscusUpstreamPath(url.pathname);
+      if (!path) {
+        next();
+        return;
+      }
+
+      const headers: Record<string, string> = {
+        host: 'giscus.app',
+        'x-forwarded-host': url.host,
+        'x-forwarded-proto': 'https',
+      };
+      const body = ['GET', 'HEAD'].includes(req.method ?? 'GET') ? undefined : await collectRequestBody(req);
+      try {
+        // 上游不可达时（大陆网络 giscus.app 被阻断）快速失败，避免 dev 请求长时间挂起。
+        const upstream = await fetch(`https://giscus.app${path}${url.search}`, {
+          method: req.method ?? 'GET',
+          headers,
+          body,
+          redirect: 'manual',
+          signal: AbortSignal.timeout(10000),
+        });
+        res.statusCode = upstream.status;
+        upstream.headers.forEach((value, key) => {
+          if (!/^(content-encoding|content-length|set-cookie)$/i.test(key)) {
+            res.setHeader(key, value);
+          }
+        });
+        res.setHeader('x-frame-options', 'SAMEORIGIN');
+        if (url.pathname === '/widget' || GISCUS_WIDGET_PATH_RE.test(url.pathname)) {
+          let parentOrigin = '';
+          try {
+            parentOrigin = new URL(new URLSearchParams(url.search).get('origin') ?? '').origin;
+          } catch {
+            parentOrigin = '';
+          }
+          res.setHeader('content-security-policy', `frame-ancestors 'self'${parentOrigin ? ` ${parentOrigin}` : ''};`);
+        } else {
+          res.removeHeader('content-security-policy');
+        }
+        const buf = Buffer.from(await upstream.arrayBuffer());
+        res.end(buf);
+      } catch {
+        res.statusCode = 502;
+        res.end('giscus proxy fetch failed');
+      }
+    });
+  },
+});
+
+const collectRequestBody = (req: {
+  on(event: 'data', cb: (chunk: Buffer) => void): void;
+  on(event: 'end', cb: () => void): void;
+  on(event: 'error', cb: (err: Error) => void): void;
+}): Promise<Buffer | undefined> =>
+  new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => resolve(chunks.length > 0 ? Buffer.concat(chunks) : undefined));
+    req.on('error', reject);
+  });
+
 // Use loadEnv inside defineConfig so .env values are available during Vite config evaluation.
 const normalizeBasePath = (value?: string) => {
   let trimmed = value?.trim().replace(/\\/g, '/');
@@ -262,6 +362,7 @@ export default defineConfig(({ command, mode }) => {
       offlinePostAssetsPlugin(),
       trimKatexFonts(),
       devImgProxyMiddleware(),
+      devGiscusProxyMiddleware(),
     ],
     base: appBase,
     esbuild:

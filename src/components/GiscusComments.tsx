@@ -7,23 +7,41 @@ const getGiscusTheme = () => (document.documentElement.classList.contains('dark'
 
 /** 距视口底部多少像素内开始预加载评论区脚本（过早加载没有意义，过晚则白屏等待）。 */
 const NEAR_VIEWPORT_MARGIN_PX = 600;
-/** 单次尝试的脚本加载超时。 */
-const LOAD_TIMEOUT_MS = 12000;
-/** 加载失败后的自动重试次数上限（giscus.app 偶发不可达/抖动时自动恢复，无需用户手动刷新）。 */
-const MAX_AUTO_RETRIES = 2;
+/** 单个来源的单次加载超时：超时视为该来源不可达（DNS 污染/阻断的连接会一直挂起，不触发 error 事件）。 */
+const LOAD_TIMEOUT_MS = 8000;
+/** 整轮来源全部失败后的自动重试次数上限。 */
+const MAX_AUTO_RETRIES = 1;
 /** 自动重试间隔。 */
 const RETRY_DELAY_MS = 2500;
-/** giscus 脚本/iframe 来源：默认官方地址；自托管或镜像时通过 site.config.json comments.origin 覆盖。 */
-const GISCUS_SOURCE = (siteConfig.comments.origin || 'https://giscus.app').replace(/\/+$/, '');
-/** 消息源校验用的纯 origin（scheme+host+port）：event.origin 永远不含路径，
- *  自托管挂在子路径（如 https://example.com/giscus）时不能用带路径的来源直接比较。 */
-const GISCUS_ORIGIN = (() => {
-  try {
-    return new URL(GISCUS_SOURCE).origin;
-  } catch {
-    return 'https://giscus.app';
+/** 官方 giscus 地址：同源代理失败（未部署/上游异常/本地开发）时的兜底来源。 */
+const GISCUS_OFFICIAL = 'https://giscus.app';
+
+/**
+ * 解析评论来源（有序回退链）。
+ *
+ * 首选同源代理：大陆网络下 giscus.app 被 DNS 污染/阻断，站点同源路径
+ * （functions/_middleware.ts 等）转发 giscus 资源即可正常加载；海外/兜底场景
+ * 回退到官方 https://giscus.app。配置项 comments.origin 支持：
+ * - 相对路径（如 "/giscus"）：解析为当前页面 origin + 路径（同源代理，推荐）；
+ * - 绝对地址（如 "https://giscus.app"）：直接使用（自托管 giscus 实例）。
+ */
+const resolveGiscusOrigins = (): string[] => {
+  const origins: string[] = [];
+  const push = (origin: string) => {
+    if (origin && !origins.includes(origin)) origins.push(origin);
+  };
+
+  const configured = (siteConfig.comments.origin || '/giscus').replace(/\/+$/, '');
+  if (configured.startsWith('/')) {
+    // 相对路径：模块在 SSR 下不解析，浏览器端才需要真实 origin。
+    if (typeof window !== 'undefined') push(`${window.location.origin}${configured}`);
+  } else {
+    push(configured);
   }
-})();
+
+  push(GISCUS_OFFICIAL);
+  return origins.length > 0 ? origins : [GISCUS_OFFICIAL];
+};
 
 interface GiscusCommentsProps {
   /** 文章 ID：pathname 映射下作为 effect 依赖；specific/number 映射下可不传。 */
@@ -48,6 +66,8 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
   // 评论区是否已进入"即将可见"范围：未触发前不注入 giscus 脚本，也不加载 iframe，
   // 避免首屏/文章阅读主流程被评论相关资源拖慢。
   const [isNearViewport, setIsNearViewport] = useState(false);
+  // 当前生效的来源（用于 postMessage 源校验与主题同步目标）。
+  const activeOriginRef = useRef<string | null>(null);
 
   useEffect(() => {
     // 水合后同步真实网络状态（SSR 首帧固定为在线，避免水合冲突）。
@@ -91,60 +111,27 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
     setIsLoaded(false);
     setLoadFailed(false);
 
+    const origins = resolveGiscusOrigins();
+    let cancelled = false;
+    let success = false;
+    // 尝试序号：每次注入脚本自增，旧尝试的迟到回调（超时/错误）据此判定失效，避免误杀新尝试。
+    let attemptSeq = 0;
+    let loadTimeout: number | undefined;
     let retryTimer: number | undefined;
-    let failed = false;
-    // 统一的失败处理：脚本加载错误 / 超时都走这里，只触发一次；未到重试上限时自动重试。
-    // 注意：loadTimeout 在 fail 之后初始化，但 fail 只会在异步事件（脚本 error / 超时）中触发，
-    // 触发时 loadTimeout 必然已赋值，不存在 TDZ 问题。
-    const fail = () => {
-      if (failed) return;
-      failed = true;
+
+    const clearTimers = () => {
       if (loadTimeout !== undefined) window.clearTimeout(loadTimeout);
-      if (autoRetryCount < MAX_AUTO_RETRIES) {
-        retryTimer = window.setTimeout(() => setAutoRetryCount((count) => count + 1), RETRY_DELAY_MS);
-      }
-      setLoadFailed(true);
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+      loadTimeout = undefined;
+      retryTimer = undefined;
     };
 
-    const script = document.createElement('script');
-    script.src = `${GISCUS_SOURCE}/client.js`;
-    script.async = true;
-    script.crossOrigin = 'anonymous';
-    script.dataset.repo = siteConfig.comments.repo;
-    script.dataset.repoId = siteConfig.comments.repoId;
-    script.dataset.category = siteConfig.comments.category;
-    script.dataset.categoryId = siteConfig.comments.categoryId;
-    script.dataset.mapping = mapping;
-    script.dataset.strict = siteConfig.comments.strict ? '1' : '0';
-    script.dataset.reactionsEnabled = '1';
-    script.dataset.emitMetadata = '0';
-    script.dataset.inputPosition = 'top';
-    script.dataset.theme = getGiscusTheme();
-    script.dataset.lang = 'zh-CN';
-    script.dataset.loading = 'lazy';
-    if ((mapping === 'specific' || mapping === 'number') && term !== undefined) {
-      script.dataset.term = String(term);
-    }
-    script.addEventListener('error', fail, { once: true });
-    container.replaceChildren(script);
-
-    const loadTimeout = window.setTimeout(fail, LOAD_TIMEOUT_MS);
-
-    const syncTheme = () => {
-      const iframe = container.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
-      iframe?.contentWindow?.postMessage(
-        {
-          giscus: {
-            setConfig: { theme: getGiscusTheme() },
-          },
-        },
-        GISCUS_ORIGIN,
-      );
-    };
-    const handleGiscusMessage = (event: MessageEvent) => {
+    const handleMessage = (event: MessageEvent) => {
+      const activeOrigin = activeOriginRef.current;
+      if (!activeOrigin) return;
       const iframe = container.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
       if (
-        event.origin !== GISCUS_ORIGIN ||
+        event.origin !== new URL(activeOrigin).origin ||
         event.source !== iframe?.contentWindow ||
         typeof event.data?.giscus !== 'object'
       ) {
@@ -153,23 +140,94 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
 
       // 成功消息到达：清除超时，并取消尚未触发的自动重试（避免"迟到的成功"后
       // 重试定时器再把已正常加载的评论区销毁重载）。
-      if (loadTimeout !== undefined) window.clearTimeout(loadTimeout);
-      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
-      failed = true;
+      if (success) return;
+      success = true;
+      clearTimers();
       setIsLoaded(true);
       setLoadFailed(false);
     };
+
+    const syncTheme = () => {
+      const activeOrigin = activeOriginRef.current;
+      if (!activeOrigin) return;
+      const iframe = container.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+      iframe?.contentWindow?.postMessage(
+        {
+          giscus: {
+            setConfig: { theme: getGiscusTheme() },
+          },
+        },
+        new URL(activeOrigin).origin,
+      );
+    };
+
+    const failCycle = () => {
+      if (cancelled || success) return;
+      activeOriginRef.current = null;
+      clearTimers();
+      container.replaceChildren();
+      if (autoRetryCount < MAX_AUTO_RETRIES) {
+        retryTimer = window.setTimeout(() => setAutoRetryCount((count) => count + 1), RETRY_DELAY_MS);
+      } else {
+        setLoadFailed(true);
+      }
+    };
+
+    const attemptOrigin = (index: number) => {
+      if (cancelled || success) return;
+      const origin = origins[index];
+      if (!origin) {
+        failCycle();
+        return;
+      }
+
+      const seq = ++attemptSeq;
+      activeOriginRef.current = origin;
+
+      // 本次尝试的失败回调：seq 与当前尝试不匹配（迟到回调）时忽略。
+      const failThisAttempt = () => {
+        if (cancelled || success || seq !== attemptSeq) return;
+        attemptOrigin(seq); // 下一个来源索引 = 已启动的尝试数
+      };
+
+      const script = document.createElement('script');
+      script.src = `${origin}/client.js`;
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+      script.dataset.repo = siteConfig.comments.repo;
+      script.dataset.repoId = siteConfig.comments.repoId;
+      script.dataset.category = siteConfig.comments.category;
+      script.dataset.categoryId = siteConfig.comments.categoryId;
+      script.dataset.mapping = mapping;
+      script.dataset.strict = siteConfig.comments.strict ? '1' : '0';
+      script.dataset.reactionsEnabled = '1';
+      script.dataset.emitMetadata = '0';
+      script.dataset.inputPosition = 'top';
+      script.dataset.theme = getGiscusTheme();
+      script.dataset.lang = 'zh-CN';
+      script.dataset.loading = 'lazy';
+      if ((mapping === 'specific' || mapping === 'number') && term !== undefined) {
+        script.dataset.term = String(term);
+      }
+      script.addEventListener('error', failThisAttempt, { once: true });
+      container.replaceChildren(script);
+      // DNS 污染/阻断的连接会一直挂起（不触发 error），用超时兜底切换来源。
+      loadTimeout = window.setTimeout(failThisAttempt, LOAD_TIMEOUT_MS);
+    };
+
     const observer = new MutationObserver(syncTheme);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     observer.observe(container, { childList: true, subtree: true });
-    window.addEventListener('message', handleGiscusMessage);
+    window.addEventListener('message', handleMessage);
+
+    attemptOrigin(0);
 
     return () => {
-      if (loadTimeout !== undefined) window.clearTimeout(loadTimeout);
-      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
-      script.removeEventListener('error', fail);
-      observer.disconnect();
-      window.removeEventListener('message', handleGiscusMessage);
+      cancelled = true;
+      activeOriginRef.current = null;
+      clearTimers();
+      observer?.disconnect();
+      window.removeEventListener('message', handleMessage);
       container.replaceChildren();
     };
   }, [isOffline, isNearViewport, loadAttempt, autoRetryCount, postId, mapping, term]);

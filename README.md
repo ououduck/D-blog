@@ -165,6 +165,17 @@ images:
 
 `/guestbook` 通过 Giscus `mapping=number` 固定指向仓库的「D-blog 留言板」Discussion（`config/site.config.ts` 的 `guestbook.discussionId`）。与文章评论共用 Akismet 反垃圾，并叠加自建关键词过滤（`config/comment-keywords.json`，可直接在 PagesCMS「评论关键词」中编辑）。仓库内置 `.github/workflows/notify-post-update.yml`：文章新增/修改时自动在指定 Issue 发布通知。
 
+### Giscus 评论与大陆网络可达性
+
+giscus.app 在大陆网络被 DNS 污染/阻断（本地解析被替换为 198.18.x.x 等假地址，真实 IP 也不可达），直连官方地址会导致评论区「加载很久后显示加载失败」。因此评论走 **站点同源代理**：
+
+- `config/site.config.json` 的 `comments.origin` 默认为 `"/giscus"`（同源相对路径）；
+- 生产环境由 `functions/_middleware.ts`（Cloudflare Pages）与根目录 `middleware.ts`（EdgeOne Pages）把 giscus 的 client.js、widget 页面、`/_next` 静态资源、主题 CSS 与相对 API 全部经站点同源路径转发到 `https://giscus.app`；两条中间件逻辑一致，改动需同步；
+- 前端 `src/components/GiscusComments.tsx` 按「同源代理 → 官方 giscus.app」顺序回退加载：同源代理不可用（如本地开发未起代理、函数未部署）时自动回退官方地址；
+- 本地开发：`vite.config.ts` 内置 `dev-giscus-proxy` 中间件，行为与生产边缘函数一致，`npm run dev` 下评论即走同源代理。
+
+限制说明：GitHub OAuth 登录回调固定指向 `giscus.app`，经同源代理访问时，海外网络可正常登录评论；大陆网络下 giscus.app 不可达，登录无法完成（读评论、看讨论不受影响）。如需大陆网络完整登录，需自托管 giscus 实例并将 `comments.origin` 指向自托管地址。
+
 ## 构建与质量
 
 `npm run build` 依次执行：数据生成 → OG 卡生成 → 客户端构建 → SSR 构建 → 模板快照 → SSG 预渲染 → 产物审计 → SEO 审计，最终输出 `dist/`。各阶段独立超时并汇总耗时，任一阶段失败立即终止流水线并在日志中标明失败阶段（[N/M] 前缀）。

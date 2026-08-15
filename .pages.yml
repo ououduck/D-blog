@@ -145,7 +145,7 @@ content:
           - { name: categoryId, label: 分类 ID, type: string }
           - name: origin
             label: giscus 来源地址
-            hint: 默认 https://giscus.app；大陆网络无法访问时可改为自托管/镜像地址
+            hint: 默认 /giscus（站点同源代理，大陆网络可正常加载）；自托管/镜像时填完整 URL，如 https://giscus.app
             type: string
           - name: strict
             label: 严格匹配
