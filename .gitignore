@@ -7,6 +7,10 @@ dist
 dist-ssr
 *.local
 
+# EdgeOne Pages 边缘函数本地构建产物（functions/ 目录的编译缓存）
+.edgeone/
+.tef_dist/
+
 # Generated files
 generated/
 

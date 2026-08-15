@@ -1029,6 +1029,13 @@ export const Home = () => {
             title={sharePost.title}
             excerpt={sharePost.excerpt}
             url={absoluteSiteUrl(`/post/${sharePost.id}`, window.location.origin)}
+            category={sharePost.category}
+            date={sharePost.date}
+            coverImage={sharePost.coverImage}
+            siteName={siteConfig.title}
+            siteSubtitle={siteConfig.subtitle}
+            siteUrl={siteConfig.url}
+            logo={assetUrl('/logo.png')}
           />
         </Suspense>
       )}

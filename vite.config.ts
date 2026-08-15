@@ -179,6 +179,40 @@ const injectEntryCssPreload = (): Plugin => {
   };
 };
 
+/**
+ * 开发环境 /img-proxy 中间件。
+ *
+ * 与生产环境的 Pages 边缘函数（functions/img-proxy.ts）行为一致：把图床图片
+ * 经站点同源路径转发并附加 CORS 头，使本地开发也能生成包含封面图的分享海报
+ * （img.pldduck.com 未开 CORS，浏览器 canvas 无法直接跨域读取）。
+ */
+const devImgProxyMiddleware = (): Plugin => ({
+  name: 'dev-img-proxy',
+  apply: 'serve',
+  configureServer(server) {
+    server.middlewares.use('/img-proxy', async (req, res) => {
+      const target = new URL(req.url ?? '/', 'http://localhost').searchParams.get('url');
+      if (!target || !/^https:\/\//i.test(target)) {
+        res.statusCode = 400;
+        res.end('missing or invalid url');
+        return;
+      }
+      try {
+        const upstream = await fetch(target);
+        const body = new Uint8Array(await upstream.arrayBuffer());
+        res.statusCode = upstream.status;
+        res.setHeader('content-type', upstream.headers.get('content-type') || 'application/octet-stream');
+        res.setHeader('access-control-allow-origin', '*');
+        res.setHeader('cache-control', 'public, max-age=86400');
+        res.end(body);
+      } catch {
+        res.statusCode = 502;
+        res.end('proxy fetch failed');
+      }
+    });
+  },
+});
+
 // Use loadEnv inside defineConfig so .env values are available during Vite config evaluation.
 const normalizeBasePath = (value?: string) => {
   let trimmed = value?.trim().replace(/\\/g, '/');
@@ -205,7 +239,13 @@ export default defineConfig(({ command, mode }) => {
   const appBase = normalizeBasePath(env.VITE_BASE_PATH);
 
   return {
-    plugins: [react({ babel: { plugins: [] } }), injectEntryCssPreload(), offlinePostAssetsPlugin(), trimKatexFonts()],
+    plugins: [
+      react({ babel: { plugins: [] } }),
+      injectEntryCssPreload(),
+      offlinePostAssetsPlugin(),
+      trimKatexFonts(),
+      devImgProxyMiddleware(),
+    ],
     base: appBase,
     esbuild:
       command === 'build'

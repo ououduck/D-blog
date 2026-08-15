@@ -10,7 +10,8 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { PostMetadata } from '../types';
 import { Seo } from '../components/Seo';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
-import { absoluteSiteUrl } from '@/utils/siteUrl';
+import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';
+import { siteConfig } from '@config/site.config';
 
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
 
@@ -223,6 +224,13 @@ export const Search = () => {
             title={sharePost.title}
             excerpt={sharePost.excerpt}
             url={absoluteSiteUrl(`/post/${sharePost.id}`, window.location.origin)}
+            category={sharePost.category}
+            date={sharePost.date}
+            coverImage={sharePost.coverImage}
+            siteName={siteConfig.title}
+            siteSubtitle={siteConfig.subtitle}
+            siteUrl={siteConfig.url}
+            logo={assetUrl('/logo.png')}
           />
         </Suspense>
       )}

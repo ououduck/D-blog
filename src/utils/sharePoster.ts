@@ -1,12 +1,20 @@
 /**
  * sharePoster.ts — 分享海报生成（纯前端 Canvas）。
  *
- * 生成一张 750×1334 的竖版海报：站点头部 + 封面图（或渐变占位）+
- * 文章标题/摘要 + 分类与日期 + 二维码卡片。全部在浏览器端绘制，
+ * 生成一张 750×1334 的竖版海报：站点头部（真实 LOGO）+ 封面图（或品牌占位）+
+ * 自适应排版的标题/摘要 + 分类与日期 + 二维码卡片。全部在浏览器端绘制，
  * 二维码用 qrcode 库直接画进 canvas（无外链请求，无跨域污染问题）。
- * 封面图走 crossOrigin=anonymous 加载，加载失败时自动回退为渐变占位，
- * 保证海报在任何网络/图床配置下都能生成。
+ *
+ * 图片加载策略（保证海报在任何网络/图床配置下都能生成）：
+ * 1. 先按 crossOrigin=anonymous 直连加载（同源资源、已开 CORS 的图床直接命中）；
+ * 2. 同源资源失败时去掉 crossOrigin 重试一次（同源绘制不会污染画布）；
+ * 3. 跨域图床（如 img.pldduck.com 未开 CORS）失败时，改走同源代理
+ *    /img-proxy?url=...（生产环境由 Pages 边缘函数提供，开发环境由 Vite
+ *    中间件模拟），代理响应自带 CORS 头，画布可安全导出。
+ * 全部失败才回退为品牌占位，保证海报始终能生成。
  */
+
+import { assetUrl } from './siteUrl';
 
 interface SharePosterOptions {
   title: string;
@@ -44,7 +52,8 @@ const FONT_SERIF = '"Playfair Display","Noto Serif SC","Songti SC","SimSun",seri
 const FONT_SANS = '-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif';
 const FONT_MONO = '"SF Mono","Consolas","Liberation Mono",monospace';
 
-const isCjkChar = (char: string) => /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef\u2014\u2018\u2019\u201c\u201d]/.test(char);
+const isCjkChar = (char: string) =>
+  /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef\u2014\u2018\u2019\u201c\u201d]/.test(char);
 const isLatinRun = (char: string) => /[A-Za-z0-9]/.test(char);
 
 /** 按 CJK 单字 / 拉丁连续串分词，支持混合中英文的自然换行。 */
@@ -111,7 +120,14 @@ const wrapCanvasText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: n
   return lines;
 };
 
-const roundRect = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) => {
+const roundRect = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) => {
   if (typeof ctx.roundRect === 'function') {
     ctx.beginPath();
     ctx.roundRect(x, y, width, height, radius);
@@ -127,9 +143,25 @@ const roundRect = (ctx: CanvasRenderingContext2D, x: number, y: number, width: n
   ctx.closePath();
 };
 
-/** 加载图片；crossOrigin 加载失败时返回 null，由调用方回退为渐变占位。
- *  不设 crossOrigin 会污染画布导致 toDataURL 抛错，故失败即放弃而非降级重试。 */
-const loadImage = (src: string, timeoutMs = 8000): Promise<HTMLImageElement | null> =>
+/** 等比缩放并居中绘制图片（contain），避免非正方形 logo 被拉伸变形。 */
+const drawImageContain = (
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => {
+  const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight);
+  const drawWidth = image.naturalWidth * scale;
+  const drawHeight = image.naturalHeight * scale;
+  ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+};
+
+// ───────────────────────── 图片加载（直连 + 同源重试 + 代理兜底） ─────────────────────────
+
+/** 单次加载：失败返回 null（crossOrigin 加载失败即放弃，避免污染画布）。 */
+const loadImageOnce = (src: string, useCrossOrigin: boolean, timeoutMs: number): Promise<HTMLImageElement | null> =>
   new Promise((resolve) => {
     if (typeof document === 'undefined') {
       resolve(null);
@@ -152,11 +184,50 @@ const loadImage = (src: string, timeoutMs = 8000): Promise<HTMLImageElement | nu
       window.clearTimeout(timer);
       finish(null);
     };
-    image.crossOrigin = 'anonymous';
+    if (useCrossOrigin) {
+      image.crossOrigin = 'anonymous';
+    }
     image.src = src;
   });
 
-const drawCoverCrop = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, width: number, height: number, radius: number) => {
+const isSameOriginSrc = (src: string): boolean => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  try {
+    return new URL(src, window.location.href).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+};
+
+const toProxyUrl = (src: string): string => `${assetUrl('/img-proxy')}?url=${encodeURIComponent(src)}`;
+
+/** 多级加载：直连 → 同源去 crossOrigin 重试 → 跨域走同源代理。 */
+const loadImage = (src: string, timeoutMs = 8000): Promise<HTMLImageElement | null> => {
+  const direct = loadImageOnce(src, true, timeoutMs);
+  return direct.then((image) => {
+    if (image) return image;
+    if (isSameOriginSrc(src)) {
+      // 同源图片本就不需要 CORS，去掉 crossOrigin 再试一次（不会污染画布）。
+      return loadImageOnce(src, false, timeoutMs);
+    }
+    // 跨域图床未开 CORS：经同源代理转发（生产环境由 Pages 边缘函数提供）。
+    return loadImageOnce(toProxyUrl(src), true, timeoutMs);
+  });
+};
+
+// ───────────────────────── 绘制辅助 ─────────────────────────
+
+const drawCoverCrop = (
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) => {
   ctx.save();
   roundRect(ctx, x, y, width, height, radius);
   ctx.clip();
@@ -171,6 +242,76 @@ const drawCoverCrop = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, x
   roundRect(ctx, x, y, width, height, radius);
   ctx.stroke();
 };
+
+/** 封面占位：渐变 + 点阵纹理 + 居中站点标志（替代原“大字站名”的粗糙占位）。 */
+const drawCoverFallback = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+  logo: HTMLImageElement | null,
+  siteName: string,
+) => {
+  const gradient = ctx.createLinearGradient(x, y, x, y + height);
+  gradient.addColorStop(0, COLORS.bandFrom);
+  gradient.addColorStop(1, COLORS.bandTo);
+  ctx.fillStyle = gradient;
+  roundRect(ctx, x, y, width, height, radius);
+  ctx.fill();
+
+  // 点阵纹理（低透明度，营造纸张质感）。
+  ctx.save();
+  roundRect(ctx, x, y, width, height, radius);
+  ctx.clip();
+  ctx.fillStyle = 'rgba(28, 25, 23, 0.05)';
+  const spacing = 26;
+  for (let py = y + 22; py < y + height - 12; py += spacing) {
+    for (let px = x + 22; px < x + width - 12; px += spacing) {
+      ctx.beginPath();
+      ctx.arc(px, py, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  const centerX = x + width / 2;
+  const centerY = y + height / 2;
+  if (logo) {
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    drawImageContain(ctx, logo, centerX - 48, centerY - 64, 96, 96);
+    ctx.restore();
+  }
+  ctx.fillStyle = 'rgba(28, 25, 23, 0.42)';
+  ctx.font = `600 30px ${FONT_SERIF}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(siteName, centerX, centerY + (logo ? 52 : 0));
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+};
+
+/** 头部 logo 占位：纸色圆角块 + 细描边 + 低透明度首字母（不再使用黑底白字色块）。 */
+const drawLogoFallback = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, siteName: string) => {
+  ctx.save();
+  ctx.fillStyle = COLORS.card;
+  roundRect(ctx, x, y, size, size, 18);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(28, 25, 23, 0.14)';
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, size, size, 18);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(28, 25, 23, 0.38)';
+  ctx.font = `700 34px ${FONT_SERIF}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText((siteName || 'D').charAt(0).toUpperCase(), x + size / 2, y + size / 2 + 2);
+  ctx.restore();
+};
+
+// ───────────────────────── 主流程 ─────────────────────────
 
 export const generateSharePoster = async (options: SharePosterOptions): Promise<string> => {
   const canvas = document.createElement('canvas');
@@ -212,7 +353,7 @@ export const generateSharePoster = async (options: SharePosterOptions): Promise<
   ctx.fillText(siteName, POSTER_WIDTH - 20, 96);
   ctx.restore();
 
-  // ===== 头部：logo + 站点名 + 副标题 =====
+  // ===== 头部：真实 LOGO + 站点名 + 副标题 =====
   const logo = options.logo ? await loadImage(options.logo) : null;
   const logoSize = 76;
   const headerY = 56;
@@ -221,18 +362,11 @@ export const generateSharePoster = async (options: SharePosterOptions): Promise<
     ctx.save();
     roundRect(ctx, headerY, headerY, logoSize, logoSize, 18);
     ctx.clip();
-    ctx.drawImage(logo, headerY, headerY, logoSize, logoSize);
+    // 等比缩放居中绘制，避免 logo 非正方形时被拉伸。
+    drawImageContain(ctx, logo, headerY, headerY, logoSize, logoSize);
     ctx.restore();
   } else {
-    // 无 logo 时画一个圆角方块占位（首字母）。
-    ctx.fillStyle = COLORS.chipBg;
-    roundRect(ctx, headerY, headerY, logoSize, logoSize, 18);
-    ctx.fill();
-    ctx.fillStyle = COLORS.chipText;
-    ctx.font = `700 40px ${FONT_SERIF}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(siteName.charAt(0).toUpperCase(), headerY + logoSize / 2, headerY + logoSize / 2 + 2);
+    drawLogoFallback(ctx, headerY, headerY, logoSize, siteName);
   }
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
@@ -251,7 +385,7 @@ export const generateSharePoster = async (options: SharePosterOptions): Promise<
   ctx.lineTo(POSTER_WIDTH - 48, headerY + logoSize + 36);
   ctx.stroke();
 
-  // ===== 封面图 / 渐变占位 =====
+  // ===== 封面图 / 品牌占位 =====
   const bandX = 48;
   const bandY = 176;
   const bandWidth = POSTER_WIDTH - 96;
@@ -261,61 +395,65 @@ export const generateSharePoster = async (options: SharePosterOptions): Promise<
   if (coverImage) {
     drawCoverCrop(ctx, coverImage, bandX, bandY, bandWidth, bandHeight, bandRadius);
   } else {
-    const gradient = ctx.createLinearGradient(bandX, bandY, bandX, bandY + bandHeight);
-    gradient.addColorStop(0, COLORS.bandFrom);
-    gradient.addColorStop(1, COLORS.bandTo);
-    ctx.fillStyle = gradient;
-    roundRect(ctx, bandX, bandY, bandWidth, bandHeight, bandRadius);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(28, 25, 23, 0.16)';
-    ctx.font = `700 88px ${FONT_SERIF}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(siteName, POSTER_WIDTH / 2, bandY + bandHeight / 2 + 4);
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
+    drawCoverFallback(ctx, bandX, bandY, bandWidth, bandHeight, bandRadius, logo, siteName);
   }
 
-  // ===== 标题（最大 4 行）=====
-  ctx.font = `700 42px ${FONT_SERIF}`;
-  const titleLines = wrapCanvasText(ctx, title, bandWidth, 4);
-  const titleLineHeight = 60;
-  const titleY = 620;
+  // ===== 标题：自适应字号（越短越大），最多 3 行 =====
+  const titleY = bandY + bandHeight + 48;
+  const titleCandidates = [46, 42, 38, 34];
+  let titleFontSize = 34;
+  let titleLines: string[] = [];
+  for (const size of titleCandidates) {
+    ctx.font = `700 ${size}px ${FONT_SERIF}`;
+    const lines = wrapCanvasText(ctx, title, bandWidth, 3);
+    titleFontSize = size;
+    titleLines = lines;
+    if (lines.length <= 3) break;
+  }
+  const titleLineHeight = Math.round(titleFontSize * 1.42);
   ctx.fillStyle = COLORS.ink;
   titleLines.forEach((line, index) => {
     ctx.fillText(line, bandX, titleY + index * titleLineHeight);
   });
 
   // ===== 摘要（按可用空间自适应 1-3 行）=====
-  // 元信息行上限为 970（防止与底部二维码卡片重叠）；标题占位越多，
-  // 摘要可用的行数越少，超长摘要自动截断而非与元信息行叠字。
-  const excerptY = titleY + titleLines.length * titleLineHeight + 44;
-  const META_ROW_LIMIT_Y = 970;
+  // 元信息行顶部上限 940：与底部二维码卡片（顶部 1032）之间保留安全间距，
+  // 标题/摘要占位越多，摘要可用的行数越少，超长摘要自动截断而非叠字。
+  const excerptY = titleY + titleLines.length * titleLineHeight + 36;
+  const CONTENT_LIMIT_Y = 940;
   const EXCERPT_LINE_HEIGHT = 40;
-  const META_GAP_Y = 44;
+  const META_GAP_Y = 40;
   let excerptLines: string[] = [];
   let metaY = 0;
   if (excerpt) {
-    ctx.font = `400 25px ${FONT_SANS}`;
-    const availableSpace = META_ROW_LIMIT_Y - excerptY;
-    const maxExcerptLines = Math.max(1, Math.min(3, Math.floor((availableSpace - META_GAP_Y) / EXCERPT_LINE_HEIGHT)));
+    ctx.font = `400 26px ${FONT_SANS}`;
+    const availableSpace = CONTENT_LIMIT_Y - excerptY - META_GAP_Y;
+    const maxExcerptLines = Math.max(1, Math.min(3, Math.floor(availableSpace / EXCERPT_LINE_HEIGHT)));
     excerptLines = wrapCanvasText(ctx, excerpt, bandWidth, maxExcerptLines);
     excerptLines.forEach((line, index) => {
       ctx.fillStyle = COLORS.muted;
       ctx.fillText(line, bandX, excerptY + index * EXCERPT_LINE_HEIGHT);
     });
-    metaY = Math.min(excerptY + excerptLines.length * EXCERPT_LINE_HEIGHT + META_GAP_Y, META_ROW_LIMIT_Y);
+    metaY = Math.min(excerptY + excerptLines.length * EXCERPT_LINE_HEIGHT + META_GAP_Y, CONTENT_LIMIT_Y);
   } else {
-    metaY = Math.min(excerptY + 20, META_ROW_LIMIT_Y);
+    metaY = Math.min(excerptY + 28, CONTENT_LIMIT_Y);
   }
 
-  // ===== 分类 chip + 日期 =====
+  // ===== 分类 chip + 日期（细分割线分隔正文与元信息）=====
+  if (options.category || options.date) {
+    ctx.strokeStyle = COLORS.line;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bandX, metaY - 24);
+    ctx.lineTo(bandX + bandWidth, metaY - 24);
+    ctx.stroke();
+  }
   if (options.category) {
     ctx.font = `600 22px ${FONT_SANS}`;
     const chipPaddingX = 16;
     const chipHeight = 46;
     const chipTextWidth = ctx.measureText(options.category).width;
-    const chipWidth = chipTextWidth + chipPaddingX * 2;
+    const chipWidth = Math.min(chipTextWidth + chipPaddingX * 2, 360);
     ctx.fillStyle = COLORS.chipBg;
     roundRect(ctx, bandX, metaY, chipWidth, chipHeight, chipHeight / 2);
     ctx.fill();
@@ -330,7 +468,7 @@ export const generateSharePoster = async (options: SharePosterOptions): Promise<
     ctx.fillStyle = COLORS.muted;
     ctx.font = `400 22px ${FONT_MONO}`;
     ctx.textAlign = 'right';
-    ctx.fillText(options.date, POSTER_WIDTH - bandX, metaY + 28);
+    ctx.fillText(options.date, POSTER_WIDTH - bandX, metaY + 30);
     ctx.textAlign = 'left';
   }
 
@@ -366,11 +504,11 @@ export const generateSharePoster = async (options: SharePosterOptions): Promise<
   ctx.fillStyle = COLORS.ink;
   ctx.font = `600 22px ${FONT_SANS}`;
   ctx.textAlign = 'center';
-  ctx.fillText('扫码阅读全文', POSTER_WIDTH / 2, qrY + qrSize + 50);
+  ctx.fillText('扫码阅读全文', POSTER_WIDTH / 2, qrY + qrSize + 46);
   if (siteUrl) {
     ctx.fillStyle = COLORS.faint;
     ctx.font = `400 18px ${FONT_MONO}`;
-    ctx.fillText(siteUrl.replace(/^https?:\/\//, ''), POSTER_WIDTH / 2, qrY + qrSize + 80);
+    ctx.fillText(siteUrl.replace(/^https?:\/\//, ''), POSTER_WIDTH / 2, qrY + qrSize + 74);
   }
   ctx.textAlign = 'left';
 
