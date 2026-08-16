@@ -82,7 +82,6 @@ D-blog/
 ├── generated/               # 构建产物：posts.json / posts-search.json / site-stats.json 等
 ├── public/                  # favicon、PWA 图标、sw.js、offline.html，以及构建生成的 feed/sitemap
 ├── scripts/                 # 构建/自动化脚本（lib/ 为共享 HTTP 与日志库）
-├── functions/               # Pages 边缘函数（img-proxy 同源图片代理）
 ├── .github/workflows/       # 部署、友链审核、评论检查、更新通知
 └── src/
     ├── components/          # Layout、PostCard、Seo、TableOfContents、SearchModal、ImageViewer 等（effects/、ui/ 为动效与基础组件）
@@ -169,16 +168,11 @@ images:
 
 在文章页/关于页可订阅 GitHub Issue（`src/components/IssueSubscriptionCard.tsx`），新文章发布时 `.github/workflows/notify-post-update.yml` 自动在指定 Issue 发布更新通知。
 
-### Giscus 评论与大陆网络可达性
+### Giscus 评论
 
-giscus.app 在大陆网络被 DNS 污染/阻断（本地解析被替换为 198.18.x.x 等假地址，真实 IP 也不可达），直连官方地址会导致评论区「加载很久后显示加载失败」。因此评论走 **站点同源代理**：
+评论区直连官方 [https://giscus.app](https://giscus.app)（`config/site.config.json` 的 `comments.origin`）。大陆网络下 giscus.app 被 DNS 污染/阻断，评论区可能加载失败；如需大陆可用的评论，可将 `comments.origin` 指向自托管 giscus 实例或可达镜像的完整 URL（前端按「配置来源 → 官方 giscus.app」顺序回退加载）。
 
-- `config/site.config.json` 的 `comments.origin` 默认为 `"/giscus"`（同源相对路径）；
-- 生产环境由 `functions/_middleware.ts`（Cloudflare Pages）与根目录 `middleware.ts`（EdgeOne Pages）把 giscus 的 client.js、widget 页面、`/_next` 静态资源、主题 CSS 与相对 API 全部经站点同源路径转发到 `https://giscus.app`；两条中间件共用 `functions/giscus-proxy-core.ts` 的路径白名单与纯逻辑（改动核心逻辑只需改这一处，两份薄壳保持不变）；
-- 前端 `src/components/GiscusComments.tsx` 按「同源代理 → 官方 giscus.app」顺序回退加载：同源代理不可用（如本地开发未起代理、函数未部署）时自动回退官方地址；
-- 本地开发：`vite.config.ts` 内置 `dev-giscus-proxy` 中间件，行为与生产边缘函数一致，`npm run dev` 下评论即走同源代理。
-
-限制说明：GitHub OAuth 登录回调固定指向 `giscus.app`，经同源代理访问时，海外网络可正常登录评论；大陆网络下 giscus.app 不可达，登录无法完成（读评论、看讨论不受影响）。如需大陆网络完整登录，需自托管 giscus 实例并将 `comments.origin` 指向自托管地址。
+限制说明：GitHub OAuth 登录回调固定指向 `giscus.app`，大陆网络下无法完成登录（读评论、看讨论不受影响）。
 
 ## 构建与质量
 

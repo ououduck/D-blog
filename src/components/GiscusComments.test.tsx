@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { GiscusComments } from './GiscusComments';
 
-// 站点配置打桩：默认启用 giscus 并指向同源代理。
+// 站点配置打桩：默认启用 giscus 并直连官方源（与 config/site.config.json 一致）。
 vi.mock('@config/site.config', () => ({
   siteConfig: {
     giscusEnabled: true,
@@ -11,7 +11,7 @@ vi.mock('@config/site.config', () => ({
       repoId: 'R_123',
       category: 'Comments',
       categoryId: 'D_456',
-      origin: '/giscus',
+      origin: 'https://giscus.app',
       strict: false,
     },
   },
@@ -91,13 +91,13 @@ describe('GiscusComments', () => {
     expect(document.querySelector('script[data-repo]')).not.toBeInTheDocument();
   });
 
-  it('进入视口后注入 giscus 脚本（同源代理来源）', () => {
+  it('进入视口后注入 giscus 脚本（直连官方来源）', () => {
     render(<GiscusComments postId="test-post" />);
     triggerNearViewport();
 
     const script = document.querySelector<HTMLScriptElement>('script[data-repo]');
     expect(script).not.toBeNull();
-    expect(script?.src).toContain('/giscus/client.js');
+    expect(script?.src).toContain('https://giscus.app/client.js');
     expect(script?.dataset.repo).toBe('owner/repo');
     expect(script?.dataset.mapping).toBe('pathname');
     expect(script?.dataset.lang).toBe('zh-CN');

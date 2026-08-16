@@ -19,11 +19,12 @@ const GISCUS_OFFICIAL = 'https://giscus.app';
 /**
  * 解析评论来源（有序回退链）。
  *
- * 首选同源代理：大陆网络下 giscus.app 被 DNS 污染/阻断，站点同源路径
- * （functions/_middleware.ts 等）转发 giscus 资源即可正常加载；海外/兜底场景
- * 回退到官方 https://giscus.app。配置项 comments.origin 支持：
- * - 相对路径（如 "/giscus"）：解析为当前页面 origin + 路径（同源代理，推荐）；
- * - 绝对地址（如 "https://giscus.app"）：直接使用（自托管 giscus 实例）。
+ * 默认直连官方 https://giscus.app（`config/site.config.json` 的 comments.origin，
+ * 站点同源代理边缘函数已移除）。大陆网络下 giscus.app 被 DNS 污染/阻断，评论区
+ * 可能无法加载；如需大陆可用的评论，可将 origin 配置为自托管 giscus 实例或
+ * 可达镜像的完整 URL。配置项 comments.origin 支持：
+ * - 绝对地址（如 "https://giscus.app"）：直接使用（默认）；
+ * - 相对路径（如 "/giscus"）：解析为当前页面 origin + 路径（需自行部署同源代理）。
  */
 const resolveGiscusOrigins = (): string[] => {
   const origins: string[] = [];

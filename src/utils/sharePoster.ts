@@ -8,9 +8,7 @@
  * 图片加载策略（保证海报在任何网络/图床配置下都能生成）：
  * 1. 先按 crossOrigin=anonymous 直连加载（同源资源、已开 CORS 的图床直接命中）；
  * 2. 同源资源失败时去掉 crossOrigin 重试一次（同源绘制不会污染画布）；
- * 3. 跨域图床（如 img.pldduck.com 未开 CORS）失败时，改走同源代理
- *    /img-proxy?url=...（生产环境由 Pages 边缘函数提供，开发环境由 Vite
- *    中间件模拟），代理响应自带 CORS 头，画布可安全导出。
+ * 3. 跨域图床（如 img.pldduck.com 未开 CORS）无法安全读取，最终回退品牌占位。
  * 全部失败才回退为品牌占位，保证海报始终能生成。
  */
 
@@ -199,11 +197,7 @@ const isSameOriginSrc = (src: string): boolean => {
   }
 };
 
-// 代理固定挂在站点根路径：Cloudflare/EdgeOne Pages 的边缘函数始终部署在域名根，
-// 不随 VITE_BASE_PATH 子路径移动，因此这里不能走 assetUrl（会拼上 base path）。
-const toProxyUrl = (src: string): string => `/img-proxy?url=${encodeURIComponent(src)}`;
-
-/** 多级加载：直连 → 同源去 crossOrigin 重试 → 跨域走同源代理。 */
+/** 多级加载：直连 → 同源去 crossOrigin 重试（跨域图床未开 CORS 时最终回退品牌占位）。 */
 const loadImage = (src: string, timeoutMs = 8000): Promise<HTMLImageElement | null> => {
   const direct = loadImageOnce(src, true, timeoutMs);
   return direct.then((image) => {
@@ -212,8 +206,8 @@ const loadImage = (src: string, timeoutMs = 8000): Promise<HTMLImageElement | nu
       // 同源图片本就不需要 CORS，去掉 crossOrigin 再试一次（不会污染画布）。
       return loadImageOnce(src, false, timeoutMs);
     }
-    // 跨域图床未开 CORS：经同源代理转发（生产环境由 Pages 边缘函数提供）。
-    return loadImageOnce(toProxyUrl(src), true, timeoutMs);
+    // 跨域图床未开 CORS：浏览器禁止跨域读取（画布会被污染），回退品牌占位。
+    return null;
   });
 };
 

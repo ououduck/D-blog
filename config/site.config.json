@@ -29,7 +29,7 @@
     "repoId": "R_kgDORApwuA",
     "category": "文章评论",
     "categoryId": "DIC_kwDORApwuM4DCztq",
-    "origin": "/giscus",
+    "origin": "https://giscus.app",
     "strict": false
   },
   "guestbook": {

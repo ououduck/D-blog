@@ -25,13 +25,5 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": [
-    "../src",
-    "../config/**/*.ts",
-    "../vite.config.ts",
-    "../vite.ssr.config.ts",
-    "../vitest.config.ts",
-    "../middleware.ts",
-    "../functions/**/*.ts"
-  ]
+  "include": ["../src", "../config/**/*.ts", "../vite.config.ts", "../vite.ssr.config.ts", "../vitest.config.ts"]
 }

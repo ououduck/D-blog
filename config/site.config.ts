@@ -34,13 +34,10 @@ export interface SiteComments {
   categoryId: string;
   /**
    * giscus 脚本/iframe/API 来源（有序回退链的「首选来源」）。
-   * - 相对路径（推荐，默认 "/giscus"）：走站点同源代理（functions/_middleware.ts
-   *   与根目录 middleware.ts，Cloudflare Pages / EdgeOne Pages 通用）。大陆网络下
-   *   giscus.app 被 DNS 污染/阻断，同源代理是评论区可用的前提；官方 https://giscus.app
-   *   作为代码内置的兜底来源，在同源代理不可用（如本地开发未起代理）时自动回退。
-   * - 绝对地址：自托管 giscus 实例或可达镜像时填写完整 URL。
-   * 注意：GitHub OAuth 登录回调固定指向 giscus.app，经同源代理访问时登录受网络
-   * 可达性影响（海外网络可正常登录，大陆网络无法完成 GitHub → giscus.app 回调）。
+   * 默认直连官方 https://giscus.app（已移除站点同源代理边缘函数）。
+   * 大陆网络下 giscus.app 被 DNS 污染/阻断，评论区可能无法加载；
+   * 如需大陆可用的评论，可改为自托管 giscus 实例或可达镜像的完整 URL。
+   * 注意：GitHub OAuth 登录回调固定指向 giscus.app，大陆网络下无法完成登录。
    */
   origin?: string;
   /**
