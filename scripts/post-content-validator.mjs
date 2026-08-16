@@ -254,6 +254,8 @@ export const validatePostContent = (post, context = {}) => {
     imageRoot = path.resolve('posts-img'),
     publishedPosts = new Map(),
     staticRoutes = DEFAULT_STATIC_ROUTES,
+    // 已发布的说说 id 集合（用于 /shuoshuo/<id> 链接的存在性校验）。
+    shuoshuoIds = new Set(),
 
     lineOffset = 0,
     skipFrontMatter = false,
@@ -396,7 +398,27 @@ export const validatePostContent = (post, context = {}) => {
         );
         return;
       }
-    } else if (!staticRoutes.has(pathname) && !/^\/shuoshuo\/[^/]+$/.test(pathname)) {
+    } else if (/^\/shuoshuo\/[^/]+$/.test(pathname)) {
+      // 与 /post/<id> 同口径的存在性校验：形状合法还不够，目标说说不存在/已删除
+      // 时同样 fail-closed，避免站内链接指向 404 页面（此前只校验形状）。
+      let targetShuoShuoId;
+      try {
+        targetShuoShuoId = decodeURIComponent(pathname.slice('/shuoshuo/'.length));
+      } catch {
+        errors.push(
+          lineError(
+            filename,
+            link.line + lineOffset,
+            `link "${link.rawTarget}" contains an invalid encoded shuoshuo ID`,
+          ),
+        );
+        return;
+      }
+      if (!shuoshuoIds.has(targetShuoShuoId)) {
+        errors.push(lineError(filename, link.line + lineOffset, `link "${link.rawTarget}" targets a missing shuoshuo`));
+        return;
+      }
+    } else if (!staticRoutes.has(pathname)) {
       errors.push(
         lineError(filename, link.line + lineOffset, `link "${link.rawTarget}" targets an unknown site route`),
       );

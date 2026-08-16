@@ -545,52 +545,9 @@ const buildPost = (record) => {
       };
 };
 
-postRecords.forEach((record) => {
-  // 草稿不参与内容级严格校验（图片 alt/本地图片文件/coverImage/站内链接与路由
-  // 目标）——未完成的草稿不应阻断构建；ID 唯一性（findDuplicatePostIds）与
-  // frontmatter 字段校验仍在 map 阶段保留（与系列重复 order 的跳过口径一致）。
-  if (record.draft) return;
-  validationErrors.push(
-    ...validatePostContent(record, {
-      filename: record.filename,
-      imageRoot: IMAGE_ROOT,
-      allPosts: allPostIndex,
-      publishedPosts: publishedPostIndex,
-      staticRoutes: DEFAULT_STATIC_ROUTES,
-      skipFrontMatter: true,
-      lineOffset: record.contentStartLine,
-    }),
-  );
-});
-
-const seriesOrders = new Map();
-postRecords.forEach((record) => {
-  if (
-    record.draft ||
-    record.data.series !== true ||
-    !record.id ||
-    !record.data['series-name'] ||
-    !Number.isInteger(record.data['series-order'])
-  ) {
-    return;
-  }
-
-  const key = record.data['series-name'].trim();
-  const order = record.data['series-order'];
-  const seenOrders = seriesOrders.get(key) ?? new Map();
-  const previous = seenOrders.get(order);
-  if (previous) {
-    validationErrors.push(
-      `Duplicate series-order ${order} for series "${key}" in ${record.filename}; already used by ${previous}.`,
-    );
-  } else {
-    seenOrders.set(order, record.filename);
-    seriesOrders.set(key, seenOrders);
-  }
-});
-
 // ── 说说（短动态）解析：shuoshuo/*.md，frontmatter 提供 id/date/images，正文即动态内容 ──
 // 与文章同级的质量门槛：id/date 缺失或重复直接 fail-closed，避免脏数据进入产物。
+// 提前到文章内容校验之前：文章正文里的 /shuoshuo/<id> 链接需要校验目标说说存在。
 const shuoshuoFiles = fs.existsSync(SHUOSHUO_DIR)
   ? fs.readdirSync(SHUOSHUO_DIR).filter((file) => file.endsWith('.md'))
   : [];
@@ -651,6 +608,51 @@ const shuoshuo = shuoshuoRecords
   .filter((record) => record.id && record.date)
   .sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id))
   .map(({ filename: _filename, ...record }) => record);
+
+postRecords.forEach((record) => {
+  // 草稿不参与内容级严格校验（图片 alt/本地图片文件/coverImage/站内链接与路由
+  // 目标）——未完成的草稿不应阻断构建；ID 唯一性（findDuplicatePostIds）与
+  // frontmatter 字段校验仍在 map 阶段保留（与系列重复 order 的跳过口径一致）。
+  if (record.draft) return;
+  validationErrors.push(
+    ...validatePostContent(record, {
+      filename: record.filename,
+      imageRoot: IMAGE_ROOT,
+      allPosts: allPostIndex,
+      publishedPosts: publishedPostIndex,
+      staticRoutes: DEFAULT_STATIC_ROUTES,
+      shuoshuoIds: new Set(shuoshuo.map((item) => item.id)),
+      skipFrontMatter: true,
+      lineOffset: record.contentStartLine,
+    }),
+  );
+});
+
+const seriesOrders = new Map();
+postRecords.forEach((record) => {
+  if (
+    record.draft ||
+    record.data.series !== true ||
+    !record.id ||
+    !record.data['series-name'] ||
+    !Number.isInteger(record.data['series-order'])
+  ) {
+    return;
+  }
+
+  const key = record.data['series-name'].trim();
+  const order = record.data['series-order'];
+  const seenOrders = seriesOrders.get(key) ?? new Map();
+  const previous = seenOrders.get(order);
+  if (previous) {
+    validationErrors.push(
+      `Duplicate series-order ${order} for series "${key}" in ${record.filename}; already used by ${previous}.`,
+    );
+  } else {
+    seenOrders.set(order, record.filename);
+    seriesOrders.set(key, seenOrders);
+  }
+});
 
 if (validationErrors.length > 0) {
   throw new Error(validationErrors.join('\n'));
