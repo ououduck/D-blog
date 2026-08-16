@@ -56,13 +56,17 @@ function parseCsv(text: string): Array<{ values: string[]; line: number }> {
   let row: string[] = [];
   let field = '';
   let quoted = false;
+  // 当前物理行号（随真实换行推进，含引号内换行）。
   let lineNumber = 1;
+  // 当前行的起始物理行号：引号内换行推进 lineNumber 但行尚未结束，
+  // 行号应取行的起始位置（「第 X 行」提示指向用户文件中的行首）。
+  let rowStartLine = 1;
   const flushRow = () => {
     row.push(field);
     field = '';
-    // 空行（含引号内换行造成的中间态）不产出记录；行号随真实文件行推进，
-    // 供错误提示「第 X 行」定位（此前 index+2 是数据行序号，空行越多偏移越大）。
-    if (row.some((value) => value.trim())) rows.push({ values: row, line: lineNumber });
+    // 空行（含引号内换行造成的中间态）不产出记录；行号取行的起始物理行
+    //（此前 index+2 是数据行序号，空行越多偏移越大）。
+    if (row.some((value) => value.trim())) rows.push({ values: row, line: rowStartLine });
     row = [];
   };
   for (let index = 0; index < text.length; index += 1) {
@@ -82,10 +86,24 @@ function parseCsv(text: string): Array<{ values: string[]; line: number }> {
       field = '';
       continue;
     }
-    if ((char === '\n' || char === '\r') && !quoted) {
-      if (char === '\r' && next === '\n') index += 1;
-      flushRow();
-      lineNumber += 1;
+    if (char === '\n' || char === '\r') {
+      if (!quoted) {
+        // 非引号状态：换行是行分隔符，产出当前行。
+        if (char === '\r' && next === '\n') index += 1;
+        flushRow();
+        lineNumber += 1;
+        rowStartLine = lineNumber;
+      } else {
+        // 引号内的换行是字段内容的一部分，必须保留进字段；同时物理行号
+        // 随真实换行推进，否则其后所有行的「第 X 行」提示系统性偏移
+        //（偏移 = 引号内换行数）。
+        field += char;
+        if (char === '\r' && next === '\n') {
+          field += next; // 保留完整的 \r\n 字段内容
+          index += 1; // 跳过 \n，避免重复计行
+        }
+        lineNumber += 1;
+      }
       continue;
     }
     field += char;

@@ -63,6 +63,22 @@ describe('parseBatchText — CSV 输入', () => {
     expect(result.items).toHaveLength(1);
     expect(result.items[0].title).toBe('标题A');
   });
+
+  it('引号内换行的字段后，错误行号取真实物理行（引号内换行参与计数）', () => {
+    // 第 1 行表头；第 2~3 行是「多行\n字段」引号字段（跨两物理行）；
+    // 第 4 行缺 title —— 若引号内换行不推进行号，会误报为第 3 行。
+    const result = parseBatchText('title,description\n"多行\n字段",ok\n,缺标题', 'input.csv');
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({ title: '多行\n字段', description: 'ok' });
+    expect(result.issues).toEqual([{ line: 4, message: '缺少 title 字段' }]);
+  });
+
+  it('引号内 CRLF 换行同样推进物理行号（不重复计行）', () => {
+    const result = parseBatchText('title,description\r\n"多行\r\n字段",ok\r\n,缺标题', 'input.csv');
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({ title: '多行\r\n字段', description: 'ok' });
+    expect(result.issues).toEqual([{ line: 4, message: '缺少 title 字段' }]);
+  });
 });
 
 describe('parseBatchText — Markdown frontmatter 输入', () => {
