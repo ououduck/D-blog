@@ -119,9 +119,11 @@ describe('Layout', () => {
     const menuButton = screen.getByRole('button', { name: '打开导航菜单' });
     await user.click(menuButton);
     expect(await screen.findByRole('dialog', { name: '移动端导航菜单' })).toBeInTheDocument();
-    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
     // 等待打开动画完成（否则切换关闭会被 isMobileNavAnimating 守卫忽略）。
     await waitForNavOpen();
+    // aria-expanded 在面板真正进入 opening/open 态后才为 true：openMobileNav 先以
+    // closed 态挂载面板（离屏）再经双 rAF 切入 opening，刚挂载那一刻仍是 false。
+    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
 
     // 再次点击切换关闭。
     await user.click(menuButton);
