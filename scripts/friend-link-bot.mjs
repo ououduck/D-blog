@@ -184,8 +184,9 @@ const api = async (endpoint, options = {}) => {
  * - avatar 缺失不再导致整单作废（由调用方决定是否降级）。
  * @param {string} [body=''] Issue 正文。
  * @returns {object | null} 全部核心字段非空时返回对象，否则 null。
+ * 导出供单元测试（续行折叠/子列表排除/重复标签容错）。
  */
-const parseApplication = (body = '') => {
+export const parseApplication = (body = '') => {
   const lines = String(body ?? '').split(/\r?\n/);
   // 收集所有字段行（容忍无空格冒号），重复标签取首次出现的值。
   const values = {};
@@ -205,7 +206,10 @@ const parseApplication = (body = '') => {
     }
     // 非字段行：仅当"缩进 ≥2 空格 + 非列表/引用标记（- * > # 等）"时视为续行，
     // 折叠进当前字段值。子列表项（缩进 + 破折号）不折叠，且终结当前续行。
-    if (currentLabel && /^\s{2,}\S/.test(rawLine) && !/^\s{2,}[-*>\d.]\s/.test(rawLine) && !/^\s{2,}#/.test(rawLine)) {
+    // 标记符后不强制要求空格（`  -foo` 这类无空格写法也应视为子列表项，
+    // 而非折叠进字段值）；数字列表（`  1. 条目`）因与 `2.0 版本` 等正文
+    // 可能混淆，仍要求点/括号后跟空白或行尾。
+    if (currentLabel && /^\s{2,}\S/.test(rawLine) && !/^\s{2,}(?:[-*>]|#|\d+[.)](?:\s|$))/.test(rawLine)) {
       const continuation = rawLine.trim();
       if (values[currentLabel]) {
         values[currentLabel] = `${values[currentLabel]} ${continuation}`.trim();
