@@ -38,6 +38,11 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
     // 中文输入法（IME）组合期间的中间态（拼音未确认）不应触发搜索：
     // compositionstart/end 之间忽略 onChange，组合结束时补一次完整值。
     const isComposingRef = useRef(false);
+    // 组合结束时刻（performance.now）：部分浏览器组合确认时 compositionend 先于
+    // keydown 派发（Chrome 反之），确认拼音的 Enter 在 isComposing 已复位的情况下
+    // 会漏进上层快捷键处理（如搜索弹窗的 Enter 导航），跳到上一次搜索的旧结果。
+    // 组合结束瞬间（<80ms）的 Enter 视为 IME 确认的尾随事件直接吞掉。
+    const compositionEndedAtRef = useRef(0);
     const hasValue = typeof value === 'string' || typeof value === 'number' ? String(value).length > 0 : false;
     const showClear = Boolean(onClear && hasValue && !disabled);
     const inputSpacing = endAction ? (showClear ? 'pr-24' : 'pr-14') : showClear ? 'pr-11' : 'pr-4';
@@ -68,8 +73,20 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
           }}
           onCompositionEnd={(event) => {
             isComposingRef.current = false;
+            // 记录组合结束时刻，供 onKeyDown 拦截 IME 确认 Enter 的尾随 keydown。
+            compositionEndedAtRef.current = performance.now();
             // 组合结束补发一次完整值，让防抖搜索基于最终中文。
             onValueChange?.(event.currentTarget.value);
+          }}
+          onKeyDown={(event) => {
+            // 组合结束瞬间的 Enter 是 IME 确认的尾随事件（compositionend 先于
+            // keydown 派发的浏览器里 isComposing 已复位，上层会误当"确认搜索"），
+            // 拦截后由防抖搜索在组合结束补发的完整值上继续；之后的 Enter 正常放行。
+            if (event.key === 'Enter' && performance.now() - compositionEndedAtRef.current < 80) {
+              event.preventDefault();
+              return;
+            }
+            inputProps.onKeyDown?.(event);
           }}
           onBlur={(event) => {
             // 防御：组合进行中失焦（点击清除按钮/移开焦点）时，若浏览器未派发

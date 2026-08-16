@@ -217,6 +217,9 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
       }
       script.addEventListener('error', failThisAttempt, { once: true });
       container.replaceChildren(script);
+      // 切换来源前清掉上一来源的挂起超时：旧超时回调虽有 seq 兜底不误杀新尝试，
+      // 但会残留到自然触发，白白占用一个定时器。
+      if (loadTimeout !== undefined) window.clearTimeout(loadTimeout);
       // DNS 污染/阻断的连接会一直挂起（不触发 error），用超时兜底切换来源。
       loadTimeout = window.setTimeout(failThisAttempt, LOAD_TIMEOUT_MS);
     };
