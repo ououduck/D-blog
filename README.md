@@ -172,7 +172,7 @@ images:
 ## 配置
 
 - **站点配置**：`config/site.config.json` — 标题、描述、URL、社交链接、作者信息、备案号等，可在 PagesCMS「站点配置」中编辑
-- **赞助与广告**：赞助方式定义于 `src/pages/Sponsor.tsx`；广告横幅在 `config/ads.config.ts` 配置
+- **赞助与广告**：赞助方式与广告横幅均写死在 `src/pages/Sponsor.tsx`（增删广告直接编辑该文件的 `adsConfig` 数组）
 - **文章分类白名单**：`config/content.config.json` 的 `postCategories` 数组
 - **环境变量**：`VITE_SITE_URL`（站点公开访问地址）、`VITE_BASE_PATH`（子路径部署时使用，留空为根路径），见 `.env.example`
 
