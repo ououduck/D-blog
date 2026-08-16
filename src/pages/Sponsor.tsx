@@ -150,6 +150,11 @@ export const Sponsor: React.FC = () => {
                   loading="lazy"
                   decoding="async"
                   className="h-auto w-full"
+                  // 广告图加载失败（404/断网）：移除整条广告位，避免破图图标与空链接
+                  //（与 ProgressiveImage 的「图片暂时无法加载」兜底口径一致）。
+                  onError={(event) => {
+                    event.currentTarget.closest('a')?.remove();
+                  }}
                 />
               </a>
             ))}

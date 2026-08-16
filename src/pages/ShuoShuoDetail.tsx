@@ -2,7 +2,7 @@
  * 说说详情页：单条短动态的独立可索引页面。
  */
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { Seo, buildSiteSchemas } from '../components/Seo';
@@ -53,6 +53,10 @@ export const ShuoShuoDetail = () => {
   const [shareTarget, setShareTarget] = useState<ShuoShuoEntry | null>(null);
   const [shareUrl, setShareUrl] = useState('');
   const [autoCopied, setAutoCopied] = useState<boolean | null>(null);
+  // 分享序号：快速关闭后重开分享弹窗时，旧弹窗的迟到复制结果（fallback
+  // execCommand 路径可能更慢）不得覆盖新弹窗的 autoCopied 状态（与
+  // ShuoShuo.tsx 的 shareSeqRef 同一竞态防护模式）。
+  const shareSeqRef = useRef(0);
 
   if (!item) {
     // 说说不存在：SPA 内以 200 响应返回该内容，必须 noindex，
@@ -76,6 +80,7 @@ export const ShuoShuoDetail = () => {
   const shareImage = item.images && item.images.length > 0 ? item.images[0] : siteConfig.seoImage;
 
   const handleShare = async (target: ShuoShuoEntry) => {
+    const seq = ++shareSeqRef.current;
     const origin = typeof window !== 'undefined' ? window.location.origin : siteConfig.url;
     const url = absoluteSiteUrl(`/shuoshuo/${target.id}`, origin);
 
@@ -84,6 +89,8 @@ export const ShuoShuoDetail = () => {
     setAutoCopied(null);
 
     const copied = await copyTextToClipboard(url);
+    // 关闭后重开（seq 已递增）：丢弃旧弹窗的迟到结果。
+    if (seq !== shareSeqRef.current) return;
     setAutoCopied(copied);
   };
 

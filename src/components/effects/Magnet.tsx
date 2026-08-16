@@ -109,9 +109,11 @@ export const Magnet: React.FC<MagnetProps> = ({
   return (
     <div
       ref={magnetRef}
+      // {...props} 先展开再声明组件自身样式：调用方传 className/style 时
+      // 若放在后面会静默覆盖 wrapperClassName 与内联定位样式（footgun）。
+      {...props}
       className={wrapperClassName}
       style={{ position: 'relative', display: 'inline-block' }}
-      {...props}
     >
       <div
         className={innerClassName}

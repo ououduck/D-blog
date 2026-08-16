@@ -130,8 +130,9 @@ export const ReadingProgressBadge: React.FC<ReadingProgressBadgeProps> = React.m
       ? createPortal(
           <div
             style={DESKTOP_BADGE_STYLE}
+            // 仅在 isVisible 时渲染，aria-hidden 恒为 false 属冗余；外层 wrapper
+            // （162 行）已有 aria-hidden={!isVisible} 承担隐藏语义。
             className="fixed-control-position pointer-events-none fixed z-floating hidden h-11 lg:block"
-            aria-hidden={!isVisible}
           >
             <div className="flex h-full min-w-[7rem] flex-col justify-center rounded-control border border-zinc-300 bg-paper px-3 shadow-none dark:border-zinc-700 dark:bg-zinc-900">
               <div className="mb-1 flex items-center justify-between gap-3 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
