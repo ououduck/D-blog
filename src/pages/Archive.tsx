@@ -422,9 +422,12 @@ export const ArchivePage = () => {
                         >
                           <ChevronDown size={17} />
                         </motion.span>
-                        <h2 className="font-serif text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-3xl">
+                        {/* 按钮内容模型只允许 phrasing content，不能嵌套标题：
+                              年份层级由按钮自身承担（aria-label 已带可访问名），
+                              这里用 span 保留视觉样式。 */}
+                        <span className="font-serif text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-3xl">
                           {group.year}
-                        </h2>
+                        </span>
                       </span>
                       <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">{group.total} 篇</span>
                     </button>
@@ -470,9 +473,10 @@ export const ArchivePage = () => {
                                     >
                                       <ChevronDown size={14} />
                                     </motion.span>
-                                    <h3 className="font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                                    {/* 同年份按钮：按钮内不嵌套标题，span 保留视觉样式 */}
+                                    <span className="font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">
                                       {monthGroup.month}
-                                    </h3>
+                                    </span>
                                     <span className="text-xs text-zinc-500 dark:text-zinc-400">
                                       {monthGroup.total} 篇
                                     </span>

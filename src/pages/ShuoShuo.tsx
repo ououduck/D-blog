@@ -234,26 +234,29 @@ export const ShuoShuo = () => {
           </button>
         </Surface>
       ) : (
-        <motion.ol
-          variants={shouldReduceMotion ? undefined : staggerContainer}
-          initial={shouldReduceMotion ? false : 'hidden'}
-          animate="visible"
-          className="relative space-y-8"
-        >
-          {/* 时间轴竖线：贯穿整条动态流 */}
+        <div className="relative">
+          {/* 时间轴竖线：贯穿整条动态流。放在 ol 外（ol 的直接子元素只允许 li，
+              直接放 span 属无效 HTML，部分读屏会误读列表边界/条目数）。 */}
           <span aria-hidden="true" className="absolute bottom-2 left-5 top-2 w-px bg-zinc-200 dark:bg-zinc-800" />
-          {filteredItems.map((item) => (
-            <ShuoShuoItem
-              key={item.id}
-              item={item}
-              onPreview={(src, alt) => setPreviewImage({ src, alt })}
-              onShare={handleShare}
-              isHighlighted={highlightedId === item.id}
-              shouldReduceMotion={shouldReduceMotion}
-              shareSnippet={(strippedContents.get(item.id) ?? '').slice(0, 24) || item.date}
-            />
-          ))}
-        </motion.ol>
+          <motion.ol
+            variants={shouldReduceMotion ? undefined : staggerContainer}
+            initial={shouldReduceMotion ? false : 'hidden'}
+            animate="visible"
+            className="space-y-8"
+          >
+            {filteredItems.map((item) => (
+              <ShuoShuoItem
+                key={item.id}
+                item={item}
+                onPreview={(src, alt) => setPreviewImage({ src, alt })}
+                onShare={handleShare}
+                isHighlighted={highlightedId === item.id}
+                shouldReduceMotion={shouldReduceMotion}
+                shareSnippet={(strippedContents.get(item.id) ?? '').slice(0, 24) || item.date}
+              />
+            ))}
+          </motion.ol>
+        </div>
       )}
 
       {previewImage && (

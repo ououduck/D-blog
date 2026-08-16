@@ -70,7 +70,9 @@ const RankingCard = ({
   items: Array<{ name: string; count: number }>;
   valueSuffix?: string;
 }) => {
-  const max = Math.max(...items.map((item) => (Number.isFinite(item.count) ? item.count : 0)), 1);
+  // 用 reduce 而非 Math.max(...spread)：数千条分类/标签条目展开会触发
+  // RangeError: Maximum call stack size exceeded（边界健壮性，防大站点崩溃）。
+  const max = items.reduce((current, item) => Math.max(current, Number.isFinite(item.count) ? item.count : 0), 1);
   const shouldReduceMotion = useReducedMotion();
 
   return (
