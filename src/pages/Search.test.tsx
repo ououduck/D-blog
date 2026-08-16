@@ -19,10 +19,7 @@ vi.mock('@/services/offlinePosts', () => ({
 
 const renderSearch = (initialEntry = '/search') =>
   render(
-    <MemoryRouter
-      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      initialEntries={[initialEntry]}
-    >
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/search" element={<Search />} />
       </Routes>
