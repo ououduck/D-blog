@@ -3,7 +3,8 @@ import { act, render, screen } from '@testing-library/react';
 import { GiscusComments } from './GiscusComments';
 
 // 站点配置打桩：默认启用 giscus 并直连官方源（与 config/site.config.json 一致）。
-vi.mock('@config/site.config', () => ({
+// vi.hoisted：vi.mock 工厂被提升到文件顶部，引用的对象必须经 hoisted 提前创建。
+const { siteConfig } = vi.hoisted(() => ({
   siteConfig: {
     giscusEnabled: true,
     comments: {
@@ -16,6 +17,7 @@ vi.mock('@config/site.config', () => ({
     },
   },
 }));
+vi.mock('@config/site.config', () => ({ siteConfig }));
 
 // jsdom 未实现 IntersectionObserver：手动模拟，让测试可控地触发懒加载。
 class MockIntersectionObserver {
@@ -160,5 +162,51 @@ describe('GiscusComments', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('GiscusComments — 非法 origin 配置容错', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    MockIntersectionObserver.instances = [];
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn(() => ({
+        matches: false,
+        media: '',
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const triggerNearViewport = () => {
+    act(() => {
+      MockIntersectionObserver.instances[0]?.triggerIntersect();
+    });
+  };
+
+  it('配置的 origin 非法（非 http/https）时在源头剔除，回退官方来源', () => {
+    // origin 配置笔误（如漏协议）：resolveGiscusOrigins 源头过滤，
+    // 不得让非法 origin 进入注入链（否则 new URL 抛错中断加载流程）。
+    vi.mocked(siteConfig).comments = {
+      ...siteConfig.comments,
+      origin: 'giscus.app', // 无协议：非法绝对地址
+    };
+    render(<GiscusComments postId="test-post" />);
+    triggerNearViewport();
+    const script = document.querySelector<HTMLScriptElement>('script[data-repo]');
+    expect(script).not.toBeNull();
+    // 回退到官方来源
+    expect(script?.src).toContain('https://giscus.app/client.js');
   });
 });

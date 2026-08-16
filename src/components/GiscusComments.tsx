@@ -33,7 +33,17 @@ const GISCUS_OFFICIAL = 'https://giscus.app';
 const resolveGiscusOrigins = (): string[] => {
   const origins: string[] = [];
   const push = (origin: string) => {
-    if (origin && !origins.includes(origin)) origins.push(origin);
+    if (!origin || origins.includes(origin)) return;
+    // 绝对地址先做合法性校验（协议/host 存在）：配置笔误（如端口非法、
+    // 拼写错误）时在源头剔除，避免后续 new URL(origin) 在 message 事件
+    // 处理器内抛未捕获异常（事件处理器异常不进入 React 错误边界）。
+    try {
+      const parsed = new URL(origin);
+      if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname) return;
+    } catch {
+      return;
+    }
+    origins.push(origin);
   };
 
   const configured = (siteConfig.comments.origin || '/giscus').replace(/\/+$/, '');
@@ -132,12 +142,25 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
       retryTimer = undefined;
     };
 
-    const handleMessage = (event: MessageEvent) => {
+    const getActiveOrigin = (): string | null => {
       const activeOrigin = activeOriginRef.current;
+      if (!activeOrigin) return null;
+      // 防御：origin 应已在 resolveGiscusOrigins 源头校验（合法 http(s)），
+      // 此处再包一层，确保事件处理器内绝不抛未捕获异常（事件处理器异常
+      // 不进入 React 错误边界，会静默中断该次处理）。
+      try {
+        return new URL(activeOrigin).origin;
+      } catch {
+        return null;
+      }
+    };
+
+    const handleMessage = (event: MessageEvent) => {
+      const activeOrigin = getActiveOrigin();
       if (!activeOrigin) return;
       const iframe = container.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
       if (
-        event.origin !== new URL(activeOrigin).origin ||
+        event.origin !== activeOrigin ||
         event.source !== iframe?.contentWindow ||
         typeof event.data?.giscus !== 'object'
       ) {
@@ -154,7 +177,7 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
     };
 
     const syncTheme = () => {
-      const activeOrigin = activeOriginRef.current;
+      const activeOrigin = getActiveOrigin();
       if (!activeOrigin) return;
       const iframe = container.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
       iframe?.contentWindow?.postMessage(
@@ -163,7 +186,7 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
             setConfig: { theme: getGiscusTheme() },
           },
         },
-        new URL(activeOrigin).origin,
+        activeOrigin,
       );
     };
 
