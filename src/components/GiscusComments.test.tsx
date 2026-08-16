@@ -131,4 +131,34 @@ describe('GiscusComments', () => {
     expect(script).toBeDefined();
     expect(script?.getAttribute('data-term')).toBe('discussion-title');
   });
+
+  it('脚本加载失败后显示失败状态（自动重试耗尽）', () => {
+    vi.useFakeTimers();
+    try {
+      render(<GiscusComments postId="test-post" />);
+      triggerNearViewport();
+      const script = document.querySelector<HTMLScriptElement>('script[data-repo]');
+      expect(script).not.toBeNull();
+
+      // 首次失败（error 事件）→ 进入自动重试调度。
+      act(() => {
+        script?.dispatchEvent(new Event('error'));
+      });
+      // 推进重试延迟（RETRY_DELAY_MS=2500），触发 autoRetryCount 递增 → effect 重跑注入新脚本。
+      act(() => {
+        vi.advanceTimersByTime(2500);
+      });
+      const retriedScript = document.querySelector<HTMLScriptElement>('script[data-repo]');
+      expect(retriedScript).not.toBeNull();
+
+      // 第二次尝试也失败 → 重试耗尽 → 失败状态。
+      act(() => {
+        retriedScript?.dispatchEvent(new Event('error'));
+      });
+      expect(screen.getByText(/评论区加载失败/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '重新加载评论' })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
