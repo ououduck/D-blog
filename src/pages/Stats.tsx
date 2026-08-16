@@ -29,7 +29,8 @@ const initialSiteStats = getInitialSiteStats();
 const initialPosts = getInitialPosts();
 
 // 非有限数值（NaN/Infinity，如生成数据异常）显示占位符，避免页面出现 "NaN"。
-const formatValue = (value: number) => (Number.isFinite(value) ? new Intl.NumberFormat('zh-CN').format(value) : '—');
+const NUMBER_FORMATTER = new Intl.NumberFormat('zh-CN');
+const formatValue = (value: number) => (Number.isFinite(value) ? NUMBER_FORMATTER.format(value) : '—');
 
 const SummaryCard = ({
   icon: Icon,

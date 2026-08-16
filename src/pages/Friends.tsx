@@ -236,6 +236,16 @@ export const Friends = () => {
     setCurrentApplicationStep((current) => Math.max(current, step));
   };
 
+  // 域名解析结果预计算（new URL 解析与 hosts 剥离）：搜索过滤每次击键不再对
+  // 全部友链重复解析 URL。
+  const friendDomains = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const friend of friends) {
+      map.set(friend.name, getFriendDomain(friend.url).toLowerCase());
+    }
+    return map;
+  }, [friends]);
+
   const filteredFriends = useMemo(() => {
     // toLowerCase（非 toLocaleLowerCase）：土耳其语等 locale 下 'I' 会变成
     // 点无点 'ı'，导致含 I 的站点名/域名搜索失配。
@@ -245,10 +255,10 @@ export const Friends = () => {
     }
 
     return friends.filter((friend) => {
-      const domain = getFriendDomain(friend.url).toLowerCase();
+      const domain = friendDomains.get(friend.name) ?? '';
       return [friend.name, friend.description, domain].some((value) => value.toLowerCase().includes(keyword));
     });
-  }, [friends, searchQuery]);
+  }, [friendDomains, friends, searchQuery]);
 
   // 已失联友链（friend.unavailable === true，由检查 Action 维护）与正常友链分开渲染：
   // 正常友链留在主列表，失联友链全部归入下方「已失联的博客」折叠板块。

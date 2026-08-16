@@ -604,6 +604,8 @@ function MermaidBlock({
   const [naturalWidth, setNaturalWidth] = useState(0);
   const mermaidIdRef = useRef<string | null>(null);
   const dragRef = useRef({ pointerId: -1, startX: 0, startY: 0, startPositionX: 0, startPositionY: 0 });
+  // pointermove 的 rAF 合并帧：拖动大图表时避免每事件整块重渲染。
+  const dragFrameRef = useRef(0);
   const diagramRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -752,14 +754,24 @@ function MermaidBlock({
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (dragRef.current.pointerId !== event.pointerId) return;
-    setPosition({
-      x: dragRef.current.startPositionX + event.clientX - dragRef.current.startX,
-      y: dragRef.current.startPositionY + event.clientY - dragRef.current.startY,
+    // rAF 节流：pointermove 频率可高于帧率，拖动大图表时每帧直接 setPosition
+    // 会整块重渲染（含 SVG 子树）；合并到帧内只更新一次。
+    if (dragFrameRef.current) return;
+    dragFrameRef.current = window.requestAnimationFrame(() => {
+      dragFrameRef.current = 0;
+      setPosition({
+        x: dragRef.current.startPositionX + event.clientX - dragRef.current.startX,
+        y: dragRef.current.startPositionY + event.clientY - dragRef.current.startY,
+      });
     });
   };
 
   const handlePointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
     if (dragRef.current.pointerId !== event.pointerId) return;
+    if (dragFrameRef.current) {
+      window.cancelAnimationFrame(dragFrameRef.current);
+      dragFrameRef.current = 0;
+    }
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -794,6 +806,13 @@ function MermaidBlock({
     }
   };
 
+  // sanitize 输出对同一 svg 恒定：记忆化避免每帧重渲染（拖动/缩放大图表时）
+  // 对整段 SVG 重复 DOMPurify 净化。须在条件早退（!svg）之前调用（Hooks 顺序）。
+  const sanitizedSvg = useMemo(
+    () => (typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } }) : svg),
+    [svg],
+  );
+
   if (!svg) {
     const isError = status === 'error';
     return (
@@ -819,9 +838,6 @@ function MermaidBlock({
       </div>
     );
   }
-
-  const sanitizedSvg =
-    typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } }) : svg;
   const scaleLabel = `${Math.round(scale * 100)}%`;
 
   return (
@@ -1555,6 +1571,10 @@ export const Post = () => {
   }, []);
 
   const headings = useMemo(() => extractMarkdownHeadings(post?.content ?? ''), [post?.content]);
+  // 正文剥离结果只依赖 post.content，记忆化避免每次重渲染（阅读模式切换、
+  // 弹窗开关、收藏反馈等）对全文（30-80KB）重跑 12+ 正则链两次
+  // （meta description 与 articleBody 共用）。
+  const strippedContent = useMemo(() => stripMarkdown(post?.content ?? ''), [post?.content]);
 
   useEffect(() => {
     if (!post?.content || headings.length === 0 || typeof window === 'undefined') {
@@ -2041,7 +2061,7 @@ export const Post = () => {
     if (excerpt.length >= 30) {
       return excerpt;
     }
-    const firstSubstantial = stripMarkdown(currentPost.content)
+    const firstSubstantial = strippedContent
       .split(/\n{2,}/)
       .map((paragraph) => paragraph.replace(/\s+/g, ' ').trim())
       .find((paragraph) => paragraph.length >= 20);
@@ -2087,7 +2107,7 @@ export const Post = () => {
           : {}),
       };
     }),
-    articleBody: stripMarkdown(post.content),
+    articleBody: strippedContent,
     wordCount: post.wordCount,
     // timeRequired（ISO 8601 时长，如 PT7M）：Article 富结果字段，助搜索结果展示阅读时长。
     ...(Number.isInteger(readMinutes) && readMinutes > 0 ? { timeRequired: `PT${readMinutes}M` } : {}),
