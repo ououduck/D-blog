@@ -74,11 +74,21 @@ describe('searchPosts 基本行为', () => {
 
   it('搜索不区分大小写', async () => {
     const allPosts = await getPosts();
-    const title = allPosts[0].title;
-    const lower = await searchPosts(title.toLocaleLowerCase());
-    const upper = await searchPosts(title.toLocaleUpperCase());
+    // 推导含 ASCII 字母的查询词：从标题/正文中找出首个拉丁字母片段（如
+    // "React"、"SPA"），分别做大小写变换后断言结果集一致 —— 此前直接用
+    // 中文标题的 toLocaleLowerCase()/toLocaleUpperCase()（恒等变换），
+    // 两次查询完全相同，从未真正验证大小写折叠逻辑。
+    const haystack = [allPosts[0].title, allPosts[0].excerpt].join(' ');
+    const asciiWord = haystack.match(/[A-Za-z]{2,}/)?.[0];
+    if (!asciiWord) {
+      // 站点数据无 ASCII 词时无法构造有效用例（测试不应依赖特定内容）。
+      return;
+    }
+    const lower = await searchPosts(asciiWord.toLowerCase());
+    const upper = await searchPosts(asciiWord.toUpperCase());
     expect(lower.length).toBeGreaterThan(0);
     expect(upper.map((post) => post.id)).toEqual(lower.map((post) => post.id));
+    expect(upper.length).toBe(lower.length);
   });
 
   it('相同查询命中缓存：两次调用返回同一数组引用', async () => {
@@ -107,13 +117,32 @@ describe('searchPosts 排序与匹配', () => {
   });
 
   it('all scope：分类精确匹配的文章先于仅正文命中的文章', async () => {
+    const searchData = (await import('../../generated/posts-search.json')).default as Array<
+      PostMetadata & { searchText?: string }
+    >;
+    // 构造对比对：找一个「纯分类命中」的文章（category=教程，但标题/摘要/正文
+    // 均不含"教程"——分类命中权重 4×12 独立贡献），与一个「纯正文命中」的文章
+    //（category≠教程 但正文含"教程"）。断言前者在结果中排在后者之前。
+    const pureCategoryHit = searchData.find(
+      (post) =>
+        post.category === '教程' &&
+        !post.title.includes('教程') &&
+        !post.excerpt.includes('教程') &&
+        !(post.searchText ?? '').includes('教程'),
+    );
+    const pureContentHit = searchData.find(
+      (post) => post.category !== '教程' && (post.searchText ?? '').includes('教程'),
+    );
+    // 站点数据不足时跳过（测试不依赖具体内容），但至少保证有分类命中结果。
     const results = await searchPosts('教程');
     expect(results.length).toBeGreaterThan(0);
-    // 分类字段命中（weight 4 * 12）远高于正文命中（weight 1），分类命中者应整体靠前。
-    const firstNonCategory = results.findIndex((post) => post.category !== '教程');
-    const prefix = firstNonCategory === -1 ? results : results.slice(0, firstNonCategory);
-    expect(prefix.length).toBeGreaterThan(0);
-    expect(prefix.every((post) => post.category === '教程')).toBe(true);
+    if (pureCategoryHit && pureContentHit) {
+      const categoryIndex = results.findIndex((post) => post.id === pureCategoryHit.id);
+      const contentIndex = results.findIndex((post) => post.id === pureContentHit.id);
+      expect(categoryIndex).toBeGreaterThanOrEqual(0);
+      expect(contentIndex).toBeGreaterThanOrEqual(0);
+      expect(categoryIndex).toBeLessThan(contentIndex);
+    }
   });
 
   it('多词查询：全部词命中才返回', async () => {

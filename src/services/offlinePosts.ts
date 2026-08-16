@@ -36,7 +36,9 @@ type OfflinePostTombstones = Record<string, number>;
 type UnknownRecord = Record<string, unknown>;
 type OfflinePostTombstone = { id: string; deletedAt: number };
 
-const toOfflineAssetUrl = (value: string): string | undefined => {
+/** 判定单条 URL 是否可离线缓存（站内绝对路径可缓存，外部图床/协议 URL 不缓存）。
+ *  导出供单元测试。 */
+export const toOfflineAssetUrl = (value: string): string | undefined => {
   const clean = value
     .trim()
     .replace(/^<|>$/g, '')
@@ -54,7 +56,9 @@ const toOfflineAssetUrl = (value: string): string | undefined => {
   return undefined;
 };
 
-const collectOfflineAssetUrls = (post: OfflinePost): string[] => {
+/** 收集文章的可离线缓存资源 URL（封面 + 正文 Markdown/HTML 图片，去重）。
+ *  导出供单元测试。 */
+export const collectOfflineAssetUrls = (post: OfflinePost): string[] => {
   const values = [post.coverImage || ''];
   if (post.content) {
     const markdownImagePattern = /!\[[^\]]*\]\(\s*<?([^\s)>]+)[^)]*\)/g;
@@ -593,7 +597,9 @@ const writeTombstones = (tombstones: OfflinePostTombstones): void => {
   localStorage.setItem(OFFLINE_POSTS_TOMBSTONES_KEY, JSON.stringify(tombstones));
 };
 
-const applyTombstones = (posts: OfflinePost[], tombstones: OfflinePostTombstones): OfflinePost[] =>
+/** 应用墓碑过滤：已删除（墓碑时间 ≥ 保存时间）的文章被剔除；
+ *  删除后重新保存（savedAt > 墓碑）的文章恢复。导出供单元测试。 */
+export const applyTombstones = (posts: OfflinePost[], tombstones: OfflinePostTombstones): OfflinePost[] =>
   posts.filter((post) => tombstones[post.id] === undefined || post.savedAt > tombstones[post.id]);
 
 const reconcileStores = async (): Promise<void> => {

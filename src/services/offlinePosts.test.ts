@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { validateOfflinePost } from './offlinePosts';
+import {
+  applyTombstones,
+  collectOfflineAssetUrls,
+  toOfflineAssetUrl,
+  validateOfflinePost,
+  type OfflinePost,
+} from './offlinePosts';
 
 const makeValidPost = (): Record<string, unknown> => ({
   id: 'post-1',
@@ -14,6 +20,12 @@ const makeValidPost = (): Record<string, unknown> => ({
   schema: 'd-blog-offline-post',
   version: 1,
 });
+
+const makeOfflinePost = (overrides: Partial<OfflinePost> = {}): OfflinePost =>
+  ({
+    ...makeValidPost(),
+    ...overrides,
+  }) as OfflinePost;
 
 describe('validateOfflinePost', () => {
   it('接受完整合法数据并克隆', () => {
@@ -109,5 +121,81 @@ describe('validateOfflinePost', () => {
     expect(validateOfflinePost({ ...makeValidPost(), authors: [{ name: 123 }] })).toBeUndefined();
     const valid = validateOfflinePost({ ...makeValidPost(), authors: [{ name: '作者', avatar: '/a.png' }] });
     expect(valid?.authors).toEqual([{ name: '作者', avatar: '/a.png' }]);
+  });
+});
+
+describe('applyTombstones — 墓碑过滤', () => {
+  it('无墓碑时全部保留', () => {
+    const posts = [makeOfflinePost({ id: 'a' }), makeOfflinePost({ id: 'b' })];
+    expect(applyTombstones(posts, {}).map((post) => post.id)).toEqual(['a', 'b']);
+  });
+
+  it('墓碑时间 ≥ 保存时间时剔除该文章', () => {
+    const post = makeOfflinePost({ id: 'a', savedAt: 1000 });
+    expect(applyTombstones([post], { a: 1000 })).toEqual([]);
+    expect(applyTombstones([post], { a: 2000 })).toEqual([]);
+  });
+
+  it('删除后重新保存（savedAt > 墓碑时间）时文章恢复', () => {
+    const post = makeOfflinePost({ id: 'a', savedAt: 3000 });
+    expect(applyTombstones([post], { a: 2000 })).toEqual([post]);
+  });
+
+  it('墓碑不影响其他文章', () => {
+    const posts = [makeOfflinePost({ id: 'a', savedAt: 1000 }), makeOfflinePost({ id: 'b', savedAt: 1000 })];
+    expect(applyTombstones(posts, { a: 2000 }).map((post) => post.id)).toEqual(['b']);
+  });
+});
+
+describe('toOfflineAssetUrl — 离线缓存 URL 判定', () => {
+  it('站内绝对路径可缓存（应用 base path）', () => {
+    expect(toOfflineAssetUrl('/images/a.png')).toBe('/images/a.png');
+  });
+
+  it('外部图床/协议 URL 不缓存', () => {
+    expect(toOfflineAssetUrl('https://cdn.example.com/a.png')).toBeUndefined();
+    expect(toOfflineAssetUrl('//cdn.example.com/a.png')).toBeUndefined();
+    expect(toOfflineAssetUrl('data:image/png;base64,xxx')).toBeUndefined();
+  });
+
+  it('相对路径（非 / 开头）不缓存', () => {
+    expect(toOfflineAssetUrl('images/a.png')).toBeUndefined();
+  });
+
+  it('剥离紧贴的尖括号包裹与查询/哈希后缀', () => {
+    expect(toOfflineAssetUrl('</images/a.png>')).toBe('/images/a.png');
+    expect(toOfflineAssetUrl('/images/a.png?v=2#frag')).toBe('/images/a.png');
+  });
+
+  it('空值返回 undefined', () => {
+    expect(toOfflineAssetUrl('')).toBeUndefined();
+    expect(toOfflineAssetUrl('   ')).toBeUndefined();
+  });
+});
+
+describe('collectOfflineAssetUrls — 文章资源 URL 收集', () => {
+  it('收集封面与 Markdown/HTML 图片并去重', () => {
+    const post = makeOfflinePost({
+      coverImage: '/covers/a.png',
+      content: [
+        '![图1](/images/1.png)',
+        '<img src="/images/2.jpg" alt="图2">',
+        '![外链](https://cdn.example.com/x.png)',
+        '重复 ![图1](/images/1.png)',
+      ].join('\n'),
+    });
+    const urls = collectOfflineAssetUrls(post);
+    // 外链图床 URL 被过滤，站内图片去重。
+    expect(urls).toEqual(['/covers/a.png', '/images/1.png', '/images/2.jpg']);
+  });
+
+  it('无内容时只收集封面', () => {
+    const post = makeOfflinePost({ coverImage: '/covers/a.png' });
+    expect(collectOfflineAssetUrls(post)).toEqual(['/covers/a.png']);
+  });
+
+  it('封面为外链时不收集', () => {
+    const post = makeOfflinePost({ coverImage: 'https://cdn.example.com/a.png' });
+    expect(collectOfflineAssetUrls(post)).toEqual([]);
   });
 });

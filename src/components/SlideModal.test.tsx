@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SlideModal } from './SlideModal';
 
@@ -66,8 +66,11 @@ describe('SlideModal', () => {
         </div>
       </SlideModal>,
     );
-    // 退出动画期间内容可能保留；最终应卸载
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(screen.queryByText('这是弹层正文')).not.toBeInTheDocument();
+    // 退出动画期间内容可能保留；用 waitFor 等待最终卸载 —— 固定 sleep 依赖
+    // 动画时长（0.18s），调整即脆断（此前 50ms 实际小于动画时长，靠
+    // jsdom/framer-motion 的巧合行为通过）。
+    await waitFor(() => {
+      expect(screen.queryByText('这是弹层正文')).not.toBeInTheDocument();
+    });
   });
 });

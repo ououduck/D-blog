@@ -3,8 +3,10 @@ import { downloadBlob } from './download';
 
 describe('downloadBlob', () => {
   beforeEach(() => {
-    Object.defineProperty(URL, 'createObjectURL', { writable: true, value: vi.fn(() => 'blob:mock') });
-    Object.defineProperty(URL, 'revokeObjectURL', { writable: true, value: vi.fn() });
+    // 用 vi.spyOn 而非 Object.defineProperty：spyOn 可被 afterEach 的
+    // restoreAllMocks 恢复（defineProperty 覆写无法恢复，违反 mock 纪律）。
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(() => 'blob:mock');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
     vi.spyOn(HTMLElement.prototype, 'click').mockImplementation(() => {});
     vi.spyOn(HTMLElement.prototype, 'remove').mockImplementation(() => {});
   });
@@ -15,6 +17,7 @@ describe('downloadBlob', () => {
   });
 
   it('创建 object URL 并触发下载', () => {
+    vi.useFakeTimers();
     const appendSpy = vi.spyOn(document.body, 'appendChild');
     const blob = new Blob(['content'], { type: 'text/plain' });
     downloadBlob(blob, 'file.txt');

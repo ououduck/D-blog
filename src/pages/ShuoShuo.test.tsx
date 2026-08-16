@@ -74,7 +74,7 @@ describe('ShuoShuo', () => {
     const input = screen.getByLabelText('搜索说说内容');
 
     await user.type(input, 'Vite');
-    await new Promise((r) => setTimeout(r, 50));
+    // 过滤是同步 useMemo（无异步等待），userEvent.type 已 flush 输入事件。
     expect(screen.queryByTestId('shuoshuo-one')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '清除搜索' }));
     expect(screen.getByTestId('shuoshuo-one')).toBeInTheDocument();
