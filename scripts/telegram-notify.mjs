@@ -38,6 +38,7 @@
  */
 
 import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { sendTelegramMessage } from './lib/telegram.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
@@ -356,10 +357,16 @@ const main = async () => {
 
 installGlobalErrorHandlers(logger);
 
-try {
-  process.exitCode = await main();
-} catch (error) {
-  // main 抛出的业务错误（事件解析失败 / 发送失败）已带上下文，统一记录。
-  logger.error('telegram-notify failed', { error: formatError(error) });
-  process.exitCode = 1;
+// 仅作为主模块直接运行时才执行：被测试/其他模块 import 时
+// 不触发任何网络副作用（与 check-broken-links 的守卫一致）。
+const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isMainModule) {
+  try {
+    process.exitCode = await main();
+  } catch (error) {
+    // main 抛出的业务错误（事件解析失败 / 发送失败）已带上下文，统一记录。
+    logger.error('telegram-notify failed', { error: formatError(error) });
+    process.exitCode = 1;
+  }
 }

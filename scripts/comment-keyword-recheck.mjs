@@ -25,6 +25,7 @@
  * 运行环境：GITHUB_TOKEN（自动注入）、GITHUB_REPOSITORY（自动注入，owner/repo）。
  */
 
+import { pathToFileURL } from 'node:url';
 import { fetchWithRetry, createTimeoutSignal, readResponseText } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 import { loadConfig, matchContent, isExemptAuthor } from './lib/keyword-filter-core.mjs';
@@ -386,7 +387,13 @@ const main = async () => {
 // 全局异常兜底：任何未捕获 rejection / 异常都结构化记录并以非零码退出。
 installGlobalErrorHandlers(logger);
 
-main().catch((error) => {
-  logger.error('Fatal: keyword recheck failed', { error: formatError(error) });
-  process.exit(1);
-});
+// 仅作为主模块直接运行时才执行：被测试/其他模块 import 时
+// 不触发任何网络副作用（与 check-broken-links 的守卫一致）。
+const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isMainModule) {
+  main().catch((error) => {
+    logger.error('Fatal: keyword recheck failed', { error: formatError(error) });
+    process.exit(1);
+  });
+}

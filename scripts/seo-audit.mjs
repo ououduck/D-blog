@@ -23,7 +23,15 @@ if (!existsSync(distDir)) {
 const SITE_URL = loadSiteConfig().url;
 // 站点 URL 精确比较：origin 相等才算站内（startsWith 前缀比较可被
 // blog.pldduck.com.evil.com 绕过，恶意域名会被误归为站内链接）。
-const SITE_ORIGIN = new URL(SITE_URL).origin;
+// loadSiteConfig 已 fail-closed 校验 url 合法性，此处仍防御性 try/catch
+//（避免配置异常时裸堆栈崩溃，与审计脚本的友好指引风格一致）。
+let SITE_ORIGIN;
+try {
+  SITE_ORIGIN = new URL(SITE_URL).origin;
+} catch {
+  console.error(`[audit:seo] site.config.json 的 url 非法: ${SITE_URL}`);
+  process.exit(1);
+}
 const isSameSiteUrl = (value) => {
   try {
     return new URL(value).origin === SITE_ORIGIN;

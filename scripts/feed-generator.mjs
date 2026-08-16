@@ -60,6 +60,9 @@ const renderAuthors = (post, fallbackAuthor) => {
     .map((author) => (typeof author === 'string' ? author : author?.name))
     .filter((name) => typeof name === 'string' && name.trim());
   const name = names[0]?.trim() || fallbackAuthor;
+  // 无任何作者（frontmatter 与站点级都缺失）时省略 <author>：
+  // 输出空标签不符合 RSS 2.0 语义，且部分阅读器/校验器会告警。
+  if (!name) return '';
   return `<author>${xmlEscape(name)}</author>`;
 };
 
