@@ -14,8 +14,7 @@ const renderSeo = (props: React.ComponentProps<typeof Seo>, route = '/') =>
   );
 
 const headTag = (selector: string): HTMLElement | null => document.head.querySelector(selector);
-const headAttr = (selector: string, attr: string): string | null =>
-  headTag(selector)?.getAttribute(attr) ?? null;
+const headAttr = (selector: string, attr: string): string | null => headTag(selector)?.getAttribute(attr) ?? null;
 
 describe('Seo', () => {
   afterEach(() => {
@@ -98,7 +97,3 @@ describe('Seo', () => {
     expect(headAttr('meta[property="article:tag"]', 'content')).toBe('React');
   });
 });
-
-
-
-
