@@ -29,10 +29,12 @@ const MAX_ANNOTATION_TITLE_CHARS = 200;
 
 /**
  * 净化日志字段值：移除控制字符与换行，防止 Actions 命令注入（::error:: 等）。
+ * 导出供 build-logger 等非 Actions 日志器复用（build 产物里的错误消息可能含
+ * 用户可控文本，同样需要防注入）。
  * @param {string} value
  * @returns {string}
  */
-const sanitizeLogValue = (value) =>
+export const sanitizeLogValue = (value) =>
   String(value)
     // \r \n 与 \u2028 \u2029 全部折叠为空格（Actions 注解与普通日志均按行解析）。
     .replace(/[\r\n\u2028\u2029]/g, ' ')

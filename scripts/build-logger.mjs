@@ -4,18 +4,22 @@
  * 与 GitHub Actions 日志器（lib/gh-actions-logger.mjs）职责互补（构建期 vs 自动化脚本）。
  */
 
+import { sanitizeLogValue } from './lib/gh-actions-logger.mjs';
+
 // detail 按字符串设计，但调用方可能传入对象（如 { path, error }）。
-// 对象直接模板拼接会变成 "[object Object]" 丢失数据，这里统一序列化。
+// 对象直接模板拼接会变成 "[object Object]" 丢失数据，这里统一序列化；
+// 输出前经 sanitizeLogValue 净化（构建产物里失败汇总可能含用户可控文本，
+// 如 post 标题，控制字符/换行会在 Actions 日志中注入伪 ::error:: 行）。
 const formatDetail = (detail) => {
   if (detail === undefined || detail === null || detail === '') return '';
   if (typeof detail === 'object') {
     try {
-      return ` ${JSON.stringify(detail)}`;
+      return ` ${sanitizeLogValue(JSON.stringify(detail))}`;
     } catch {
-      return ` ${String(detail)}`;
+      return ` ${sanitizeLogValue(String(detail))}`;
     }
   }
-  return ` ${detail}`;
+  return ` ${sanitizeLogValue(detail)}`;
 };
 
 export const createBuildLogger = (scope) => {

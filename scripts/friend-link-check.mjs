@@ -314,11 +314,16 @@ const main = async () => {
 
       if (statusLabel === 'recovered' || statusLabel === 'newly-unavailable') {
         // 保留原缩进与原字段顺序（JSON.parse 保持键序，unavailable 追加在末尾）。
-        const serialized = `${JSON.stringify(data, null, detectIndent(raw))}${raw.endsWith('\n') ? '\n' : ''}`;
-        if (serialized !== raw) {
+        // 比较前把原文件换行规范化为 \n：JSON.stringify 只产 \n，含 CRLF 的文件
+        // 直接比较必然不相等，首次运行会把整个文件重写（超大 diff）。
+        const normalizedRaw = raw.replace(/\r\n/g, '\n');
+        const serialized = `${JSON.stringify(data, null, detectIndent(raw))}${normalizedRaw.endsWith('\n') ? '\n' : ''}`;
+        if (serialized !== normalizedRaw) {
           changedFiles.push(filePath);
           if (!DRY_RUN) {
-            await fs.writeFile(filePath, serialized, 'utf8');
+            // 写入保留原文件换行风格（CRLF 文件不整文件改写成 LF）。
+            const writeContent = raw.includes('\r\n') ? serialized.replace(/\n/g, '\r\n') : serialized;
+            await fs.writeFile(filePath, writeContent, 'utf8');
           }
         } else {
           stats.unchanged += 1;
