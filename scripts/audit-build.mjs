@@ -4,9 +4,14 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createBuildLogger } from './build-logger.mjs';
 
-const DIST_DIR = path.resolve('dist');
+// 基于本模块位置解析（与其他脚本一致）：从任意目录调用时行为不变
+// （此前 path.resolve('dist') 依赖进程 cwd，CI 从仓库根运行无碍，但其它调用方式
+// 会静默审计错误的目录，甚至「dist 不存在」误报）。
+const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const DIST_DIR = path.join(ROOT_DIR, 'dist');
 const strict = process.argv.includes('--strict');
 const verbose = process.env.BUILD_VERBOSE === '1';
 const logger = createBuildLogger('audit:build');
@@ -135,11 +140,11 @@ if (localStylesheets.size === 0) {
 // 依赖第三方服务（Clarity/Busuanzi）的引用存在性检查：期望值从源模板
 // （index.html / public/_headers）推导 —— 从源码移除对应服务时审计自动放宽，
 // 无需再手动同步本文件的硬编码检查串（原实现在移除服务后构建会误红）。
-const sourceIndexHtml = fs.existsSync(path.resolve('index.html'))
-  ? fs.readFileSync(path.resolve('index.html'), 'utf8')
+const sourceIndexHtml = fs.existsSync(path.join(ROOT_DIR, 'index.html'))
+  ? fs.readFileSync(path.join(ROOT_DIR, 'index.html'), 'utf8')
   : '';
-const sourceHeadersFile = fs.existsSync(path.resolve('public/_headers'))
-  ? fs.readFileSync(path.resolve('public/_headers'), 'utf8')
+const sourceHeadersFile = fs.existsSync(path.join(ROOT_DIR, 'public/_headers'))
+  ? fs.readFileSync(path.join(ROOT_DIR, 'public/_headers'), 'utf8')
   : '';
 const sourceUsesClarity = sourceIndexHtml.includes('clarity.ms') || sourceHeadersFile.includes('clarity.ms');
 const sourceUsesBusuanzi = sourceIndexHtml.includes('busuanzi.cc') || sourceHeadersFile.includes('busuanzi.cc');

@@ -145,12 +145,15 @@ const resolveLocalPath = (rawPath, fileDir) => {
   if (!clean || isExternalUrl(clean)) return null;
 
   // 站内绝对路径：/xxx → <root>/xxx
-  if (clean.startsWith('/')) {
-    return path.resolve(ROOT_DIR, `.${clean}`);
-  }
+  const resolved = clean.startsWith('/') ? path.resolve(ROOT_DIR, `.${clean}`) : path.resolve(fileDir, clean);
 
-  // 相对路径：基于 MD 文件目录解析
-  return path.resolve(fileDir, clean);
+  // 目录边界校验：`../` 可逃逸仓库根，解析结果必须落在 ROOT_DIR 内，
+  // 否则可能把仓库外任意可读文件上传到图床（路径穿越读/外泄）。
+  const relativeToRoot = path.relative(ROOT_DIR, resolved);
+  if (relativeToRoot.startsWith('..') || path.isAbsolute(relativeToRoot)) {
+    return null;
+  }
+  return resolved;
 };
 
 // ── 调用 PicGo 批量上传 ───────────────────────────────────

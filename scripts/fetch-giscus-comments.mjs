@@ -20,9 +20,12 @@
 import { pathToFileURL } from 'url';
 import { loadSiteConfig } from './site-config-loader.mjs';
 import { createBuildLogger } from './build-logger.mjs';
+import { fetchWithRetry, RetryableHttpError } from './lib/http.mjs';
 
 const GRAPHQL_ENDPOINT = 'https://api.github.com/graphql';
 const REQUEST_TIMEOUT_MS = 15000;
+/** 网络瞬时抖动/5xx 的重试次数（不含首次）；限流/权限类错误不重试。 */
+const REQUEST_RETRIES = 2;
 /** 分页上限（防御）：正常站点 discussions 数量远小于此。 */
 const MAX_PAGES = 10;
 const DISCUSSIONS_PER_PAGE = 100;
@@ -88,17 +91,38 @@ export const fetchCommentCounts = async ({ posts, token = process.env.GITHUB_TOK
     let cursor = null;
     let truncated = false;
     for (let page = 0; page < MAX_PAGES; page += 1) {
-      const response = await fetch(GRAPHQL_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'User-Agent': 'd-blog-build',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({ query: COMMENT_COUNTS_QUERY, variables: { owner, name, cursor } }),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
+      let response;
+      try {
+        response = await fetchWithRetry(
+          GRAPHQL_ENDPOINT,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'User-Agent': 'd-blog-build',
+              Accept: 'application/json',
+            },
+            body: JSON.stringify({ query: COMMENT_COUNTS_QUERY, variables: { owner, name, cursor } }),
+          },
+          {
+            timeoutMs: REQUEST_TIMEOUT_MS,
+            retries: REQUEST_RETRIES,
+            onRetry: (info) =>
+              logger.warn(
+                'GitHub GraphQL 请求瞬时失败，重试中',
+                `attempt=${info.attempt} status=${info.status ?? 'network'}`,
+              ),
+          },
+        );
+      } catch (error) {
+        // 网络抖动/5xx 重试耗尽：评论数优雅降级（不阻塞构建）。
+        logger.warn(
+          'GitHub GraphQL 请求失败，跳过评论数获取',
+          error instanceof RetryableHttpError ? `status=${error.status} attempts=${error.attempts}` : String(error),
+        );
+        return null;
+      }
 
       if (response.status === 401 || response.status === 403) {
         const rateLimited = response.headers.get('x-ratelimit-remaining') === '0';
