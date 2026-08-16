@@ -71,6 +71,13 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
             // 组合结束补发一次完整值，让防抖搜索基于最终中文。
             onValueChange?.(event.currentTarget.value);
           }}
+          onBlur={(event) => {
+            // 防御：组合进行中失焦（点击清除按钮/移开焦点）时，若浏览器未派发
+            // compositionend（取消组合的派发行为因浏览器/输入法而异），组合标记
+            // 会永久卡在 true 导致后续输入全部被忽略。失焦即复位，保证状态不粘滞。
+            isComposingRef.current = false;
+            inputProps.onBlur?.(event);
+          }}
           disabled={disabled}
           className={`w-full min-w-0 appearance-none rounded-control border pl-10 text-ink outline-none transition-[background-color,border-color,color,box-shadow] duration-150 placeholder:text-zinc-400 hover:border-zinc-400 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/15 disabled:cursor-not-allowed dark:text-white dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-100 dark:focus:ring-zinc-100/15 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-webkit-search-results-button]:hidden [&::-webkit-search-results-decoration]:hidden ${variantClasses} ${sizeClass} ${inputSpacing} ${className}`}
         />
