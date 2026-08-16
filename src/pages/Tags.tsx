@@ -335,6 +335,7 @@ export const Tags = () => {
                   </span>
                 </h2>
                 <button
+                  type="button"
                   onClick={() => updateTagParam()}
                   className="editorial-button inline-flex w-full gap-2 px-4 font-bold sm:w-fit"
                 >

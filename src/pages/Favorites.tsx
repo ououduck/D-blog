@@ -106,7 +106,10 @@ export const Favorites = () => {
                 <Link
                   to={`/post/${encodeURIComponent(post.id)}`}
                   className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]"
-                  aria-label={`阅读文章：${post.title}`}
+                  // 封面链接不重复声明 aria-label：同一卡片标题链接已声明
+                  // 「阅读文章：X」，两个相同 label 的链接会让读屏连续播报两次。
+                  aria-hidden="true"
+                  tabIndex={-1}
                 >
                   {post.coverImage ? (
                     <ProgressiveImage

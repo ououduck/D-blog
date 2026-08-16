@@ -17,7 +17,8 @@ import { SpotlightLayer } from '@/components/effects/SpotlightLayer';
 import { easeOut, easeSmooth } from '@/utils/motion';
 import { isPinnedFeaturedPost } from '@/utils/postSelection';
 
-export interface PostCardProps {
+// 组件 props 类型（全仓库仅本文件使用，不导出避免公共 API 承诺）。
+interface PostCardProps {
   post: PostMetadata;
   index: number;
   featured?: boolean;

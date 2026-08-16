@@ -83,7 +83,9 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     isResultsListboxOpen && visibleResults[activeResultIndex]
       ? `site-search-result-${visibleResults[activeResultIndex].id}`
       : undefined;
-  const searchResultStatus = !isSearching && hasSearchQuery ? `找到 ${results.length} ${TEXT.resultsSuffix}` : '';
+  // 错误态先播报「找到 0 条」再播报错误会自相矛盾：错误时只播错误，不播结果数。
+  const searchResultStatus =
+    !isSearching && !searchError && hasSearchQuery ? `找到 ${results.length} ${TEXT.resultsSuffix}` : '';
   const activeScopeHint = SEARCH_SCOPE_HINTS[searchScope];
   const prefersReducedMotion = useReducedMotion();
   const modalEase = easeSmooth;
