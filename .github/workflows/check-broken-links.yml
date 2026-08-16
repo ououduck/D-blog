@@ -41,7 +41,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # 逐个请求外链（顺序检查、每链接 12s 超时 + 150ms 间隔），
+    # 固定并发池（4 workers）请求外链（每链接 12s 超时 + 150ms 间隔），
     # 几十个链接的量级下几分钟内完成，10 分钟上限留足余量。
     timeout-minutes: 10
     steps:
