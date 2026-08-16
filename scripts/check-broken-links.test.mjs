@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { extractExternalLinks, parseIgnoreHosts } from './check-broken-links.mjs';
 

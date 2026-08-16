@@ -28,6 +28,8 @@ export default defineConfig({
     alias: resolvedViteConfig.resolve?.alias,
   },
   test: {
+    // 全局 jsdom；scripts 的 Node 侧测试在文件头用 // @vitest-environment node 声明
+    // （Vitest 4 已移除 environmentMatchGlobs，per-file docblock 是受支持的环境切换方式）。
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.mjs'],
@@ -35,7 +37,21 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       include: ['src/**/*.{ts,tsx}', 'scripts/lib/**/*.mjs'],
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.test-d.ts', 'src/test/**', 'src/vite-env.d.ts'],
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/**/*.test-d.ts',
+        'src/test/**',
+        'src/vite-env.d.ts',
+        'scripts/**/*.test.mjs',
+      ],
+      // 按当前实际覆盖率定基（全量 Stmts≈53/Branch≈47），防止覆盖率继续下滑；
+      // 门槛仅约束本地 test:coverage 运行（CI 跑 test 不带 coverage）。
+      thresholds: {
+        statements: 50,
+        lines: 50,
+        functions: 50,
+        branches: 45,
+      },
     },
   },
 });

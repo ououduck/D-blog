@@ -73,6 +73,29 @@ describe('flattenSuspenseBoundaries', () => {
     expect(result).not.toContain('hidden id="S:');
   });
 
+  it('真正嵌套的边界（内层 hidden div 在外层 hidden div 内）：逐层展平无残留', () => {
+    // 此前「嵌套边界」用例的 fixture 与多 $RC 用例完全相同（B:0/B:1 是兄弟节点），
+    // 从未真正覆盖嵌套场景。真实嵌套：内层边界整体位于外层 hidden div 内。
+    const html =
+      '<html><body><div id="root">' +
+      '<!--$?--><template id="B:0">fallback-outer</template><!--/$-->' +
+      '<div hidden id="S:0">' +
+      'outer-content ' +
+      '<!--$?--><template id="B:1">fallback-inner</template><!--/$-->' +
+      '<div hidden id="S:1">inner-content</div>' +
+      '<script>$RC=function(b,c){};$RC("B:1","S:1")</script>' +
+      '</div>' +
+      '<script>$RC=function(b,c){};$RC("B:0","S:0")</script>' +
+      '</div></body></html>';
+    const result = flattenSuspenseBoundaries(html);
+    expect(result).toContain('<!--$-->inner-content<!--/$-->');
+    expect(result).toContain('outer-content');
+    expect(result).not.toContain('<!--$?-->');
+    expect(result).not.toContain('hidden id="S:');
+    expect(result).not.toContain('<template id="B:');
+    expect(result).not.toContain('$RC("B:');
+  });
+
   it('正文中的字面量 $RC 文本不被误展平（只在 script 区域内扫描）', () => {
     const html =
       '<html><body><div id="root">' +
