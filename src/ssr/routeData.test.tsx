@@ -1,6 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { buildSsgRouteData } from './routeData';
 import type { Post } from '@/types';
+
+// readSsgRouteData 是模块级单例（首次读取后缓存），测试间需重置模块状态
+// 与 DOM，保证各用例从干净状态开始。
+const ROUTE_DATA_ID = 'ssg-route-data';
+
+const resetRouteDataModule = async () => {
+  vi.resetModules();
+  document.getElementById(ROUTE_DATA_ID)?.remove();
+};
 
 const makePost = (id: string, overrides: Partial<Post> = {}): Post => ({
   id,
@@ -13,6 +22,58 @@ const makePost = (id: string, overrides: Partial<Post> = {}): Post => ({
   tags: [],
   content: `# ${id} 正文`,
   ...overrides,
+});
+
+describe('readSsgRouteData', () => {
+  beforeEach(async () => {
+    await resetRouteDataModule();
+  });
+
+  it('存在注入标签时解析并移除标签', async () => {
+    const element = document.createElement('script');
+    element.id = ROUTE_DATA_ID;
+    element.type = 'application/json';
+    element.textContent = JSON.stringify({ post: { id: 'a' } });
+    document.body.appendChild(element);
+
+    const { readSsgRouteData: read } = await import('./routeData');
+    const data = read();
+    expect(data).toEqual({ post: { id: 'a' } });
+    // 标签被移除：不残留 <script> 在 DOM 中。
+    expect(document.getElementById(ROUTE_DATA_ID)).toBeNull();
+  });
+
+  it('单例缓存：第二次调用不重新读 DOM（标签移除后仍返回首次结果）', async () => {
+    const element = document.createElement('script');
+    element.id = ROUTE_DATA_ID;
+    element.type = 'application/json';
+    element.textContent = JSON.stringify({ post: { id: 'a' } });
+    document.body.appendChild(element);
+
+    const { readSsgRouteData: read } = await import('./routeData');
+    const first = read();
+    // 模拟 React 并发/StrictMode 重渲染：再次调用（此时标签已移除）。
+    const second = read();
+    expect(first).toEqual({ post: { id: 'a' } });
+    expect(second).toEqual(first);
+  });
+
+  it('损坏的 JSON 返回 undefined 且不抛错，标签被移除', async () => {
+    const element = document.createElement('script');
+    element.id = ROUTE_DATA_ID;
+    element.type = 'application/json';
+    element.textContent = '{not valid json';
+    document.body.appendChild(element);
+
+    const { readSsgRouteData: read } = await import('./routeData');
+    expect(read()).toBeUndefined();
+    expect(document.getElementById(ROUTE_DATA_ID)).toBeNull();
+  });
+
+  it('无注入标签返回 undefined', async () => {
+    const { readSsgRouteData: read } = await import('./routeData');
+    expect(read()).toBeUndefined();
+  });
 });
 
 describe('buildSsgRouteData', () => {

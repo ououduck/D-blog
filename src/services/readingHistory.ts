@@ -61,9 +61,12 @@ const writeEntries = (entries: ReadingHistoryEntry[]) => {
 export const getReadingHistory = () => readEntries().sort((a, b) => b.updatedAt - a.updatedAt);
 
 export const getReadingHistoryEntry = (postId: string) => getReadingHistory().find((entry) => entry.postId === postId);
-/** 保存阅读进度（合并/截断最近 20 条）。 */
+/** 保存阅读进度（合并/截断最近 20 条）。NaN 进度直接丢弃（clamp(NaN) 仍为
+ * NaN，JSON.stringify 会序列化为 null，下次读取被 normalizeEntry 的
+ * Number.isFinite 校验拒绝 → 整条记录被静默丢弃）。 */
 export const saveReadingHistory = (entry: Omit<ReadingHistoryEntry, 'updatedAt'> & { updatedAt?: number }) => {
-  if (!entry.postId.trim()) return;
+  if (typeof entry.postId !== 'string' || !entry.postId.trim()) return;
+  if (typeof entry.progress !== 'number' || !Number.isFinite(entry.progress)) return;
   const nextEntry: ReadingHistoryEntry = {
     postId: entry.postId,
     progress: clamp(entry.progress, 0, 1),

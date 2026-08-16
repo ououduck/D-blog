@@ -83,4 +83,24 @@ describe('readingHistory 服务', () => {
     saveReadingHistory({ postId: 'b', progress: 0.1 });
     expect(notified).toBe(1);
   });
+
+  it('NaN 进度被丢弃（不产生 localStorage 中损坏的 null 进度记录）', () => {
+    saveReadingHistory({ postId: 'a', progress: Number.NaN });
+    expect(getReadingHistoryEntry('a')).toBeUndefined();
+    expect(getReadingHistory()).toEqual([]);
+    // 且不影响后续正常保存。
+    saveReadingHistory({ postId: 'a', progress: 0.4 });
+    expect(getReadingHistoryEntry('a')?.progress).toBe(0.4);
+  });
+
+  it('非字符串 postId 被忽略（不抛 TypeError）', () => {
+    // @ts-expect-error 传入非法类型验证入口校验
+    saveReadingHistory({ postId: null, progress: 0.5 });
+    expect(getReadingHistory()).toEqual([]);
+  });
+
+  it('Infinity 进度被丢弃', () => {
+    saveReadingHistory({ postId: 'a', progress: Number.POSITIVE_INFINITY });
+    expect(getReadingHistoryEntry('a')).toBeUndefined();
+  });
 });

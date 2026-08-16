@@ -34,8 +34,21 @@ const toMetadata = (post: Post): PostMetadata => {
 /**
  * 客户端水合前读取 SSG 注入的路由数据（<script id="ssg-route-data">）。
  * 仅生产构建（SSG）存在该标签；开发模式返回 undefined。
+ *
+ * 实现为模块级单例：首次调用读取 DOM 并移除标签，之后返回缓存结果。
+ * App 在渲染体内调用本函数（App.tsx），React 并发渲染中断/水合失配重渲染/
+ * StrictMode 重渲染时组件体会再次执行 —— 若每次重新读 DOM，标签已被移除，
+ * 第二次调用会返回 undefined，SSG 注入的文章/相邻/系列/相关数据被丢弃
+ * （回落到异步加载，失去首帧快速路径）。单例缓存保证任意次调用结果一致。
  */
+let cachedSsgRouteData: SsgRouteData | undefined;
+let ssgRouteDataRead = false;
+
 export const readSsgRouteData = (): SsgRouteData | undefined => {
+  if (ssgRouteDataRead) {
+    return cachedSsgRouteData;
+  }
+  ssgRouteDataRead = true;
   if (typeof document === 'undefined') {
     return undefined;
   }
@@ -47,10 +60,11 @@ export const readSsgRouteData = (): SsgRouteData | undefined => {
   const raw = element.textContent || '';
   element.remove();
   try {
-    return JSON.parse(raw) as SsgRouteData;
+    cachedSsgRouteData = JSON.parse(raw) as SsgRouteData;
   } catch {
-    return undefined;
+    cachedSsgRouteData = undefined;
   }
+  return cachedSsgRouteData;
 };
 
 /**
