@@ -34,7 +34,7 @@ import {
 import { Seo } from '../components/Seo';
 import { SearchField } from '../components/SearchField';
 import { hasOpenOverlay, useModalOverlay } from '../hooks/useModalOverlay';
-import { coverTemplates as templates, defaultTemplate, type CoverTemplate } from '../config/coverTemplates';
+import { coverTemplates as templates, defaultTemplate, type CoverTemplate } from './cover/coverTemplates';
 import {
   COVER_RATIOS,
   DEFAULT_TEXT_SHADOW,

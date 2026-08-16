@@ -1,8 +1,8 @@
 /**
  * 封面生成器的常量配置：基准画布尺寸、安全边距、比例预设与文件上传上限，
- * 统一从 config/coverPresets 派生，避免各处魔法数字漂移。
+ * 统一从 coverPresets 派生，避免各处魔法数字漂移。
  */
-import { coverSizePresets } from '../../config/coverPresets';
+import { coverSizePresets } from './coverPresets';
 import type { CoverRatio, ShadowConfig } from './coverTypes';
 
 export const BASE_CANVAS_WIDTH = 1200;
