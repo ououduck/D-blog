@@ -82,7 +82,12 @@ export const tokenizeText = (text: string): string[] => {
  * 返回每行文本数组（已去除行首多余空白）。导出供单元测试（该函数经历两轮
  * 截断 bug 修复，需要直接回归覆盖）。
  */
-export const wrapCanvasText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number): string[] => {
+export const wrapCanvasText = (
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxLines: number,
+): string[] => {
   const lines: string[] = [];
   let currentLine = '';
   const tokens = tokenizeText(text.replace(/\s+/g, ' ').trim());

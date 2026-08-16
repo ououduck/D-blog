@@ -45,9 +45,7 @@ describe('useModalOverlay', () => {
     container.setAttribute('role', 'dialog');
     document.body.appendChild(container);
     const onClose = vi.fn();
-    renderHook(() =>
-      useModalOverlay({ isOpen: true, onClose, containerRef: { current: container } }),
-    );
+    renderHook(() => useModalOverlay({ isOpen: true, onClose, containerRef: { current: container } }));
 
     act(() => {
       fireEvent.keyDown(window, { key: 'Escape' });
