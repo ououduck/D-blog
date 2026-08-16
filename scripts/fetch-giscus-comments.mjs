@@ -21,6 +21,7 @@ import { pathToFileURL } from 'url';
 import { loadSiteConfig } from './site-config-loader.mjs';
 import { createBuildLogger } from './build-logger.mjs';
 import { fetchWithRetry, RetryableHttpError } from './lib/http.mjs';
+import { getBasePath, withBasePath } from './base-path.mjs';
 
 const GRAPHQL_ENDPOINT = 'https://api.github.com/graphql';
 const REQUEST_TIMEOUT_MS = 15000;
@@ -84,7 +85,12 @@ export const fetchCommentCounts = async ({ posts, token = process.env.GITHUB_TOK
   }
 
   const [owner, name] = repo.split('/');
-  const postPathToId = new Map(posts.map((post) => [`/post/${post.id}`, post.id]));
+  // 匹配键与 Giscus 的 pathname mapping 口径一致：页面实际 URL 的 pathname
+  //（含 base path）。子路径部署（如 /repo/post/<id>）时必须叠加 BASE_PATH，
+  // 否则 discussion 标题（页面 URL pathname）与 /post/<id> 匹配不上，
+  // 评论数会静默全缺。
+  const basePath = getBasePath();
+  const postPathToId = new Map(posts.map((post) => [withBasePath(`/post/${post.id}`, basePath), post.id]));
   const counts = new Map();
 
   try {

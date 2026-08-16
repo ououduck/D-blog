@@ -25,17 +25,23 @@ logger.start('Generate site data');
 
 /**
  * 全局异常兜底（Phase 1 审计项 9 修复）：
- * 本脚本主体为顶层同步逻辑，任何校验/解析 throw（如 front matter 校验失败）
- * 都会触发 uncaughtException。这里结构化记录错误并以非零码退出，
- * 替代 Node 默认的裸堆栈打印，便于在 Actions 日志中快速定位失败原因。
- * 注意：用 process.exitCode 而非 process.exit(1)——前者让事件循环自然收尾、
- * stdout/stderr 日志完成 flush 后再退出（避免日志被截断）；脚本为顶层同步
- * 逻辑，异常后没有挂起的异步工作，进程随即退出。非零码由 build.mjs 阶段
- * 判定，构建失败行为不变。
+ * 本脚本主体为顶层逻辑（含 fetchCommentCounts 等少量顶层 await），任何
+ * 校验/解析 throw（如 front matter 校验失败）都会触发 uncaughtException。
+ * 这里结构化记录错误并以非零码退出，替代 Node 默认的裸堆栈打印，便于在
+ * Actions 日志中快速定位失败原因。
+ *
+ * 退出策略：先用 process.exitCode = 1 让事件循环自然收尾（stdout/stderr
+ * 日志完成 flush，避免日志被截断）；再挂一个 5s 宽限期兜底 —— 若异常后
+ * 仍有挂起的异步工作（如未完成的网络请求）导致事件循环迟迟不空转，宽限期
+ * 一到强制 process.exit(1)，避免进程带不一致状态挂起（Node 官方要求
+ * uncaughtException handler 之后必须退出）。正常路径下事件循环在日志
+ * flush 后立即空转退出，宽限期不生效。
  */
+const FATAL_EXIT_GRACE_MS = 5000;
 process.on('uncaughtException', (error) => {
   logger.error('Site data generation failed', error instanceof Error ? error.stack : String(error));
   process.exitCode = 1;
+  setTimeout(() => process.exit(1), FATAL_EXIT_GRACE_MS).unref();
 });
 process.on('unhandledRejection', (reason) => {
   logger.error(
@@ -43,6 +49,7 @@ process.on('unhandledRejection', (reason) => {
     reason instanceof Error ? reason.stack : String(reason),
   );
   process.exitCode = 1;
+  setTimeout(() => process.exit(1), FATAL_EXIT_GRACE_MS).unref();
 });
 
 const siteConfig = loadSiteConfig({ logger });
