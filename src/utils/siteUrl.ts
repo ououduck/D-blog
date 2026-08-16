@@ -63,7 +63,8 @@ export const getRouterBasename = (currentPath?: string): string => {
   return basePath === '/' ? '/' : basePath.replace(/\/$/, '');
 };
 
-const isExternalUrl = (value: string) => /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(value);
+/** 外部 URL 判定（协议前缀或 // 相对协议）。导出供 offlinePosts 等复用，避免正则双份漂移。 */
+export const isExternalUrl = (value: string) => /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(value);
 
 const splitSuffix = (value: string) => {
   const match = value.match(/^([^?#]*)([?#][\s\S]*)?$/);

@@ -8,7 +8,7 @@
  * 保存成功后尽力而为地把文章资源写入 Service Worker 缓存，实现断网离线阅读。
  */
 import type { Post, PostMetadata } from '../types';
-import { assetUrl, routeUrl } from '@/utils/siteUrl';
+import { assetUrl, routeUrl, isExternalUrl } from '@/utils/siteUrl';
 
 const OFFLINE_POSTS_DB_NAME = 'd-blog-offline-posts';
 const OFFLINE_POSTS_DB_VERSION = 2;
@@ -36,14 +36,13 @@ type OfflinePostTombstones = Record<string, number>;
 type UnknownRecord = Record<string, unknown>;
 type OfflinePostTombstone = { id: string; deletedAt: number };
 
-const EXTERNAL_URL_PATTERN = /^(?:[a-z][a-z\d+.-]*:|\/\/)/i;
-
 const toOfflineAssetUrl = (value: string): string | undefined => {
   const clean = value
     .trim()
     .replace(/^<|>$/g, '')
     .replace(/[?#].*$/, '');
-  if (!clean || EXTERNAL_URL_PATTERN.test(clean)) {
+  // 外部 URL 判定复用 siteUrl.ts 的 isExternalUrl（同一正则双份拷贝易漂移）。
+  if (!clean || isExternalUrl(clean)) {
     return undefined;
   }
 
