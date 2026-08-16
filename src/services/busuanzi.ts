@@ -42,6 +42,26 @@ const fillSpans = ({ pageUrl, data }: CachedBusuanziResponse): number => {
   return filled;
 };
 
+// 上报失败（离线 / API 故障）时把仍是「加载中」占位文案的 span 替换为「—」，
+// 避免统计不可用却永久显示「加载中」误导用户。已被真实计数填充的 span 不覆盖。
+const BUSUANZI_METRIC_KEYS = [
+  'busuanzi_today_pv',
+  'busuanzi_today_uv',
+  'busuanzi_site_pv',
+  'busuanzi_site_uv',
+  'busuanzi_page_pv',
+];
+const fillUnavailableMetrics = (pageUrl: string): void => {
+  if (typeof document === 'undefined') return;
+  const canFillPageMetrics = pageUrl === getPageUrl();
+  for (const key of BUSUANZI_METRIC_KEYS) {
+    if (key.startsWith('busuanzi_page_') && !canFillPageMetrics) continue;
+    document.querySelectorAll(`#${CSS.escape(key)}`).forEach((el) => {
+      if (el.textContent === '加载中') el.textContent = '—';
+    });
+  }
+};
+
 /**
  * 用最近一次的计数回填当前页面中的不蒜子 span（不发起请求、不计数）。
  * 供展示不蒜子数据的组件在挂载/可见性变化时调用，避免 span 晚于 Ping 完成时
@@ -79,6 +99,8 @@ export const pingBusuanzi = (signal?: AbortSignal): void => {
       lastResponse = response;
       let frames = 0;
       const step = () => {
+        // 路由切换（abort）后 span 已随旧页面卸载：停止轮询，避免空转主线程。
+        if (signal?.aborted) return;
         const filled = fillSpans(response);
         if (filled === 0 && ++frames < 45) {
           requestAnimationFrame(step);
@@ -86,7 +108,10 @@ export const pingBusuanzi = (signal?: AbortSignal): void => {
       };
       requestAnimationFrame(step);
     })
-    .catch(() => {
-      // 不蒜子统计失败不影响页面功能，静默忽略（含路由切换 abort）。
+    .catch((error) => {
+      // 路由切换触发的 abort 不是统计故障，静默忽略。
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      // 离线 / API 故障：把「加载中」占位替换为「—」，不再永久残留加载态。
+      fillUnavailableMetrics(pageUrl);
     });
 };

@@ -43,6 +43,18 @@ describe('busuanzi 统计', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
+  it('fetch 失败时把「加载中」占位替换为「—」，已填充的不覆盖', async () => {
+    const pendingSpan = makeSpan('busuanzi_page_pv');
+    pendingSpan.textContent = '加载中';
+    const filledSpan = makeSpan('busuanzi_site_pv');
+    filledSpan.textContent = '1234';
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
+    pingBusuanzi();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(pendingSpan.textContent).toBe('—');
+    expect(filledSpan.textContent).toBe('1234');
+  });
+
   it('fillBusuanziSpans 无缓存时为空操作', () => {
     expect(() => fillBusuanziSpans()).not.toThrow();
   });
