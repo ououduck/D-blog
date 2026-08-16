@@ -362,6 +362,9 @@ const main = async () => {
         // 直接比较必然不相等，首次运行会把整个文件重写（超大 diff）。
         const normalizedRaw = raw.replace(/\r\n/g, '\n');
         const serialized = `${JSON.stringify(data, null, detectIndent(raw))}${normalizedRaw.endsWith('\n') ? '\n' : ''}`;
+        // 进入本分支意味着 unavailable 字段已被新增或删除，序列化结果必然
+        // 与原文不同（此前比较结果恒不相等，else 分支为死代码）；仍保留
+        // 防御性比较，防止未来逻辑变化导致重复写盘。
         if (serialized !== normalizedRaw) {
           changedFiles.push(filePath);
           if (!DRY_RUN) {
@@ -369,11 +372,6 @@ const main = async () => {
             const writeContent = raw.includes('\r\n') ? serialized.replace(/\n/g, '\r\n') : serialized;
             await fs.writeFile(filePath, writeContent, 'utf8');
           }
-        } else {
-          stats.unchanged += 1;
-          stats.changed -= 1;
-          if (reachable) stats.recovered -= 1;
-          else stats.newlyUnavailable -= 1;
         }
       } else {
         stats.unchanged += 1;
