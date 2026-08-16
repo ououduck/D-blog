@@ -20,6 +20,8 @@
 5. **robots.txt**：LF 换行（与 .gitattributes eol=lf 一致），sitemap 引用绝对地址。
 6. **产物计数**：summary 的 outputs 从 generated//public/ 实际统计（禁止硬编码）。
 7. **共享核心**：front matter 剥离（markdown-core.mjs）、标题提取（headings-core.mjs）是 src/scripts 共享模块，改动必须两端一致。
+8. **异常兜底**：uncaughtException/unhandledRejection handler 必须在记录日志后确保进程退出（宽限期强制 process.exit(1)），不得依赖「异常后无挂起异步」的假设 —— 脚本含顶层 await（fetchCommentCounts），异常发生在异步窗口时进程可能带不一致状态继续/挂起。
+9. **评论数匹配口径**：fetch-giscus-comments 的 discussion 标题（页面 URL pathname）匹配必须叠加 BASE_PATH（withBasePath），子路径部署时 `/post/<id>` 匹配不上会导致评论数静默全缺。
 
 ## 常见陷阱
 

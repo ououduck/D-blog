@@ -17,7 +17,7 @@
 2. **申请向导**：多步表单状态、校验规则、Issue 草稿生成在 `friendLinkApplication.ts` 中，不在组件内重写；`mailto` 预填正文必须净化换行（防头注入）。
 3. **搜索过滤**：`getFriendDomain`（new URL 解析）结果必须预计算 Map 缓存（禁止每次击键对全部友链重复解析）；大小写统一用 toLowerCase（非 toLocaleLowerCase，locale 无关）。
 4. **SSG 确定性**：友链列表与失联分组首帧由 `getInitialFriends()` 渲染。
-5. **光效**：useSpotlight/SpotlightLayer 保持既有实现；卡片 hover 光效不阻塞内容可读。
+5. **光效**：useSpotlight/SpotlightLayer 保持既有实现；卡片 hover 光效不阻塞内容可读；**pointermove 光斑跟随必须保持 rAF 单帧合并**（禁止每次移动直接 setState，卡片子树会高频重渲染）。
 
 ## 常见陷阱
 

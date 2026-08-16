@@ -14,16 +14,18 @@
 ## 修改规则（必须遵守）
 
 1. **代码块/行内代码屏蔽**：外链提取前必须经 `maskFencedCodeBlocks`（headings-core 共享）+ 行内代码屏蔽 —— 代码示例中的 URL 不得被当作真实外链检查（已修事故）。
-2. **SSRF 防护**：请求任意 URL 前必须调用 `isSafePublicHttpUrl`（lib/http.mjs），内网/回环/带凭据地址不发起请求直接判为不可访问。
+2. **SSRF 防护（含重定向逐跳）**：请求任意 URL 前必须调用 `isSafePublicHttpUrl`（lib/http.mjs），内网/回环/带凭据地址不发起请求直接判为不可访问；**重定向链必须手动逐跳跟随**（`redirect: 'manual'`），每一跳重新 `isSafePublicHttpUrl` —— 初始 URL 安全不代表跳转目标安全，公开站点可 302 到 127.0.0.1/169.254.169.254 形成绕过（与 friend-link-bot 的 fetchPublicPage 口径一致）。重定向超过上限（MAX_REDIRECTS）判失效（防环）。
 3. **重试语义**：单 URL 检查必须复用 `fetchWithRetry`（瞬时抖动不误判死链）。
 4. **忽略名单**：`--ignore-hosts` 语义保持（已知反爬站点如 Cloudflare Dashboard 的 403 误报）。
 5. **并发与礼貌**：固定并发池（4）+ 每请求 150ms 间隔的平衡保持。
 6. **上报**：失效报告走 `sendTelegramMessage`（配置缺失优雅跳过返回 null）；`--dry-run` 不上报；`--fail` 非零退出。
 7. **导入副作用**：模块被 import 时不得执行 main()（入口判定 pathToFileURL 比较）。
+8. **日志脱敏**：输出用户可控 URL 前必须 `sanitizeUrlForLogs`（URL 可能含 userinfo 凭据，如 https://user:secret@host）。
 
 ## 常见陷阱
 
 - 不要在本脚本内重新实现 fetch/重试/脱敏（lib/http.mjs 已有）；
+- 重定向 Location 为相对路径时必须 `new URL(location, current)` 解析后再校验，直接拼接会漏掉跳转目标；
 - Telegram 消息为 HTML parse mode，URL/错误文本必须 escapeHtml；
 - workflow 的 npm ci 只为 gray-matter（headings-core 无依赖）。
 

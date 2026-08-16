@@ -19,6 +19,7 @@ Giscus 评论区（文章评论 + 留言板）：懒加载、多来源回退链�
 4. **主题同步**：iframe 就绪前丢弃的 postMessage 需要补发机制（主题切换后同步）。
 5. **mapping 语义**：pathname（文章自动建讨论）/ number（留言板精确锁定）语义不可混淆；缺 term 时禁止静默注入。
 6. **构建期评论数**：fetch-giscus-comments 用 fetchWithRetry（防抖动），失败优雅降级（不阻塞构建）。
+7. **BASE_PATH 匹配口径**：discussion 标题（页面 URL pathname）与文章路由匹配必须叠加 BASE_PATH（withBasePath）—— 子路径部署时硬编码 `/post/<id>` 匹配不上，评论数会静默全缺。
 
 ## 常见陷阱
 

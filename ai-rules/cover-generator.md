@@ -15,11 +15,12 @@
 2. **canvas 健壮性**：所有 getContext 必须判空并如实反馈（禁止 `?.` 吞掉后静默画空白）；`ctx.roundRect` 必须特性检测回退 `rect`（老浏览器缺 API）。
 3. **存储诚实语义**：writeDraft/writePreset/deletePreset 在 localStorage 不可用时必须如实返回 false/null（禁止假报成功）；版本号容错（COVER_STORAGE_VERSION）保持。
 4. **导出**：JPEG 导出必须铺白底（JPEG 不支持透明）；导出尺寸/像素上限与加载上限保持一致；导出失败必须给明确错误文案。
-5. **批量解析**：CSV 表头检测（首行含 title/name 等已知字段才算表头，无表头文件首行不得被吞）；错误提示必须用真实文件行号；slug 去重（dedupeSlugs）保持跨文件唯一性。
+5. **批量解析**：CSV 表头检测（首行含 title/name 等已知字段才算表头，无表头文件首行不得被吞）；错误提示必须用真实文件行号（**引号内换行也必须推进物理行号**，行号取行的起始物理行 —— 否则其后所有行的「第 X 行」系统性偏移）；slug 去重（dedupeSlugs）保持跨文件唯一性。
 6. **自动配色**：sampleRegion 网格抽样（stride 4）保持；chooseTextColor 的 lowContrast 语义完整。
 7. **性能**：预览渲染避免不必要的大内存分配（模糊层 canvas 惰性重建）；fitText 缩小字号循环不得无界。
 8. **SSG 确定性**：封面页静态结构由 SSG 渲染，画布预览仅客户端。
 9. **大文件治理**：CoverGenerator.tsx 已超 3000 行，新增逻辑优先抽入 cover/ 子模块，禁止继续膨胀。
+10. **用户取消语义**：批量导出点击「取消」（AbortController.abort）不得当作错误播报（role=alert/assertive）—— 应以 info 反馈；Iconify 弹窗关闭必须清理搜索防抖定时器与在途 fetch（否则关闭后仍会发起网络请求并后台 setState）。
 
 ## 常见陷阱
 

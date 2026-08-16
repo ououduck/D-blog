@@ -14,10 +14,11 @@
 ## 修改规则（必须遵守）
 
 1. **SSG/水合确定性**：写作日历窗口**必须锚定「最近发布日期」而非「今天」**（构建与客户端水合数据一致）；月份标签节距必须与单元格实际尺寸联动（移动端 14px / sm+ 16px，用 CSS 变量，禁止写死单值导致移动端漂移）。
-2. **数据源**：统计值来自 `getInitialSiteStats()`（构建期内联）与 `getInitialPosts()`；异步加载仅作兜底，不得作为主路径。
-3. **数字格式化**：`Intl.NumberFormat('zh-CN')` 必须是模块级单例；NaN/Infinity 显示占位符「—」。
-4. **动画**：CountUp 尊重 prefers-reduced-motion（SSR 首帧渲染最终值）；柱状图 width 动画进入视口触发，不得影响首帧可读性。
-5. **布局**：站点概览 → 写作日历 → 分类/标签/最近更新三列 → 字数/图片两列 → 外部统计；新增板块需与既有栅格协调。
+2. **日历 aria 汇总口径**：WritingCalendar 的 totalPosts/activeDays 必须只统计**窗口（53 周网格）内**的发布数与活跃天数 —— 直接取全量 counts 的 sum/size 会让站点运行一年后的 aria-label 被窗口外旧文章灌大，与网格实际内容不一致。
+3. **数据源**：统计值来自 `getInitialSiteStats()`（构建期内联）与 `getInitialPosts()`；异步加载仅作兜底，不得作为主路径。
+4. **数字格式化**：`Intl.NumberFormat('zh-CN')` 必须是模块级单例；NaN/Infinity 显示占位符「—」。
+5. **动画**：CountUp 尊重 prefers-reduced-motion（SSR 首帧渲染最终值）；柱状图 width 动画进入视口触发，不得影响首帧可读性。
+6. **布局**：站点概览 → 写作日历 → 分类/标签/最近更新三列 → 字数/图片两列 → 外部统计；新增板块需与既有栅格协调。
 
 ## 常见陷阱
 

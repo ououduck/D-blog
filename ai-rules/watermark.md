@@ -12,7 +12,7 @@
 ## 修改规则（必须遵守）
 
 1. **本地处理**：所有操作在浏览器本地完成（FileReader/ObjectURL），禁止引入上传逻辑。
-2. **加载健壮性**：`loadImage` 必须有超时兜底（onload/onerror 都可能不触发）；卸载守卫与代际（generation）防护保持。
+2. **加载健壮性**：`loadImage` 必须有超时兜底（onload/onerror 都可能不触发）；卸载守卫（mountedRef）与代际（generation）防护保持 —— 图片加载（最长 10s 超时）跨过组件卸载后不得 setState。
 3. **导出**：JPEG 导出必须铺白底（透明 PNG 导出 JPEG 不得出现大黑底）；`toBlob` 返回 null 必须报「导出失败」而非静默；导出期间禁止移除图片（按钮 disabled + 代际校验）。
 4. **Y 轴夹紧**：文字定位夹紧必须保证上界不低于下界（高度小于半字号时退化为居中半可见，禁止整体越界不可见）。
 5. **无障碍**：预览 canvas 必须有 `role="img"` 与可读名称。
