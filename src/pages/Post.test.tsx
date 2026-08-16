@@ -45,7 +45,6 @@ vi.mock('@/components/ImageViewer', () => ({
 }));
 
 import * as postsService from '@/services/posts';
-import { MemoryRouter as _MR } from 'react-router-dom';
 
 const makePost = (overrides: Record<string, unknown> = {}) => ({
   id: 'test-post',
@@ -62,7 +61,7 @@ const makePost = (overrides: Record<string, unknown> = {}) => ({
 
 const renderPost = (id = 'test-post') =>
   render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[`/post/${id}`]}>
+    <MemoryRouter initialEntries={[`/post/${id}`]}>
       <ReadingModeProvider>
         <Routes>
           <Route path="/post/:id" element={<Post />} />

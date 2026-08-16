@@ -17,7 +17,7 @@ const Consumer = () => {
 
 const renderConsumer = () =>
   render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter>
       <ReadingModeProvider>
         <Consumer />
       </ReadingModeProvider>
@@ -70,7 +70,7 @@ describe('ReadingModeContext', () => {
       );
     };
     render(
-      <MemoryRouter initialEntries={['/post/a']} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouter initialEntries={['/post/a']}>
         <ReadingModeProvider>
           <NavConsumer />
         </ReadingModeProvider>

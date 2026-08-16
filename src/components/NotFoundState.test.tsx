@@ -5,8 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { NotFoundState } from './NotFoundState';
 
 // future 标志与 App.tsx 的 Router 保持一致，消除 React Router v7 迁移警告。
-const renderWithRouter = (ui: React.ReactNode) =>
-  render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>{ui}</MemoryRouter>);
+const renderWithRouter = (ui: React.ReactNode) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
 describe('NotFoundState', () => {
   it('渲染标题与描述', () => {

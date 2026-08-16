@@ -7,8 +7,7 @@ import { PostCard } from './PostCard';
 import type { PostMetadata } from '@/types';
 
 // future 标志与 App.tsx 的 Router 保持一致，消除 React Router v7 迁移警告。
-const renderWithRouter = (ui: React.ReactNode) =>
-  render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>{ui}</MemoryRouter>);
+const renderWithRouter = (ui: React.ReactNode) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
 const makePost = (overrides: Partial<PostMetadata> = {}): PostMetadata => ({
   id: 'test-post',

@@ -22,7 +22,7 @@ vi.mock('@/components/effects/SpotlightLayer', () => ({
 
 const renderCover = () =>
   render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/cover']}>
+    <MemoryRouter initialEntries={['/cover']}>
       <CoverGenerator />
     </MemoryRouter>,
   );

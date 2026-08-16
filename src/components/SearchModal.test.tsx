@@ -46,7 +46,7 @@ const setupSearchHook = async ({
 
 const renderModal = (isOpen = true, onClose = vi.fn()) =>
   render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/']}>
+    <MemoryRouter initialEntries={['/']}>
       <Routes>
         <Route path="*" element={<SearchModal isOpen={isOpen} onClose={onClose} />} />
       </Routes>

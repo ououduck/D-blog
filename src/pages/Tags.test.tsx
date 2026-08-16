@@ -16,7 +16,7 @@ vi.mock('@/services/busuanzi', () => ({
 
 const renderTags = (initialEntry = '/tags') =>
   render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[initialEntry]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/tags" element={<Tags />} />
       </Routes>

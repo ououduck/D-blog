@@ -23,7 +23,7 @@ import * as shuoshuoService from '@/services/shuoshuo';
 
 const renderShuoShuo = (initialEntry = '/shuoshuo') =>
   render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[initialEntry]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/shuoshuo" element={<ShuoShuo />} />
       </Routes>

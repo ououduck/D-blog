@@ -9,7 +9,8 @@
  */
 import { renderToPipeableStream } from 'react-dom/server';
 import { Writable } from 'node:stream';
-import { StaticRouter } from 'react-router-dom/server';
+// v7 起 StaticRouter 从 react-router 主入口导出（react-router-dom/server 入口已移除）。
+import { StaticRouter } from 'react-router';
 import { HelmetProvider } from 'react-helmet-async';
 import { AppShell } from './App';
 import { SsgRouteContext, buildSsgRouteData, type SsgRouteData } from './ssr/routeData';

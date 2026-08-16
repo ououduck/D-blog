@@ -180,7 +180,7 @@ const App: React.FC = () => {
       {/* future 标志：提前启用 React Router v7 的默认行为（v7_startTransition 让路由
           更新走 startTransition 非阻塞渲染；v7_relativeSplatPath 修正 splat 路由内的
           相对路径解析），消除升级 v7 时的破坏性变更，并消掉测试中的 future flag 警告。 */}
-      <Router basename={getRouterBasename()} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Router basename={getRouterBasename()}>
         <SsgRouteContext.Provider value={ssgRouteData}>
           <AppShell />
         </SsgRouteContext.Provider>

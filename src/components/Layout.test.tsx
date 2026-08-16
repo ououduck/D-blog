@@ -23,7 +23,7 @@ vi.mock('@/services/busuanzi', () => ({
 
 const renderLayout = () =>
   render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/']}>
+    <MemoryRouter initialEntries={['/']}>
       <Layout>
         <div>页面内容</div>
       </Layout>

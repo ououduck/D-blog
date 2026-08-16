@@ -32,7 +32,7 @@ vi.mock('@/services/busuanzi', () => ({
 
 const renderFriends = (initialEntry = '/friends') =>
   render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[initialEntry]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/friends" element={<Friends />} />
       </Routes>

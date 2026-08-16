@@ -16,7 +16,7 @@ vi.mock('@/services/busuanzi', () => ({
 
 const renderArchive = (initialEntry = '/archive') =>
   render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[initialEntry]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/archive" element={<ArchivePage />} />
       </Routes>

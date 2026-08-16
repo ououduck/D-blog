@@ -20,7 +20,7 @@ const renderItem = (props: {
   showDetailLink?: boolean;
 }) =>
   render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter>
       <ShuoShuoItem
         item={props.item}
         onPreview={props.onPreview ?? vi.fn()}

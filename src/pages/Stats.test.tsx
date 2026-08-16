@@ -10,7 +10,7 @@ vi.mock('@/services/busuanzi', () => ({
 
 const renderStats = () =>
   render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/stats']}>
+    <MemoryRouter initialEntries={['/stats']}>
       <Stats />
     </MemoryRouter>,
   );
