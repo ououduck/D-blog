@@ -15,6 +15,7 @@ import type { PostMetadata } from '../types';
 import { Seo, buildSiteSchemas } from '../components/Seo';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';
+import { clearSearchQueryParams, setSearchQueryParams } from '@/utils/searchParams';
 import { siteConfig } from '@config/site.config';
 
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
@@ -75,15 +76,7 @@ export const Search = () => {
     lastEditedQueryRef.current = query;
     handleSearch(query);
     setSearchParams(
-      (previous) => {
-        const nextParams = new URLSearchParams(previous);
-        if (query.trim()) {
-          nextParams.set('q', query);
-        } else {
-          nextParams.delete('q');
-        }
-        return nextParams;
-      },
+      (previous) => setSearchQueryParams(previous, query),
       { replace: true },
     );
   };
@@ -91,14 +84,7 @@ export const Search = () => {
   const handleClearSearch = () => {
     lastEditedQueryRef.current = '';
     clearSearch();
-    setSearchParams(
-      (previous) => {
-        const nextParams = new URLSearchParams(previous);
-        nextParams.delete('q');
-        return nextParams;
-      },
-      { replace: true },
-    );
+    setSearchParams((previous) => clearSearchQueryParams(previous), { replace: true });
   };
 
   const handleToggleSave = async (post: PostMetadata) => {

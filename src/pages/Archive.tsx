@@ -11,6 +11,7 @@ import { getInitialPosts, getPosts } from '@/services/posts';
 import type { PostMetadata } from '../types';
 import { Seo, buildSiteSchemas } from '../components/Seo';
 import { absoluteSiteUrl } from '@/utils/siteUrl';
+import { clearSearchQueryParams, setSearchQueryParams } from '@/utils/searchParams';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { SearchField } from '@/components/SearchField';
 import { usePostSearch } from '@/hooks/usePostSearch';
@@ -112,33 +113,14 @@ export const ArchivePage = () => {
     // 的提交是异步延迟的，期间 queryFromUrl 仍是旧值）。
     lastEditedQueryRef.current = query;
     handleSearch(query);
-    setSearchParams(
-      (previous) => {
-        const nextParams = new URLSearchParams(previous);
-        nextParams.delete('year');
-        if (query.trim()) {
-          nextParams.set('q', query);
-        } else {
-          nextParams.delete('q');
-        }
-        return nextParams;
-      },
-      { replace: true },
-    );
+    // 搜索时删除 year：搜索结果按时间线展示，年份筛选与搜索语义冲突。
+    setSearchParams((previous) => setSearchQueryParams(previous, query, ['year']), { replace: true });
   };
 
   const handleClearSearch = () => {
     lastEditedQueryRef.current = '';
     clearSearch();
-    setSearchParams(
-      (previous) => {
-        const nextParams = new URLSearchParams(previous);
-        nextParams.delete('q');
-        nextParams.delete('year');
-        return nextParams;
-      },
-      { replace: true },
-    );
+    setSearchParams((previous) => clearSearchQueryParams(previous, ['year']), { replace: true });
   };
 
   const groups = useMemo(() => buildArchiveGroups(results), [results]);

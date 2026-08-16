@@ -26,6 +26,7 @@ import { isReadingComplete } from '@/utils/readingProgress';
 import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';
 import { Pagination } from '@/components/Pagination';
 import { canonicalizeHomeQuery, getHomeQueryState, setHomeQueryParam } from '@/utils/homeQuery';
+import { clearSearchQueryParams, setSearchQueryParams } from '@/utils/searchParams';
 import { Magnet } from '@/components/effects/Magnet';
 
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
@@ -505,36 +506,15 @@ export const Home = () => {
     lastEditedQueryRef.current = query;
     handleSearch(query);
     setCurrentPage(1);
-    setSearchParams(
-      (previous) => {
-        const nextParams = new URLSearchParams(previous);
-
-        if (query.trim()) {
-          nextParams.set('q', query);
-        } else {
-          nextParams.delete('q');
-        }
-        nextParams.delete('page');
-
-        return nextParams;
-      },
-      { replace: true },
-    );
+    // 搜索时删除 page 页码：搜索结果的页数与无搜索时不一致，保留会跳到错误页。
+    setSearchParams((previous) => setSearchQueryParams(previous, query, ['page']), { replace: true });
   };
 
   const handleClearSearch = () => {
     lastEditedQueryRef.current = '';
     clearSearch();
     setCurrentPage(1);
-    setSearchParams(
-      (previous) => {
-        const nextParams = new URLSearchParams(previous);
-        nextParams.delete('q');
-        nextParams.delete('page');
-        return nextParams;
-      },
-      { replace: true },
-    );
+    setSearchParams((previous) => clearSearchQueryParams(previous, ['page']), { replace: true });
   };
 
   const currentPosts = useMemo(() => {

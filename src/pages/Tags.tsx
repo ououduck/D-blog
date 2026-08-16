@@ -12,6 +12,7 @@ import { getInitialPosts, getPosts } from '@/services/posts';
 import type { PostMetadata } from '../types';
 import { Seo, buildSiteSchemas } from '../components/Seo';
 import { absoluteSiteUrl } from '@/utils/siteUrl';
+import { clearSearchQueryParams, setSearchQueryParams } from '@/utils/searchParams';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -114,31 +115,13 @@ export const Tags = () => {
     // 的提交是异步延迟的，期间 queryFromUrl 仍是旧值）。
     lastEditedQueryRef.current = query;
     handleSearch(query);
-    setSearchParams(
-      (previous) => {
-        const nextParams = new URLSearchParams(previous);
-        if (query.trim()) {
-          nextParams.set('q', query);
-        } else {
-          nextParams.delete('q');
-        }
-        return nextParams;
-      },
-      { replace: true },
-    );
+    setSearchParams((previous) => setSearchQueryParams(previous, query), { replace: true });
   };
 
   const handleClearSearch = () => {
     lastEditedQueryRef.current = '';
     clearSearch();
-    setSearchParams(
-      (previous) => {
-        const nextParams = new URLSearchParams(previous);
-        nextParams.delete('q');
-        return nextParams;
-      },
-      { replace: true },
-    );
+    setSearchParams((previous) => clearSearchQueryParams(previous), { replace: true });
   };
 
   useEffect(() => {
