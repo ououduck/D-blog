@@ -90,7 +90,9 @@ const RankingCard = ({
                 <motion.div
                   className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
                   initial={shouldReduceMotion ? false : { width: 0 }}
-                  whileInView={{ width: `${Math.max(8, ((Number.isFinite(item.count) ? item.count : 0) / max) * 100)}%` }}
+                  whileInView={{
+                    width: `${Math.max(8, ((Number.isFinite(item.count) ? item.count : 0) / max) * 100)}%`,
+                  }}
                   viewport={{ once: true, amount: 0.6 }}
                   transition={{ duration: 0.65, ease: easeOut, delay: Math.min(index * 0.06, 0.3) }}
                 />

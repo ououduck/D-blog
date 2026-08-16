@@ -90,8 +90,7 @@ const REJECTED_MARKER = '<!-- d-blog-friend-bot:rejected -->';
 
 /** 站点信息：反链检查目标。从 site.config.json 读取，可 env 覆盖（移除硬编码）。 */
 const siteConfig = loadSiteConfig();
-const SITE_URL =
-  process.env.FRIEND_LINK_SITE_URL || `${String(siteConfig.url || '').replace(/\/+$/, '')}/`;
+const SITE_URL = process.env.FRIEND_LINK_SITE_URL || `${String(siteConfig.url || '').replace(/\/+$/, '')}/`;
 
 /** 人工审核联系邮箱：从 site.config.json 的 social 读取，可 env 覆盖。 */
 const CONTACT_EMAIL =

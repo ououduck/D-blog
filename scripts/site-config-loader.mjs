@@ -28,7 +28,9 @@ const DEFAULT_SITE_CONFIG = {
 };
 
 const normalizeBaseUrl = (value, logger, allowFallback) => {
-  const rawUrl = String(value || '').trim().replace(/\/+$/, '');
+  const rawUrl = String(value || '')
+    .trim()
+    .replace(/\/+$/, '');
 
   if (!rawUrl) {
     if (allowFallback) {
@@ -45,7 +47,9 @@ const normalizeBaseUrl = (value, logger, allowFallback) => {
       logger?.warn('Invalid site URL, fallback to default', `${rawUrl} -> ${DEFAULT_SITE_CONFIG.url}`);
       return DEFAULT_SITE_CONFIG.url;
     }
-    throw new Error(`site.config.json 的 url 字段非法（${rawUrl}）：${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `site.config.json 的 url 字段非法（${rawUrl}）：${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 };
 
@@ -74,9 +78,7 @@ export const loadSiteConfig = ({ logger, allowFallback = false } = {}) => {
   try {
     raw = JSON.parse(fs.readFileSync(SITE_CONFIG_FILE, 'utf-8'));
   } catch (error) {
-    return fallback(
-      `Failed to parse site.config.json: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    return fallback(`Failed to parse site.config.json: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
