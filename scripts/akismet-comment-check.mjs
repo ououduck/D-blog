@@ -107,7 +107,11 @@ const checkWithAkismet = async (input) => {
   const apiKey = process.env.AKISMET_API_KEY;
   const params = new URLSearchParams(input);
 
-  const { signal, cleanup } = createTimeoutSignal(AKISMET_TIMEOUT_MS);
+  // 外层信号只做「总预算」兜底（单次超时 × 尝试次数 × 2 余量），内层超时与重试
+  // 交给 fetchWithRetry 的 timeoutMs 管理。此前外层 15s 与内层默认 15s 同长，
+  // 外层先触发 → externalSignal.aborted → fetchWithRetry 按外部取消直接抛出，
+  // 「15s × 4 次尝试」的重试语义在超时路径完全失效（挂死端点只试一次）。
+  const { signal, cleanup } = createTimeoutSignal(AKISMET_TIMEOUT_MS * (AKISMET_RETRIES + 1) * 2);
   try {
     const response = await fetchWithRetry(
       `https://${apiKey}.rest.akismet.com/1.1/comment-check`,
@@ -122,6 +126,7 @@ const checkWithAkismet = async (input) => {
       },
       {
         retries: AKISMET_RETRIES,
+        timeoutMs: AKISMET_TIMEOUT_MS,
         signal,
         onRetry: (info) =>
           logger.warn('Retrying Akismet request', {
@@ -184,7 +189,9 @@ const deleteDiscussionComment = async (commentNodeId) => {
     return;
   }
 
-  const { signal, cleanup } = createTimeoutSignal(GRAPHQL_TIMEOUT_MS);
+  // 外层信号为总预算兜底（单次 20s × 3 次尝试 × 2 余量 = 120s），
+  // 单次超时与重试由 fetchWithRetry 的 timeoutMs 管理（见 comment-check 调用注释）。
+  const { signal, cleanup } = createTimeoutSignal(GRAPHQL_TIMEOUT_MS * (GRAPHQL_RETRIES + 1) * 2);
   try {
     const response = await fetchWithRetry(
       GITHUB_GRAPHQL_URL,
@@ -204,6 +211,7 @@ const deleteDiscussionComment = async (commentNodeId) => {
       },
       {
         retries: GRAPHQL_RETRIES,
+        timeoutMs: GRAPHQL_TIMEOUT_MS,
         signal,
         onRetry: (info) =>
           logger.warn('Retrying GraphQL delete', {

@@ -136,7 +136,10 @@ const runGraphQL = async (query, variables) => {
     return { ok: false };
   }
 
-  const { signal, cleanup } = createTimeoutSignal(GRAPHQL_TIMEOUT_MS);
+  // 外层信号为总预算兜底（单次 20s × 3 次尝试 × 2 余量 = 120s），
+  // 单次超时与重试由 fetchWithRetry 的 timeoutMs 管理：此前外层 20s 会让
+  // 第二次重试只剩几秒窗口，「20s × 3 次尝试」的重试语义在超时路径不成立。
+  const { signal, cleanup } = createTimeoutSignal(GRAPHQL_TIMEOUT_MS * (GRAPHQL_RETRIES + 1) * 2);
   try {
     const response = await fetchWithRetry(
       GITHUB_GRAPHQL_URL,
@@ -153,6 +156,7 @@ const runGraphQL = async (query, variables) => {
       },
       {
         retries: GRAPHQL_RETRIES,
+        timeoutMs: GRAPHQL_TIMEOUT_MS,
         signal,
         onRetry: (info) =>
           logger.warn('Retrying GraphQL request', {
