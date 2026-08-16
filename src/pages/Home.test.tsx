@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { Home } from './Home';
@@ -84,5 +84,36 @@ describe('Home', () => {
     expect(shareButtons.length).toBeGreaterThan(0);
     await user.click(shareButtons[0]);
     expect(await screen.findByTestId('mock-share-modal')).toBeInTheDocument();
+  });
+
+  it('URL 带 ?q= 时同步到搜索框', async () => {
+    renderHome('/?q=react');
+    const input = await screen.findByRole('searchbox', { name: '搜索文章' });
+    await waitFor(() => expect(input).toHaveValue('react'));
+  });
+
+  it('输入搜索词后输入框保持用户输入不被 URL 同步回退（v7_startTransition 竞态回归）', async () => {
+    const user = userEvent.setup();
+    renderHome();
+    const input = screen.getByRole('searchbox', { name: '搜索文章' });
+
+    await user.type(input, 'react');
+    // 击键后 URL 异步提交期间，URL→state 回写不得把输入内容回退。
+    await waitFor(() => expect(input).toHaveValue('react'));
+    expect(input).toHaveValue('react');
+  });
+
+  it('清除搜索后 URL 的 q 参数被移除', async () => {
+    const user = userEvent.setup();
+    renderHome('/?q=react');
+    const input = await screen.findByRole('searchbox', { name: '搜索文章' });
+    await waitFor(() => expect(input).toHaveValue('react'));
+
+    await user.click(screen.getByRole('button', { name: '清除搜索' }));
+    await waitFor(() => expect(input).toHaveValue(''));
+    // URL 中不再有 q 参数。
+    await waitFor(() => {
+      expect(window.location.search).not.toContain('q=');
+    });
   });
 });
