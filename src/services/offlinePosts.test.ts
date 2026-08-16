@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateOfflinePost, type OfflinePost } from './offlinePosts';
+import { validateOfflinePost } from './offlinePosts';
 
 const makeValidPost = (): Record<string, unknown> => ({
   id: 'post-1',
