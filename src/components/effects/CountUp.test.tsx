@@ -59,4 +59,3 @@ describe('CountUp', () => {
     expect(screen.getByText('500')).toBeInTheDocument();
   });
 });
-
