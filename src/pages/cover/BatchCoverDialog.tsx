@@ -1,3 +1,7 @@
+/**
+ * 批量封面生成弹窗：多文件（Markdown/CSV/JSON）导入解析、跨文件 slug 去重、
+ * 解析问题提示与条目预览，确认后交由父组件生成 ZIP 下载。
+ */
 import React, { useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useModalOverlay } from '../../hooks/useModalOverlay';

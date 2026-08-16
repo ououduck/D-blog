@@ -1,3 +1,7 @@
+/**
+ * 文章选取工具：首页精选槽位（hero）选取——置顶精选（featured-top）
+ * 优先于普通 featured 标记。
+ */
 import type { PostMetadata } from '@/types';
 
 type FeaturedPostFields = Pick<PostMetadata, 'featured' | 'featured-top'>;

@@ -1,8 +1,3 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { easeSmooth } from '@/utils/motion';
-
 /**
  * 滚动进入视口的轻量揭示组件（灵感来自 react-bits「FadeContent /
  * AnimatedContent」的滚动激活思想，改用 framer-motion 实现）：
@@ -11,6 +6,11 @@ import { easeSmooth } from '@/utils/motion';
  *   水合后由 framer-motion 在进入视口时播放入场动画；
  * - 尊重 prefers-reduced-motion：直接渲染最终状态。
  */
+
+import React from 'react';
+import { motion } from 'framer-motion';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { easeSmooth } from '@/utils/motion';
 
 interface RevealProps {
   /** 进入视口的延迟（秒）。 */

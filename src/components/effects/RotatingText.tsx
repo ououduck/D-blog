@@ -1,3 +1,13 @@
+/**
+ * 参考 react-bits「RotatingText」的词条轮换组件（framer-motion 版）：
+ * 多段短语以 3D 翻转/位移动画循环切换。
+ *
+ * 适配 D-blog：
+ * - SSR 首帧渲染第一段短语（无 JS 时展示静态文本）；
+ * - 尊重 prefers-reduced-motion：自动轮换关闭，仅展示首段；
+ * - 移除 react-bits 中不适用于本站的部分默认样式，样式由调用方控制。
+ */
+
 import {
   motion,
   AnimatePresence,
@@ -8,16 +18,6 @@ import {
 } from 'framer-motion';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-
-/**
- * 参考 react-bits「RotatingText」的词条轮换组件（framer-motion 版）：
- * 多段短语以 3D 翻转/位移动画循环切换。
- *
- * 适配 D-blog：
- * - SSR 首帧渲染第一段短语（无 JS 时展示静态文本）；
- * - 尊重 prefers-reduced-motion：自动轮换关闭，仅展示首段；
- * - 移除 react-bits 中不适用于本站的部分默认样式，样式由调用方控制。
- */
 
 export interface RotatingTextRef {
   next: () => void;

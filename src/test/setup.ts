@@ -1,3 +1,7 @@
+/**
+ * vitest 全局测试配置：注册 @testing-library/react 的 afterEach 清理，
+ * 并补齐 jsdom 缺失的 scrollIntoView / scrollTo 实现。
+ */
 import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';

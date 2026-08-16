@@ -1,6 +1,3 @@
-import { visit } from 'unist-util-visit';
-import type { Root } from 'mdast';
-
 /**
  * remark 插件：把围栏代码块的 info 字符串（如 ```ts title="app.ts"）透传到
  * code 元素的 data-meta 属性。
@@ -11,6 +8,9 @@ import type { Root } from 'mdast';
  * hProperties，让最终渲染的 <code> 携带 data-meta 属性，供 PreBlock 解析
  * 出文件名等信息。
  */
+import { visit } from 'unist-util-visit';
+import type { Root } from 'mdast';
+
 export const remarkCodeMeta = () => (tree: Root) => {
   visit(tree, 'code', (node) => {
     if (!node.meta) return;

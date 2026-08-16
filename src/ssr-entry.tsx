@@ -1,11 +1,3 @@
-import { renderToPipeableStream } from 'react-dom/server';
-import { Writable } from 'node:stream';
-import { StaticRouter } from 'react-router-dom/server';
-import { HelmetProvider } from 'react-helmet-async';
-import { AppShell } from './App';
-import { SsgRouteContext, buildSsgRouteData, type SsgRouteData } from './ssr/routeData';
-import { Post } from './types';
-
 /**
  * 把 React 节点渲染为完整 HTML 字符串。
  * 使用 renderToPipeableStream（而非 renderToString）：路由组件均为 React.lazy
@@ -15,6 +7,14 @@ import { Post } from './types';
  * 若懒加载 chunk 迟迟无法 resolve，onAllReady 可能永不触发导致构建永久挂起，
  * 因此设置渲染超时：超时后 reject，由调用方记录错误并中止该页渲染。
  */
+import { renderToPipeableStream } from 'react-dom/server';
+import { Writable } from 'node:stream';
+import { StaticRouter } from 'react-router-dom/server';
+import { HelmetProvider } from 'react-helmet-async';
+import { AppShell } from './App';
+import { SsgRouteContext, buildSsgRouteData, type SsgRouteData } from './ssr/routeData';
+import { Post } from './types';
+
 const RENDER_TIMEOUT_MS = 30000;
 
 const renderTreeToString = (node: React.ReactNode, onError?: (error: unknown) => void): Promise<string> =>

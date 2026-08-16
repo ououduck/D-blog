@@ -1,3 +1,6 @@
+/**
+ * 封面生成器渐变模板数据：模板列表（纯黑/纯白）与默认模板。
+ */
 export interface CoverTemplate {
   id: string;
   name: string;

@@ -1,3 +1,7 @@
+/**
+ * 离线状态提示条：监听 online/offline 事件，离线时提示已收藏文章仍可阅读，
+ * 恢复网络后短暂显示「网络已恢复」。
+ */
 import React, { useEffect, useRef, useState } from 'react';
 
 export const OfflineStatus: React.FC = () => {

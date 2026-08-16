@@ -1,7 +1,3 @@
-import { useInView, useMotionValue, useSpring } from 'framer-motion';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
-
 /**
  * 参考 react-bits「CountUp」的数字滚动组件，适配 D-blog：
  * - SSR 首帧直接渲染最终值（无 JS 时爬虫/用户也能读到完整数字），
@@ -9,6 +5,10 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
  * - 使用 framer-motion 的 useSpring 阻尼滚动，滚动曲线与全站动效一致；
  * - 尊重 prefers-reduced-motion：直接静态渲染最终值，不启动动画。
  */
+
+import { useInView, useMotionValue, useSpring } from 'framer-motion';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 interface CountUpProps {
   /** 目标值（SSR 首帧即渲染该值）。 */

@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-
 /**
  * 监听媒体查询变化。
  * 初始化与 SSR 首帧返回 defaultValue，挂载后立即同步真实媒体状态并持续监听，
  * 保证客户端首帧渲染与 SSR 输出一致（水合无冲突）。
  */
+import { useEffect, useState } from 'react';
+
 export const useMediaQuery = (query: string, defaultValue = false): boolean => {
   // 初始化器不访问 window：确保 SSR 与客户端首帧渲染一致（水合无冲突）。
   // 下方 useEffect 会在挂载后立即读取真实媒体状态并纠正。

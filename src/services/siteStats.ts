@@ -1,3 +1,7 @@
+/**
+ * 站点统计数据层：构建期 site-stats.json 经 eager glob 内联，SSR 阶段
+ * 同步读取；数据缺失时以 EMPTY_SITE_STATS 兜底。
+ */
 import type { PostMetadata } from '@/types';
 
 interface StatCountItem {

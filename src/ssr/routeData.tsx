@@ -1,7 +1,3 @@
-import { createContext, useContext } from 'react';
-import { Post, PostMetadata } from '../types';
-import { getSeriesNavigation, getRelatedPosts, type SeriesNavigation } from '../utils/postRelations';
-
 /**
  * 构建期 SSG 注入的路由数据（仅文章页）。
  * 客户端水合时 context 保持 SSR 时的值，SPA 导航到其他文章时取不到数据，
@@ -11,6 +7,10 @@ import { getSeriesNavigation, getRelatedPosts, type SeriesNavigation } from '../
  * HTML，因此体积直接贡献于 TTFB。相邻/相关文章在页面上只展示标题/封面/日期等
  * 元数据，无需完整正文——注入前剥离 content 与 searchText，可显著缩小每页 HTML。
  */
+import { createContext, useContext } from 'react';
+import { Post, PostMetadata } from '../types';
+import { getSeriesNavigation, getRelatedPosts, type SeriesNavigation } from '../utils/postRelations';
+
 export interface SsgRouteData {
   post: Post;
   adjacentPosts: { prev: PostMetadata | null; next: PostMetadata | null };

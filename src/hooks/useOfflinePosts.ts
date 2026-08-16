@@ -1,3 +1,6 @@
+/**
+ * 离线收藏 hook：列表/收藏状态/切换收藏/刷新，自动订阅跨页变更。
+ */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getOfflinePost,
@@ -25,7 +28,6 @@ interface UseOfflinePostsResult {
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error && error.message ? error.message : fallback;
 
-/** 离线收藏 hook：列表/收藏状态/切换收藏/刷新，自动订阅跨页变更。 */
 export const useOfflinePosts = (post?: OfflinePostInput | null): UseOfflinePostsResult => {
   const postId = post?.id;
   const postRef = useRef(post);

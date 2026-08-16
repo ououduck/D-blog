@@ -1,3 +1,7 @@
+/**
+ * 客户端渲染入口：SSR 静态 HTML 存在时以水合接管，否则普通渲染；
+ * 生产构建下注册 Service Worker。
+ */
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';

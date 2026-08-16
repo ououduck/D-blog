@@ -1,3 +1,7 @@
+/**
+ * Giscus 评论区：接近视口且在线时才懒加载，多来源回退加载链 + 超时与
+ * 自动重试；水合后同步网络状态，并随主题切换同步 iframe 主题。
+ */
 import { useEffect, useRef, useState } from 'react';
 import { MessageSquareText } from 'lucide-react';
 

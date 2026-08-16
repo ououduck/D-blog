@@ -1,3 +1,7 @@
+/**
+ * Service Worker 注册与状态管理：注册、更新检测与更新可用提示，
+ * 通过订阅通知 UI（ServiceWorkerUpdatePrompt）并由其触发刷新。
+ */
 import { getSiteBasePath } from '@/utils/siteUrl';
 
 type ServiceWorkerStatus =

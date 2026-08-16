@@ -1,3 +1,7 @@
+/**
+ * 应用根组件：路由配置 + View Transitions 页面切换 + 全局错误边界，
+ * 导出 AppShell 供 SSR 复用。
+ */
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';

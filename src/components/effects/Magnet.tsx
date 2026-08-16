@@ -1,7 +1,3 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
-
 /**
  * 参考 react-bits「Magnet」的磁吸效果：元素在光标接近时向光标方向轻微
  * 平移，离开后回弹。适配 D-blog：
@@ -9,6 +5,10 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
  * - 尊重 prefers-reduced-motion：整体禁用；
  * - 位移幅度默认更克制（magnetStrength 更大），保持编辑风的内敛观感。
  */
+
+import React, { useEffect, useRef, useState } from 'react';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 interface MagnetProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onMouseMove'> {
   /** 感应范围（以元素边缘向外扩展的像素数）。 */

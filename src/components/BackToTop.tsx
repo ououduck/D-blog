@@ -1,3 +1,7 @@
+/**
+ * 返回顶部按钮：IntersectionObserver 观察顶部哨兵控制显隐，隐藏时同步
+ * 移除焦点可达性；滚动行为尊重 prefers-reduced-motion。
+ */
 import React, { useCallback, useEffect, useRef } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';

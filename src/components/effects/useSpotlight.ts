@@ -1,7 +1,3 @@
-import { useRef, useState } from 'react';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
-
 /**
  * 参考 react-bits「SpotlightCard」的指针跟随高光逻辑：
  * 鼠标在元素内移动时记录光标位置，配合 <SpotlightLayer /> 渲染一层
@@ -13,6 +9,10 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
  * - 仅在支持 hover + 精细指针的设备上启用（触屏不会有“悬停粘滞”光斑）；
  * - 尊重 prefers-reduced-motion：直接禁用整个效果（纯装饰）。
  */
+
+import { useRef, useState } from 'react';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export interface SpotlightLayerStyle extends React.CSSProperties {
   '--spotlight-x'?: string;

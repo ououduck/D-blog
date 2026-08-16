@@ -1,5 +1,3 @@
-import type { Variants } from 'framer-motion';
-
 /**
  * 全站统一的 cubic-bezier 缓动曲线。
  *
@@ -8,6 +6,8 @@ import type { Variants } from 'framer-motion';
  * 状态过渡。两者均为标准 ease-out（y 控制点不越过 1，无回弹），配合无位移动画，
  * 减少重排感。
  */
+import type { Variants } from 'framer-motion';
+
 export const easeOut = [0.16, 1, 0.3, 1] as const;
 export const easeSmooth = [0.22, 1, 0.36, 1] as const;
 
