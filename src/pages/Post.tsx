@@ -60,6 +60,7 @@ import type { MarkdownHeading } from '@/utils/headings';
 import { formatDate } from '@/utils/date';
 import { stripMarkdown } from '@/utils/markdownText';
 import { copyTextToClipboard } from '@/utils/clipboard';
+import { downloadBlob } from '@/utils/download';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 import { useReadingMode } from '@/components/ReadingModeContext';
@@ -429,20 +430,11 @@ const PreBlock = ({
   };
 
   const handleDownload = () => {
-    const objectUrl = URL.createObjectURL(new Blob([code], { type: 'text/plain;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.href = objectUrl;
     // title="app.ts" 已带扩展名时不再追加，避免生成 app.ts.ts。
     const baseName = filename || 'code-snippet';
     const extension = getCodeFileExtension(lang);
-    link.download = baseName.toLowerCase().endsWith(`.${extension}`) ? baseName : `${baseName}.${extension}`;
-    link.rel = 'noopener';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    // 延迟释放：部分浏览器（如 Firefox）异步发起下载，同步 revoke 可能中止下载
-    // （与 ImageViewer 的下载逻辑保持一致的时序约定）。
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    const downloadName = baseName.toLowerCase().endsWith(`.${extension}`) ? baseName : `${baseName}.${extension}`;
+    downloadBlob(new Blob([code], { type: 'text/plain;charset=utf-8' }), downloadName);
   };
 
   if (isMermaidBlock || lang?.toLowerCase() === 'mermaid') {

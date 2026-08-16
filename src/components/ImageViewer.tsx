@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Maximize2, Minus, Plus, RotateCcw, X } from 'lucide-react';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { downloadBlob } from '@/utils/download';
 
 interface ImageViewerProps {
   src: string | null;
@@ -115,15 +116,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
                 : blob.type === 'image/svg+xml'
                   ? '.svg'
                   : '';
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = `${baseName}${ext}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      // 延迟释放：部分浏览器（如 Firefox）异步发起下载，同步 revoke 可能中止下载。
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      downloadBlob(blob, `${baseName}${ext}`);
     } catch {
       window.open(displaySrc, '_blank', 'noopener,noreferrer');
     }

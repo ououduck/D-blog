@@ -1,8 +1,12 @@
 /**
  * 封面导出工具：canvas 转 Blob（含跨域污染的降级提示）与画布合成导出，
- * 供批量导出与单张保存共用。
+ * 供批量导出与单张保存共用。Blob 下载统一走 @/utils/download（挂载-点击-
+ * 延迟释放时序约定见该模块）。
  */
 import type { ExportFormat } from './coverTypes';
+import { downloadBlob } from '@/utils/download';
+
+export { downloadBlob };
 
 export function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -42,17 +46,7 @@ export async function downloadCanvas(
 ): Promise<void> {
   const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
   const blob = await canvasToBlob(canvas, mimeType, format === 'jpeg' ? quality : undefined);
-  const url = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = url;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    window.setTimeout(() => URL.revokeObjectURL(url), 100);
-  }
+  downloadBlob(blob, filename);
 }
 
 export async function copyCanvas(
@@ -73,19 +67,5 @@ export async function copyCanvas(
     const png = await canvasToBlob(canvas, 'image/png');
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
     return 'png-fallback';
-  }
-}
-
-export function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = url;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    window.setTimeout(() => URL.revokeObjectURL(url), 100);
   }
 }

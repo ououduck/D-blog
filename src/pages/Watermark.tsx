@@ -5,6 +5,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Download, Image as ImageIcon, RefreshCw, Upload, X } from 'lucide-react';
 import { Seo } from '../components/Seo';
+import { downloadBlob } from '@/utils/download';
 import {
   DEFAULT_WATERMARK_OPTIONS,
   clampWatermarkFontSize,
@@ -145,16 +146,7 @@ export const Watermark: React.FC = () => {
       canvas.height = imageState.image.naturalHeight;
       renderWatermark(canvas, imageState.image, { text, fontSize, opacity, position, padding: 32 });
       const blob = await canvasToBlob(canvas, format, quality / 100);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = getWatermarkFilename(imageState.name, format);
-      // 先挂载到 DOM 再点击、延迟释放 object URL：Firefox/Safari 对“未挂载的
-      // <a> + 立即 revoke”会中断或忽略下载（与 cover/coverExport 的 downloadBlob 一致）。
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 100);
+      downloadBlob(blob, getWatermarkFilename(imageState.name, format));
       setFeedback({ kind: 'success', message: '水印图片已下载。' });
     } catch (error) {
       setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '导出失败，请重试。' });
