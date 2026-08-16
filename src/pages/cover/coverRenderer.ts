@@ -252,6 +252,21 @@ async function drawIcon(
   ctx.restore();
 }
 
+// overlay 模糊层复用画布：模糊需要把已绘制内容拷到临时层再模糊回填。每次渲染
+// 新建全尺寸 canvas（导出 4× 时 4800×2512 ≈ 1200 万像素）会造成预览拖拽/输入时
+// 频繁的大块内存分配与 GC 抖动。按尺寸惰性重建的画布可复用；模糊段为同步执行
+// （无 await 间隙），并发渲染间不会相互污染，drawImage 全幅覆盖旧内容。
+let overlayBlurLayer: HTMLCanvasElement | null = null;
+
+const getOverlayBlurLayer = (width: number, height: number): HTMLCanvasElement => {
+  if (!overlayBlurLayer || overlayBlurLayer.width !== width || overlayBlurLayer.height !== height) {
+    overlayBlurLayer = document.createElement('canvas');
+    overlayBlurLayer.width = width;
+    overlayBlurLayer.height = height;
+  }
+  return overlayBlurLayer;
+};
+
 export async function renderCover(ctx: CanvasRenderingContext2D, options: CoverRenderOptions): Promise<void> {
   const { width, height } = options.size;
   const baseScale = width / BASE_CANVAS_WIDTH;
@@ -301,9 +316,9 @@ export async function renderCover(ctx: CanvasRenderingContext2D, options: CoverR
     ctx.restore();
   }
   if (options.overlay.enabled && options.overlay.blur > 0) {
-    const layer = document.createElement('canvas');
-    layer.width = width;
-    layer.height = height;
+    // 复用惰性重建的模糊层画布（尺寸变化时才重建），避免每次预览渲染
+    // 都新建全尺寸临时 canvas 造成内存抖动。
+    const layer = getOverlayBlurLayer(width, height);
     layer.getContext('2d')?.drawImage(ctx.canvas, 0, 0);
     ctx.clearRect(0, 0, width, height);
     ctx.save();
