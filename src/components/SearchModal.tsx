@@ -67,7 +67,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   const location = useLocation();
   const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const resultRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const resultRefs = useRef<Array<HTMLDivElement | null>>([]);
   const previousPathnameRef = useRef(location.pathname);
   const [searchScope, setSearchScope] = useState<PostSearchScope>('all');
   const [activeResultIndex, setActiveResultIndex] = useState(0);
@@ -323,7 +323,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                   {visibleResults.map((post, index) => {
                     const isActive = index === activeResultIndex;
                     return (
-                      <button
+                      <div
                         ref={(element) => {
                           resultRefs.current[index] = element;
                         }}
@@ -340,6 +340,10 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                         }`}
                         aria-label={`打开文章：${post.title}`}
                       >
+                        {/* 结果项用 div 而非 button：button 内容模型只允许 phrasing content，
+                            div/h4/p 属 flow content，嵌套属无效 HTML（AGENT.md 规则 12）。
+                            listbox 由输入框的 aria-activedescendant 驱动，option 本就
+                            不应进入 Tab 序（焦点始终停留在 combobox），div 语义更贴合。 */}
                         <div className="mb-1 flex items-center gap-2">
                           <span className="border border-zinc-200 bg-zinc-100 px-1.5 py-0.5 text-xs font-bold text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
                             {post.category}
@@ -360,7 +364,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                             {renderHighlightedText(post.searchMatch.snippet, post.searchMatch.terms)}
                           </p>
                         )}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
