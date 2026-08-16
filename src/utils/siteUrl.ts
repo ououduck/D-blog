@@ -97,21 +97,20 @@ const withBasePath = (value: string, basePath = getSiteBasePath()): string => {
   return `${joined || '/'}${suffix}`;
 };
 /** 拼接路由 URL（应用 base path，外部 URL 原样返回）。 */
-
 export const routeUrl = (route: string, basePath = getSiteBasePath()): string =>
   withBasePath(
     isExternalUrl(route) || route.startsWith('#') ? route : route.startsWith('/') ? route : `/${route}`,
     basePath,
-    /** 拼接静态资源 URL（应用 base path，外部/协议 URL 原样返回）。 */
   );
 
+/** 拼接静态资源 URL（应用 base path，外部/协议 URL 原样返回）。 */
 export const assetUrl = (asset: string, basePath = getSiteBasePath()): string =>
   withBasePath(
     isExternalUrl(asset) || asset.startsWith('#') ? asset : asset.startsWith('/') ? asset : `/${asset}`,
-    /** 生成绝对站点 URL（应用 base path；同源 URL 重挂 base，异源原样返回）。 */
     basePath,
   );
 
+/** 生成绝对站点 URL（应用 base path；同源 URL 重挂 base，异源原样返回）。 */
 export const absoluteSiteUrl = (value: string | undefined, siteUrl: string, basePath = getSiteBasePath()): string => {
   if (!value) {
     return new URL(withBasePath('/', basePath), `${siteUrl.replace(/\/+$/, '')}/`).toString();
