@@ -9,17 +9,23 @@ const flushFrames = async () => {
   });
 };
 
-// 目标元素的固定几何信息：top=600 高 800，视口高 800 时正文末尾位于视口底部附近。
-const mockTargetRect = {
-  top: 600,
-  bottom: 1400,
-  height: 800,
-  left: 0,
-  right: 800,
-  width: 800,
-  x: 0,
-  y: 600,
-  toJSON: () => ({}),
+// 目标元素的几何信息：文档绝对位置 top=600 高 800（视口 800 时正文末尾位于
+// 视口底部附近）。getBoundingClientRect 返回视口相对坐标 —— 随 scrollY 联动
+// （元素随滚动上移），否则模拟滚动时 articleTop = rect.top + scrollY 与
+// startScrollTop 同步增长，进度恒 0，滚动测试无法断言变化。
+const getMockRect = () => {
+  const top = 600 - window.scrollY;
+  return {
+    top,
+    bottom: top + 800,
+    height: 800,
+    left: 0,
+    right: 800,
+    width: 800,
+    x: 0,
+    y: top,
+    toJSON: () => ({}),
+  } as DOMRect;
 };
 
 describe('ReadingProgressBadge', () => {
@@ -41,8 +47,8 @@ describe('ReadingProgressBadge', () => {
       })),
     });
     // 渲染时 target 存在且几何已知
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-      return mockTargetRect as DOMRect;
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      return getMockRect();
     });
   });
 
@@ -61,12 +67,31 @@ describe('ReadingProgressBadge', () => {
 
   it('滚动更新进度百分比', async () => {
     const ref = { current: document.createElement('article') };
+    // 文档高度：让可滚动区间 > 0（jsdom 默认 scrollHeight=0，进度恒 0）。
+    Object.defineProperty(document.documentElement, 'scrollHeight', { configurable: true, value: 2000 });
     render(<ReadingProgressBadge targetRef={ref} />);
     await flushFrames();
-    // 移动端与桌面端徽章各渲染一个百分比
-    const badges = screen.getAllByText(/%$/);
-    expect(badges.length).toBeGreaterThan(0);
-    expect(badges[0]).toHaveTextContent('%');
+    // 移动端与桌面端徽章各渲染一个百分比；固定几何（top=600 高 800、视口 800、
+    // 文档 2000）下 scrollY=0 → 0%。
+    const readPercentage = () => screen.getAllByText(/%$/)[0].textContent ?? '';
+    expect(readPercentage()).toBe('0%');
+
+    // 真实模拟滚动：修改 scrollY 并派发 scroll 事件（组件经 rAF 重新计算）。
+    // scrollY=600 → (600-456)/(1000-456) ≈ 26%。
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 600 });
+    await act(async () => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+    await flushFrames();
+    expect(readPercentage()).toBe('26%');
+
+    // 滚过正文末尾（end 越过视口中间 50%）→ 徽章按设计隐藏（进入评论区/推荐区）。
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 1000 });
+    await act(async () => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+    await flushFrames();
+    expect(screen.queryByText(/%$/)).not.toBeInTheDocument();
   });
 
   it('可见性变化时触发 onVisibilityChange', async () => {

@@ -1,8 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import { Search } from './Search';
+
+// URL 探针：MemoryRouter 不更新 window.location，断言搜索参数必须经
+// useSearchParams 读取（否则「清除搜索后参数移除」的断言恒真、无回归保护）。
+let probeSearch = '';
+const SearchParamsProbe = () => {
+  const [searchParams] = useSearchParams();
+  probeSearch = searchParams.toString();
+  return null;
+};
 
 vi.mock('@/components/PostCard', () => ({
   PostCard: () => <div data-testid="mock-post-card" />,
@@ -21,7 +30,15 @@ const renderSearch = (initialEntry = '/search') =>
   render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
-        <Route path="/search" element={<Search />} />
+        <Route
+          path="/search"
+          element={
+            <>
+              <Search />
+              <SearchParamsProbe />
+            </>
+          }
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -69,7 +86,7 @@ describe('Search', () => {
     await user.click(screen.getByRole('button', { name: '清除搜索' }));
     await waitFor(() => expect(input).toHaveValue(''));
     await waitFor(() => {
-      expect(window.location.search).not.toContain('q=');
+      expect(probeSearch).not.toContain('q=');
     });
   });
 

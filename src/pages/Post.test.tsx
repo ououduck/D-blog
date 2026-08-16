@@ -136,10 +136,17 @@ describe('Post', () => {
     renderPost();
     await screen.findByText('测试文章标题');
 
-    const before = window.location.href;
-    fireEvent.keyDown(window, { key: 'ArrowLeft', altKey: true, repeat: false });
-    fireEvent.keyDown(window, { key: 'ArrowRight', altKey: true, repeat: false });
-    // URL 不应变化（默认行为被 preventDefault 拦截，不会退化为历史导航）。
-    expect(window.location.href).toBe(before);
+    // jsdom 不实现 Alt+Arrow 的历史导航，断言 URL 不变是恒真（起不到回归保护）；
+    // 真正的回归点是 preventDefault 被调用（拦截浏览器默认后退/前进行为，
+    // 否则用户会意外离开当前页面）。dispatchEvent 返回 false 即表示
+    // 监听器调用了 preventDefault（cancelable 事件）。
+    const leftEvent = new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, cancelable: true });
+    const rightEvent = new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, cancelable: true });
+    expect(window.dispatchEvent(leftEvent)).toBe(false);
+    expect(window.dispatchEvent(rightEvent)).toBe(false);
+    // 且未发生导航（getPostById 不被再次调用）。
+    await waitFor(() => {
+      expect(postsService.getPostById).toHaveBeenCalledTimes(1);
+    });
   });
 });

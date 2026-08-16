@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import { ArchivePage } from './Archive';
 
 vi.mock('@/services/posts', () => ({
@@ -14,11 +14,28 @@ vi.mock('@/services/busuanzi', () => ({
   fillBusuanziSpans: vi.fn(),
 }));
 
+// URL 探针：MemoryRouter 不更新 window.location，断言搜索参数必须经
+// useSearchParams 读取（否则「清除搜索后参数移除」的断言恒真、无回归保护）。
+let probeSearch = '';
+const SearchParamsProbe = () => {
+  const [searchParams] = useSearchParams();
+  probeSearch = searchParams.toString();
+  return null;
+};
+
 const renderArchive = (initialEntry = '/archive') =>
   render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
-        <Route path="/archive" element={<ArchivePage />} />
+        <Route
+          path="/archive"
+          element={
+            <>
+              <ArchivePage />
+              <SearchParamsProbe />
+            </>
+          }
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -62,12 +79,13 @@ describe('Archive', () => {
     renderArchive('/archive?q=react&year=2026');
     const input = await screen.findByRole('searchbox', { name: '搜索归档文章' });
     await waitFor(() => expect(input).toHaveValue('react'));
+    await waitFor(() => expect(probeSearch).toContain('q=react'));
 
     await user.click(screen.getByRole('button', { name: '清除搜索' }));
     await waitFor(() => expect(input).toHaveValue(''));
     await waitFor(() => {
-      expect(window.location.search).not.toContain('q=');
-      expect(window.location.search).not.toContain('year=');
+      expect(probeSearch).not.toContain('q=');
+      expect(probeSearch).not.toContain('year=');
     });
   });
 });

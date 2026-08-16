@@ -86,10 +86,14 @@ describe('SearchModal', () => {
 
   it('渲染搜索结果列表并支持点击导航', async () => {
     await setupSearchHook({ results: [mockSearchResult()], hasQuery: true });
-    renderModal();
+    const onClose = vi.fn();
+    renderModal(true, onClose);
     const resultButton = await screen.findByRole('option', { name: /打开文章：搜索结果文章/ });
     expect(screen.getByText('搜索结果文章')).toBeInTheDocument();
-    expect(resultButton).toBeInTheDocument();
+    // 点击结果：handleSelect → navigate(/post/<id>) + onClose（点击还可能经其他
+    // 关闭路径触发多次，断言至少一次即可验证「点击确实导航并关闭」）。
+    await userEvent.click(resultButton);
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
   it('无结果时展示空态提示', async () => {
@@ -116,12 +120,22 @@ describe('SearchModal', () => {
     );
   });
 
-  it('关闭后清空搜索状态（onClose 触发）', async () => {
-    await setupSearchHook();
+  it('关闭后清空搜索状态（isOpen=false 触发 clearSearch）', async () => {
+    await setupSearchHook({ hasQuery: true });
     const onClose = vi.fn();
-    renderModal(true, onClose);
-    await userEvent.click(screen.getByRole('button', { name: '关闭站内搜索' }));
-    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    const { rerender } = renderModal(true, onClose);
+    // 取回被 mock 的 hook 返回值：断言关闭时 clearSearch 被调用（此前用例只
+    // 断言 onClose，测试名与断言不符，且 clearSearch 从未被验证）。
+    const { usePostSearch } = await import('@/hooks/usePostSearch');
+    const { clearSearch } = vi.mocked(usePostSearch).mock.results[0].value as { clearSearch: ReturnType<typeof vi.fn> };
+    rerender(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="*" element={<SearchModal isOpen={false} onClose={onClose} />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(clearSearch).toHaveBeenCalled());
   });
 
   it('IME 组合输入期间按 Enter 上屏不触发导航（isComposing 拦截）', async () => {
