@@ -24,8 +24,9 @@ const stageTimeoutMs = Number(process.env.BUILD_STAGE_TIMEOUT_MS) || DEFAULT_STA
 /**
  * 整条流水线的总预算（毫秒）：55 分钟。
  * 防御性兜底：即使每个阶段都逼近各自的 stageTimeoutMs，叠加后也可能撞上
- * Actions 的 6 小时默认 job 上限（尤其并行 schedule 与 push 触发时排队堆积）。
- * 超过总预算立即停止剩余阶段并汇总已执行阶段耗时 —— job 永远在可控时长内结束。
+ * Actions job 的 60 分钟硬超时（ci.yml / deploy.yml 均设 timeout-minutes: 60），
+ * job 被强杀时阶段汇总日志来不及打印。超过总预算立即停止剩余阶段并汇总
+ * 已执行阶段耗时 —— job 永远在可控时长内结束，汇总始终可打印。
  * 可通过环境变量 BUILD_TOTAL_TIMEOUT_MS 覆盖（本地调试用）。
  */
 const DEFAULT_TOTAL_TIMEOUT_MS = 55 * 60 * 1000;
@@ -99,9 +100,14 @@ const run = ({ command, args }) =>
     });
 
     let timedOut = false;
+    // 阶段超时与总预算取较小者：单阶段不允许把流水线拖过总预算（最坏情况
+    // 8 阶段 × 20min 远超 job 的 60min 硬超时，汇总日志会被强杀吞掉）。
+    // 总预算已耗尽时该值 ≤ 0，定时器立即触发，与总预算检查一致地终止流水线。
+    const remainingBudget = totalTimeoutMs - (Date.now() - startedAt);
+    const effectiveTimeoutMs = Math.min(stageTimeoutMs, Math.max(0, remainingBudget));
     const timer = setTimeout(() => {
       timedOut = true;
-      write('timeout', `Killing stage after ${Math.round(stageTimeoutMs / 1000)}s`, `pid=${child.pid}`);
+      write('timeout', `Killing stage after ${Math.round(effectiveTimeoutMs / 1000)}s`, `pid=${child.pid}`);
       // 先 SIGTERM 给优雅退出机会，3s 后仍不退出再 SIGKILL。
       // 注意不能靠 child.killed 判断存活：kill() 调用后该标志同步置 true，
       // 无论进程是否真的退出。signalCode/exitCode 在 close 事件后才被填充。
@@ -111,7 +117,7 @@ const run = ({ command, args }) =>
           child.kill('SIGKILL');
         }
       }, 3000).unref();
-    }, stageTimeoutMs);
+    }, effectiveTimeoutMs);
 
     child.once('error', (error) => {
       clearTimeout(timer);
