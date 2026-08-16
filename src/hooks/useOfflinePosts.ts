@@ -43,6 +43,10 @@ export const useOfflinePosts = (post?: OfflinePostInput | null): UseOfflinePosts
   const mountedRef = useRef(true);
 
   useEffect(() => {
+    // setup 里复位：React StrictMode 开发模式会「执行 → cleanup → 再执行」，
+    // 若只在初始值置 true、cleanup 置 false，第二轮执行后 mountedRef 恒为 false，
+    // 收藏列表/状态永远停在 loading（开发环境功能失效）。
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };

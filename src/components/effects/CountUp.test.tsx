@@ -54,8 +54,10 @@ describe('CountUp', () => {
     expect(screen.getByText('0')).toBeInTheDocument();
   });
 
-  it('方向 down 时挂载后显示目标值（from 为动画终点）', () => {
+  it('方向 down 时挂载后显示起始值（动画从 from 向下滚到 to，终点为目标值）', () => {
     render(<CountUp to={500} from={1000} direction="down" />);
-    expect(screen.getByText('500')).toBeInTheDocument();
+    // 挂载水合写回起始值；to 是动画终点（SSR 首帧渲染），from 是起点。
+    expect(screen.getByText('1000')).toBeInTheDocument();
+    expect(screen.queryByText('500')).not.toBeInTheDocument();
   });
 });

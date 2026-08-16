@@ -11,11 +11,15 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 interface CountUpProps {
-  /** 目标值（SSR 首帧即渲染该值）。 */
+  /** 目标值（SSR 首帧即渲染该值，动画也收敛到此值）。 */
   to: number;
   /** 起始值，默认 0。 */
   from?: number;
-  /** 计数方向。 */
+  /**
+   * 计数方向（仅文档语义，不影响动画数学）：数字滚动方向由 from/to 的
+   * 数值关系决定（from > to 自然向下滚动）。此前 direction="down" 会把
+   * spring 从 to 滚向 from，动画终点变成 from，与「to 为目标值」的契约矛盾。
+   */
   direction?: 'up' | 'down';
   /** 进入视口后的延迟（秒）。 */
   delay?: number;
@@ -37,15 +41,7 @@ const getDecimalPlaces = (num: number): number => {
   return Number(decimals) !== 0 ? decimals.length : 0;
 };
 
-export const CountUp: React.FC<CountUpProps> = ({
-  to,
-  from = 0,
-  direction = 'up',
-  delay = 0,
-  duration = 1.8,
-  className,
-  separator,
-}) => {
+export const CountUp: React.FC<CountUpProps> = ({ to, from = 0, delay = 0, duration = 1.8, className, separator }) => {
   const ref = useRef<HTMLSpanElement | null>(null);
   const reducedMotion = useReducedMotion();
   // NaN/非法数字防御：非法值归零，避免渲染 "NaN" 且 NaN 进入 spring 计算
@@ -73,7 +69,9 @@ export const CountUp: React.FC<CountUpProps> = ({
     [formatter, separator],
   );
 
-  const motionValue = useMotionValue(direction === 'down' ? safeTo : safeFrom);
+  // spring 恒从 from 滚向 to（direction 不再参与数学）：终点必为 to，
+  // 与 SSR 首帧渲染的最终值一致。
+  const motionValue = useMotionValue(safeFrom);
   const damping = 20 + 40 * (1 / duration);
   const stiffness = 100 * (1 / duration);
   const springValue = useSpring(motionValue, { damping, stiffness });
@@ -87,7 +85,7 @@ export const CountUp: React.FC<CountUpProps> = ({
     // 水合后先写回起始值：首屏元素挂载即进入视口，用户会看到
     // "SSR 最终值 → 起始值 → 进入视口滚动计数"的短暂跳变；视口外元素则
     // 在滚动进入时才可见计数过程。减弱动效偏好下不写回，直接静态显示最终值。
-    ref.current.textContent = formatValue(direction === 'down' ? safeTo : safeFrom);
+    ref.current.textContent = formatValue(safeFrom);
 
     const unsubscribe = springValue.on('change', (latest: number) => {
       if (ref.current) {
@@ -96,7 +94,7 @@ export const CountUp: React.FC<CountUpProps> = ({
     });
 
     return () => unsubscribe();
-  }, [direction, formatValue, reducedMotion, safeFrom, safeTo, springValue]);
+  }, [formatValue, reducedMotion, safeFrom, springValue]);
 
   useEffect(() => {
     if (!isInView || reducedMotion) {
@@ -104,11 +102,11 @@ export const CountUp: React.FC<CountUpProps> = ({
     }
 
     const timeoutId = window.setTimeout(() => {
-      motionValue.set(direction === 'down' ? safeFrom : safeTo);
+      motionValue.set(safeTo);
     }, delay * 1000);
 
     return () => window.clearTimeout(timeoutId);
-  }, [delay, direction, isInView, motionValue, reducedMotion, safeFrom, safeTo]);
+  }, [delay, isInView, motionValue, reducedMotion, safeTo]);
 
   return (
     <span ref={ref} className={className}>

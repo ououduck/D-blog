@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { StrictMode } from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useOfflinePosts } from './useOfflinePosts';
 import * as offlinePostsService from '@/services/offlinePosts';
@@ -68,6 +69,14 @@ describe('useOfflinePosts', () => {
     expect(saved).toBe(false);
     expect(result.current.error).toContain('quota');
     expect(result.current.isSaving).toBe(false);
+  });
+
+  it('StrictMode 双挂载（执行→cleanup→再执行）后仍正常加载', async () => {
+    // 回归：mountedRef 初始 true、仅在 cleanup 置 false 时，StrictMode 第二轮
+    // 执行后 mountedRef 恒为 false，loading 永远停在 true（开发环境功能失效）。
+    const { result } = renderHook(() => useOfflinePosts(makePost('a')), { wrapper: StrictMode });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.posts).toEqual([]);
   });
 
   it('卸载后迟到的 refresh 结果不再 setState（mountedRef 守卫）', async () => {
