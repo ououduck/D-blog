@@ -25,7 +25,7 @@
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const PICGO_URL = 'http://127.0.0.1:36677/upload';
 const PICGO_TIMEOUT_MS = 120_000;
@@ -344,10 +344,15 @@ const main = async () => {
   console.log(cyan('━'.repeat(60)));
 };
 
-main().catch((error) => {
-  console.error(red(`\n✗ 迁移失败: ${error instanceof Error ? error.message : String(error)}`));
-  if (error instanceof Error && error.cause) {
-    console.error(red(`  原因: ${error.cause.message || error.cause}`));
-  }
-  process.exit(1);
-});
+// 入口守卫：仅在作为主模块直接运行时执行（被 import 时不得触发上传/写文件副作用，
+// 与其余 scripts/*.mjs 的 isMainModule 判定保持一致）。
+const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMainModule) {
+  main().catch((error) => {
+    console.error(red(`\n✗ 迁移失败: ${error instanceof Error ? error.message : String(error)}`));
+    if (error instanceof Error && error.cause) {
+      console.error(red(`  原因: ${error.cause.message || error.cause}`));
+    }
+    process.exit(1);
+  });
+}
