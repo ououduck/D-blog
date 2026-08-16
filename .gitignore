@@ -95,6 +95,3 @@ CODEBUDDY.md
 .obsidian/
 .trash/
 .dsh/
-
-# Local DeepSeek Harness plugins (installed into the harness profile, not part of this site)
-dsh-plugins/

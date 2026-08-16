@@ -28,7 +28,6 @@ export default tseslint.config(
       'public/',
       // 依赖与本地工具目录
       'node_modules/',
-      'dsh-plugins/',
       '.zcode/',
       '.trash/',
       '.vscode/',
