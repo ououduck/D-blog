@@ -77,8 +77,11 @@ const watchInstallingWorker = (currentRegistration: ServiceWorkerRegistration, w
   };
   worker.addEventListener('statechange', handleStateChange);
   // 附加监听时 worker 可能已越过 installed（快速安装竞态下 statechange 不会
-  // 再触发），需同步检查一次当前状态，否则状态会卡在 installing。
-  if (worker.state === 'installed') {
+  // 再触发），需同步检查一次当前状态，否则状态会卡在 installing。除了
+  // installed，还要覆盖 activating/activated：页面主线程繁忙期间小型 SW 可能
+  // 已走完 install → skipWaiting → activate 全流程，此时同步检查只会看到
+  // 这些后续状态，漏掉则 update-available/ready 永远不会下发。
+  if (worker.state === 'installed' || worker.state === 'activating' || worker.state === 'activated') {
     setState(isUpdate ? 'update-available' : 'ready', currentRegistration);
   } else if (worker.state === 'redundant') {
     warn('worker installation became redundant');

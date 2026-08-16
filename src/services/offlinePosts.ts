@@ -797,15 +797,15 @@ export const saveOfflinePost = async (post: OfflinePostInput): Promise<OfflinePo
   if (rejectedByNewerDelete) {
     throw new Error('文章已在其他页面取消收藏，请重新操作。');
   }
-  // 本地落库成功后再准备 SW 离线缓存（尽力而为）：无 SW / SW 未就绪 / 超时
-  // 不应阻断收藏本身（本地 IndexedDB/localStorage 已可离线阅读）；被墓碑拒绝的
-  // 保存也不会再把已删除文章缓存进 SW。
-  try {
-    await prepareOfflineCache(offlinePost);
-  } catch (error) {
-    console.warn('离线缓存准备被跳过，文章已保存在本地。', error);
-  }
+  // 本地落库成功即视为收藏完成：先发变更通知并返回（解锁 isSaving、立即同步
+  // 跨标签页收藏列表）。SW 离线资源缓存为尽力而为，异步执行不阻塞收藏本身：
+  // 无 SW / SW 未就绪 / 消息无回包时 prepareOfflineCache 最多额外等待
+  // 8s(worker) + 15s(消息) ≈ 23s，若同步 await 会让按钮长时间锁死、变更通知
+  // 延迟（用户期间导航离开则通知直接丢失）。被墓碑拒绝的保存不会走到这里。
   emitChange('save', offlinePost.id);
+  void prepareOfflineCache(offlinePost).catch((error) => {
+    console.warn('离线缓存准备被跳过，文章已保存在本地。', error);
+  });
   return offlinePost;
 };
 

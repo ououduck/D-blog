@@ -103,6 +103,21 @@ const wrapCanvasText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: n
   }
   if (currentLine.trimEnd()) pushLine(currentLine.trimEnd());
 
+  // 单 token 比 maxWidth 还宽（无分隔符的超长连续串，如长序列号/长单词）时，
+  // 上方换行逻辑无法拆分行（首 token 时 currentLine 为空不触发换行），整行
+  // 会画出海报边界被裁切且无省略号。对每行做逐字截断兜底。
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (ctx.measureText(line).width <= maxWidth) {
+      continue;
+    }
+    let truncated = line;
+    while (truncated && ctx.measureText(`${truncated}…`).width > maxWidth) {
+      truncated = truncated.slice(0, -1);
+    }
+    lines[index] = `${truncated}…`;
+  }
+
   // 超出最大行数时，最后一行截断并追加省略号。
   if (lines.length > maxLines) {
     const last = lines[maxLines - 1];
