@@ -37,6 +37,23 @@ describe('extractExternalLinks', () => {
     const links = extractExternalLinks(content);
     expect(links.map((link) => link.line)).toEqual([1, 3]);
   });
+
+  it('围栏代码块内的 URL 不提取（示例代码不当作外链）', () => {
+    const content = ['正文 [真实](https://real.com)', '', '```bash', 'curl https://example.com/api', '```'].join('\n');
+    const links = extractExternalLinks(content);
+    expect(links).toEqual([{ url: 'https://real.com', line: 1, type: 'md' }]);
+  });
+
+  it('行内代码里的括号结构不提取（`` `[foo](bar)` `` 不是链接）', () => {
+    const links = extractExternalLinks('语法：`[文本](https://example.com)` 不是链接');
+    expect(links).toEqual([]);
+  });
+
+  it('HTML 注释内的 URL 不提取', () => {
+    const content = ['<!-- 临时：https://deprecated.example.com 勿删 -->', '', '[正文](https://real.com)'].join('\n');
+    const links = extractExternalLinks(content);
+    expect(links).toEqual([{ url: 'https://real.com', line: 3, type: 'md' }]);
+  });
 });
 
 describe('parseIgnoreHosts', () => {

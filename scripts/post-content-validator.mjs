@@ -76,7 +76,10 @@ const parseDestination = (rawInner) => {
 };
 
 const parseMarkdownTokens = (markdown) => {
-  const masked = maskFencedCodeBlocks(markdown);
+  // 围栏/缩进代码块已由 maskFencedCodeBlocks 屏蔽；行内代码（`...` / ``...``）同样
+  // 需要屏蔽：`` `[foo](bar)` `` 里的括号结构会被当成真实链接，目标 "bar" 不满足
+  // URL/路由规则 → 校验 fail-closed 直接挂掉整个构建（讲解 Markdown 语法的文章易踩中）。
+  const masked = maskFencedCodeBlocks(markdown).replace(/`{1,2}[^`\n]+`{1,2}/g, (match) => ' '.repeat(match.length));
   const images = [];
   const links = [];
 

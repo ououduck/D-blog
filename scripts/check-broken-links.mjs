@@ -22,6 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { maskFencedCodeBlocks } from '../src/utils/headings-core.mjs';
 import { sendTelegramMessage } from './lib/telegram.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
@@ -77,7 +78,13 @@ const getHost = (url) => {
  */
 export const extractExternalLinks = (content) => {
   const results = [];
-  const lines = content.split(/\r?\n/);
+  // 先屏蔽围栏/缩进代码块与 HTML 注释（保留换行与列位，行号不受影响）：
+  // 技术文章代码示例里的 https://example.com 等 URL 不应被当作真实外链检查
+  // （示例域名可能早已下线/反爬，逐个请求只会制造误报）。
+  const masked = maskFencedCodeBlocks(content)
+    // 行内代码（`...` / ``...``）同样屏蔽：`` `[foo](bar)` `` 里的括号结构不是链接。
+    .replace(/`{1,2}[^`\n]+`{1,2}/g, (match) => ' '.repeat(match.length));
+  const lines = masked.split(/\r?\n/);
 
   const cleanUrl = (raw) => {
     let url = String(raw).trim();
