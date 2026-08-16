@@ -9,6 +9,17 @@ import { fileURLToPath } from 'node:url';
 import { loadSiteConfig } from './site-config-loader.mjs';
 
 const distDir = process.argv[2] ?? join(fileURLToPath(new URL('.', import.meta.url)), '..', 'dist');
+
+// 与 audit-build.mjs 对齐：dist 缺失时给出指引而非裸 ENOENT 堆栈，
+// 便于本地单独运行 npm run audit:seo 时快速定位原因。
+// 注意：distDir 检查必须先于 loadSiteConfig —— 配置缺失/损坏时
+// loadSiteConfig 抛错会盖掉「请先运行 npm run build」的指引。
+if (!existsSync(distDir)) {
+  console.error(`[audit:seo] dist directory not found: ${distDir}`);
+  console.error('[audit:seo] 请先运行 npm run build 生成构建产物，再执行本审计。');
+  process.exit(1);
+}
+
 const SITE_URL = loadSiteConfig().url;
 // 站点 URL 精确比较：origin 相等才算站内（startsWith 前缀比较可被
 // blog.pldduck.com.evil.com 绕过，恶意域名会被误归为站内链接）。
@@ -20,14 +31,6 @@ const isSameSiteUrl = (value) => {
     return false;
   }
 };
-
-// 与 audit-build.mjs 对齐：dist 缺失时给出指引而非裸 ENOENT 堆栈，
-// 便于本地单独运行 npm run audit:seo 时快速定位原因。
-if (!existsSync(distDir)) {
-  console.error(`[audit:seo] dist directory not found: ${distDir}`);
-  console.error('[audit:seo] 请先运行 npm run build 生成构建产物，再执行本审计。');
-  process.exit(1);
-}
 
 const walkHtml = (dir, base = dir) => {
   const results = [];
