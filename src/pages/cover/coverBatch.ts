@@ -48,11 +48,23 @@ function itemFromRecord(record: Record<string, unknown>, index: number): BatchCo
   return { title, subtitle, description, slug };
 }
 
-function parseCsv(text: string): Record<string, string>[] {
-  const rows: string[][] = [];
+/** CSV 已知字段名（表头识别用）：首行含任一字段视为表头行。 */
+const CSV_KNOWN_FIELDS = ['title', 'name', 'subtitle', 'category', 'description', 'excerpt', 'slug', 'id'];
+
+function parseCsv(text: string): Array<{ values: string[]; line: number }> {
+  const rows: Array<{ values: string[]; line: number }> = [];
   let row: string[] = [];
   let field = '';
   let quoted = false;
+  let lineNumber = 1;
+  const flushRow = () => {
+    row.push(field);
+    field = '';
+    // 空行（含引号内换行造成的中间态）不产出记录；行号随真实文件行推进，
+    // 供错误提示「第 X 行」定位（此前 index+2 是数据行序号，空行越多偏移越大）。
+    if (row.some((value) => value.trim())) rows.push({ values: row, line: lineNumber });
+    row = [];
+  };
   for (let index = 0; index < text.length; index += 1) {
     const char = text[index];
     const next = text[index + 1];
@@ -72,18 +84,14 @@ function parseCsv(text: string): Record<string, string>[] {
     }
     if ((char === '\n' || char === '\r') && !quoted) {
       if (char === '\r' && next === '\n') index += 1;
-      row.push(field);
-      field = '';
-      if (row.some((value) => value.trim())) rows.push(row);
-      row = [];
+      flushRow();
+      lineNumber += 1;
       continue;
     }
     field += char;
   }
-  row.push(field);
-  if (row.some((value) => value.trim())) rows.push(row);
-  const headers = (rows.shift() || []).map((header) => header.trim().toLowerCase());
-  return rows.map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ''])));
+  flushRow();
+  return rows;
 }
 
 function parseMarkdownFrontmatter(text: string): BatchCoverItem | null {
@@ -143,10 +151,18 @@ export function parseBatchText(text: string, filename = 'input'): BatchParseResu
       issues.push({ line: 1, message: 'JSON 格式无效' });
     }
   } else if (extension === 'csv') {
-    parseCsv(text).forEach((record, index) => {
+    const parsedRows = parseCsv(text);
+    const firstValues = parsedRows[0]?.values ?? [];
+    // 无表头 CSV（每行即一条记录）：首行不含任何已知字段时当作数据行处理，
+    // 否则首行按表头消费（此前的无条件 shift 会把无表头文件的首条数据吞掉）。
+    const isHeaderRow = firstValues.some((value) => CSV_KNOWN_FIELDS.includes(value.trim().toLowerCase()));
+    const headerValues = isHeaderRow ? firstValues : ['title', 'subtitle', 'description'];
+    const dataRows = isHeaderRow ? parsedRows.slice(1) : parsedRows;
+    dataRows.forEach(({ values, line }, index) => {
+      const record = Object.fromEntries(headerValues.map((header, headerIndex) => [header, values[headerIndex] ?? '']));
       const item = itemFromRecord(record, index);
       if (item) items.push(item);
-      else issues.push({ line: index + 2, message: '缺少 title 字段' });
+      else issues.push({ line, message: '缺少 title 字段' });
     });
   } else {
     // Markdown：只解析第一份 frontmatter 生成一个封面条目（多篇文档合并

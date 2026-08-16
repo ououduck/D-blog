@@ -42,10 +42,26 @@ describe('parseBatchText — CSV 输入', () => {
     expect(result.items[0]).toMatchObject({ title: '文章,一', description: '他说"你好"' });
   });
 
-  it('跳过空行并逐行定位缺失 title 的错误行号（空行不计数）', () => {
+  it('跳过空行并定位缺失 title 的真实文件行号（空行参与计数）', () => {
     const result = parseBatchText('title,description\n\n有效文章,ok\n,缺标题', 'input.csv');
     expect(result.items).toHaveLength(1);
-    expect(result.issues).toEqual([{ line: 3, message: '缺少 title 字段' }]);
+    // 第 4 行（第 1 行表头、第 2 行空行、第 3 行有效、第 4 行缺标题）——
+    // 此前用数据行序号 +2，空行越多偏移越大，误导用户定位。
+    expect(result.issues).toEqual([{ line: 4, message: '缺少 title 字段' }]);
+  });
+
+  it('无表头 CSV：每行即一条记录，首行不被当表头吞掉', () => {
+    const result = parseBatchText('文章一,副标题一\n文章二,副标题二', 'input.csv');
+    expect(result.issues).toEqual([]);
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0]).toMatchObject({ title: '文章一', subtitle: '副标题一' });
+    expect(result.items[1]).toMatchObject({ title: '文章二', subtitle: '副标题二' });
+  });
+
+  it('表头含 name 字段同样识别为表头', () => {
+    const result = parseBatchText('name,description\n标题A,描述A', 'input.csv');
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].title).toBe('标题A');
   });
 });
 

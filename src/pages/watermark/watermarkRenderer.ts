@@ -64,7 +64,10 @@ const getWatermarkPoint = (
   // 宽幅小图（高度 < padding×2 + fontSize，如 400×50）时 top/bottom 锚点会落在
   // 画布外，fillText 被整体裁掉、水印完全不可见：把 y 夹在 [halfHeight,
   // height - halfHeight] 内，保证文字至少完整可见（字号本身已按宽度收缩）。
-  const y = Math.max(halfHeight, Math.min(height - halfHeight, rawY));
+  // 注意高度 < halfHeight 时上界为负，旧式 min 后 max 会得到 y=halfHeight > height，
+  // 文字整体越界不可见；上界须不低于下界（高度过小时退化为居中半可见）。
+  const upper = Math.max(halfHeight, height - halfHeight);
+  const y = Math.min(Math.max(halfHeight, rawY), upper);
 
   return { x, y, textAlign: horizontal === 'left' ? 'left' : horizontal === 'right' ? 'right' : 'center' } as const;
 };

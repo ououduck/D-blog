@@ -168,6 +168,15 @@ export const Watermark: React.FC = () => {
       const canvas = document.createElement('canvas');
       canvas.width = imageState.image.naturalWidth;
       canvas.height = imageState.image.naturalHeight;
+      if (format === 'jpeg') {
+        // JPEG 不支持透明：canvas 透明区域按黑合成，透明 PNG 导出 JPEG 会得到
+        // 大黑底，与预览观感严重不一致；先铺白底。
+        const context = canvas.getContext('2d');
+        if (context) {
+          context.fillStyle = '#ffffff';
+          context.fillRect(0, 0, canvas.width, canvas.height);
+        }
+      }
       renderWatermark(canvas, imageState.image, { text, fontSize, opacity, position, padding: 32 });
       const blob = await canvasToBlob(canvas, format, quality / 100);
       downloadBlob(blob, getWatermarkFilename(imageState.name, format));

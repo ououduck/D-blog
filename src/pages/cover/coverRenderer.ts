@@ -230,12 +230,21 @@ async function drawIcon(
     }
   }
   const radius = Math.min(size / 2, (size * radiusPercent) / 100);
+  // roundRect 为 Safari 16+/Chrome 99+ 才支持：老浏览器缺 API 时整幅封面
+  // 渲染抛 TypeError（图标默认圆角 12，drawIcon 必然触发）；回退 rect 保持可用。
+  const traceRoundedRect = (r: number) => {
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x, y, size, size, r);
+    } else {
+      ctx.rect(x, y, size, size);
+    }
+  };
   if (backgroundEnabled) {
     ctx.save();
     ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.beginPath();
     if (radius > 0) {
-      ctx.roundRect(x, y, size, size, radius);
+      traceRoundedRect(radius);
     } else {
       ctx.rect(x, y, size, size);
     }
@@ -245,7 +254,7 @@ async function drawIcon(
   ctx.save();
   if (radius > 0) {
     ctx.beginPath();
-    ctx.roundRect(x, y, size, size, radius);
+    traceRoundedRect(radius);
     ctx.clip();
   }
   ctx.drawImage(image, x, y, size, size);
@@ -319,7 +328,13 @@ export async function renderCover(ctx: CanvasRenderingContext2D, options: CoverR
     // 复用惰性重建的模糊层画布（尺寸变化时才重建），避免每次预览渲染
     // 都新建全尺寸临时 canvas 造成内存抖动。
     const layer = getOverlayBlurLayer(width, height);
-    layer.getContext('2d')?.drawImage(ctx.canvas, 0, 0);
+    const layerContext = layer.getContext('2d');
+    if (!layerContext) {
+      // getContext 失败（内存/驱动异常，低概率）：跳过模糊层但不清空主画布，
+      // 否则下方 clearRect 后 drawImage(layer) 只能画出空白，整幅画面静默丢失。
+      throw new Error('封面模糊层初始化失败，请降低导出尺寸后重试');
+    }
+    layerContext.drawImage(ctx.canvas, 0, 0);
     ctx.clearRect(0, 0, width, height);
     ctx.save();
     ctx.filter = `blur(${options.overlay.blur * baseScale}px)`;
