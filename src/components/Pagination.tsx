@@ -66,6 +66,11 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
         type="button"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
+        // mousedown 阻止默认行为：输入框聚焦时点击翻页按钮会先触发 onBlur
+        // 提交输入框的值，再触发 click 导航 —— 双重跳转且 click 用的是旧
+        // currentPage 闭包。阻止 mousedown 默认行为可避免输入框失焦（不提交
+        // 未确认的页码），导航后 useEffect 会把输入框同步为当前页。
+        onMouseDown={(event) => event.preventDefault()}
         className={`${buttonClass} px-3`}
         aria-label="上一页"
       >
@@ -93,6 +98,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
               key={item}
               type="button"
               onClick={() => onPageChange(item)}
+              onMouseDown={(event) => event.preventDefault()}
               aria-current={currentPage === item ? 'page' : undefined}
               aria-label={`第 ${item} 页`}
               className={`${buttonClass} ${currentPage === item ? activeButtonClass : ''}`}
@@ -123,6 +129,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
         type="button"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
+        onMouseDown={(event) => event.preventDefault()}
         className={`${buttonClass} px-3`}
         aria-label="下一页"
       >

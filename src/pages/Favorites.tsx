@@ -17,14 +17,21 @@ export const Favorites = () => {
   const navigate = useNavigate();
   const { posts, loading, error, refresh } = useOfflinePosts();
   const [removeError, setRemoveError] = React.useState<string | null>(null);
+  // 进行中的删除集合：快速连点（双击）同一文章的删除按钮时，第二次点击在
+  // 列表刷新前仍会命中同一元素，并发 remove 会把"文章已删除"误报为失败。
+  const removingIdsRef = React.useRef(new Set<string>());
 
   const handleRemove = async (id: string) => {
+    if (removingIdsRef.current.has(id)) return;
+    removingIdsRef.current.add(id);
     setRemoveError(null);
     try {
       // useOfflinePosts 已订阅变更并自动 refresh，无需手动刷新（避免重复读 IndexedDB）。
       await removeOfflinePost(id);
     } catch {
       setRemoveError('取消收藏失败，请稍后重试。');
+    } finally {
+      removingIdsRef.current.delete(id);
     }
   };
   const hasFavorites = posts.length > 0;
