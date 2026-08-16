@@ -134,6 +134,21 @@ describe('renderWatermark', () => {
     expect(fillText).toHaveBeenCalledWith('测试', 40, 64, expect.any(Number));
   });
 
+  it('宽幅小图（高度小于 padding×2+字号）时 Y 坐标夹紧到画布内', () => {
+    const { context } = createMockContext();
+    // 400×50：bottom 锚点 y = 50 - 32 - 24 = -6，落在画布外水印会整体不可见；
+    // 夹紧后 y = max(24, min(50-24, -6)) = 24。
+    const canvas = { width: 400, height: 50, getContext: () => context } as unknown as HTMLCanvasElement;
+    const fillText = vi.mocked(context.fillText);
+    renderWatermark(canvas, {} as CanvasImageSource, {
+      ...DEFAULT_WATERMARK_OPTIONS,
+      text: '测试',
+      position: 'bottom-right',
+      padding: 32,
+    });
+    expect(fillText).toHaveBeenCalledWith('测试', 400 - 32, 24, expect.any(Number));
+  });
+
   it('超出可用宽度时按比例缩小字号', () => {
     const { context } = createMockContext();
     // measureText 恒返回 100，可用宽度 = 800 - 32*2 = 736，不触发缩放；

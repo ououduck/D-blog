@@ -150,6 +150,13 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   };
 
   const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    // IME 组合输入期间（中文拼音上屏的 Enter、方向键选择候选词）跳过全部快捷键：
+    // 组合中的 Enter 会触发 keydown（key === 'Enter'、isComposing === true），
+    // 若不拦截会误触发 handleSelect 跳转到上一次搜索的旧结果并关闭弹窗。
+    if (event.nativeEvent.isComposing) {
+      return;
+    }
+
     if (event.key === 'ArrowDown' && visibleResults.length > 0) {
       event.preventDefault();
       setActiveResultIndex((current) => (current + 1) % visibleResults.length);

@@ -55,12 +55,16 @@ const getWatermarkPoint = (
   const x = horizontal === 'left' ? safePadding : horizontal === 'right' ? width - safePadding : width / 2;
   // 配合 renderWatermark 的 textBaseline='middle'：以 em 盒中心定位，
   // top/bottom 的 padding 语义对称，且底部文字不会因 descender 越界被裁切。
-  const y =
+  const rawY =
     vertical === 'top'
       ? safePadding + halfHeight
       : vertical === 'bottom'
         ? height - safePadding - halfHeight
         : height / 2;
+  // 宽幅小图（高度 < padding×2 + fontSize，如 400×50）时 top/bottom 锚点会落在
+  // 画布外，fillText 被整体裁掉、水印完全不可见：把 y 夹在 [halfHeight,
+  // height - halfHeight] 内，保证文字至少完整可见（字号本身已按宽度收缩）。
+  const y = Math.max(halfHeight, Math.min(height - halfHeight, rawY));
 
   return { x, y, textAlign: horizontal === 'left' ? 'left' : horizontal === 'right' ? 'right' : 'center' } as const;
 };

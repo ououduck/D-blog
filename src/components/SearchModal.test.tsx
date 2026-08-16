@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { SearchModal } from './SearchModal';
@@ -122,5 +122,17 @@ describe('SearchModal', () => {
     renderModal(true, onClose);
     await userEvent.click(screen.getByRole('button', { name: '关闭站内搜索' }));
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  it('IME 组合输入期间按 Enter 上屏不触发导航（isComposing 拦截）', async () => {
+    // 已有上一次搜索的结果；模拟中文输入法组合中按 Enter 提交拼音。
+    await setupSearchHook({ results: [mockSearchResult()], hasQuery: true });
+    const onClose = vi.fn();
+    renderModal(true, onClose);
+    const input = screen.getByPlaceholderText(/搜索文章/);
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+    // 弹窗不应关闭、不应跳转（handleSelect 未执行）。
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });
