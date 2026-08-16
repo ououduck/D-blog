@@ -74,4 +74,16 @@ describe('TableOfContents', () => {
     expect(await screen.findByText('常见问题')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText('使用方法')).not.toBeInTheDocument());
   });
+
+  it('Escape 关闭目录并归还焦点到触发按钮（键盘可达性回归）', async () => {
+    const user = userEvent.setup();
+    render(<TableOfContents headings={makeHeadings()} />);
+    const trigger = await screen.findByRole('button', { name: /打开目录/ });
+    await user.click(trigger);
+    await screen.findByText('文章目录');
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByText('文章目录')).not.toBeInTheDocument());
+    expect(document.activeElement).toBe(trigger);
+  });
 });
