@@ -22,6 +22,7 @@
 - [项目结构](#项目结构)
 - [内容管理](#内容管理)
 - [AI 开发者约束](#ai-开发者约束)
+- [技术文档](#技术文档)
 - [构建与质量](#构建与质量)
 - [配置](#配置)
 - [部署](#部署)
@@ -77,6 +78,8 @@ D-blog/
 ├── public/                  # favicon、PWA 图标、sw.js、offline.html，以及构建生成的 feed/sitemap
 ├── scripts/                 # 构建/自动化脚本（lib/ 为共享 HTTP 与日志库）
 ├── .github/workflows/       # 部署、友链审核、评论检查、更新通知
+├── ai-rules/                # AI 功能级修改规则（硬性约束）
+├── ai-doc/                  # 项目技术说明文档
 └── src/
     ├── components/          # Layout、PostCard、Seo、TableOfContents、SearchModal、ImageViewer 等
     ├── pages/               # 页面组件（懒加载）；cover/、watermark/、archive/、friends/ 为模块集
@@ -157,8 +160,20 @@ images:
 
 - **[`AGENT.md`](AGENT.md)** — AI 总行为准则：沟通语言、git 纪律（每小任务一提交、不 push）、技术硬性约束（SSG/水合确定性、UI/主题不变、错误处理、竞态防护、日志安全、SSRF 防护等）。
 - **[`ai-rules/`](ai-rules/README.md)** — 每个功能的详细修改规则（硬性约束）：功能概述、关键文件、修改规则、常见陷阱。
+- **[`ai-doc/`](ai-doc/README.md)** — 项目技术说明文档：架构、开发工作流、SSG/水合、脚本体系、前端模块、质量与性能基线。
 - **破例流程**：当 AI 认为有必要打破任何规则（含修改 `ai-rules/` 内文档）时，**必须先向用户说明理由并请求授权**；未获明确准许前不得动手。获准后须在提交信息中注明「依据用户授权破例」。
 - 修改 `AGENT.md` 本身同样需要用户明确授权。
+
+## 技术文档
+
+项目技术说明见 [`ai-doc/`](ai-doc/README.md)：
+
+- [架构总览](ai-doc/architecture.md)
+- [开发工作流](ai-doc/development-workflow.md)
+- [SSG 与水合](ai-doc/ssg-hydration.md)
+- [脚本与自动化体系](ai-doc/scripts-and-automation.md)
+- [前端模块速查](ai-doc/frontend-modules.md)
+- [质量、性能与安全基线](ai-doc/quality-and-performance.md)
 
 ## 构建与质量
 
