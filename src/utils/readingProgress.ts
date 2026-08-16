@@ -66,7 +66,7 @@ export const getScrollTopForReadingProgress = (input: ReadingProgressInput, prog
   }
 
   return clamp(startScrollTop + clamp(progress, 0, 1) * totalScrollable, 0, documentMaxScrollTop);
-  /** 判断进度是否达到完成阈值（≥99.5%）。 */
 };
 
+/** 判断进度是否达到完成阈值（≥99.5%）。 */
 export const isReadingComplete = (progress: number) => progress >= READING_PROGRESS_COMPLETION_THRESHOLD;

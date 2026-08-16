@@ -76,15 +76,15 @@ export const saveReadingHistory = (entry: Omit<ReadingHistoryEntry, 'updatedAt'>
   }
   const entries = readEntries().filter((candidate) => candidate.postId !== entry.postId);
   writeEntries([nextEntry, ...entries].slice(0, 20));
-  /** 删除单篇文章的阅读历史。 */
 };
 
+/** 删除单篇文章的阅读历史。 */
 export const removeReadingHistory = (postId: string) => {
   const entries = readEntries().filter((entry) => entry.postId !== postId);
-  /** 订阅阅读历史变更，返回取消订阅函数。 */
   writeEntries(entries);
 };
 
+/** 订阅阅读历史变更，返回取消订阅函数。 */
 export const subscribeReadingHistory = (listener: () => void) => {
   if (typeof window === 'undefined') return () => undefined;
   const handleChange = () => listener();

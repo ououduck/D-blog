@@ -53,9 +53,9 @@ export const collectInitialExpandedState = (nodes: TocNode[]) => {
   traverse(nodes);
 
   return nextState;
-  /** 构建子节点 id → 父节点 的映射。 */
 };
 
+/** 构建子节点 id → 父节点 的映射。 */
 export const buildParentMap = (nodes: TocNode[]) => {
   const parentMap = new Map<string, string | null>();
 
@@ -68,10 +68,10 @@ export const buildParentMap = (nodes: TocNode[]) => {
 
   traverse(nodes, null);
 
-  /** 获取节点到根的全部祖先 id。 */
   return parentMap;
 };
 
+/** 获取节点到根的全部祖先 id。 */
 export const getAncestorIds = (id: string | null, parentMap: Map<string, string | null>) => {
   const ancestorIds: string[] = [];
   let currentId = id;
@@ -86,11 +86,11 @@ export const getAncestorIds = (id: string | null, parentMap: Map<string, string 
     ancestorIds.push(parentId);
     currentId = parentId;
   }
-  /** 获取节点所属根分支（顶层节点）的 id。 */
 
   return ancestorIds;
 };
 
+/** 获取节点所属根分支（顶层节点）的 id。 */
 export const getRootBranchId = (id: string | null, parentMap: Map<string, string | null>) => {
   if (!id) {
     return null;
@@ -106,12 +106,12 @@ export const getRootBranchId = (id: string | null, parentMap: Map<string, string
     }
 
     currentId = parentId;
-    /** 按 id 在目录树中查找节点。 */
   }
 
   return null;
 };
 
+/** 按 id 在目录树中查找节点。 */
 export const findTocNodeById = (nodes: TocNode[], id: string): TocNode | null => {
   for (const node of nodes) {
     if (node.id === id) {

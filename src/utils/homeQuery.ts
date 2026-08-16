@@ -41,9 +41,9 @@ export const setHomeQueryParam = (params: URLSearchParams, key: 'sort' | 'page',
   }
 
   return nextParams;
-  /** 归一化首页查询参数（移除无效 sort/page），保持 canonical 稳定。 */
 };
 
+/** 归一化首页查询参数（移除无效 sort/page），保持 canonical 稳定。 */
 export const canonicalizeHomeQuery = (params: URLSearchParams) => {
   const state = getHomeQueryState(params);
   let nextParams = setHomeQueryParam(params, 'sort', state.sortOrder);
