@@ -64,6 +64,13 @@ export const TableOfContents: React.FC<{
   const [searchQuery, setSearchQuery] = useState('');
   const shouldReduceMotion = useReducedMotion();
   const touchStartYRef = useRef<number | null>(null);
+  // 触摸拖动的 rAF 合并帧：touchmove 频率可高于帧率，同帧内多次移动合并为
+  // 一次 setDragOffsetY，避免整棵目录树（含过滤/展开/AnimatePresence 子树）
+  // 随每次 touchmove 逐帧重渲染。
+  const sheetDragFrameRef = useRef(0);
+  // 帧挂起期间的最新位移：touchmove 每次都更新，帧回调与 touchend 读取它，
+  // 避免「帧未执行时后续位移丢失」导致 touchend 的关闭判定使用过期值。
+  const latestDragOffsetRef = useRef(0);
   const mobileSheetRef = useRef<HTMLElement | null>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
   const headingTree = useMemo(() => buildHeadingTree(headings), [headings]);
@@ -119,6 +126,12 @@ export const TableOfContents: React.FC<{
       setDragOffsetY(0);
       setSearchQuery('');
       touchStartYRef.current = null;
+      // 清理挂起的拖拽 rAF 帧（关闭后不应再有位移写入）。
+      if (sheetDragFrameRef.current) {
+        window.cancelAnimationFrame(sheetDragFrameRef.current);
+        sheetDragFrameRef.current = 0;
+      }
+      latestDragOffsetRef.current = 0;
     }
   }, [isOpen]);
 
@@ -435,6 +448,7 @@ export const TableOfContents: React.FC<{
   // 触摸下滑关闭：仅绑定在顶部抓手区域（nav 列表之外），无需判断触摸起点。
   const handleSheetTouchStart = (event: React.TouchEvent<HTMLElement>) => {
     touchStartYRef.current = event.touches[0]?.clientY ?? null;
+    latestDragOffsetRef.current = 0;
   };
 
   const handleSheetTouchMove = (event: React.TouchEvent<HTMLElement>) => {
@@ -445,16 +459,32 @@ export const TableOfContents: React.FC<{
     }
 
     const currentY = event.touches[0]?.clientY ?? startY;
-    const nextOffset = Math.max(0, currentY - startY);
-    setDragOffsetY(nextOffset);
+    // 每次都更新最新位移（帧挂起期间也不丢失，供帧回调与 touchend 读取）。
+    latestDragOffsetRef.current = Math.max(0, currentY - startY);
+    // rAF 合并：同帧内多次 touchmove 只 commit 一次 setDragOffsetY，
+    // 避免整棵目录树随每次 touchmove 逐帧重渲染。
+    if (sheetDragFrameRef.current) {
+      return;
+    }
+    sheetDragFrameRef.current = window.requestAnimationFrame(() => {
+      sheetDragFrameRef.current = 0;
+      setDragOffsetY((current) => (current === latestDragOffsetRef.current ? current : latestDragOffsetRef.current));
+    });
   };
 
   const handleSheetTouchEnd = () => {
-    if (dragOffsetY > 96) {
+    // 取消挂起的 rAF 帧：防止 touchmove 调度但未执行的帧在结束后再写入位移。
+    if (sheetDragFrameRef.current) {
+      window.cancelAnimationFrame(sheetDragFrameRef.current);
+      sheetDragFrameRef.current = 0;
+    }
+    // 用最新位移（而非可能滞后的 state）判定是否下滑关闭。
+    if (latestDragOffsetRef.current > 96) {
       setIsOpen(false);
     }
 
     setDragOffsetY(0);
+    latestDragOffsetRef.current = 0;
     touchStartYRef.current = null;
   };
   const filteredHeadingTree = useMemo(() => {
