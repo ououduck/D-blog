@@ -17,7 +17,8 @@ interface UseOfflinePostsResult {
   isSaving: boolean;
   error: string | null;
   isSaved: boolean;
-  toggleSaved: () => Promise<void>;
+  /** 切换收藏；resolve 值为是否成功（失败时不抛出，错误通过 error 状态反馈）。 */
+  toggleSaved: () => Promise<boolean>;
   refresh: () => Promise<void>;
 }
 
@@ -74,10 +75,10 @@ export const useOfflinePosts = (post?: OfflinePostInput | null): UseOfflinePosts
     });
   }, [refresh]);
 
-  const toggleSaved = useCallback(async () => {
+  const toggleSaved = useCallback(async (): Promise<boolean> => {
     const currentPost = postRef.current;
     if (!currentPost || !currentPost.id || toggleInFlightRef.current) {
-      return;
+      return false;
     }
 
     toggleInFlightRef.current = true;
@@ -90,10 +91,13 @@ export const useOfflinePosts = (post?: OfflinePostInput | null): UseOfflinePosts
         await saveOfflinePost(currentPost);
       }
       await refresh();
+      return true;
     } catch (toggleError) {
-      // 失败信息通过 error 状态反馈给 UI；不再向上抛出，避免调用点
-      // （Post.tsx 的 void toggleSaved()）产生未处理的 Promise rejection。
+      // 失败信息通过 error 状态反馈给 UI；返回 false 供调用点区分成败，
+      // 不向上抛出，避免调用点（Post.tsx 的 void toggleSaved()）产生未处理的
+      // Promise rejection。
       setError(getErrorMessage(toggleError, '离线收藏操作失败，请稍后重试。'));
+      return false;
     } finally {
       toggleInFlightRef.current = false;
       setIsSaving(false);

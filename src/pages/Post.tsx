@@ -213,6 +213,10 @@ const ReadingProgressBadge = lazy(() =>
   import('../components/ReadingProgressBadge').then((m) => ({ default: m.ReadingProgressBadge })),
 );
 const MAX_CODE_LINES = 30;
+/** hash 深链滚动校正上限：Mermaid/懒加载内容导致的布局变化最多校正次数。 */
+const HASH_SCROLL_MAX_CORRECTIONS = 12;
+/** hash 深链滚动校正时间窗（毫秒）：内容稳定后自动断开观察器。 */
+const HASH_SCROLL_CORRECTION_WINDOW_MS = 3000;
 const READING_SCROLL_KEYS = new Set([
   'ArrowDown',
   'ArrowLeft',
@@ -1580,7 +1584,33 @@ export const Post = () => {
     };
 
     const timeoutId = window.setTimeout(scrollToHashHeading, 0);
-    return () => window.clearTimeout(timeoutId);
+
+    // Mermaid/懒加载内容渲染完成后会改变上方布局（占位高度 → 成图高度），把
+    // 深链目标标题推离落点；单次 setTimeout 只覆盖首帧。用 ResizeObserver 监听
+    // 正文容器，在内容加载导致的布局变化期间重复校正滚动位置。限次/限时自动
+    // 断开：内容稳定后不再校正，避免用户手动滚动后仍被迟到的加载（如慢图）
+    // 拉回深链位置。
+    const articleBody = articleBodyRef.current;
+    let corrections = 0;
+    let resizeObserver: ResizeObserver | undefined;
+    if (articleBody && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        corrections += 1;
+        if (corrections > HASH_SCROLL_MAX_CORRECTIONS) {
+          resizeObserver?.disconnect();
+          return;
+        }
+        scrollToHashHeading();
+      });
+      resizeObserver.observe(articleBody);
+    }
+    const disconnectTimer = window.setTimeout(() => resizeObserver?.disconnect(), HASH_SCROLL_CORRECTION_WINDOW_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearTimeout(disconnectTimer);
+      resizeObserver?.disconnect();
+    };
   }, [headings, post?.content]);
 
   useEffect(() => {
@@ -1852,6 +1882,13 @@ export const Post = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (hasOpenOverlay()) {
+        return;
+      }
+
+      // 按住不放时 keydown 以 ~30ms 间隔连续触发（repeat），而首次 navigate 后
+      // adjacentPosts 要到 effect 阶段才清空 —— 期间的 repeat 事件仍持有旧闭包，
+      // 会对同一篇文章重复入栈（浏览器返回要多按几次才能回原页）。
+      if (e.repeat) {
         return;
       }
 
@@ -2188,9 +2225,13 @@ export const Post = () => {
                   type="button"
                   onClick={() => {
                     const wasSaved = isSaved;
-                    void toggleSaved()
-                      .then(() => setSavedFeedback(wasSaved ? '已取消收藏' : '已保存，可离线阅读'))
-                      .catch(() => undefined);
+                    void toggleSaved().then((saved) => {
+                      // toggleSaved 失败时不抛出（错误经 offlineError 状态反馈），
+                      // 这里按返回值决定是否展示成功文案，避免失败时显示假成功。
+                      if (saved) {
+                        setSavedFeedback(wasSaved ? '已取消收藏' : '已保存，可离线阅读');
+                      }
+                    });
                   }}
                   disabled={isSaving}
                   aria-pressed={isSaved}
