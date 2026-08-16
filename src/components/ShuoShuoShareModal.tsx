@@ -56,13 +56,13 @@ export const ShuoShuoShareModal: React.FC<ShuoShuoShareModalProps> = ({
     if (userCopiedRef.current) return;
     setCopied(autoCopied === true);
     setCopyError(autoCopied === false ? '自动复制失败，请点击下方按钮手动复制。' : null);
-  }, [isOpen, autoCopied]);
+  }, [autoCopied, clearResetTimer, isOpen]);
 
   useEffect(() => {
     return () => {
       clearResetTimer();
     };
-  }, []);
+  }, [clearResetTimer]);
 
   const handleCopy = async () => {
     userCopiedRef.current = true;

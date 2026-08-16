@@ -59,13 +59,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       setPosterError(null);
       setIsGeneratingPoster(false);
     }
-  }, [isOpen]);
+  }, [clearResetTimer, isOpen]);
 
   React.useEffect(() => {
     return () => {
       clearResetTimer();
     };
-  }, []);
+  }, [clearResetTimer]);
 
   const handleCopy = async (type: 'all' | 'link') => {
     const text = type === 'all' ? `标题：${title}\n简介：${excerpt}\n链接：${url}` : url;
