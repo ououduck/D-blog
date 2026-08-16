@@ -10,13 +10,18 @@
  *   4. 推送到 Telegram（复用 lib/telegram.mjs，配置缺失优雅跳过）。
  *
  * 运行：node scripts/check-broken-links.mjs
- * 可选：--dry-run（只打印不上报）、--fail（发现失效链接时非零退出，默认仅报告）。
+ * 可选：
+ *   --dry-run                只打印不上报（不发送 Telegram）；
+ *   --fail                   发现失效链接时非零退出（默认仅报告，exit 0）；
+ *   --ignore-hosts=a.com,b   跳过指定域名（逗号分隔，忽略大小写），
+ *                            用于已知反爬/机器人拦截的站点（如 Cloudflare
+ *                            Dashboard 对非浏览器 GET 返回 403，属误报）。
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { sendTelegramMessage } from './lib/telegram.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
@@ -35,6 +40,33 @@ const REQUEST_DELAY_MS = 150;
 const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
 const failOnBroken = args.includes('--fail');
+
+/**
+ * 解析 --ignore-hosts=a.com,b.com 参数 → 小写域名集合。
+ * 导出供单元测试。
+ * @param {string[]} argv
+ * @returns {Set<string>}
+ */
+export const parseIgnoreHosts = (argv = process.argv.slice(2)) => {
+  const flag = argv.find((arg) => arg.startsWith('--ignore-hosts='));
+  if (!flag) return new Set();
+  return new Set(
+    flag
+      .slice('--ignore-hosts='.length)
+      .split(',')
+      .map((host) => host.trim().toLowerCase())
+      .filter(Boolean),
+  );
+};
+
+/** 提取 URL 的主机名（小写）；解析失败返回空串。 */
+const getHost = (url) => {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+};
 
 /**
  * 从 Markdown 正文提取外链（http/https）。
@@ -159,10 +191,20 @@ const main = async () => {
   logger.info('Collected external links', `files=${files.length} links=${linkRecords.length}`);
 
   const uniqueUrls = [...new Set(linkRecords.map((record) => record.url))];
+  // 应用忽略名单：已知反爬/机器人拦截的域名直接跳过，不发起请求、不计入检查。
+  const ignoredHosts = parseIgnoreHosts();
+  const urlsToCheck = uniqueUrls.filter((url) => !ignoredHosts.has(getHost(url)));
+  if (urlsToCheck.length < uniqueUrls.length) {
+    logger.info(
+      'Skipped ignored hosts',
+      `ignored=${uniqueUrls.length - urlsToCheck.length} hosts=[${[...ignoredHosts].join(', ')}]`,
+    );
+  }
+
   const broken = []; // { url, status?, error? }
   let checkedCount = 0;
 
-  for (const url of uniqueUrls) {
+  for (const url of urlsToCheck) {
     const result = await checkUrl(url);
     checkedCount += 1;
     if (!result.ok) {
@@ -170,16 +212,16 @@ const main = async () => {
       logger.warn('Broken link', `${url} (${result.status ? `HTTP ${result.status}` : result.error})`);
     }
     if (checkedCount % 10 === 0) {
-      logger.info('Progress', `checked=${checkedCount}/${uniqueUrls.length} broken=${broken.length}`);
+      logger.info('Progress', `checked=${checkedCount}/${urlsToCheck.length} broken=${broken.length}`);
     }
     await sleep(REQUEST_DELAY_MS);
   }
 
   const brokenLinks = broken.length;
-  logger.info('Check complete', `checked=${uniqueUrls.length} broken=${brokenLinks}`);
+  logger.info('Check complete', `checked=${urlsToCheck.length} broken=${brokenLinks}`);
 
   if (brokenLinks === 0) {
-    logger.info('No broken links found', `checked=${uniqueUrls.length}`);
+    logger.info('No broken links found', `checked=${urlsToCheck.length}`);
     return 0;
   }
 
@@ -202,7 +244,9 @@ const main = async () => {
     }
     lines.push('');
   }
-  lines.push(`共检查 ${uniqueUrls.length} 个唯一外链。`);
+  lines.push(
+    `共检查 ${urlsToCheck.length} 个唯一外链${urlsToCheck.length < uniqueUrls.length ? `（另跳过 ${uniqueUrls.length - urlsToCheck.length} 个忽略域名）` : ''}。`,
+  );
   const report = lines.join('\n');
 
   if (!isDryRun) {
@@ -223,9 +267,15 @@ const main = async () => {
 
 installGlobalErrorHandlers(logger);
 
-try {
-  process.exitCode = await main();
-} catch (error) {
-  logger.error('check-broken-links failed', formatError(error));
-  process.exitCode = 1;
+// 仅作为主模块直接运行时才执行扫描：被测试/其他模块 import 时
+// 不触发任何副作用（避免单测误跑真实网络扫描）。
+const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isMainModule) {
+  try {
+    process.exitCode = await main();
+  } catch (error) {
+    logger.error('check-broken-links failed', formatError(error));
+    process.exitCode = 1;
+  }
 }

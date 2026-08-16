@@ -63,4 +63,6 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_TOPIC_ID: ${{ secrets.TELEGRAM_TOPIC_ID }}
         # 默认仅报告（exit 0），发现死链推 Telegram；如需 CI 红叉可加 --fail。
-        run: node scripts/check-broken-links.mjs
+        # --ignore-hosts=one.dash.cloudflare.com：Cloudflare Dashboard 对非浏览器
+        # GET 返回 403（反爬），实为有效链接的误报；新增同类站点用逗号追加。
+        run: node scripts/check-broken-links.mjs --ignore-hosts=one.dash.cloudflare.com

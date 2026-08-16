@@ -207,7 +207,7 @@ Service Worker 作用域跟随部署路径，在线按页面/静态资源/图片
 博客内容会随外部站点改版/下线产生死链，且完全可以在构建期检测。`scripts/check-broken-links.mjs` 扫描 `posts/*.md` 中全部 http/https 外链（Markdown 链接 + HTML `<a href>`，排除图片与站内锚点），逐个请求检查可达性，失效链接按文章分组汇总（带行号与 HTTP 状态）推送到 Telegram。只读操作，不修改仓库、不触发部署。
 
 - **触发**：Pages CMS 侧边栏「🔗 检查失效外链」按钮（`check-broken-links.yml`，workflow_dispatch），或每周一 02:00 UTC 定时自动巡检（schedule）；
-- **本地运行**：`npm run check:links`（默认仅报告退出码 0）；`--dry-run` 只打印不上报；`--fail` 发现失效链接时非零退出（可用于 CI 红叉门禁）；
+- **本地运行**：`npm run check:links`（默认仅报告退出码 0）；`--dry-run` 只打印不上报；`--fail` 发现失效链接时非零退出（可用于 CI 红叉门禁）；`--ignore-hosts=a.com,b.com` 跳过指定域名（用于已知反爬/机器人拦截的站点，如 Cloudflare Dashboard 对非浏览器 GET 返回 403 属误报，CI 中已内置该域名）；
 - **通知配置**：复用 Telegram Secrets（`TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`，可选 `TELEGRAM_TOPIC_ID`），未配置时优雅跳过；报告发送复用 `scripts/lib/telegram.mjs`（与 `telegram-notify` 共享）。
 
 ## 许可证

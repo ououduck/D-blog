@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractExternalLinks } from './check-broken-links.mjs';
+import { extractExternalLinks, parseIgnoreHosts } from './check-broken-links.mjs';
 
 describe('extractExternalLinks', () => {
   it('提取 Markdown 外链（含行号）', () => {
@@ -36,5 +36,18 @@ describe('extractExternalLinks', () => {
     const content = ['第一行 [a](https://a.com)', '', '第三行 [b](https://b.com)'].join('\n');
     const links = extractExternalLinks(content);
     expect(links.map((link) => link.line)).toEqual([1, 3]);
+  });
+});
+
+describe('parseIgnoreHosts', () => {
+  it('未传 --ignore-hosts 时返回空集合', () => {
+    expect(parseIgnoreHosts([])).toEqual(new Set());
+    expect(parseIgnoreHosts(['--dry-run', '--fail'])).toEqual(new Set());
+  });
+
+  it('解析逗号分隔域名（去空白、小写、忽略空项）', () => {
+    expect(parseIgnoreHosts(['--ignore-hosts=One.Dash.Cloudflare.com, example.com , ,B.com'])).toEqual(
+      new Set(['one.dash.cloudflare.com', 'example.com', 'b.com']),
+    );
   });
 });
