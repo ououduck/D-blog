@@ -42,13 +42,23 @@ export const ShuoShuo = () => {
   // 避免旧说说的复制结果串台到新打开的弹窗。
   const shareSeqRef = useRef(0);
 
+  // 正文剥离结果按 id 缓存：搜索过滤每次按键都对全部说说重跑 14 步正则链
+  // （O(条目数 × 正文长度)），内容不变时应复用。
+  const strippedContents = useMemo(() => {
+    const cache = new Map<string, string>();
+    for (const item of allItems) {
+      cache.set(item.id, stripMarkdown(item.content));
+    }
+    return cache;
+  }, [allItems]);
+
   // ── 独立搜索：仅匹配说说正文内容（markdown 剥离后），大小写不敏感 ──
   const filteredItems = useMemo(() => {
     // toLowerCase（非 toLocaleLowerCase）：与全站搜索一致，locale 无关（见 services/posts.ts）。
     const query = searchQuery.trim().toLowerCase();
     if (!query) return allItems;
-    return allItems.filter((item) => stripMarkdown(item.content).toLowerCase().includes(query));
-  }, [allItems, searchQuery]);
+    return allItems.filter((item) => (strippedContents.get(item.id) ?? '').toLowerCase().includes(query));
+  }, [allItems, searchQuery, strippedContents]);
   const hasSearchQuery = searchQuery.trim().length > 0;
 
   // ── 定位功能：URL ?id=<说说 id>，打开页面后自动滚动到对应说说并高亮 ──

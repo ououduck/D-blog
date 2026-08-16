@@ -23,6 +23,9 @@ describe('getDateTimestamp', () => {
     expect(getDateTimestamp('garbage')).toBe(0);
     expect(getDateTimestamp('')).toBe(0);
     expect(getDateTimestamp('2026/08/12')).toBe(0);
+    // 尾部垃圾字符此前会被 split+parseInt 静默吞掉（'12abc' → 12），产出错误时间戳。
+    expect(getDateTimestamp('2026-08-12abc')).toBe(0);
+    expect(getDateTimestamp('2026-08-1 2')).toBe(0);
   });
 
   it('非补零月份同样被接受（split 后逐段解析）', () => {

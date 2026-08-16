@@ -554,12 +554,23 @@ const readFallbackPosts = (): OfflinePost[] => {
   }
 };
 
+/** 最近一次写入 localStorage 的镜像序列化串：读路径仅在内容变化时回写，
+ *  避免 getOfflinePosts/getOfflinePost 每次调用都全量序列化大字段正文并 setItem
+ *  （收藏页刷新一次会写两回）。空串表示本会话尚未写过，首次写入总是执行
+ *  （覆盖 localStorage 被外部清空的场景）。 */
+let lastFallbackSnapshot = '';
+
 const writeFallbackPosts = (posts: OfflinePost[]): void => {
   try {
     if (typeof localStorage === 'undefined') {
       throw new Error('当前浏览器不支持本地存储。');
     }
-    localStorage.setItem(OFFLINE_POSTS_STORAGE_KEY, JSON.stringify(posts));
+    const serialized = JSON.stringify(posts);
+    if (lastFallbackSnapshot !== '' && serialized === lastFallbackSnapshot) {
+      return;
+    }
+    localStorage.setItem(OFFLINE_POSTS_STORAGE_KEY, serialized);
+    lastFallbackSnapshot = serialized;
   } catch (error) {
     throw error instanceof Error ? error : new Error('无法写入本地离线文章。');
   }

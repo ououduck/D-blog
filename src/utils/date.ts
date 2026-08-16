@@ -6,6 +6,11 @@
  * 导致文章排序与日期格式化出错。本地时区构造保证日历日始终正确。
  */
 const parseISODate = (dateText: string) => {
+  // 先整串校验格式：split + parseInt 对尾部垃圾字符（如 "2026-08-12abc"）会
+  // 静默取到合法日/月，产出错误时间戳；格式不符一律按无效日期处理。
+  if (!/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateText)) {
+    return new Date(Number.NaN);
+  }
   const [yearText, monthText, dayText] = dateText.split('-');
   const year = Number.parseInt(yearText, 10);
   const month = Number.parseInt(monthText, 10);
