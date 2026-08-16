@@ -1,6 +1,32 @@
 // @vitest-environment node
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { extractExternalLinks, parseIgnoreHosts } from './check-broken-links.mjs';
+
+// mock 网络层（http.mjs 由本测试文件首行导入前 mock）：SSRF 校验与 fetch 可控。
+vi.mock('./lib/http.mjs', () => ({
+  isSafePublicHttpUrl: vi.fn(async () => true),
+  fetchWithRetry: vi.fn(async () => ({ status: 200, body: { cancel: async () => {} }, headers: new Headers() })),
+  RetryableHttpError: class RetryableHttpError extends Error {
+    constructor(message, status = 0, attempts = 1) {
+      super(message);
+      this.status = status;
+      this.attempts = attempts;
+    }
+  },
+}));
+import { isSafePublicHttpUrl, fetchWithRetry } from './lib/http.mjs';
+import { checkUrl } from './check-broken-links.mjs';
+
+const mockResponse = (status, location) => {
+  const headers = new Headers();
+  if (location !== undefined) headers.set('location', location);
+  return { status, ok: status >= 200 && status < 300, body: { cancel: async () => {} }, headers };
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  isSafePublicHttpUrl.mockResolvedValue(true);
+});
 
 describe('extractExternalLinks', () => {
   it('提取 Markdown 外链（含行号）', () => {
@@ -67,5 +93,52 @@ describe('parseIgnoreHosts', () => {
     expect(parseIgnoreHosts(['--ignore-hosts=One.Dash.Cloudflare.com, example.com , ,B.com'])).toEqual(
       new Set(['one.dash.cloudflare.com', 'example.com', 'b.com']),
     );
+  });
+});
+
+describe('checkUrl — 重定向逐跳 SSRF 校验', () => {
+  it('初始 URL 不安全时直接拦截，不发请求', async () => {
+    isSafePublicHttpUrl.mockResolvedValue(false);
+    const result = await checkUrl('https://127.0.0.1/');
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('SSRF');
+    expect(fetchWithRetry).not.toHaveBeenCalled();
+  });
+
+  it('重定向到内网地址被拦截（跳转绕过防护）', async () => {
+    // 第一跳安全，第二跳（内网元数据地址）被 SSRF 校验拦下。
+    isSafePublicHttpUrl.mockImplementation(async (url) => url === 'https://public.example.com/');
+    fetchWithRetry.mockResolvedValueOnce(mockResponse(302, 'http://169.254.169.254/latest/meta-data/'));
+
+    const result = await checkUrl('https://public.example.com/');
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('SSRF');
+    expect(fetchWithRetry).toHaveBeenCalledTimes(1);
+    expect(isSafePublicHttpUrl).toHaveBeenCalledWith('http://169.254.169.254/latest/meta-data/');
+  });
+
+  it('重定向链最终 200 判为正常', async () => {
+    fetchWithRetry.mockResolvedValueOnce(mockResponse(301, 'https://public.example.com/new'));
+    fetchWithRetry.mockResolvedValueOnce(mockResponse(200));
+
+    const result = await checkUrl('https://public.example.com/');
+    expect(result.ok).toBe(true);
+    expect(result.status).toBe(200);
+    expect(fetchWithRetry).toHaveBeenCalledTimes(2);
+  });
+
+  it('重定向超过上限判为失效', async () => {
+    // 无限 302 环：超过 MAX_REDIRECTS(5) 后返回失效。
+    fetchWithRetry.mockResolvedValue(mockResponse(302, 'https://public.example.com/loop'));
+    const result = await checkUrl('https://public.example.com/');
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('重定向');
+  });
+
+  it('重定向缺少 Location 判为失效', async () => {
+    fetchWithRetry.mockResolvedValueOnce(mockResponse(302));
+    const result = await checkUrl('https://public.example.com/');
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('Location');
   });
 });

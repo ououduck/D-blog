@@ -62,6 +62,7 @@ import {
   readResponseText,
   GITHUB_API_VERSION,
   isSafePublicHttpUrl,
+  sanitizeUrlForLogs,
 } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 import { parseEnvNumber } from './lib/env.mjs';
@@ -290,7 +291,7 @@ const fetchPublicPage = async (value) => {
   let current = value;
   for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
     if (!(await isSafePublicHttpUrl(current))) {
-      logger.warn('Blocked unsafe redirect target', { url: current });
+      logger.warn('Blocked unsafe redirect target', { url: sanitizeUrlForLogs(current) });
       return null;
     }
 
@@ -312,7 +313,7 @@ const fetchPublicPage = async (value) => {
           signal,
           onRetry: (info) =>
             logger.warn('Retrying friend-page fetch', {
-              url: current,
+              url: sanitizeUrlForLogs(current),
               attempt: info.attempt,
               status: info.status ?? 'network',
               delayMs: info.delayMs,

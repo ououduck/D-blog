@@ -24,7 +24,7 @@ import matter from 'gray-matter';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { maskFencedCodeBlocks } from '../src/utils/headings-core.mjs';
 import { sendTelegramMessage } from './lib/telegram.mjs';
-import { fetchWithRetry, RetryableHttpError, isSafePublicHttpUrl } from './lib/http.mjs';
+import { fetchWithRetry, RetryableHttpError, isSafePublicHttpUrl, sanitizeUrlForLogs } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
 const logger = createActionLogger('link-check');
@@ -132,28 +132,62 @@ export const extractExternalLinks = (content) => {
  * 返回 { ok: boolean, status?: number, error?: string }。
  * 复用 fetchWithRetry：网络瞬时抖动（DNS/连接/5xx）自动退避重试，
  * 单次超时不再是「一次抖动即判失效」的误报来源。
+ *
+ * SSRF 跳转防护：redirect 改 manual 逐跳跟随，每一跳都重新
+ * isSafePublicHttpUrl 校验 —— 初始 URL 安全不代表重定向目标安全，
+ * 公开站点可 302 到 127.0.0.1 / 169.254.169.254 等内网地址形成绕过。
+ * 导出供单元测试（SSRF 拦截/重定向逐跳校验）。
  */
-const checkUrl = async (url) => {
+const MAX_REDIRECTS = 5;
+
+export const checkUrl = async (url) => {
+  let current = url;
   try {
-    const response = await fetchWithRetry(
-      url,
-      {
-        method: 'GET',
-        redirect: 'follow',
-        headers: {
-          'User-Agent': 'D-blog-LinkChecker/1.0',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
+      const isSafe = await isSafePublicHttpUrl(current);
+      if (!isSafe) {
+        return { ok: false, error: 'blocked: 非公开 HTTP(S) 地址（SSRF 防护拦截）' };
+      }
+
+      const response = await fetchWithRetry(
+        current,
+        {
+          method: 'GET',
+          redirect: 'manual',
+          headers: {
+            'User-Agent': 'D-blog-LinkChecker/1.0',
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          },
         },
-      },
-      {
-        timeoutMs: REQUEST_TIMEOUT_MS,
-        retries: REQUEST_RETRIES,
-      },
-    );
-    // 释放响应体（不下载页面内容），仅保留状态。
-    await response.body?.cancel().catch(() => {});
-    const ok = response.ok || (response.status >= 300 && response.status < 400);
-    return ok ? { ok: true, status: response.status } : { ok: false, status: response.status };
+        {
+          timeoutMs: REQUEST_TIMEOUT_MS,
+          retries: REQUEST_RETRIES,
+        },
+      );
+
+      // 3xx：读取 Location 继续下一跳（下一轮循环开头重新做 SSRF 校验）。
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        // 释放响应体（不下载重定向中间页内容）。
+        await response.body?.cancel().catch(() => {});
+        if (!location) {
+          return { ok: false, error: '重定向缺少 Location' };
+        }
+        try {
+          current = new URL(location, current).toString();
+        } catch {
+          return { ok: false, error: '重定向 Location 非法' };
+        }
+        continue;
+      }
+
+      // 释放响应体（不下载页面内容），仅保留状态。
+      await response.body?.cancel().catch(() => {});
+      const ok = response.ok || (response.status >= 300 && response.status < 400);
+      return ok ? { ok: true, status: response.status } : { ok: false, status: response.status };
+    }
+    // 重定向超过 MAX_REDIRECTS 跳：判为失效（防重定向环）。
+    return { ok: false, error: `重定向超过 ${MAX_REDIRECTS} 跳` };
   } catch (error) {
     // fetchWithRetry 重试耗尽后抛 RetryableHttpError（含最终状态/网络错误信息）。
     return {
@@ -232,15 +266,19 @@ const main = async () => {
     // SSRF 防护：文章外链经 Pages CMS / PR 可编辑，先确认目标是安全的公开地址
     //（协议/凭据检查 + DNS 解析后逐 IP 私网校验，fail-closed）；内网/回环/本地
     // 地址不发起请求，直接判为不可访问（这类链接对公网读者同样无效）。
+    // 重定向链的逐跳校验在 checkUrl 内部完成（redirect: 'manual' 每跳重新校验）。
     const isSafe = await isSafePublicHttpUrl(url);
     if (!isSafe) {
       broken.push({ url, error: 'blocked: 非公开 HTTP(S) 地址（SSRF 防护拦截）' });
-      logger.warn('Blocked non-public URL', url);
+      logger.warn('Blocked non-public URL', sanitizeUrlForLogs(url));
     } else {
       const result = await checkUrl(url);
       if (!result.ok) {
         broken.push({ url, ...result });
-        logger.warn('Broken link', `${url} (${result.status ? `HTTP ${result.status}` : result.error})`);
+        logger.warn(
+          'Broken link',
+          `${sanitizeUrlForLogs(url)} (${result.status ? `HTTP ${result.status}` : result.error})`,
+        );
       }
     }
     checkedCount += 1;
