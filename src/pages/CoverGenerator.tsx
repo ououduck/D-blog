@@ -36,6 +36,7 @@ import { SearchField } from '../components/SearchField';
 import { hasOpenOverlay, useModalOverlay } from '../hooks/useModalOverlay';
 import { coverTemplates as templates, defaultTemplate, type CoverTemplate } from './cover/coverTemplates';
 import {
+  BACKGROUND_IMAGE_MAX_BYTES,
   COVER_RATIOS,
   DEFAULT_TEXT_SHADOW,
   MAX_BACKGROUND_SCALE,
@@ -1712,7 +1713,9 @@ export const CoverGenerator: React.FC = () => {
                           <Upload size={14} />
                           {bgDragActive ? '松开即可导入' : '上传或拖入背景图片'}
                         </button>
-                        <p className="mt-2 text-center text-[11px] text-zinc-400">支持 PNG、JPEG、WebP，最大 10MB</p>
+                        <p className="mt-2 text-center text-[11px] text-zinc-400">
+                          支持 PNG、JPEG、WebP，最大 {BACKGROUND_IMAGE_MAX_BYTES / 1024 / 1024}MB
+                        </p>
                       </div>
                     </div>
                   )}

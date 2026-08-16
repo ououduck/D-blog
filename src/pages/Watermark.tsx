@@ -138,7 +138,11 @@ export const Watermark: React.FC = () => {
     }
     if (file.size > MAX_IMAGE_FILE_BYTES) {
       setImageState(null);
-      setFeedback({ kind: 'error', message: '图片文件不能超过 25MB，请压缩后重试。' });
+      // 上限文案从常量派生，调整常量时提示自动同步，避免文案与校验值漂移。
+      setFeedback({
+        kind: 'error',
+        message: `图片文件不能超过 ${MAX_IMAGE_FILE_BYTES / 1024 / 1024}MB，请压缩后重试。`,
+      });
       return;
     }
     try {
@@ -147,7 +151,11 @@ export const Watermark: React.FC = () => {
       const totalPixels = image.naturalWidth * image.naturalHeight;
       if (!image.naturalWidth || !image.naturalHeight || totalPixels > MAX_IMAGE_PIXELS) {
         setImageState(null);
-        setFeedback({ kind: 'error', message: '图片总像素不能超过 2400 万像素，请缩小尺寸后重试。' });
+        // 与 MAX_IMAGE_FILE_BYTES 文案同口径：从常量派生（万像素 = 像素数 / 10000）。
+        setFeedback({
+          kind: 'error',
+          message: `图片总像素不能超过 ${MAX_IMAGE_PIXELS / 10_000} 万像素，请缩小尺寸后重试。`,
+        });
         return;
       }
       setImageState({ image, name: file.name });
@@ -268,7 +276,7 @@ export const Watermark: React.FC = () => {
               {imageState ? '更换图片' : '选择图片'}
             </button>
             <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-              支持常见图片格式，最大 25MB、2400 万像素。
+              支持常见图片格式，最大 {MAX_IMAGE_FILE_BYTES / 1024 / 1024}MB、{MAX_IMAGE_PIXELS / 10_000} 万像素。
             </p>
             {imageState && (
               <p
