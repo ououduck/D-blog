@@ -176,6 +176,9 @@ export const CoverGenerator: React.FC = () => {
   const [searchError, setSearchError] = useState<string | null>(null);
   const iconifyAbortRef = useRef<AbortController | null>(null);
   const iconifySearchIdRef = useRef(0);
+  // 图标搜索防抖定时器：声明与 abort/searchId 相邻（弹窗关闭清理 effect
+  // 引用它，避免声明在组件中段造成 TDZ 易碎写法）。
+  const iconifyDebounceRef = useRef<number | null>(null);
 
   // 字体状态
   const [customFont, setCustomFont] = useState<string | null>(null);
@@ -232,6 +235,26 @@ export const CoverGenerator: React.FC = () => {
     initialFocusRef: iconSearchInputRef,
     containerRef: iconifyDialogRef,
   });
+
+  // 弹窗关闭时清理搜索状态：取消在途 fetch（iconifyAbortRef）与防抖定时器
+  //（iconifyDebounceRef），否则输入关键词后立即关弹窗，400ms 后仍会向
+  // api.iconify.design 发起请求并在后台 setState（组件不卸载，请求直到
+  // 完成/8s 超时才停）。重置查询词：重新打开时从空搜索开始。
+  useEffect(() => {
+    if (showIconifyModal) return;
+    if (iconifyDebounceRef.current) {
+      window.clearTimeout(iconifyDebounceRef.current);
+      iconifyDebounceRef.current = null;
+    }
+    iconifyAbortRef.current?.abort();
+    iconifyAbortRef.current = null;
+    iconifySearchIdRef.current += 1;
+    setIconifyResults([]);
+    setFailedIconifyResults(new Set());
+    setSearchError(null);
+    setIsSearching(false);
+    setIconifySearch('');
+  }, [showIconifyModal]);
 
   // 折叠面板
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -744,7 +767,6 @@ export const CoverGenerator: React.FC = () => {
     }
   }, []);
 
-  const iconifyDebounceRef = useRef<number | null>(null);
   const resetIconifySearch = useCallback((clearQuery = true) => {
     if (iconifyDebounceRef.current) {
       window.clearTimeout(iconifyDebounceRef.current);
@@ -1185,7 +1207,14 @@ export const CoverGenerator: React.FC = () => {
         downloadBlob(zip, `${exportFilename.trim() || 'covers'}-batch.zip`);
         setFeedback({ kind: 'success', message: `批量封面已打包下载，共 ${items.length} 个文件` });
       } catch (error) {
-        setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '批量生成失败' });
+        // 用户主动取消（点击「取消导出」触发 abort）不是错误：
+        // 以 info 反馈而非 role=alert 的断言式错误播报。
+        const message = error instanceof Error ? error.message : '批量生成失败';
+        const isCancelled =
+          message === '批量生成已取消' ||
+          (error instanceof DOMException && error.name === 'AbortError') ||
+          controller.signal.aborted;
+        setFeedback({ kind: isCancelled ? 'info' : 'error', message: isCancelled ? '批量导出已取消' : message });
       } finally {
         batchAbortRef.current = null;
         setBatchProgress(null);

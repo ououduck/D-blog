@@ -85,6 +85,9 @@ export const Watermark: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageLoadGenerationRef = useRef(0);
+  // 卸载守卫：图片加载（最长 10s 超时）可能跨过组件卸载（路由切换），
+  // 卸载后不再 setState（React 19 下为空操作，防御性卫生，与全站既有模式一致）。
+  const mountedRef = useRef(true);
   const [imageState, setImageState] = useState<ImageState | null>(null);
   const [text, setText] = useState(DEFAULT_WATERMARK_OPTIONS.text);
   const [fontSize, setFontSize] = useState(DEFAULT_WATERMARK_OPTIONS.fontSize);
@@ -94,6 +97,15 @@ export const Watermark: React.FC = () => {
   const [quality, setQuality] = useState(92);
   const [isExporting, setIsExporting] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
+
+  // 挂载态由 effect 置 true（不能只依赖初始值）：StrictMode 开发态 cleanup
+  // 先执行，会把初始 true 清掉导致守卫失效（与全站 useOfflinePosts 等一致）。
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const drawPreview = useCallback(() => {
     if (!imageState || !canvasRef.current) return;
@@ -131,7 +143,7 @@ export const Watermark: React.FC = () => {
     }
     try {
       const image = await loadImage(file);
-      if (generation !== imageLoadGenerationRef.current) return;
+      if (generation !== imageLoadGenerationRef.current || !mountedRef.current) return;
       const totalPixels = image.naturalWidth * image.naturalHeight;
       if (!image.naturalWidth || !image.naturalHeight || totalPixels > MAX_IMAGE_PIXELS) {
         setImageState(null);
@@ -141,7 +153,7 @@ export const Watermark: React.FC = () => {
       setImageState({ image, name: file.name });
       setFeedback(null);
     } catch (error) {
-      if (generation !== imageLoadGenerationRef.current) return;
+      if (generation !== imageLoadGenerationRef.current || !mountedRef.current) return;
       setImageState(null);
       setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '图片加载失败。' });
     }
