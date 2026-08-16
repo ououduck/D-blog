@@ -23,7 +23,9 @@ import { siteConfig } from '@config/site.config';
 // 客户端水合首帧与 SSR 输出一致；异步加载仅作为初始数据缺失时的兜底。
 const initialSiteStats = getInitialSiteStats();
 
-const formatValue = (value: number) => new Intl.NumberFormat('zh-CN').format(value);
+// 非有限数值（NaN/Infinity，如生成数据异常）显示占位符，避免页面出现 "NaN"。
+const formatValue = (value: number) =>
+  Number.isFinite(value) ? new Intl.NumberFormat('zh-CN').format(value) : '—';
 
 const SummaryCard = ({
   icon: Icon,
