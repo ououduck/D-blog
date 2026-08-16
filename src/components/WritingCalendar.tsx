@@ -135,12 +135,15 @@ export const WritingCalendar: React.FC<WritingCalendarProps> = ({ dates, classNa
           {/* 月份标签行 */}
           <div className="flex" aria-hidden="true">
             <span className="w-8 shrink-0 sm:w-9" />
-            <div className="relative flex gap-[3px] sm:gap-[4px]">
+            <div className="relative flex gap-[3px] sm:gap-[4px] [--cell-pitch:14px] sm:[--cell-pitch:16px]">
               {monthLabels.map(({ weekIndex, label }) => (
                 <span
                   key={`${weekIndex}-${label}`}
                   className="absolute top-0 text-[10px] leading-none text-zinc-400 dark:text-zinc-500"
-                  style={{ left: `${weekIndex * (13 + 3)}px` }}
+                  // 标签列位置按实际单元格节距（宽 + 间距）计算：移动端 11+3=14px、
+                  // sm+ 12+4=16px。此前写死 16px，移动端每列漂移 2px，靠后的月份
+                  // 标签会明显错位。
+                  style={{ left: `calc(${weekIndex} * var(--cell-pitch))` }}
                 >
                   {label}
                 </span>
