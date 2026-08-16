@@ -516,13 +516,17 @@ export const ArchivePage = () => {
                                                 <time className="font-mono text-xs font-medium text-zinc-500 dark:text-zinc-400 md:pt-1">
                                                   {formatDay(post.date)}
                                                 </time>
-                                                <h4 className="min-w-0 break-words font-serif text-lg font-bold leading-snug text-zinc-900 transition-colors [overflow-wrap:anywhere] group-hover:text-zinc-600 dark:text-zinc-100 dark:group-hover:text-zinc-300 md:text-xl">
+                                                {/* 年份/月份折叠按钮是交互控件，按内容模型不能用标题；文章标题
+                                                    即为 h1 之后的下一级内容标题，用 h2 保持层级连续（h1 → h2），
+                                                    避免 SEO 审计「标题层级跳级」告警。字号由 className 控制，
+                                                    与 h 级别无关，视觉不变。 */}
+                                                <h2 className="min-w-0 break-words font-serif text-lg font-bold leading-snug text-zinc-900 transition-colors [overflow-wrap:anywhere] group-hover:text-zinc-600 dark:text-zinc-100 dark:group-hover:text-zinc-300 md:text-xl">
                                                   {post.title}
                                                   <ArrowUpRight
                                                     className="ml-1 inline-block -translate-y-0.5 opacity-0 transition-opacity group-hover:opacity-100"
                                                     size={14}
                                                   />
-                                                </h4>
+                                                </h2>
                                                 <p className="min-w-0 break-words text-xs text-zinc-500 [overflow-wrap:anywhere] dark:text-zinc-400 md:whitespace-nowrap">
                                                   {post.category}{' '}
                                                   <span className="mx-1 text-zinc-300 dark:text-zinc-700">·</span>{' '}
