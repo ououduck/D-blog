@@ -417,9 +417,10 @@ export const generateSharePoster = async (options: SharePosterOptions): Promise<
     const lines = wrapCanvasText(ctx, title, bandWidth, 3);
     titleFontSize = size;
     titleLines = lines;
-    // wrapCanvasText 恒返回 ≤3 行，超长时最后一行以省略号截断；
-    // 仅当未被截断（末行不以 … 结尾）时说明该字号能完整放下，停止降字号。
-    if (!lines[lines.length - 1]?.endsWith('…')) break;
+    // 只有所有行都未被截断（任一行都不以 … 结尾）才认为该字号能完整放下；
+    // 只看末行会把"中间行被逐字截断兜底"（wrapCanvasText 内超宽 token 分支）
+    // 误判为字号合适，导致 46px 时中间行省略号、34px 本可完整放下。
+    if (!lines.some((line) => line.endsWith('…'))) break;
   }
   const titleLineHeight = Math.round(titleFontSize * 1.42);
   ctx.fillStyle = COLORS.ink;

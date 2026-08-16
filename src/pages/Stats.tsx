@@ -24,8 +24,7 @@ import { siteConfig } from '@config/site.config';
 const initialSiteStats = getInitialSiteStats();
 
 // 非有限数值（NaN/Infinity，如生成数据异常）显示占位符，避免页面出现 "NaN"。
-const formatValue = (value: number) =>
-  Number.isFinite(value) ? new Intl.NumberFormat('zh-CN').format(value) : '—';
+const formatValue = (value: number) => (Number.isFinite(value) ? new Intl.NumberFormat('zh-CN').format(value) : '—');
 
 const SummaryCard = ({
   icon: Icon,
@@ -65,7 +64,7 @@ const RankingCard = ({
   items: Array<{ name: string; count: number }>;
   valueSuffix?: string;
 }) => {
-  const max = Math.max(...items.map((item) => item.count), 1);
+  const max = Math.max(...items.map((item) => (Number.isFinite(item.count) ? item.count : 0)), 1);
   const shouldReduceMotion = useReducedMotion();
 
   return (
@@ -91,7 +90,7 @@ const RankingCard = ({
                 <motion.div
                   className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
                   initial={shouldReduceMotion ? false : { width: 0 }}
-                  whileInView={{ width: `${Math.max(8, (item.count / max) * 100)}%` }}
+                  whileInView={{ width: `${Math.max(8, ((Number.isFinite(item.count) ? item.count : 0) / max) * 100)}%` }}
                   viewport={{ once: true, amount: 0.6 }}
                   transition={{ duration: 0.65, ease: easeOut, delay: Math.min(index * 0.06, 0.3) }}
                 />

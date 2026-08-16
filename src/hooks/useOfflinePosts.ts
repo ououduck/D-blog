@@ -38,6 +38,15 @@ export const useOfflinePosts = (post?: OfflinePostInput | null): UseOfflinePosts
   const [isSaving, setIsSaving] = useState(false);
   const requestIdRef = useRef(0);
   const toggleInFlightRef = useRef(false);
+  // 卸载守卫：IndexedDB 读写耗时可能跨过组件卸载（路由切换），
+  // 卸载后不再 setState（React 19 下为空操作，防御性卫生）。
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     postRef.current = post;
@@ -45,6 +54,7 @@ export const useOfflinePosts = (post?: OfflinePostInput | null): UseOfflinePosts
 
   const refresh = useCallback(async () => {
     const requestId = ++requestIdRef.current;
+    if (!mountedRef.current) return;
     setLoading(true);
 
     try {
@@ -52,19 +62,19 @@ export const useOfflinePosts = (post?: OfflinePostInput | null): UseOfflinePosts
         getOfflinePosts(),
         postId ? getOfflinePost(postId) : Promise.resolve(undefined),
       ]);
-      if (requestId !== requestIdRef.current) {
+      if (requestId !== requestIdRef.current || !mountedRef.current) {
         return;
       }
       setPosts(savedPosts);
       setIsSaved(Boolean(savedPost));
       setError(null);
     } catch (loadError) {
-      if (requestId !== requestIdRef.current) {
+      if (requestId !== requestIdRef.current || !mountedRef.current) {
         return;
       }
       setError(getErrorMessage(loadError, '离线收藏加载失败，请稍后重试。'));
     } finally {
-      if (requestId === requestIdRef.current) {
+      if (requestId === requestIdRef.current && mountedRef.current) {
         setLoading(false);
       }
     }

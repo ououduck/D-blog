@@ -103,10 +103,13 @@ export const Watermark: React.FC = () => {
     const generation = ++imageLoadGenerationRef.current;
     if (!file) return;
     if (!file.type.startsWith('image/')) {
+      // 更换新图被拒时清空旧图预览：避免"错误提示配旧图"的 UI 自相矛盾。
+      setImageState(null);
       setFeedback({ kind: 'error', message: '请选择 PNG、JPEG、WebP 等图片文件。' });
       return;
     }
     if (file.size > MAX_IMAGE_FILE_BYTES) {
+      setImageState(null);
       setFeedback({ kind: 'error', message: '图片文件不能超过 25MB，请压缩后重试。' });
       return;
     }
@@ -115,6 +118,7 @@ export const Watermark: React.FC = () => {
       if (generation !== imageLoadGenerationRef.current) return;
       const totalPixels = image.naturalWidth * image.naturalHeight;
       if (!image.naturalWidth || !image.naturalHeight || totalPixels > MAX_IMAGE_PIXELS) {
+        setImageState(null);
         setFeedback({ kind: 'error', message: '图片总像素不能超过 2400 万像素，请缩小尺寸后重试。' });
         return;
       }
@@ -122,6 +126,7 @@ export const Watermark: React.FC = () => {
       setFeedback(null);
     } catch (error) {
       if (generation !== imageLoadGenerationRef.current) return;
+      setImageState(null);
       setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '图片加载失败。' });
     }
   };

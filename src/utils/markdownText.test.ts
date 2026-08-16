@@ -14,6 +14,11 @@ describe('stripMarkdown', () => {
     expect(stripMarkdown('![封面图](https://cdn.example.com/a.png)')).toBe('封面图');
   });
 
+  it('URL 含一层嵌套括号时完整剥离', () => {
+    expect(stripMarkdown('[维基](https://en.wikipedia.org/wiki/Foo_(bar)) 后文')).toBe('维基 后文');
+    expect(stripMarkdown('![封面](https://cdn.example.com/a_(b).png) 后文')).toBe('封面 后文');
+  });
+
   it('行内代码与围栏代码块处理', () => {
     expect(stripMarkdown('使用 `npm run build` 构建')).toBe('使用 npm run build 构建');
     expect(stripMarkdown('```ts\nconst a = 1;\n```\n正文')).toBe('正文');

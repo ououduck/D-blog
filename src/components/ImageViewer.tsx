@@ -199,11 +199,15 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
   const handleTouchStart = (event: React.TouchEvent) => {
     if (event.touches.length === 1) {
       const now = Date.now();
-      if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      const isDoubleTap = now - lastTapRef.current < DOUBLE_TAP_DELAY;
+      // 双击触发后把判定窗口推后一个双击间隔：三连击的第 3 击（距第 2 击仍
+      // 在窗口内）不再误判为又一次双击（否则 3 次连击 = 放大又缩小闪回）；
+      // 真正的双双击（4 连击）语义不变：t3 抑制、t4 重新进入窗口 toggle。
+      lastTapRef.current = isDoubleTap ? now + DOUBLE_TAP_DELAY : now;
+      if (isDoubleTap) {
         event.preventDefault();
         handleToggleZoom();
       }
-      lastTapRef.current = now;
       touchStartRef.current = {
         x: event.touches[0].clientX,
         y: event.touches[0].clientY,
@@ -245,8 +249,19 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
     }
   };
 
-  const handleTouchEnd = () => {
-    touchStartRef.current = null;
+  const handleTouchEnd = (event: React.TouchEvent) => {
+    if (event.touches.length === 1) {
+      // 双指捏合抬起一指（或 touchcancel 中断）：用剩余手指当前位置重新锚定，
+      // 消除平移死区与旧锚点残留导致的位移跳变；touchcancel 与 touchend 同清理。
+      touchStartRef.current = {
+        x: event.touches[0].clientX,
+        y: event.touches[0].clientY,
+        posX: position.x,
+        posY: position.y,
+      };
+    } else {
+      touchStartRef.current = null;
+    }
     pinchStartRef.current = { distance: 0, scale };
     stopDragging();
   };
@@ -280,6 +295,9 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
           onMouseLeave={stopDragging}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          // touchcancel（系统手势/来电/滚动接管中断触摸）与 touchend 走同一清理逻辑，
+          // 避免旧锚点残留导致下一次平移位移跳变。
+          onTouchCancel={handleTouchEnd}
         >
           <div className="absolute left-3 right-3 top-3 z-50 flex items-center justify-between gap-3 sm:left-5 sm:right-5 sm:top-5">
             <div className="min-w-0 rounded-control border border-white/20 bg-zinc-900 px-3 py-2 text-xs text-white/70 sm:px-4">

@@ -48,7 +48,11 @@ export const CountUp: React.FC<CountUpProps> = ({
 }) => {
   const ref = useRef<HTMLSpanElement | null>(null);
   const reducedMotion = useReducedMotion();
-  const maxDecimals = Math.max(getDecimalPlaces(from), getDecimalPlaces(to));
+  // NaN/非法数字防御：非法值归零，避免渲染 "NaN" 且 NaN 进入 spring 计算
+  // （spring 对 NaN 不收敛，动画会卡死）。
+  const safeTo = Number.isFinite(to) ? to : 0;
+  const safeFrom = Number.isFinite(from) ? from : 0;
+  const maxDecimals = Math.max(getDecimalPlaces(safeFrom), getDecimalPlaces(safeTo));
 
   // 缓存 formatter：动画期间每个 tick 都要格式化，避免重复构造 Intl 实例。
   const formatter = useMemo(
@@ -69,7 +73,7 @@ export const CountUp: React.FC<CountUpProps> = ({
     [formatter, separator],
   );
 
-  const motionValue = useMotionValue(direction === 'down' ? to : from);
+  const motionValue = useMotionValue(direction === 'down' ? safeTo : safeFrom);
   const damping = 20 + 40 * (1 / duration);
   const stiffness = 100 * (1 / duration);
   const springValue = useSpring(motionValue, { damping, stiffness });
@@ -83,7 +87,7 @@ export const CountUp: React.FC<CountUpProps> = ({
     // 水合后先写回起始值：首屏元素挂载即进入视口，用户会看到
     // "SSR 最终值 → 起始值 → 进入视口滚动计数"的短暂跳变；视口外元素则
     // 在滚动进入时才可见计数过程。减弱动效偏好下不写回，直接静态显示最终值。
-    ref.current.textContent = formatValue(direction === 'down' ? to : from);
+    ref.current.textContent = formatValue(direction === 'down' ? safeTo : safeFrom);
 
     const unsubscribe = springValue.on('change', (latest: number) => {
       if (ref.current) {
@@ -92,7 +96,7 @@ export const CountUp: React.FC<CountUpProps> = ({
     });
 
     return () => unsubscribe();
-  }, [direction, formatValue, from, reducedMotion, springValue, to]);
+  }, [direction, formatValue, reducedMotion, safeFrom, safeTo, springValue]);
 
   useEffect(() => {
     if (!isInView || reducedMotion) {
@@ -100,15 +104,15 @@ export const CountUp: React.FC<CountUpProps> = ({
     }
 
     const timeoutId = window.setTimeout(() => {
-      motionValue.set(direction === 'down' ? from : to);
+      motionValue.set(direction === 'down' ? safeFrom : safeTo);
     }, delay * 1000);
 
     return () => window.clearTimeout(timeoutId);
-  }, [delay, direction, from, isInView, motionValue, reducedMotion, to]);
+  }, [delay, direction, isInView, motionValue, reducedMotion, safeFrom, safeTo]);
 
   return (
     <span ref={ref} className={className}>
-      {formatValue(to)}
+      {formatValue(safeTo)}
     </span>
   );
 };

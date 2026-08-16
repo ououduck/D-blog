@@ -12,10 +12,10 @@ export const stripMarkdown = (markdown: string): string => {
     .replace(/```[\s\S]*?```/g, ' ')
     // 行内代码 `code` → code
     .replace(/`([^`]*)`/g, '$1')
-    // 图片 ![alt](url) → alt 文字
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
-    // 链接 [text](url) → text
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    // 图片 ![alt](url) → alt 文字（URL 段支持一层嵌套括号，如维基百科链接）
+    .replace(/!\[([^\]]*)\]\((?:[^()]|\([^)]*\))*\)/g, '$1')
+    // 链接 [text](url) → text（同上）
+    .replace(/\[([^\]]*)\]\((?:[^()]|\([^)]*\))*\)/g, '$1')
     // 标题符号 # 与列表符号 - * + 数字.
     .replace(/^\s{0,3}#{1,6}\s+/gm, '')
     .replace(/^\s*[-*+]\s+/gm, '')
