@@ -237,14 +237,16 @@ export const Friends = () => {
   };
 
   const filteredFriends = useMemo(() => {
-    const keyword = searchQuery.trim().toLocaleLowerCase();
+    // toLowerCase（非 toLocaleLowerCase）：土耳其语等 locale 下 'I' 会变成
+    // 点无点 'ı'，导致含 I 的站点名/域名搜索失配。
+    const keyword = searchQuery.trim().toLowerCase();
     if (!keyword) {
       return friends;
     }
 
     return friends.filter((friend) => {
-      const domain = getFriendDomain(friend.url).toLocaleLowerCase();
-      return [friend.name, friend.description, domain].some((value) => value.toLocaleLowerCase().includes(keyword));
+      const domain = getFriendDomain(friend.url).toLowerCase();
+      return [friend.name, friend.description, domain].some((value) => value.toLowerCase().includes(keyword));
     });
   }, [friends, searchQuery]);
 

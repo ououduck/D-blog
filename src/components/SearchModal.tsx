@@ -187,7 +187,7 @@ export const SearchModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       'gi',
     );
     return text.split(pattern).map((part, index) => {
-      const isMatch = normalizedTerms.some((term) => part.toLocaleLowerCase() === term.toLocaleLowerCase());
+      const isMatch = normalizedTerms.some((term) => part.toLowerCase() === term.toLowerCase());
       return isMatch ? (
         <mark key={`${part}-${index}`} className="bg-zinc-200 px-0.5 text-zinc-950 dark:bg-zinc-700 dark:text-zinc-100">
           {part}

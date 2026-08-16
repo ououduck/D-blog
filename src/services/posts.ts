@@ -27,7 +27,10 @@ const loadPostsSearchData = async (): Promise<Array<PostMetadata & { searchText?
   return data.default as Array<PostMetadata & { searchText?: string }>;
 };
 
-const normalizeSearchText = (value: string) => value.normalize('NFKC').toLocaleLowerCase().trim().replace(/\s+/g, ' ');
+// toLowerCase（非 toLocaleLowerCase）：locale 无关的大小写归一化。土耳其语等
+// locale 下 'I'.toLocaleLowerCase() 会变成点无点 'ı'，导致含 I 的查询（如
+// "String"/"JSON" 代码片段）与内容失配。
+const normalizeSearchText = (value: string) => value.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ');
 
 const splitSearchTerms = (value: string) => normalizeSearchText(value).split(' ').filter(Boolean);
 
@@ -217,7 +220,7 @@ const createSearchSnippet = (
   }
 
   const firstTerm = matchedTerms[0];
-  const rawMatchIndex = rawValue.toLocaleLowerCase().indexOf(firstTerm);
+  const rawMatchIndex = rawValue.toLowerCase().indexOf(firstTerm);
   const matchIndex = rawMatchIndex >= 0 ? rawMatchIndex : normalizedValue.indexOf(firstTerm);
   const maxLength = field === 'content' ? 84 : 72;
   const start = Math.max(0, Math.min(rawValue.length, matchIndex) - 28);

@@ -44,9 +44,10 @@ export const ShuoShuo = () => {
 
   // ── 独立搜索：仅匹配说说正文内容（markdown 剥离后），大小写不敏感 ──
   const filteredItems = useMemo(() => {
-    const query = searchQuery.trim().toLocaleLowerCase();
+    // toLowerCase（非 toLocaleLowerCase）：与全站搜索一致，locale 无关（见 services/posts.ts）。
+    const query = searchQuery.trim().toLowerCase();
     if (!query) return allItems;
-    return allItems.filter((item) => stripMarkdown(item.content).toLocaleLowerCase().includes(query));
+    return allItems.filter((item) => stripMarkdown(item.content).toLowerCase().includes(query));
   }, [allItems, searchQuery]);
   const hasSearchQuery = searchQuery.trim().length > 0;
 
