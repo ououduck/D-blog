@@ -764,7 +764,7 @@ export const Home = () => {
             onClose={() => setSharePost(null)}
             title={sharePost.title}
             excerpt={sharePost.excerpt}
-            url={absoluteSiteUrl(`/post/${encodeURIComponent(sharePost.id)}`, window.location.origin)}
+            url={absoluteSiteUrl(`/post/${sharePost.id}`, window.location.origin)}
             category={sharePost.category}
             date={sharePost.date}
             coverImage={sharePost.coverImage}

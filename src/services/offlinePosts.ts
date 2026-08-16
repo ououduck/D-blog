@@ -136,7 +136,7 @@ const prepareOfflineCache = async (post: OfflinePost): Promise<void> => {
     worker.postMessage(
       {
         type: 'CACHE_OFFLINE_POST',
-        pageUrl: routeUrl(`/post/${encodeURIComponent(post.id)}`),
+        pageUrl: routeUrl(`/post/${post.id}`),
         assetUrls: collectOfflineAssetUrls(post),
       },
       [channel.port2],

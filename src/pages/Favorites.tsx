@@ -104,7 +104,7 @@ export const Favorites = () => {
                 className="flex h-full min-w-0 flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-zinc-400 hover:shadow-[0_4px_12px_rgba(24,24,27,0.08)] dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:shadow-black/20"
               >
                 <Link
-                  to={`/post/${encodeURIComponent(post.id)}`}
+                  to={`/post/${post.id}`}
                   className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]"
                   // 封面链接不重复声明 aria-label：同一卡片标题链接已声明
                   // 「阅读文章：X」，两个相同 label 的链接会让读屏连续播报两次。
@@ -135,7 +135,7 @@ export const Favorites = () => {
                     <span aria-hidden="true">/</span>
                     <span className="normal-case tracking-normal">已收藏</span>
                   </div>
-                  <Link to={`/post/${encodeURIComponent(post.id)}`} aria-label={`阅读文章：${post.title}`}>
+                  <Link to={`/post/${post.id}`} aria-label={`阅读文章：${post.title}`}>
                     <h2 className="mb-1.5 line-clamp-2 min-h-11 md:mb-2 font-serif text-base font-bold leading-snug text-ink hover:underline dark:text-zinc-100 md:text-lg">
                       {post.title}
                     </h2>
