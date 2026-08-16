@@ -25,6 +25,7 @@ import {
   getInitialExpansion,
   getMonthKey,
   isAllVisibleExpanded,
+  normalizeYearKey,
 } from './archive/archiveState';
 
 const formatDay = (dateText: string) =>
@@ -170,7 +171,8 @@ export const ArchivePage = () => {
     if (!initializedRef.current || !yearFromUrl) {
       return;
     }
-    if (!groups.some((group) => group.year === yearFromUrl)) {
+    // 归一化比较：URL 值可为纯数字（?year=2026）或本地化文案（?year=2026年）。
+    if (!groups.some((group) => normalizeYearKey(group.year) === normalizeYearKey(yearFromUrl))) {
       setSearchParams(
         (previous) => {
           const nextParams = new URLSearchParams(previous);
@@ -227,7 +229,8 @@ export const ArchivePage = () => {
       setSearchParams(
         (previous) => {
           const nextParams = new URLSearchParams(previous);
-          if (nextParams.get('year') === year) {
+          const urlYear = nextParams.get('year');
+          if (urlYear !== null && normalizeYearKey(urlYear) === normalizeYearKey(year)) {
             nextParams.delete('year');
           }
           return nextParams;
@@ -240,7 +243,9 @@ export const ArchivePage = () => {
       setSearchParams(
         (previous) => {
           const nextParams = new URLSearchParams(previous);
-          nextParams.set('year', year);
+          // URL 写纯数字年份（展示层继续显示「2026年」）：?year=2026 可
+          // 手工构造/分享，不再写入 URL 编码的本地化文案。
+          nextParams.set('year', normalizeYearKey(year));
           return nextParams;
         },
         { replace: true },

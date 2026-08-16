@@ -64,4 +64,27 @@ describe('coverStorage', () => {
     expect(next).toHaveLength(0);
     expect(readPresets()).toHaveLength(0);
   });
+
+  it('localStorage 不可用时 writePreset/deletePreset 返回 null（不假报成功）', () => {
+    // 隐私模式/沙箱 iframe 访问 localStorage 即抛错：storage() 返回 null。
+    const originalDescriptor = Object.getOwnPropertyDescriptor(window, 'localStorage');
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('SecurityError: access to localStorage denied');
+      },
+    });
+    try {
+      expect(writePreset('预设', makeDraft())).toBeNull();
+      expect(deletePreset('预设')).toBeNull();
+      // writeDraft 同样如实返回 false（既有语义，一并回归）。
+      expect(writeDraft(makeDraft())).toBe(false);
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(window, 'localStorage', originalDescriptor);
+      } else {
+        delete (window as { localStorage?: unknown }).localStorage;
+      }
+    }
+  });
 });

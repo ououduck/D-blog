@@ -45,6 +45,11 @@ const compareYearDesc = (a: string, b: string) => {
 
 export const getMonthKey = (year: string, monthNum: number) => `${year}-${monthNum}`;
 
+/** 年份键归一化：展示层用本地化文案（zh-CN 的「2026年」），URL 写纯数字
+ *  （?year=2026）。手工构造/分享的纯数字参数必须能与展示键互认，否则
+ *  groups.some(year === yearFromUrl) 永不匹配，参数会被静默删除。 */
+export const normalizeYearKey = (value: string): string => String(value).replace(/[^\d]/g, '');
+
 export const buildArchiveGroups = (posts: PostMetadata[]): ArchiveGroup[] => {
   const groups = new Map<string, ArchiveGroup>();
 
@@ -91,7 +96,10 @@ export const getInitialExpansion = (groups: ArchiveGroup[], year: string | null)
     return { years: new Set(), months: new Set() };
   }
 
-  const target = groups.find((group) => group.year === year) ?? groups[0];
+  const target =
+    year === null
+      ? groups[0]
+      : (groups.find((group) => normalizeYearKey(group.year) === normalizeYearKey(year)) ?? groups[0]);
   const firstMonth = target.months[0];
   return {
     years: new Set([target.year]),
@@ -112,9 +120,15 @@ export const isAllVisibleExpanded = (
   );
 
 export const ensureYearExpanded = (groups: ArchiveGroup[], expandedYears: ReadonlySet<string>, year: string | null) => {
-  if (!year || !groups.some((group) => group.year === year) || expandedYears.has(year)) {
+  if (!year) {
+    return new Set(expandedYears);
+  }
+  // URL 值可能是纯数字（?year=2026）或本地化文案：归一化后定位到展示键
+  //（「2026年」），Set 内容必须用展示键才能与渲染层互认。
+  const target = groups.find((group) => normalizeYearKey(group.year) === normalizeYearKey(year));
+  if (!target || expandedYears.has(target.year)) {
     return new Set(expandedYears);
   }
 
-  return new Set([...expandedYears, year]);
+  return new Set([...expandedYears, target.year]);
 };

@@ -113,6 +113,13 @@ export function readPresets(): StoredPreset[] {
  * "已保存"但刷新后预设丢失）。
  */
 export function writePreset(name: string, state: CoverDraft): StoredPreset[] | null {
+  const store = storage();
+  if (!store) {
+    // localStorage 不可用（隐私模式/沙箱 iframe 访问即抛错）时如实返回 null：
+    // 此前 storage()?.setItem 空安全调用静默跳过写入却仍返回 next，UI 显示
+    // 「已保存预设」但刷新后预设全部丢失（与 writeDraft 的成功语义矛盾）。
+    return null;
+  }
   const preset: StoredPreset = {
     name: name.trim() || '未命名预设',
     createdAt: Date.now(),
@@ -120,7 +127,7 @@ export function writePreset(name: string, state: CoverDraft): StoredPreset[] | n
   };
   const next = [preset, ...readPresets().filter((item) => item.name !== preset.name)].slice(0, 20);
   try {
-    storage()?.setItem(COVER_PRESETS_KEY, JSON.stringify(next));
+    store.setItem(COVER_PRESETS_KEY, JSON.stringify(next));
   } catch {
     return null;
   }
@@ -129,9 +136,13 @@ export function writePreset(name: string, state: CoverDraft): StoredPreset[] | n
 
 /** 删除自定义预设；写入失败返回 null（与 writePreset 一致的成功语义）。 */
 export function deletePreset(name: string): StoredPreset[] | null {
+  const store = storage();
+  if (!store) {
+    return null;
+  }
   const next = readPresets().filter((preset) => preset.name !== name);
   try {
-    storage()?.setItem(COVER_PRESETS_KEY, JSON.stringify(next));
+    store.setItem(COVER_PRESETS_KEY, JSON.stringify(next));
   } catch {
     return null;
   }
