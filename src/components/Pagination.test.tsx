@@ -66,4 +66,21 @@ describe('Pagination', () => {
     expect(onPageChange).not.toHaveBeenCalled();
     expect(input).toHaveValue(2);
   });
+
+  it('翻页按钮 mousedown 阻止默认行为（输入框聚焦时点击不触发 onBlur 双重跳转）', async () => {
+    const user = userEvent.setup();
+    const onPageChange = vi.fn();
+    render(<Pagination currentPage={2} totalPages={5} onPageChange={onPageChange} />);
+    const input = screen.getByRole('spinbutton');
+    const nextButton = screen.getByRole('button', { name: '下一页' });
+    // 聚焦输入框并输入新页码，然后点击「下一页」：
+    // 若 mousedown 未 preventDefault，onBlur 会先提交输入框的页码（双重跳转）。
+    await user.click(input);
+    await user.type(input, '4');
+    await user.click(nextButton);
+    // 仅触发一次 onPageChange：点击「下一页」（基于 currentPage 2 → 3），
+    // 输入框的「4」被丢弃（未确认）。
+    expect(onPageChange).toHaveBeenCalledTimes(1);
+    expect(onPageChange).toHaveBeenCalledWith(3);
+  });
 });
