@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { computeBackoffDelay, createTimeoutSignal } from './http.mjs';
+import { computeBackoffDelay, createTimeoutSignal, sanitizeUrlForLogs } from './http.mjs';
 
 describe('computeBackoffDelay', () => {
   it('第 1 次重试延迟在 [0, base×2) 内', () => {
@@ -49,5 +49,29 @@ describe('createTimeoutSignal', () => {
     cleanup();
     await new Promise((resolve) => setTimeout(resolve, 40));
     expect(signal.aborted).toBe(false);
+  });
+});
+
+describe('sanitizeUrlForLogs', () => {
+  it('脱敏 Telegram bot token（路径段）', () => {
+    expect(sanitizeUrlForLogs('https://api.telegram.org/bot123456:ABC-DEF_xyz/sendMessage')).toBe(
+      'https://api.telegram.org/bot***/sendMessage',
+    );
+  });
+
+  it('脱敏 Akismet key（子域）', () => {
+    expect(sanitizeUrlForLogs('https://deadbeef123.rest.akismet.com/1.1/comment-check')).toBe(
+      'https://***.rest.akismet.com/1.1/comment-check',
+    );
+  });
+
+  it('脱敏 basic auth userinfo', () => {
+    expect(sanitizeUrlForLogs('https://user:secret@api.example.com/v1')).toBe('https://***@api.example.com/v1');
+  });
+
+  it('普通 URL 原样保留', () => {
+    expect(sanitizeUrlForLogs('https://api.github.com/repos/owner/repo/issues')).toBe(
+      'https://api.github.com/repos/owner/repo/issues',
+    );
   });
 });

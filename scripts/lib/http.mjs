@@ -120,6 +120,19 @@ export class HttpStatusError extends Error {
 }
 
 /**
+ * 日志脱敏：URL 中可能内嵌密钥 —— Telegram bot token 在路径（/bot<token>）、
+ * Akismet key 在子域（<key>.rest.akismet.com）、basic auth 在 userinfo。
+ * 错误消息/onRetry 回调直接拼接 URL 会明文落盘；GitHub Actions 的 secret 脱敏
+ * （***）只覆盖 CI runner，本地运行（npm run check:links 等）无此保护。
+ * 导出供单测覆盖。
+ */
+export const sanitizeUrlForLogs = (url) =>
+  String(url)
+    .replace(/\/\/[^/@\s]+@/, '//***@') // userinfo：https://user:pass@host → https://***@host
+    .replace(/\/bot[^/\s]+/, '/bot***') // Telegram：/bot123456:ABC…/ → /bot***/
+    .replace(/\/\/[a-z0-9_-]+\.rest\.akismet\.com/, '//***.rest.akismet.com'); // Akismet key 子域
+
+/**
  * 分页超限错误：strictPagination 模式下达到 maxPages 仍有下一页（数据被截断）。
  * 调用方应 fail-closed（中止批处理并报警），绝不静默丢失数据。
  */
@@ -485,7 +498,7 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
         lastBody = await readResponseText(response, { maxBytes: 4096 });
         cleanup();
         throw new RetryableHttpError(
-          `request failed after ${retries + 1} attempts: ${url} (status ${response.status})`,
+          `request failed after ${retries + 1} attempts: ${sanitizeUrlForLogs(url)} (status ${response.status})`,
           response.status,
           retries + 1,
           lastBody,
@@ -520,7 +533,7 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
 
       // 网络错误重试耗尽：包装为 RetryableHttpError（status=0），统一调用方 catch 边界。
       throw new RetryableHttpError(
-        `request failed after ${retries + 1} attempts: ${url} (network error: ${error.message})`,
+        `request failed after ${retries + 1} attempts: ${sanitizeUrlForLogs(url)} (network error: ${error.message})`,
         0,
         retries + 1,
       );
@@ -529,7 +542,7 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
 
   // 理论不可达（循环内必然 return 或 throw）；保留防御性兜底以防未来修改破坏不变量。
   throw new RetryableHttpError(
-    `request failed after ${retries + 1} attempts: ${url}`,
+    `request failed after ${retries + 1} attempts: ${sanitizeUrlForLogs(url)}`,
     lastStatus ?? 0,
     retries + 1,
     lastBody,
@@ -649,7 +662,7 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
       } catch (error) {
         if (error instanceof RetryableHttpError && error.status === 429) {
           throw new RateLimitError(
-            `GitHub secondary rate limit exceeded after ${error.attempts} attempts: ${url}`,
+            `GitHub secondary rate limit exceeded after ${error.attempts} attempts: ${sanitizeUrlForLogs(url)}`,
             60,
             0,
           );
@@ -678,7 +691,10 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
       const waitMs = parsedRateLimit.reset ? Math.max(0, parsedRateLimit.reset * 1000 - Date.now()) : 0;
       const retryAfterSeconds = parseRetryAfter(response.headers);
       const retryAfterMs = retryAfterSeconds !== undefined ? retryAfterSeconds * 1000 : Number.POSITIVE_INFINITY;
-      const boundedWaitMs = Math.min(waitMs || Number.POSITIVE_INFINITY, retryAfterMs, maxRateLimitWaitMs);
+      // waitMs 用 ?? 而非 ||：reset 缺失/已过期时 waitMs 为 0（合法值：无需等待），
+      // 若被 || Infinity 吞掉会退化为 maxRateLimitWaitMs（90s），每次无 reset 头的
+      // 限流响应都白等 90 秒。
+      const boundedWaitMs = Math.min(waitMs ?? Number.POSITIVE_INFINITY, retryAfterMs, maxRateLimitWaitMs);
 
       if (Number.isFinite(boundedWaitMs) && boundedWaitMs > 0) {
         await sleep(boundedWaitMs, signal);
@@ -703,7 +719,7 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
       if (isRateLimitResponse(response, responseBodyText)) {
         const parsedRateLimit = parseRateLimitHeaders(response.headers);
         throw new RateLimitError(
-          `GitHub rate limit exceeded: ${url}`,
+          `GitHub rate limit exceeded: ${sanitizeUrlForLogs(url)}`,
           parsedRateLimit.reset ? Math.max(0, Math.ceil(parsedRateLimit.reset - Date.now() / 1000)) : 60,
           maxRateLimitWaitMs,
         );
