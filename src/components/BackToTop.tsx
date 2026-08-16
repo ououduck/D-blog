@@ -22,6 +22,11 @@ export const BackToTop = () => {
         if (entry.isIntersecting) {
           // 隐藏时同步 visibility/tabIndex：仅 opacity/pointer-events 仍可被键盘
           // Tab 聚焦触发滚动，且会被读屏软件读出。
+          // 键盘用户聚焦可见按钮后向上滚动越过阈值：visibility:hidden 不移走
+          // 焦点，主动 blur 避免焦点滞留于不可见、不可读元素。
+          if (document.activeElement === btn) {
+            btn.blur();
+          }
           btn.style.opacity = '0';
           btn.style.pointerEvents = 'none';
           btn.style.visibility = 'hidden';

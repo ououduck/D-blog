@@ -124,6 +124,13 @@ export const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
     }, [elements]);
     const totalCharCount = useMemo(() => elements.reduce((sum, word) => sum + word.characters.length, 0), [elements]);
 
+    // random 错峰锚点在词条变化时固化一次：渲染期调用 Math.random 会让每次
+    // 重渲染/轮换的 delay 随机抖动，且 SSR 与客户端得到不同延迟。
+    const randomStaggerAnchor = useMemo(
+      () => (staggerFrom === 'random' ? Math.floor(Math.random() * Math.max(1, totalCharCount)) : 0),
+      [staggerFrom, totalCharCount],
+    );
+
     const getStaggerDelay = useCallback(
       (index: number, totalChars: number): number => {
         const total = totalChars;
@@ -138,12 +145,11 @@ export const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
           return Math.abs(center - index) * staggerDuration;
         }
         if (staggerFrom === 'random') {
-          const randomIndex = Math.floor(Math.random() * total);
-          return Math.abs(randomIndex - index) * staggerDuration;
+          return Math.abs(randomStaggerAnchor - index) * staggerDuration;
         }
         return Math.abs((staggerFrom as number) - index) * staggerDuration;
       },
-      [staggerFrom, staggerDuration],
+      [randomStaggerAnchor, staggerFrom, staggerDuration],
     );
 
     const handleIndexChange = useCallback(
@@ -155,6 +161,8 @@ export const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
     );
 
     const next = useCallback(() => {
+      // texts 为空时 length-1 = -1，相等判断恒 false，索引会无限自增。
+      if (texts.length === 0) return;
       const nextIndex = currentTextIndex === texts.length - 1 ? (loop ? 0 : currentTextIndex) : currentTextIndex + 1;
       if (nextIndex !== currentTextIndex) {
         handleIndexChange(nextIndex);
@@ -162,6 +170,7 @@ export const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
     }, [currentTextIndex, loop, texts.length, handleIndexChange]);
 
     const previous = useCallback(() => {
+      if (texts.length === 0) return;
       const prevIndex = currentTextIndex === 0 ? (loop ? texts.length - 1 : currentTextIndex) : currentTextIndex - 1;
       if (prevIndex !== currentTextIndex) {
         handleIndexChange(prevIndex);
@@ -207,7 +216,9 @@ export const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
                 {wordObj.characters.map((char, charIndex) => (
                   <motion.span
                     key={charIndex}
-                    initial={initial}
+                    // reducedMotion 时跳过入场动画（与「自动轮换已停」的意图一致，
+                    // 直接渲染最终状态，避免水合后仍播放一次字符动画）。
+                    initial={reducedMotion ? false : initial}
                     animate={animate}
                     exit={exit}
                     transition={{

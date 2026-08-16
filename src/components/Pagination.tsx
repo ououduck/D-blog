@@ -54,6 +54,11 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
       setPageInput(String(currentPage));
       return;
     }
+    // 页码未变化时短路：聚焦输入框后直接点空白处（失焦）不再写 URL/新增历史记录。
+    if (pageNumber === currentPage) {
+      setPageInput(String(currentPage));
+      return;
+    }
     onPageChange(Math.min(Math.max(1, pageNumber), totalPages));
   };
 

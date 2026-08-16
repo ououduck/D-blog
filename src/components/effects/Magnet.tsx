@@ -49,12 +49,18 @@ export const Magnet: React.FC<MagnetProps> = ({
       return;
     }
 
+    let frame = 0;
     const reset = () => {
+      // 取消挂起的 rAF：光标快速移出时，最后一次 mousemove 已挂起帧，
+      // 若不清除，reset 清 0 后挂起回调按旧坐标重新置非零位移，元素保持偏移。
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+        frame = 0;
+      }
       setIsActive(false);
       setPosition({ x: 0, y: 0 });
     };
 
-    let frame = 0;
     const handleMouseMove = (event: MouseEvent) => {
       // rAF 节流：mousemove 频率可能高于帧率，同帧内多次移动合并为一次
       // setState，避免高频重渲染。
