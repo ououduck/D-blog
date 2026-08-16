@@ -7,6 +7,7 @@ import { X, Copy, Check, Link as LinkIcon } from 'lucide-react';
 import { SlideModal } from './SlideModal';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { formatDate } from '@/utils/date';
+import { useResetTimer } from '@/hooks/useResetTimer';
 
 interface ShuoShuoShareModalProps {
   isOpen: boolean;
@@ -34,26 +35,11 @@ export const ShuoShuoShareModal: React.FC<ShuoShuoShareModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const resetTimerRef = useRef<number | null>(null);
+  const { clear: clearResetTimer, schedule: scheduleReset } = useResetTimer();
   // 用户手动复制过之后，迟到的自动复制结果（autoCopied 异步返回）不得再覆盖
   // 用户已成功的手动复制状态。
   const userCopiedRef = useRef(false);
   const titleId = useId();
-
-  const clearResetTimer = () => {
-    if (resetTimerRef.current !== null) {
-      window.clearTimeout(resetTimerRef.current);
-      resetTimerRef.current = null;
-    }
-  };
-
-  const scheduleReset = () => {
-    clearResetTimer();
-    resetTimerRef.current = window.setTimeout(() => {
-      setCopied(false);
-      setCopyError(null);
-    }, COPY_RESET_MS);
-  };
 
   // 每次打开弹窗时重置状态，并根据自动复制结果初始化反馈文案。
   // autoCopied 的语义是「本次打开时自动复制的最终结果」：若用户已手动复制，
@@ -80,6 +66,12 @@ export const ShuoShuoShareModal: React.FC<ShuoShuoShareModalProps> = ({
 
   const handleCopy = async () => {
     userCopiedRef.current = true;
+    // 2 秒后自动清除复制反馈（连续复制会重置计时）。
+    const scheduleCopyReset = () =>
+      scheduleReset(() => {
+        setCopied(false);
+        setCopyError(null);
+      }, COPY_RESET_MS);
     try {
       const ok = await copyTextToClipboard(url);
       if (!ok) {
@@ -87,11 +79,11 @@ export const ShuoShuoShareModal: React.FC<ShuoShuoShareModalProps> = ({
       }
       setCopied(true);
       setCopyError(null);
-      scheduleReset();
+      scheduleCopyReset();
     } catch {
       setCopied(false);
       setCopyError('复制失败，请手动长按链接复制。');
-      scheduleReset();
+      scheduleCopyReset();
     }
   };
 

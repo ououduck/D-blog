@@ -65,7 +65,6 @@ const getFocusableElements = (container: HTMLElement) =>
     return style.visibility !== 'hidden' && style.display !== 'none';
   });
 /** 弹层叠加管理 hook：焦点陷阱、滚动锁、Escape 关闭与关闭后焦点还原。 */
-
 export function useModalOverlay({ isOpen, onClose, initialFocusRef, containerRef }: UseModalOverlayOptions) {
   const overlayIdRef = useRef(Symbol('modal-overlay'));
   const previousActiveElementRef = useRef<HTMLElement | null>(null);

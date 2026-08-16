@@ -51,6 +51,7 @@ import { createBatchZip, type BatchCoverItem } from './cover/coverBatch';
 import { preloadImage } from './cover/coverImageCache';
 import { renderCover } from './cover/coverRenderer';
 import { assetUrl } from '@/utils/siteUrl';
+import { yieldToBrowser } from '@/utils/yieldToBrowser';
 import type { BackgroundFit, CoverRenderOptions, LayoutMode, ShadowConfig, TextAlign } from './cover/coverTypes';
 import {
   deletePreset,
@@ -65,8 +66,6 @@ import {
 const DEFAULT_ICON_SOURCE = assetUrl('/logo.png');
 const MAX_BATCH_ITEMS = 30;
 const MAX_BATCH_OUTPUT_PIXELS = 64_000_000;
-
-const yieldToBrowser = () => new Promise<void>((resolve) => window.setTimeout(resolve, 0));
 
 type Feedback = {
   kind: 'success' | 'error' | 'info';

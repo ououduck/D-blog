@@ -7,6 +7,7 @@ import { X, Copy, Check, Link as LinkIcon, Image as ImageIcon, Download, LoaderC
 import { SlideModal } from './SlideModal';
 import { generateSharePoster } from '@/utils/sharePoster';
 import { copyTextToClipboard } from '@/utils/clipboard';
+import { useResetTimer } from '@/hooks/useResetTimer';
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -43,24 +44,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   const [isGeneratingPoster, setIsGeneratingPoster] = useState(false);
   const [posterError, setPosterError] = useState<string | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const resetTimerRef = useRef<number | null>(null);
+  const { clear: clearResetTimer, schedule: scheduleReset } = useResetTimer();
   const titleId = useId();
   const descriptionId = useId();
-
-  const clearResetTimer = () => {
-    if (resetTimerRef.current !== null) {
-      window.clearTimeout(resetTimerRef.current);
-      resetTimerRef.current = null;
-    }
-  };
-
-  const scheduleReset = () => {
-    clearResetTimer();
-    resetTimerRef.current = window.setTimeout(() => {
-      setCopiedType(null);
-      setCopyError(null);
-    }, 2000);
-  };
 
   React.useEffect(() => {
     if (!isOpen) {
@@ -84,6 +70,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   const handleCopy = async (type: 'all' | 'link') => {
     const text = type === 'all' ? `标题：${title}\n简介：${excerpt}\n链接：${url}` : url;
 
+    const scheduleCopyReset = () =>
+      // 2 秒后自动清除复制反馈（连续复制会重置计时）。
+      scheduleReset(() => {
+        setCopiedType(null);
+        setCopyError(null);
+      }, 2000);
+
     try {
       const copied = await copyTextToClipboard(text);
       if (!copied) {
@@ -92,12 +85,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
       setCopiedType(type);
       setCopyError(null);
-      scheduleReset();
+      scheduleCopyReset();
     } catch (error) {
       console.error('复制失败:', error);
       setCopiedType(null);
       setCopyError('复制失败，请手动复制链接。');
-      scheduleReset();
+      scheduleCopyReset();
     }
   };
 

@@ -42,7 +42,6 @@ export const getDateTimestamp = (dateText: string) => {
 
 const isValidDate = (date: Date) => !Number.isNaN(date.getTime());
 /** 格式化日期字符串（本地时区）；无效日期或 locale 不可用时回退原字符串。 */
-
 export const formatDate = (dateText: string, locale: string, options: Intl.DateTimeFormatOptions) => {
   const parsedDate = parseISODate(dateText);
   if (!isValidDate(parsedDate)) {

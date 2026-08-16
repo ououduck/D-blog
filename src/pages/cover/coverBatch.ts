@@ -3,6 +3,7 @@
  * 生成封面条目列表，支持去重（slug）与 ZIP 打包导出。
  */
 import JSZip from 'jszip';
+import { yieldToBrowser } from '@/utils/yieldToBrowser';
 
 export interface BatchCoverItem {
   title: string;
@@ -171,7 +172,8 @@ export async function createBatchZip(
     zip.file(result.filename, result.blob);
     completed += 1;
     onProgress?.(completed);
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    // 逐项让出主线程，避免大批量导出时页面卡顿/无响应。
+    await yieldToBrowser();
   }
   return zip.generateAsync({ type: 'blob' });
 }

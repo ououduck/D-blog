@@ -4,6 +4,7 @@
  */
 import { BASE_CANVAS_WIDTH, CANVAS_SAFE_MARGIN } from './coverConstants';
 import type { BackgroundFit, CanvasSize, CoverRatio, FittedText, LayoutMode } from './coverTypes';
+import { clamp as clampValue } from '@/utils/clamp';
 
 type TextMeasure = (text: string, fontSize: number) => number;
 interface FitTextOptions {
@@ -44,8 +45,7 @@ interface LayoutMetrics {
 }
 
 export function clamp(value: number, min: number, max: number): number {
-  if (min > max) [min, max] = [max, min];
-  return Math.min(max, Math.max(min, value));
+  return clampValue(value, min, max);
 }
 
 export function getCanvasSize(ratio: Pick<CoverRatio, 'w' | 'h'>, width = BASE_CANVAS_WIDTH): CanvasSize {

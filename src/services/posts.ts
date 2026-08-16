@@ -6,6 +6,7 @@
  */
 import type { Post, PostMetadata } from '../types';
 import { getOfflinePost } from './offlinePosts';
+import { getDateTimestamp } from '@/utils/date';
 import { stripFrontmatter } from '@/utils/markdown-core.mjs';
 
 const generatedPostModules = import.meta.glob<PostMetadata[]>('../../generated/posts.json', {
@@ -52,7 +53,9 @@ interface SearchIndexEntry {
 const buildSearchIndex = (posts: Array<PostMetadata & { searchText?: string }>): SearchIndexEntry[] =>
   posts.map(({ searchText, ...post }) => ({
     post,
-    dateTimestamp: new Date(post.date).getTime(),
+    // 与全站日期口径统一：new Date('YYYY-MM-DD') 按 UTC 午夜解析，在东时区
+    // 与 getDateTimestamp 的本地时区口径相差 8 小时（见 utils/date.ts 的注释）。
+    dateTimestamp: getDateTimestamp(post.date),
     rawTitle: post.title,
     rawExcerpt: post.excerpt,
     rawCategory: post.category,

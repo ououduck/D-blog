@@ -2,7 +2,7 @@
  * 友链数据层：构建期 friends.json 经 eager glob 内联，SSR 阶段同步可读；
  * getFriends 会话内仅打乱一次，返回稳定顺序。
  */
-import { Friend } from '../types';
+import type { Friend } from '../types';
 
 // 构建期 SSG：friends.json 通过 eager glob 内联进产物，SSR 阶段即可同步渲染友链列表，
 // 爬虫无需执行 JS 即可读取全部友链（与 posts.ts 的 posts.json 模式一致）。

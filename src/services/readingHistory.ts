@@ -3,6 +3,7 @@
  * 含订阅通知与损坏容错，供首页继续阅读卡片与文章页进度恢复使用。
  */
 import { isReadingComplete } from '@/utils/readingProgress';
+import { clamp } from '@/utils/clamp';
 
 const READING_HISTORY_STORAGE_KEY = 'd-blog-reading-history-v1';
 const READING_HISTORY_EVENT = 'd-blog:reading-history-change';
@@ -15,7 +16,6 @@ export interface ReadingHistoryEntry {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
-const clamp = (value: number) => Math.min(Math.max(value, 0), 1);
 
 const normalizeEntry = (value: unknown): ReadingHistoryEntry | undefined => {
   if (!isRecord(value) || typeof value.postId !== 'string' || !value.postId.trim()) return undefined;
@@ -23,7 +23,7 @@ const normalizeEntry = (value: unknown): ReadingHistoryEntry | undefined => {
   if (typeof value.updatedAt !== 'number' || !Number.isFinite(value.updatedAt) || value.updatedAt < 0) return undefined;
   return {
     postId: value.postId,
-    progress: clamp(value.progress),
+    progress: clamp(value.progress, 0, 1),
     updatedAt: value.updatedAt,
   };
 };
@@ -62,12 +62,11 @@ export const getReadingHistory = () => readEntries().sort((a, b) => b.updatedAt 
 
 export const getReadingHistoryEntry = (postId: string) => getReadingHistory().find((entry) => entry.postId === postId);
 /** 保存阅读进度（合并/截断最近 20 条）。 */
-
 export const saveReadingHistory = (entry: Omit<ReadingHistoryEntry, 'updatedAt'> & { updatedAt?: number }) => {
   if (!entry.postId.trim()) return;
   const nextEntry: ReadingHistoryEntry = {
     postId: entry.postId,
-    progress: clamp(entry.progress),
+    progress: clamp(entry.progress, 0, 1),
     updatedAt: entry.updatedAt ?? Date.now(),
   };
   if (isReadingComplete(nextEntry.progress)) {
