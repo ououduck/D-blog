@@ -134,6 +134,10 @@ export const TableOfContents: React.FC<{
       if (event.key === 'Escape') {
         event.preventDefault();
         setIsOpen(false);
+        // 关闭后归还焦点到触发按钮：弹层内的焦点元素随卸载消失，不归还则
+        // 焦点掉到 body，键盘用户按 Escape 后失去 Tab 起点（与移动端 sheet
+        // 走 useModalOverlay 关闭后还原焦点的行为保持一致）。
+        desktopTriggerRef.current?.focus();
       }
     };
 

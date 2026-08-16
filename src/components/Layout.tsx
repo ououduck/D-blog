@@ -445,16 +445,20 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
   const requestCloseMobileNav = useCallback(
     (afterClose?: () => void) => {
+      // 动画进行中（opening/closing）的重复关闭请求直接忽略：此时若把
+      // afterCloseActionRef 覆盖为 null，会静默丢弃已挂起的导航/搜索动作
+      // （用户点击导航项后菜单进入 340ms closing 动画，期间按 Escape 或点
+      // 遮罩会再次走到这里，动作被清空，菜单关闭但页面不跳转）。
+      if (mobileNavPhase === 'opening' || mobileNavPhase === 'closing') {
+        return;
+      }
+
       afterCloseActionRef.current = afterClose ?? null;
 
       if (!isMobileNavMounted && mobileNavPhase === 'closed') {
         const immediateAction = afterCloseActionRef.current;
         afterCloseActionRef.current = null;
         immediateAction?.();
-        return;
-      }
-
-      if (mobileNavPhase === 'opening' || mobileNavPhase === 'closing') {
         return;
       }
 
@@ -884,7 +888,10 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                   aria-haspopup="menu"
                   aria-expanded={isMoreMenuOpen}
                   aria-controls="desktop-more-menu"
-                  onClick={() => setIsMoreMenuOpen(true)}
+                  // 切换而非只开：菜单已由 hover 打开时，再次点击按钮应关闭
+                  // （指针始终在容器内不会触发 mouseleave，只开不关会让
+                  // aria-expanded 按钮的第二次点击失效）。
+                  onClick={() => setIsMoreMenuOpen((open) => !open)}
                   onKeyDown={handleDesktopMoreMenuButtonKeyDown}
                 >
                   <span>更多</span>

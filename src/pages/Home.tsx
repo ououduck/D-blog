@@ -2,7 +2,7 @@
  * 首页：精选/最新文章网格、站内搜索、分类/排序/分页筛选与继续阅读。
  */
 
-import React, { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronRight, X } from 'lucide-react';
@@ -255,6 +255,11 @@ export const Home = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryFromUrl = searchParams.get('category');
   const queryFromUrl = searchParams.get('q') || '';
+  // 用户最近一次通过输入框编辑的查询值：用于区分「URL 更新还在 startTransition
+  // 延迟中」与「URL 确实来自导航（直访 ?q= / 浏览器前进后退）」。见下方同步 effect。
+  const lastEditedQueryRef = useRef<string | null>(null);
+  // 已处理过的 loadAttempt：防「重新加载成功 → length 变化 → 重复 fetch」。
+  const handledLoadAttemptRef = useRef(-1);
   const homeQueryState = useMemo(() => getHomeQueryState(searchParams), [searchParams]);
   const [allPosts, setAllPosts] = useState<PostMetadata[]>(initialPosts);
   const [categories, setCategories] = useState<string[]>(() => getCategories(initialPosts));
@@ -310,6 +315,15 @@ export const Home = () => {
         cancelled = true;
       };
     }
+    // 同一 loadAttempt 只发起一次请求：重新加载成功后 allPosts.length 变化
+    // 会再次触发本 effect（依赖数组含 length），若不拦截会重复 fetch 并闪烁
+    // loading 态；loadAttempt 递增（新的重试/重载）时正常放行。
+    if (handledLoadAttemptRef.current === loadAttempt) {
+      return () => {
+        cancelled = true;
+      };
+    }
+    handledLoadAttemptRef.current = loadAttempt;
 
     const loadHomeData = async () => {
       setLoading(true);
@@ -377,6 +391,15 @@ export const Home = () => {
   }, [categories, categoryFromUrl, setSearchParams]);
 
   useEffect(() => {
+    // 单向同步（URL → 输入框），且仅在「URL 值不是用户最近编辑产生」时生效：
+    // 生产路由启用 v7_startTransition 后 setSearchParams 的提交是异步延迟的，
+    // 用户击键期间 queryFromUrl 仍是旧值 —— 若此时按 queryFromUrl 回写
+    // setSearchQuery，会把刚输入的内容回退掉（输入闪变/丢字），并让 usePostSearch
+    // 的空查询分支把结果重置回全量列表。lastEditedQueryRef 与 URL 一致说明
+    // 本次编辑已落地（或本来就是导航带来的变化），此时才允许 URL → state 同步。
+    if (lastEditedQueryRef.current !== null && lastEditedQueryRef.current !== queryFromUrl) {
+      return;
+    }
     if (queryFromUrl !== searchQuery) {
       setSearchQuery(queryFromUrl);
     }
@@ -479,6 +502,7 @@ export const Home = () => {
   };
 
   const handleSearchChange = (query: string) => {
+    lastEditedQueryRef.current = query;
     handleSearch(query);
     setCurrentPage(1);
     setSearchParams(
@@ -499,6 +523,7 @@ export const Home = () => {
   };
 
   const handleClearSearch = () => {
+    lastEditedQueryRef.current = '';
     clearSearch();
     setCurrentPage(1);
     setSearchParams(
