@@ -2,7 +2,7 @@
 
 ## 功能概述
 
-Vitest 测试体系：90 个测试文件 / 700+ 用例；jsdom（src）与 node（scripts）双环境；@testing-library/react；覆盖率门槛。
+Vitest 测试体系：92 个测试文件 / 700+ 用例；jsdom（src）与 node（scripts）双环境；@testing-library/react；覆盖率门槛。
 
 ## 关键文件
 
@@ -23,7 +23,7 @@ Vitest 测试体系：90 个测试文件 / 700+ 用例；jsdom（src）与 node�
 ## 常见陷阱
 
 - jsdom 无 canvas/IntersectionObserver/matchMedia：按既有 stub 模式处理，不视为问题；
-- 修改测试基建（setup/vitest 配置）需全量回归（90 文件）；
+- 修改测试基建（setup/vitest 配置）需全量回归（92 文件）；
 - 模块级缓存（如 busuanzi 的 lastResponse、routeData 的单例）会跨用例共享：
   测试「无缓存」前提必须用 vi.resetModules 隔离或改为验证真实行为；
 - 等待动画/异步完成禁用裸 setTimeout（Layout 的 600ms sleep、SlideModal 的
