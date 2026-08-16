@@ -11,6 +11,11 @@ describe('stripInlineMarkdown', () => {
     expect(stripInlineMarkdown('![截图](/img/shot.png)')).toBe('截图');
   });
 
+  it('图片/链接 URL 含嵌套括号时完整剥离（维基式 URL）', () => {
+    expect(stripInlineMarkdown('![封面](https://cdn.example.com/a_(b).png)')).toBe('封面');
+    expect(stripInlineMarkdown('[维基](https://en.wikipedia.org/wiki/Foo_(bar))')).toBe('维基');
+  });
+
   it('剥离行内代码', () => {
     expect(stripInlineMarkdown('运行 `npm run build` 即可')).toBe('运行 npm run build 即可');
   });
@@ -90,6 +95,16 @@ describe('extractMarkdownHeadings', () => {
       [1, '大标题'],
       [2, '小标题'],
     ]);
+  });
+
+  it('列表项 + 空列表项不被误判为 Setext 标题', () => {
+    // CommonMark 中「- item one\n- 」是两个列表项；此前会被当成二级标题。
+    const headings = extractMarkdownHeadings('- item one\n- \n');
+    expect(headings).toEqual([]);
+    // 引用块同理不是 Setext 标题。
+    expect(extractMarkdownHeadings('> quote\n---')).toEqual([]);
+    // 有序列表项同理。
+    expect(extractMarkdownHeadings('1. first\n2. ')).toEqual([]);
   });
 
   it('跳过围栏代码块中的伪标题', () => {

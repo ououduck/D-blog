@@ -1002,6 +1002,10 @@ const createMarkdownComponents = (
 ): Components => {
   let headingCursor = 0;
   const fallbackHeadingIds = new Map<string, number>();
+  // 已分配出去的 heading id：二次扫描（顺序匹配落空后的全表兜底）必须跳过，
+  // 否则「渲染文本与 rawText 不一致」的标题（含图片/公式）会让后续标题错配到
+  // 同一 id，DOM 出现重复 id、TOC 锚点失效。
+  const usedHeadingIds = new Set<string>();
 
   const resolveHeadingId = (level: number, children: React.ReactNode) => {
     // 与构建期 TOC 相同的归一化：折叠空白、解码实体、移除尾部 #。
@@ -1012,12 +1016,14 @@ const createMarkdownComponents = (
       const heading = headings[index];
       if (heading.level === level && heading.rawText === text) {
         headingCursor = index + 1;
+        usedHeadingIds.add(heading.id);
         return heading.id;
       }
     }
 
     for (const heading of headings) {
-      if (heading.level === level && heading.rawText === text) {
+      if (heading.level === level && heading.rawText === text && !usedHeadingIds.has(heading.id)) {
+        usedHeadingIds.add(heading.id);
         return heading.id;
       }
     }
