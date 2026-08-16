@@ -43,7 +43,7 @@ import {
   MIN_BACKGROUND_SCALE,
   MIN_EXPORT_SCALE,
 } from './cover/coverConstants';
-import { clamp, getCanvasSize, getExportFilename } from './cover/coverLayout';
+import { clamp, getCanvasSize, getEffectiveLayout, getExportFilename } from './cover/coverLayout';
 import { loadFontFile, loadImageFile } from './cover/coverFiles';
 import { canvasToBlob, copyCanvas, downloadBlob, downloadCanvas } from './cover/coverExport';
 import { BatchCoverDialog } from './cover/BatchCoverDialog';
@@ -486,6 +486,13 @@ export const CoverGenerator: React.FC = () => {
   const lastDraftRef = useRef<string | null>(null);
   const restoringDraftRef = useRef(false);
   const historyReadyRef = useRef(false);
+  // 恢复提交的强制渲染 tick：applyDraft 的 ~40 个 setState 若全部被 React 按
+  // Object.is 相等性 bail out（如加载与当前状态完全相同的草稿/预设），组件不会
+  // 重渲染，历史 effect 不运行，restoringDraftRef 会永久卡在 true——此后所有
+  // 编辑都被当作「恢复提交」处理，撤销栈永远为空（撤销/重做静默失效）。
+  // 该 tick 恒产生新值，保证每次 applyDraft 后至少有一次带 restore 标志的提交
+  // 进入历史 effect 消费并复位标志。
+  const [restoreTick, setRestoreTick] = useState(0);
   // 挂载完成后置 true：用于区分「挂载首帧的恢复分支」（serialized 仍是默认状态）与
   // 「撤销/重做/预设恢复」（serialized 已是恢复后的值）。
   const mountedRef = useRef(false);
@@ -546,6 +553,9 @@ export const CoverGenerator: React.FC = () => {
     setExportScale(draft.exportScale);
     setExportFormat(draft.exportFormat);
     setExportFilename(draft.exportFilename);
+    // 强制下一次提交进入历史 effect（见 restoreTick 注释）：即使全部 setState
+    // 都被相等性 bail out，restoringDraftRef 也会被正常消费复位。
+    setRestoreTick((value) => value + 1);
   }, []);
 
   useEffect(() => {
@@ -594,7 +604,9 @@ export const CoverGenerator: React.FC = () => {
     // 仅存在基线（恢复了草稿，或用户已产生过编辑）时才持久化草稿；
     // 首次访问的默认状态不写入存储。
     if (hasBaseline) writeDraft(serializableDraft);
-  }, [serializableDraft]);
+    // restoreTick 依赖：保证 applyDraft 后即使全部 setState 被相等性 bail out
+    // （serializableDraft 引用不变），恢复分支也会运行并复位 restoringDraftRef。
+  }, [serializableDraft, restoreTick]);
 
   // 挂载完成后标记：供恢复分支区分「挂载首帧」与「撤销/重做/预设恢复」。
   // 声明在历史 effect 之后，保证挂载首帧的恢复分支运行时 mountedRef 仍为 false。
@@ -1021,7 +1033,10 @@ export const CoverGenerator: React.FC = () => {
       },
       fallbackIconSource: DEFAULT_ICON_SOURCE,
       decorations: { showCorners, cornerColor, cornerOpacity, showSeparator, separatorColor, separatorOpacity },
-      maxTextLines: layoutMode === 'text-only' ? 3 : 2,
+      // 按生效布局取行数上限：布局为带图标版式但图标被隐藏/未上传时，
+      // getEffectiveLayout 已降级为 text-only（应允许 3 行）；按 layoutMode
+      // 取值会让「stacked 关掉图标」与「显式 text-only」的截断行为不一致。
+      maxTextLines: getEffectiveLayout(layoutMode, showIcon, Boolean(customIcon)) === 'text-only' ? 3 : 2,
       minFontSize: 18,
       diagnostics,
     }),

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createBatchZip, parseBatchText } from './coverBatch';
+import { createBatchZip, dedupeSlugs, parseBatchText, type BatchCoverItem } from './coverBatch';
 
 describe('parseBatchText — JSON 输入', () => {
   it('解析数组对象并使用 title/name 字段', () => {
@@ -73,6 +73,27 @@ describe('parseBatchText — slug 去重', () => {
       'input.json',
     );
     expect(result.items.map((item) => item.slug)).toEqual(['same', 'same-2', 'same-2-2']);
+  });
+});
+
+describe('dedupeSlugs — 跨文件合并去重', () => {
+  it('多文件合并后相同 slug 追加后缀，避免 ZIP 同名覆盖', () => {
+    // 模拟两个文件各含一个 slug: same 的条目（parseBatchText 单文件内已去重，
+    // 合并后仍可能冲突）。
+    const items: BatchCoverItem[] = [
+      { title: 'A', subtitle: '', description: '', slug: 'same' },
+      { title: 'B', subtitle: '', description: '', slug: 'same' },
+    ];
+    expect(dedupeSlugs(items).map((item) => item.slug)).toEqual(['same', 'same-2']);
+  });
+
+  it('与既有 -2 后缀不冲突', () => {
+    const items: BatchCoverItem[] = [
+      { title: 'A', subtitle: '', description: '', slug: 'same' },
+      { title: 'B', subtitle: '', description: '', slug: 'same' },
+      { title: 'C', subtitle: '', description: '', slug: 'same-2' },
+    ];
+    expect(dedupeSlugs(items).map((item) => item.slug)).toEqual(['same', 'same-2', 'same-2-2']);
   });
 });
 

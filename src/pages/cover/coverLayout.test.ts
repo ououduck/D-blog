@@ -130,8 +130,21 @@ describe('fitText', () => {
     expect(result.lines).toEqual([]);
   });
 
-  it('保留多段落结构', () => {
-    const result = fitText('第一段\n\n第二段', { maxWidth: 500, maxLines: 5, fontSize: 24 }, measure);
-    expect(result.lines.length).toBeGreaterThanOrEqual(2);
+  it('保留多段落结构（段落间空行保留，末尾换行剔除）', () => {
+    const result = fitText('第一段\n\n第二段\n\n', { maxWidth: 500, maxLines: 5, fontSize: 24 }, measure);
+    // 段落间空行作为视觉断句保留；文本末尾的换行不产生多余行高。
+    expect(result.lines).toEqual(['第一段', '', '第二段']);
+    expect(result.truncated).toBe(false);
+  });
+
+  it('段落空行不占用 maxLines 行数预算', () => {
+    // 3 个非空行 + 2 个段落空行 = 5 行，maxLines=2 时按非空行截断。
+    const result = fitText(
+      '第一段\n\n第二段\n\n第三段',
+      { maxWidth: 500, maxLines: 2, fontSize: 24, minFontSize: 24 },
+      measure,
+    );
+    expect(result.truncated).toBe(true);
+    expect(result.lines).toEqual(['第一段', '', '第二段…']);
   });
 });

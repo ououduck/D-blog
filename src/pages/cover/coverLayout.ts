@@ -123,6 +123,9 @@ function wrapText(text: string, maxWidth: number, fontSize: number, measure: Tex
   const lines: string[] = [];
   for (const paragraph of paragraphs) {
     if (!paragraph.trim()) {
+      // 段落空行：保留为视觉断句（渲染层按 lineHeight 逐行绘制，空行产生
+      // 段落间距）。此前末尾的 filter(Boolean) 会把这些空行全部过滤掉，
+      // 多段落文字被压成连续行，与「保留多段落结构」的意图矛盾。
       if (lines.length) lines.push('');
       continue;
     }
@@ -130,8 +133,15 @@ function wrapText(text: string, maxWidth: number, fontSize: number, measure: Tex
     for (const token of tokenizeText(paragraph)) appendToken(paragraphLines, token, maxWidth, fontSize, measure);
     lines.push(...paragraphLines.map((line) => line.trim()).filter(Boolean));
   }
-  return lines.filter(Boolean);
+  // 剔除末尾空行：段落间空行保留（视觉断句），但文本末尾的换行不应产生多余行高。
+  while (lines.length > 0 && !lines[lines.length - 1].trim()) {
+    lines.pop();
+  }
+  return lines;
 }
+
+/** 统计非空行数：段落空行不参与 maxLines 判定与截断计数。 */
+const countNonEmptyLines = (lines: string[]): number => lines.filter((line) => line.trim()).length;
 
 export function fitText(text: string, options: FitTextOptions, measure: TextMeasure): FittedText {
   const maxWidth = Math.max(1, options.maxWidth);
@@ -139,20 +149,23 @@ export function fitText(text: string, options: FitTextOptions, measure: TextMeas
   const minFontSize = Math.max(1, Math.min(options.fontSize, options.minFontSize ?? 12));
   let fontSize = Math.max(minFontSize, options.fontSize);
   let lines = wrapText(text, maxWidth, fontSize, measure);
-  while (fontSize > minFontSize && lines.length > maxLines) {
+  while (fontSize > minFontSize && countNonEmptyLines(lines) > maxLines) {
     fontSize--;
     lines = wrapText(text, maxWidth, fontSize, measure);
   }
-  const truncated = lines.length > maxLines;
+  const truncated = countNonEmptyLines(lines) > maxLines;
   if (truncated) {
-    lines = lines.slice(0, maxLines);
-    let last = lines[maxLines - 1] ?? '';
+    // 截断到 maxLines 个非空行，并剔除末尾的空行（避免以段落空行收尾）。
+    const nonEmptyIndexes = lines.map((line, index) => (line.trim() ? index : -1)).filter((index) => index >= 0);
+    const lastKeptIndex = nonEmptyIndexes[Math.min(maxLines, nonEmptyIndexes.length) - 1] ?? lines.length - 1;
+    lines = lines.slice(0, lastKeptIndex + 1);
+    let last = lines[lastKeptIndex] ?? '';
     if (measure('…', fontSize) <= maxWidth) {
       while (last && measure(`${last}…`, fontSize) > maxWidth) last = Array.from(last).slice(0, -1).join('');
-      lines[maxLines - 1] = `${last}…`;
+      lines[lastKeptIndex] = `${last}…`;
     } else {
       while (last && measure(last, fontSize) > maxWidth) last = Array.from(last).slice(0, -1).join('');
-      lines[maxLines - 1] = last;
+      lines[lastKeptIndex] = last;
     }
   }
   return { lines, fontSize, lineHeight: fontSize * (options.lineHeight ?? 1.2), truncated };
@@ -181,8 +194,15 @@ export function calculateLayoutMetrics(options: LayoutMetricsOptions): LayoutMet
     (options.subText.trim() ? subLineHeight * 2 : 0) +
     iconHeight +
     options.subSpacing * 2;
+  // icon-split：文本在图标两侧各自换行（sideWidth），水平总宽恒等于
+  // availableWidth，唯一硬约束是图标加间距不超过可用宽度（否则两侧文本宽度
+  // 趋零不可读）。因此仅当 iconSize + 2*spacing 超过 availableWidth 时才需
+  // 收缩（旧实现按固定比例叠加估算 contentWidth，图标较大时虚假整体缩小并
+  // 弹出误导性「内容已自动缩小」警告）。
   const contentWidth =
-    effectiveLayout === 'icon-split' ? options.iconSize + options.spacing * 2 + availableWidth * 0.6 : availableWidth;
+    effectiveLayout === 'icon-split'
+      ? Math.max(availableWidth, options.iconSize + options.spacing * 2)
+      : availableWidth;
   const scale = Math.min(1, availableWidth / Math.max(1, contentWidth), availableHeight / Math.max(1, contentHeight));
   const safeScale = Math.max(0.35, scale);
   const scaled = safeScale < 0.999;

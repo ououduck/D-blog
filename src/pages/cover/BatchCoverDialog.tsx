@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useModalOverlay } from '../../hooks/useModalOverlay';
-import { parseBatchText, type BatchCoverItem, type BatchParseIssue } from './coverBatch';
+import { parseBatchText, dedupeSlugs, type BatchCoverItem, type BatchParseIssue } from './coverBatch';
 
 interface BatchCoverDialogProps {
   isOpen: boolean;
@@ -50,7 +50,9 @@ export const BatchCoverDialog: React.FC<BatchCoverDialogProps> = ({ isOpen, onCl
         nextIssues.push(...result.issues.map((issue) => ({ ...issue, message: `${file.name}：${issue.message}` })));
       }
       if (generation !== readGenerationRef.current) return;
-      setItems(nextItems);
+      // 合并后再做一次全局 slug 去重：parseBatchText 只保证单文件内唯一，
+      // 多文件（<input multiple>）同名 slug 会让 JSZip 静默覆盖导致封面丢失。
+      setItems(dedupeSlugs(nextItems));
       setIssues(nextIssues);
     } catch (error) {
       // file.text() 等读取失败：展示错误而非让界面卡在「正在读取文件…」。

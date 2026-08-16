@@ -101,6 +101,28 @@ function parseMarkdownFrontmatter(text: string): BatchCoverItem | null {
   return itemFromRecord(fields, 0);
 }
 
+/**
+ * 全局 slug 去重：对条目列表中的重复 slug 追加 -2、-3… 后缀直到唯一。
+ * 此前仅检查原始 slug 的重复计数，修改后的 slug（foo-2）可能与另一条目的
+ * 原始 slug 冲突；改为 Set 循环检查。独立导出供跨文件合并后二次调用
+ * （单个 parseBatchText 只保证单文件内唯一，<input multiple> 多文件合并时
+ * 同名条目会令 JSZip 静默覆盖，ZIP 内封面丢失）。
+ */
+export function dedupeSlugs(items: BatchCoverItem[]): BatchCoverItem[] {
+  const used = new Set<string>();
+  for (const item of items) {
+    if (!used.has(item.slug)) {
+      used.add(item.slug);
+      continue;
+    }
+    let suffix = 2;
+    while (used.has(`${item.slug}-${suffix}`)) suffix += 1;
+    item.slug = `${item.slug}-${suffix}`;
+    used.add(item.slug);
+  }
+  return items;
+}
+
 export function parseBatchText(text: string, filename = 'input'): BatchParseResult {
   const extension = filename.split('.').pop()?.toLowerCase();
   const items: BatchCoverItem[] = [];
@@ -134,19 +156,7 @@ export function parseBatchText(text: string, filename = 'input'): BatchParseResu
     else issues.push({ line: 1, message: 'Markdown 缺少有效 frontmatter 或 title' });
   }
   // 去重：对每个 slug 检查是否已使用，若冲突则追加 -2、-3… 后缀直到唯一。
-  // 此前仅检查原始 slug 的重复计数，修改后的 slug（foo-2）可能与另一条目的原始 slug 冲突。
-  const used = new Set<string>();
-  for (const item of items) {
-    if (!used.has(item.slug)) {
-      used.add(item.slug);
-      continue;
-    }
-    let suffix = 2;
-    while (used.has(`${item.slug}-${suffix}`)) suffix += 1;
-    item.slug = `${item.slug}-${suffix}`;
-    used.add(item.slug);
-  }
-  return { items, issues };
+  return { items: dedupeSlugs(items), issues };
 }
 
 export async function createBatchZip(
