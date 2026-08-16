@@ -16,6 +16,7 @@ import { useSpotlight } from '@/hooks/useSpotlight';
 import { SpotlightLayer } from '@/components/effects/SpotlightLayer';
 import { easeOut, easeSmooth } from '@/utils/motion';
 import { isPinnedFeaturedPost } from '@/utils/postSelection';
+import { useMemo } from 'react';
 
 // 组件 props 类型（全仓库仅本文件使用，不导出避免公共 API 承诺）。
 interface PostCardProps {
@@ -53,18 +54,24 @@ const PostCardImpl: React.FC<PostCardProps> = ({ post, index, featured, onShare,
   const shouldReduceMotion = useReducedMotion();
   // react-bits SpotlightCard 启发：光标在卡片内移动时跟随柔光，触屏/减弱动效下自动禁用。
   const spotlight = useSpotlight<HTMLDivElement>({ activeOpacity: 0.5 });
-  const cardVariants = {
-    hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 8 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: shouldReduceMotion ? 0 : 0.25,
-        ease: easeSmooth,
-        delay: shouldReduceMotion ? 0 : index * 0.02,
+  // 变体对象依赖 index（错峰 delay）与 shouldReduceMotion：useMemo 缓存避免
+  // 每次渲染（收藏切换/搜索击键/父级状态）新建对象，减少 framer-motion 的
+  // 变体重评估与协调开销（React.memo 只挡父级渲染，挡不住 motion 层开销）。
+  const cardVariants = useMemo(
+    () => ({
+      hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 8 },
+      visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+          duration: shouldReduceMotion ? 0 : 0.25,
+          ease: easeSmooth,
+          delay: shouldReduceMotion ? 0 : index * 0.02,
+        },
       },
-    },
-  };
+    }),
+    [index, shouldReduceMotion],
+  );
 
   const handleShareClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();

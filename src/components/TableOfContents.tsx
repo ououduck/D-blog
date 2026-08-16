@@ -76,6 +76,9 @@ export const TableOfContents: React.FC<{
   const collapseInactiveRootBranches = siteConfig.toc?.collapseInactiveRootBranches ?? false;
   const isMobileDialogOpen = isOpen && isMobileViewport;
   const closeTableOfContents = useCallback(() => setIsOpen(false), []);
+  // 搜索过滤时强制展开整棵过滤后的树（过滤结果本就精简，无需折叠状态）。
+  // 声明在 renderNodes 之前：renderNodes 内部引用该常量，避免 TDZ 窗口。
+  const shouldForceExpandFilteredTree = searchQuery.trim().length > 0;
 
   useModalOverlay({
     isOpen: isMobileDialogOpen,
@@ -485,7 +488,6 @@ export const TableOfContents: React.FC<{
       items.reduce((total, current) => total + 1 + countNodes(current.children), 0);
     return count + countNodes([node]);
   }, 0);
-  const shouldForceExpandFilteredTree = searchQuery.trim().length > 0;
   const currentHeadingIndex = headings.findIndex((h) => h.id === activeHeadingId);
   const readingProgressDisplay =
     headings.length > 0 ? Math.round(((currentHeadingIndex + 1) / headings.length) * 100) : 0;

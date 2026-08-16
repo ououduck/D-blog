@@ -124,12 +124,15 @@ export const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
     }, [elements]);
     const totalCharCount = useMemo(() => elements.reduce((sum, word) => sum + word.characters.length, 0), [elements]);
 
-    // random 错峰锚点在词条变化时固化一次：渲染期调用 Math.random 会让每次
-    // 重渲染/轮换的 delay 随机抖动，且 SSR 与客户端得到不同延迟。
-    const randomStaggerAnchor = useMemo(
-      () => (staggerFrom === 'random' ? Math.floor(Math.random() * Math.max(1, totalCharCount)) : 0),
-      [staggerFrom, totalCharCount],
-    );
+    // random 错峰锚点在挂载后生成一次：渲染期调用 Math.random 会让 SSR 与
+    // 客户端得到不同延迟锚点（违反 SSG 确定性约束），且每次重渲染/轮换的
+    // delay 随机抖动。挂载后生成（useEffect）只执行一次，两端一致。
+    const [randomStaggerAnchor, setRandomStaggerAnchor] = useState(0);
+    useEffect(() => {
+      if (staggerFrom === 'random') {
+        setRandomStaggerAnchor(Math.floor(Math.random() * Math.max(1, totalCharCount)));
+      }
+    }, [staggerFrom, totalCharCount]);
 
     const getStaggerDelay = useCallback(
       (index: number, totalChars: number): number => {

@@ -280,18 +280,29 @@ html.theme-switching .editorial-input {
 }
 
 .nav-more-menu-panel {
+  /* visibility: hidden —— 关闭态面板仅靠 opacity/pointer-events 隐藏时，
+     7 个 role="menuitem" 仍常驻可访问性树，读屏浏览模式下会读到不可见的
+     菜单项（tabIndex=-1 只阻止 Tab 聚焦）。hidden 移出可访问性树；
+     transition 把 visibility 切换延迟到 opacity 淡出结束后，动画不受影响。 */
+  visibility: hidden;
   opacity: 0;
   pointer-events: none;
   transform: translateY(-0.35rem);
   transition:
     opacity 160ms ease,
-    transform 160ms ease;
+    transform 160ms ease,
+    visibility 0s linear 160ms;
 }
 
 .nav-more-menu-panel[data-open='true'] {
+  visibility: visible;
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    visibility 0s;
 }
 
 .mobile-more-menu-panel {

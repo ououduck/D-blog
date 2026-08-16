@@ -47,6 +47,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   const { clear: clearResetTimer, schedule: scheduleReset } = useResetTimer();
   const titleId = useId();
   const descriptionId = useId();
+  // 海报生成代际：关闭弹窗后重新打开时，在途的旧生成结果不得覆盖新会话
+  // （否则会显示上一篇文章的海报）。声明在 useEffect 之前，避免 TDZ 窗口。
+  const posterGenerationRef = useRef(0);
 
   React.useEffect(() => {
     if (!isOpen) {
@@ -96,8 +99,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   // 海报生成代际：关闭弹窗后重新打开时，在途的旧生成结果不得覆盖新会话
   // （否则会显示上一篇文章的海报）。
-  const posterGenerationRef = useRef(0);
-
   const handleGeneratePoster = async () => {
     if (isGeneratingPoster) return;
     const generationId = ++posterGenerationRef.current;
