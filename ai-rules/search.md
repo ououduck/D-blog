@@ -17,7 +17,7 @@
 3. **相关度排序**：`getFieldMatchScore`（精确/前缀/包含加权）与日期降序在 `services/posts.ts` 中，不得在组件内重写。
 4. **竞态与防抖**：usePostSearch 的防抖清理、requestId 比对不得移除。
 5. **SSG 确定性**：SSG 只预渲染无 q 默认界面；带 q 的结果在客户端执行。
-6. **分享 URL**：`post.id` 必须 `encodeURIComponent`。
+6. **分享 URL**：`/post/<id>` 路径用裸 `post.id`（与 SSG/canonical 口径一致）；查询参数（`?q=` 等）才需 `encodeURIComponent`。
 
 ## 常见陷阱
 
