@@ -9,7 +9,7 @@ const loadModule = async () => {
 
 const makeServiceWorker = (state: string) => {
   const listeners = new Set<() => void>();
-  return {
+  const worker = {
     state,
     addEventListener: vi.fn((type: string, cb: () => void) => {
       if (type === 'statechange') listeners.add(cb);
@@ -18,10 +18,11 @@ const makeServiceWorker = (state: string) => {
     postMessage: vi.fn(),
     // 测试辅助：模拟状态迁移触发 statechange
     _setState(next: string) {
-      this.state = next;
+      worker.state = next;
       listeners.forEach((cb) => cb());
     },
-  } as unknown as ServiceWorker & { _setState: (s: string) => void };
+  };
+  return worker as unknown as ServiceWorker & { _setState: (s: string) => void };
 };
 
 const makeRegistration = (worker: ServiceWorker) =>

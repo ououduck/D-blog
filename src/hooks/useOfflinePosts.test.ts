@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useOfflinePosts } from './useOfflinePosts';
 import * as offlinePostsService from '@/services/offlinePosts';
+import type { PostMetadata } from '@/types';
 
 vi.mock('@/services/offlinePosts', () => ({
   getOfflinePosts: vi.fn(),
@@ -13,20 +14,16 @@ vi.mock('@/services/offlinePosts', () => ({
 
 const mocked = vi.mocked(offlinePostsService);
 
-const makePost = (id: string) =>
-  ({
-    id,
-    title: id,
-    excerpt: '',
-    date: '2026-01-01',
-    category: '技术',
-    filePath: `/posts/${id}.md`,
-    readTime: '1分钟',
-    tags: [],
-    savedAt: 1,
-    schema: 'd-blog-offline-post',
-    version: 1,
-  }) as const;
+const makePost = (id: string): PostMetadata => ({
+  id,
+  title: id,
+  excerpt: '',
+  date: '2026-01-01',
+  category: '技术',
+  filePath: `/posts/${id}.md`,
+  readTime: '1分钟',
+  tags: [],
+});
 
 describe('useOfflinePosts', () => {
   beforeEach(() => {
@@ -37,7 +34,7 @@ describe('useOfflinePosts', () => {
   });
 
   it('加载列表与当前文章收藏状态', async () => {
-    mocked.getOfflinePosts.mockResolvedValue([makePost('a')]);
+    mocked.getOfflinePosts.mockResolvedValue([makePost('a')] as never[]);
     mocked.getOfflinePost.mockResolvedValue(makePost('a') as never);
     const { result } = renderHook(() => useOfflinePosts(makePost('a')));
     await waitFor(() => expect(result.current.loading).toBe(false));
