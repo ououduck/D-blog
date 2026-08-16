@@ -1315,6 +1315,17 @@ export const Post = () => {
   // hash 深链跳转 / 阅读位置恢复触发的程序化滚动标记：此类滚动不应被视为
   // 真实阅读进度（否则 hash 打开会覆盖历史中更高的继续阅读记录）。
   const programmaticScrollRef = useRef(false);
+  // 异步回调（收藏反馈等）的挂载守卫：组件卸载后不再 setState。
+  // 挂载态必须由 effect 置 true（不能只依赖初始值）：StrictMode 开发态
+  // cleanup 先执行，会把初始 true 清掉导致守卫失效。
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   // 阅读进度保存的会话状态。必须放在组件级 ref 中：relatedPosts 等异步数据加载会
   // 触发保存 effect 重跑，若用 effect 内局部变量保存“已读完”等标记，重跑后会被重置，
   // 导致读完后再滚回上方时重新写入部分进度、让主页“继续阅读”卡片复活。
@@ -1584,9 +1595,21 @@ export const Post = () => {
     // 拉回深链位置。
     const articleBody = articleBodyRef.current;
     let corrections = 0;
+    // 用户是否已主动中断深链校正（滚动/输入/点击）：一旦中断，迟到的布局变化
+    // （慢图、Mermaid）不得再把用户拉回深链位置。
+    let userInterrupted = false;
     let resizeObserver: ResizeObserver | undefined;
+    const stopCorrecting = () => {
+      userInterrupted = true;
+      resizeObserver?.disconnect();
+    };
+    const handleUserScroll = () => {
+      // 程序化校正产生的滚动（programmaticScrollRef 为 true）不算用户主动滚动。
+      if (!programmaticScrollRef.current) stopCorrecting();
+    };
     if (articleBody && typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(() => {
+        if (userInterrupted) return;
         corrections += 1;
         if (corrections > HASH_SCROLL_MAX_CORRECTIONS) {
           resizeObserver?.disconnect();
@@ -1597,10 +1620,20 @@ export const Post = () => {
       resizeObserver.observe(articleBody);
     }
     const disconnectTimer = window.setTimeout(() => resizeObserver?.disconnect(), HASH_SCROLL_CORRECTION_WINDOW_MS);
+    // 校正窗口内监听用户输入：wheel/touch/pointer/键盘滚动都会产生 scroll 事件，
+    // 一旦用户主动滚动即永久放弃后续校正（与阅读位置恢复的 stopRestore 同一套路）。
+    window.addEventListener('wheel', stopCorrecting, { passive: true });
+    window.addEventListener('touchstart', stopCorrecting, { passive: true });
+    window.addEventListener('pointerdown', stopCorrecting, { passive: true });
+    window.addEventListener('scroll', handleUserScroll, { passive: true });
 
     return () => {
       window.clearTimeout(timeoutId);
       window.clearTimeout(disconnectTimer);
+      window.removeEventListener('wheel', stopCorrecting);
+      window.removeEventListener('touchstart', stopCorrecting);
+      window.removeEventListener('pointerdown', stopCorrecting);
+      window.removeEventListener('scroll', handleUserScroll);
       resizeObserver?.disconnect();
     };
   }, [headings, post?.content]);
@@ -1739,9 +1772,10 @@ export const Post = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', scheduleLayoutRestore);
+    // 仅观察正文容器：正文内图片/高亮/Mermaid 的布局变化需要重排恢复；正文下方
+    // （许可/相关文章/评论区）高度变化不影响正文内容位置，且会把静止用户反复
+    // 钉回保存进度。窗口 resize 已由上方事件监听兜底。
     resizeObserver?.observe(target);
-    resizeObserver?.observe(document.documentElement);
-    if (readingEndRef.current) resizeObserver?.observe(readingEndRef.current);
     scheduleDelayedRestore();
 
     return () => {
@@ -1863,7 +1897,10 @@ export const Post = () => {
       if (animationFrame) window.cancelAnimationFrame(animationFrame);
       saveLatestProgress();
     };
-  }, [post, relatedPosts.length]);
+    // 只依赖 post：relatedPosts 等异步数据到达会触发 effect 重跑，但 effect
+    // 内部不使用它们，依赖它们的 length 只会无谓重置 1s 节流窗口（cleanup 的
+    // saveLatestProgress 还会多一次不受节流的写入）。
+  }, [post]);
 
   useEffect(() => {
     if (isReadingMode && shareModalOpen) {
@@ -1894,13 +1931,19 @@ export const Post = () => {
           return;
         }
       }
-      if (e.key === 'ArrowLeft' && e.altKey && adjacentPosts.prev) {
+      // 无相邻文章（首篇/末篇/加载中）时 Alt+←/→ 也必须 preventDefault：
+      // 否则退化为浏览器历史后退/前进，用户会意外离开当前页面。
+      if (e.key === 'ArrowLeft' && e.altKey) {
         e.preventDefault();
-        navigate(`/post/${adjacentPosts.prev.id}`);
+        if (adjacentPosts.prev) {
+          navigate(`/post/${adjacentPosts.prev.id}`);
+        }
       }
-      if (e.key === 'ArrowRight' && e.altKey && adjacentPosts.next) {
+      if (e.key === 'ArrowRight' && e.altKey) {
         e.preventDefault();
-        navigate(`/post/${adjacentPosts.next.id}`);
+        if (adjacentPosts.next) {
+          navigate(`/post/${adjacentPosts.next.id}`);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -2220,7 +2263,9 @@ export const Post = () => {
                     void toggleSaved().then((saved) => {
                       // toggleSaved 失败时不抛出（错误经 offlineError 状态反馈），
                       // 这里按返回值决定是否展示成功文案，避免失败时显示假成功。
-                      if (saved) {
+                      // mountedRef 防护：IndexedDB 读写耗时可能跨过组件卸载
+                      // （点收藏后立刻导航离开），卸载后不再 setState。
+                      if (saved && mountedRef.current) {
                         setSavedFeedback(wasSaved ? '已取消收藏' : '已保存，可离线阅读');
                       }
                     });
