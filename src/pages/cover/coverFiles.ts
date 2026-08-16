@@ -39,7 +39,9 @@ function validateFontFile(file: File | null | undefined): File {
   const validMime = (FONT_MIME_TYPES as readonly string[]).includes(file.type.toLowerCase());
   const validExtension = (FONT_EXTENSIONS as readonly string[]).includes(extension);
   if (!validMime && !validExtension) throw new Error('字体仅支持 WOFF、WOFF2、TTF 或 OTF 格式');
-  if (file.size > FONT_MAX_BYTES) throw new Error('字体大小不能超过 10MB');
+  // 上限文案从常量派生（与 validateImageFile 的 `${limit / 1024 / 1024}MB` 口径一致），
+  // 调整 FONT_MAX_BYTES 时提示自动同步，避免文案与校验值漂移。
+  if (file.size > FONT_MAX_BYTES) throw new Error(`字体大小不能超过 ${FONT_MAX_BYTES / 1024 / 1024}MB`);
   return file;
 }
 
