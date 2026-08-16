@@ -93,10 +93,7 @@ export const WritingCalendar: React.FC<WritingCalendarProps> = ({ dates, classNa
     for (let week = 0; week < WEEK_COUNT; week += 1) {
       // 月份标签：每周的第一个新月份（第一列总是显示）。
       const firstOfWeek = new Date(cursor);
-      if (
-        week === 0 ||
-        firstOfWeek.getMonth() !== new Date(cursor.getTime() - 7 * 24 * 3600 * 1000).getMonth()
-      ) {
+      if (week === 0 || firstOfWeek.getMonth() !== new Date(cursor.getTime() - 7 * 24 * 3600 * 1000).getMonth()) {
         monthLabels.push({
           weekIndex: week,
           label: `${firstOfWeek.getMonth() + 1}月`,
@@ -123,9 +120,7 @@ export const WritingCalendar: React.FC<WritingCalendarProps> = ({ dates, classNa
   }, [dates]);
 
   if (cells.length === 0) {
-    return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无文章发布记录。</p>
-    );
+    return <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无文章发布记录。</p>;
   }
 
   const weeks: CalendarCell[][] = [];
