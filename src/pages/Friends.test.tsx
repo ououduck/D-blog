@@ -11,7 +11,13 @@ const { friendsFixture } = vi.hoisted(() => ({
   friendsFixture: [
     { name: '示例博客', description: '前端技术分享', avatar: '/a.png', url: 'https://example.com' },
     { name: 'DEV Blog', description: 'Web development', avatar: '/b.png', url: 'https://dev.example.org' },
-    { name: '失联站点', description: '曾经的友链', avatar: '/c.png', url: 'https://gone.example.net', unavailable: true },
+    {
+      name: '失联站点',
+      description: '曾经的友链',
+      avatar: '/c.png',
+      url: 'https://gone.example.net',
+      unavailable: true,
+    },
   ],
 }));
 
@@ -26,10 +32,7 @@ vi.mock('@/services/busuanzi', () => ({
 
 const renderFriends = (initialEntry = '/friends') =>
   render(
-    <MemoryRouter
-      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      initialEntries={[initialEntry]}
-    >
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/friends" element={<Friends />} />
       </Routes>
@@ -99,5 +102,3 @@ describe('Friends', () => {
     expect(screen.getByText('示例博客')).toBeInTheDocument();
   });
 });
-
-
