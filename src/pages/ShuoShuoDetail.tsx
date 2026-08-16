@@ -194,16 +194,20 @@ export const ShuoShuoDetail = () => {
         </p>
       </header>
 
-      <ol className="relative space-y-8">
+      <div className="relative">
+        {/* 时间轴竖线放在 ol 外（ol 的直接子元素只允许 li）：与列表页 ShuoShuo.tsx
+            同一修复，避免无效 HTML 让读屏误读列表边界/条目数。 */}
         <span aria-hidden="true" className="absolute bottom-2 left-5 top-2 w-px bg-zinc-200 dark:bg-zinc-800" />
-        <ShuoShuoItem
-          item={item}
-          onPreview={(src, alt) => setPreviewImage({ src, alt })}
-          onShare={handleShare}
-          showDetailLink={false}
-          shouldReduceMotion={shouldReduceMotion}
-        />
-      </ol>
+        <ol className="space-y-8">
+          <ShuoShuoItem
+            item={item}
+            onPreview={(src, alt) => setPreviewImage({ src, alt })}
+            onShare={handleShare}
+            showDetailLink={false}
+            shouldReduceMotion={shouldReduceMotion}
+          />
+        </ol>
+      </div>
 
       <div className="mt-12 border-t border-zinc-200 pt-6 dark:border-zinc-800">
         <Link
