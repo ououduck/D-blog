@@ -202,11 +202,16 @@ const flattenSuspenseBoundaries = (html) => {
     }
 
     const fallbackEnd = fallbackEndIdx + '<!--/$-->'.length;
-    // 三处区间互不重叠且从右往左排列，从后往前修改不影响前面区间的索引。
-    result = result.slice(0, scriptStart) + result.slice(scriptEnd);
+    // 三处编辑从右往左（script 最右 → hidden 居中 → fallback 最左），互不重叠，
+    // 从后往前修改不影响前面区间的索引。成功路径同样只摘除 $RC 调用文本而非
+    // 整个 <script>：React 19 可能在同一内联脚本写入多个 $RC 调用（见下方防御
+    // 路径注释），整段删除会连带抹掉其余调用，对应边界保持未展平（正文仍藏在
+    // hidden div 中，爬虫读不到）；仅摘除当前调用后重扫即可逐个展平。
+    const removeStart = scriptStart + match.index;
+    result = result.slice(0, removeStart) + result.slice(removeStart + match[0].length);
     result = result.slice(0, hidden.start) + result.slice(hidden.end);
     result = result.slice(0, fallbackStart) + `<!--$-->${hidden.content}<!--/$-->` + result.slice(fallbackEnd);
-    // 三处编辑后索引整体前移，重置游标从头部重新扫描（每轮至少移除一个 script）。
+    // 三处编辑后索引整体前移，重置游标从头部重新扫描（每轮至少消费一个 $RC 调用）。
     searchFrom = 0;
   }
   return result;
@@ -651,8 +656,9 @@ export const runSsg = async ({
     }
   }
 
-  // 汇总：任何页面失败都视为构建失败（但已生成页面保留供排查）；
-  // skipped 仅因总预算截断，单独提示。
+  // 汇总：任何页面失败或预算截断跳过都视为构建失败（已生成页面保留供排查）。
+  // skipped 表示站点不完整（首页/文章页可能缺失），若仍以退出码 0 结束，
+  // 流水线会继续审计并部署残缺站点 —— 与 fail-closed 的防御哲学不一致。
   if (skippedPages.length > 0) {
     logger.warn('Pages skipped due to total SSG budget', {
       count: skippedPages.length,
@@ -660,7 +666,7 @@ export const runSsg = async ({
     });
   }
   const totalPages = posts.length + staticPages.length + shuoshuoItems.length + 3;
-  if (failedPages.length > 0) {
+  if (failedPages.length > 0 || skippedPages.length > 0) {
     for (const failed of failedPages) {
       logger.error('Page generation failed', `${failed.url}: ${failed.error}`);
     }

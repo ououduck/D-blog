@@ -86,6 +86,7 @@ export const fetchCommentCounts = async ({ posts, token = process.env.GITHUB_TOK
 
   try {
     let cursor = null;
+    let truncated = false;
     for (let page = 0; page < MAX_PAGES; page += 1) {
       const response = await fetch(GRAPHQL_ENDPOINT, {
         method: 'POST',
@@ -139,7 +140,21 @@ export const fetchCommentCounts = async ({ posts, token = process.env.GITHUB_TOK
       }
 
       if (!discussions.pageInfo?.hasNextPage || !discussions.pageInfo.endCursor) break;
+      // 已达到分页上限且仍有余页：标记截断，循环自然结束（上方 break 条件为
+      // 下一页存在，因此此处必然 page === MAX_PAGES - 1）。
+      if (page === MAX_PAGES - 1) {
+        truncated = true;
+        break;
+      }
       cursor = discussions.pageInfo.endCursor;
+    }
+    if (truncated) {
+      // 超过 1000 条 discussion 时结果不完整：明确提示而非静默截断
+      // （文章卡片展示的评论数会偏低）。
+      logger.warn(
+        'discussions 数量超过分页上限，评论数可能不完整',
+        `pages=${MAX_PAGES} perPage=${DISCUSSIONS_PER_PAGE}`,
+      );
     }
   } catch (error) {
     logger.warn('获取评论数失败（网络异常等），跳过评论数获取', error instanceof Error ? error.message : String(error));

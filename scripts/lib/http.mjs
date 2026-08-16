@@ -42,6 +42,11 @@ export const DEFAULT_BASE_DELAY_MS = 500;
 /** 单次退避上限（毫秒），防止重试间隔无限膨胀。 */
 export const DEFAULT_MAX_DELAY_MS = 8000;
 
+/** Retry-After 单独封顶（毫秒）：服务器明确指示的等待时长不应被通用退避上限
+ * （默认 8s）压缩 —— GitHub 二次限流常见 retry-after: 60，按 8s 提前重试只会
+ * 连续命中 429 烧掉全部重试次数。上限防止畸形/极端 Retry-After 拖垮 job。 */
+export const DEFAULT_MAX_RETRY_AFTER_MS = 60000;
+
 /** 因 GitHub 限流而等待 reset 的最大时长（毫秒）。超过则放弃并抛 RateLimitError，
  *  由调用方决定策略 —— 保证 job 永远有明确的退出路径，绝不无限挂起。 */
 export const DEFAULT_MAX_RATE_LIMIT_WAIT_MS = 90000;
@@ -429,6 +434,7 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
   const retries = config.retries ?? DEFAULT_RETRIES;
   const baseDelayMs = config.baseDelayMs ?? DEFAULT_BASE_DELAY_MS;
   const maxDelayMs = config.maxDelayMs ?? DEFAULT_MAX_DELAY_MS;
+  const maxRetryAfterMs = config.maxRetryAfterMs ?? DEFAULT_MAX_RETRY_AFTER_MS;
   const externalSignal = config.signal;
 
   let lastStatus = null;
@@ -454,7 +460,10 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
         const retryAfterSeconds = parseRetryAfter(response.headers);
         const delayMs =
           retryAfterSeconds !== undefined
-            ? Math.min(retryAfterSeconds * 1000, maxDelayMs)
+            ? // Retry-After 用独立上限（maxRetryAfterMs），不复用通用退避上限：
+              // 服务器明确指示的等待时长（GitHub 二次限流常见 60s）应被尊重，
+              // 提前重试只会连续命中 429 烧掉重试次数。
+              Math.min(retryAfterSeconds * 1000, maxRetryAfterMs)
             : computeBackoffDelay(attempt + 1, baseDelayMs, maxDelayMs);
         config.onRetry?.({
           attempt: attempt + 1,
@@ -675,6 +684,13 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
         await sleep(boundedWaitMs, signal);
         // 等待补偿后重试一次；若仍被限流，走下方 isRateLimitResponse 抛错分支。
         response = await fetchPageRequest(1);
+        // 补偿重试返回的是新响应：重新读取其 body 用于后续错误分类。
+        // 若沿用旧响应的 body，权限类 403（body 含 permission 提示）会被误判
+        // 为限流（整批暂停），HttpStatusError 的详情文本也会是过期内容。
+        responseBodyText = '';
+        if (response.status === 403 && parseRateLimitHeaders(response.headers).remaining !== 0) {
+          responseBodyText = await readResponseText(response, { maxBytes: 4096 }).catch(() => '');
+        }
       }
     }
 
@@ -715,6 +731,10 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
     } else if (page === 1) {
       // 非数组响应（如 POST 创建评论返回单个对象）：不翻页，直接返回。
       return { data, headers: lastResponse.headers, rateLimit, pages, lastLink: link };
+    } else {
+      // 第 2+ 页返回非数组：静默跳过会丢失该页数据且继续翻页（结果残缺）。
+      // GitHub 列表端点恒返回数组，此分支为防御；fail-closed 而非吞数据。
+      throw new Error(`GitHub API pagination expected an array on page ${page}, got ${typeof data}: ${buildUrl(page)}`);
     }
 
     if (!paginate || !link.next || pages >= maxPages) {

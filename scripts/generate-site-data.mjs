@@ -963,14 +963,18 @@ const generateRss = () => {
  * 提供站点简介与文章链接列表，便于智能体浏览时快速定位内容。
  */
 const generateLlmsTxt = () => {
+  // Markdown 链接文本转义：标题/片段含 [ ] ( ) 时不转义会被提前闭合或嵌套
+  // （如「[译] 深入理解 React」），llmstxt 解析器得到损坏的链接。
+  const escapeLinkText = (text) => text.replace(/[\]()]/g, (char) => `\\${char}`).replace(/\[/g, '\\[');
   const sortedPosts = [...posts].sort((a, b) => (a.date === b.date ? 0 : a.date > b.date ? -1 : 1));
   const postLines = sortedPosts.map(
-    (post) => `- [${post.title}](${siteAbsoluteUrl(`/post/${post.id}`)}): ${post.excerpt.replace(/\n+/g, ' ').trim()}`,
+    (post) =>
+      `- [${escapeLinkText(post.title)}](${siteAbsoluteUrl(`/post/${post.id}`)}): ${post.excerpt.replace(/\n+/g, ' ').trim()}`,
   );
   // 说说为短动态，直接把剥离后的纯文本附在链接后，便于智能体直接读取内容。
   const shuoshuoLines = shuoshuo.map((item) => {
     const snippet = markdownToSearchText(item.content).slice(0, 60) || '图片/纯动态';
-    return `- [说说：${snippet}](${siteAbsoluteUrl(`/shuoshuo/${item.id}`)}): ${snippet}`;
+    return `- [说说：${escapeLinkText(snippet)}](${siteAbsoluteUrl(`/shuoshuo/${item.id}`)}): ${snippet}`;
   });
 
   const content = [
