@@ -808,8 +808,15 @@ function MermaidBlock({
 
   // sanitize 输出对同一 svg 恒定：记忆化避免每帧重渲染（拖动/缩放大图表时）
   // 对整段 SVG 重复 DOMPurify 净化。须在条件早退（!svg）之前调用（Hooks 顺序）。
+  // 注意两个守卫缺一不可：
+  // 1) svg 为空（SSR 恒为空）时短路，不触碰 DOMPurify —— 此前 useMemo 前移后
+  //    SSR 首帧即执行 sanitize，而 SSR bundle 中 import DOMPurify 的模块形态
+  //    与客户端不同（sanitize 不存在），含 Mermaid 的文章整页渲染崩溃；
+  // 2) typeof DOMPurify.sanitize 形态守卫：客户端 interop 下 DOMPurify 是函数，
+  //    异常形态时回退原始 svg（不崩溃）。
   const sanitizedSvg = useMemo(
-    () => (typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } }) : svg),
+    () =>
+      svg && typeof DOMPurify.sanitize === 'function' ? DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true } }) : svg,
     [svg],
   );
 
