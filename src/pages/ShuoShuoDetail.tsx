@@ -2,7 +2,7 @@
  * 说说详情页：单条短动态的独立可索引页面。
  */
 
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { Seo, buildSiteSchemas } from '../components/Seo';
@@ -26,28 +26,32 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
  */
 
 /** 取说说正文首个非空行作为标题/h1（保持简洁，避免长标题被搜索引擎截断）。 */
-const getTitleSnippet = (item: ShuoShuoEntry): string => {
-  const firstLine = stripMarkdown(item.content)
+const getTitleSnippet = (strippedContent: string, fallbackDate: string): string => {
+  const firstLine = strippedContent
     .split('\n')
     .map((line) => line.trim())
     .find((line) => line.length > 0);
-  const snippet = firstLine || item.date;
+  const snippet = firstLine || fallbackDate;
   return snippet.length > 40 ? `${snippet.slice(0, 40).trimEnd()}…` : snippet;
 };
 
 /** meta description：正文过长时截断为 120 字，再拼上作者与日期上下文（总长仍远低于 Google 摘要上限 160 字）。 */
-const getDescription = (item: ShuoShuoEntry): string => {
-  const text = stripMarkdown(item.content).replace(/\s+/g, ' ').trim();
+const getDescription = (strippedContent: string, date: string): string => {
+  const text = strippedContent.replace(/\s+/g, ' ').trim();
   const core = text.length > 120 ? `${text.slice(0, 120).trimEnd()}…` : text;
   return core
-    ? `${siteConfig.author.name} 的说说（${item.date}）：${core}`
-    : `${siteConfig.author.name} 于 ${item.date} 发布的一条说说`;
+    ? `${siteConfig.author.name} 的说说（${date}）：${core}`
+    : `${siteConfig.author.name} 于 ${date} 发布的一条说说`;
 };
 
 export const ShuoShuoDetail = () => {
   const { id } = useParams<{ id: string }>();
   const allItems = getInitialShuoShuo();
-  const item = allItems.find((candidate) => candidate.id === id);
+  // 查找结果与正文剥离只依赖 id/内容，useMemo 缓存避免每次渲染
+  //（预览开关、分享弹窗状态变化）对正文重跑 stripMarkdown 正则链并
+  // 重复 find（详情页单条场景也遵循列表页的缓存口径）。
+  const item = useMemo(() => allItems.find((candidate) => candidate.id === id), [allItems, id]);
+  const itemContent = useMemo(() => stripMarkdown(item?.content ?? ''), [item?.content]);
   const shouldReduceMotion = useReducedMotion();
   const [previewImage, setPreviewImage] = useState<{ src: string; alt?: string } | null>(null);
   const [shareTarget, setShareTarget] = useState<ShuoShuoEntry | null>(null);
@@ -57,6 +61,15 @@ export const ShuoShuoDetail = () => {
   // execCommand 路径可能更慢）不得覆盖新弹窗的 autoCopied 状态（与
   // ShuoShuo.tsx 的 shareSeqRef 同一竞态防护模式）。
   const shareSeqRef = useRef(0);
+  // 卸载守卫：复制异步可能跨过组件卸载（分享后立即导航离开），卸载后不 setState。
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   if (!item) {
     // 说说不存在：SPA 内以 200 响应返回该内容，必须 noindex，
@@ -75,8 +88,8 @@ export const ShuoShuoDetail = () => {
     );
   }
 
-  const snippet = getTitleSnippet(item);
-  const description = getDescription(item);
+  const snippet = getTitleSnippet(itemContent, item.date);
+  const description = getDescription(itemContent, item.date);
   const shareImage = item.images && item.images.length > 0 ? item.images[0] : siteConfig.seoImage;
 
   const handleShare = async (target: ShuoShuoEntry) => {
@@ -89,8 +102,8 @@ export const ShuoShuoDetail = () => {
     setAutoCopied(null);
 
     const copied = await copyTextToClipboard(url);
-    // 关闭后重开（seq 已递增）：丢弃旧弹窗的迟到结果。
-    if (seq !== shareSeqRef.current) return;
+    // 关闭后重开（seq 已递增）或组件已卸载：丢弃旧弹窗的迟到结果。
+    if (seq !== shareSeqRef.current || !mountedRef.current) return;
     setAutoCopied(copied);
   };
 
@@ -110,7 +123,7 @@ export const ShuoShuoDetail = () => {
         url: siteConfig.social.github,
         email: siteConfig.social.rawEmail,
       },
-      articleBody: stripMarkdown(item.content),
+      articleBody: itemContent,
       inLanguage: 'zh-CN',
       isPartOf: {
         '@type': 'WebSite',
@@ -228,7 +241,7 @@ export const ShuoShuoDetail = () => {
           isOpen={Boolean(shareTarget)}
           onClose={() => setShareTarget(null)}
           url={shareUrl}
-          contentPreview={stripMarkdown(shareTarget.content)}
+          contentPreview={itemContent}
           date={shareTarget.date}
           autoCopied={autoCopied}
         />

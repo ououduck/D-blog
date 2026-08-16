@@ -41,6 +41,16 @@ export const ShuoShuo = () => {
   // 分享序号：快速连续分享多条说说时，先发出的自动复制结果晚到会被丢弃，
   // 避免旧说说的复制结果串台到新打开的弹窗。
   const shareSeqRef = useRef(0);
+  // 卸载守卫：复制（fallback execCommand 路径可能较慢）可能跨过组件卸载
+  //（分享后立即导航离开），卸载后不再 setState。
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // 正文剥离结果按 id 缓存：搜索过滤每次按键都对全部说说重跑 14 步正则链
   // （O(条目数 × 正文长度)），内容不变时应复用。
@@ -118,8 +128,9 @@ export const ShuoShuo = () => {
     setAutoCopied(null);
 
     const copied = await copyTextToClipboard(url);
-    // 分享目标已切换（快速连续分享）时丢弃过期结果，避免串台。
-    if (seq !== shareSeqRef.current) return;
+    // 分享目标已切换（快速连续分享）时丢弃过期结果，避免串台；
+    // 组件已卸载时同样丢弃（复制异步可能跨过导航）。
+    if (seq !== shareSeqRef.current || !mountedRef.current) return;
     setAutoCopied(copied);
   };
 
