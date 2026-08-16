@@ -32,8 +32,6 @@ export default tseslint.config(
       '.zcode/',
       '.trash/',
       '.vscode/',
-      // 遗留 CommonJS 风格配置产物（postcss/tailwind 等），不参与 lint
-      '**/*.config.js',
       '*.local',
       '.dsh-*.cjs',
     ],

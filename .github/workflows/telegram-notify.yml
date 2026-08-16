@@ -3,7 +3,7 @@
 # 覆盖三类提醒：
 #   1. 💬 新评论 / 新讨论 / 新 Issue（giscus 文章评论、留言板留言、友链申请等）；
 #   2. 🚀 push 到 main 的提交（提交列表 + 对比链接）；
-#   3. ⚙️ 任一 Action 运行完成的结果（成功/失败/取消），自动覆盖新增 workflow。
+#   3. ⚙️ 白名单内任一 Action 运行完成的结果（成功/失败/取消）。
 #
 # 触发：
 #   - push: main 分支提交（.pages.yml 保存内容、友链 bot 推送等都会走到这里）；
@@ -34,10 +34,13 @@ on:
     # workflows 为必填键（缺失时 GitHub 拒绝解析，报 "does not reference any workflows"）。
     # 使用显式白名单（不含本工作流自身）：若用 "**" 通配，本工作流每次运行完成后
     # 也会触发一次自身的 workflow_run（脚本虽按名称跳过发送，但运行本身照常创建，
-    # 每个事件产生 2 次运行、双倍 Actions 消耗）。新增 workflow 时在此补充即可。
+    # 每个事件产生 2 次运行、双倍 Actions 消耗）。
+    # ⚠️ 白名单需手动维护：新增 workflow 时在此补充，否则其运行结果（尤其失败）会静默。
+    # 注意 check-broken-links.yml 为每周定时任务，已在白名单内，失败会提醒；勿删。
     workflows:
       - "Akismet Discussion Comment Checker"
       - "CI"
+      - "Check Broken Links"
       - "Comment Keyword Filter"
       - "Comment Keyword Recheck"
       - "Deploy to Cloudflare & EdgeOne"

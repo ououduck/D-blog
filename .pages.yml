@@ -108,6 +108,7 @@ content:
       - { name: title, label: 站点标题, type: string, required: true }
       - { name: subtitle, label: 站点副标题, type: string }
       - { name: seoHomeTitle, label: 首页 SEO 标题, type: string }
+      - { name: seoHomeDescription, label: 首页 SEO 描述, type: text }
       - { name: description, label: 站点描述, type: text, required: true }
       - { name: logo, label: Logo 链接, type: string }
       - { name: logoSmall, label: 小 Logo 路径, type: string }
