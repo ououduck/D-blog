@@ -56,6 +56,10 @@ jobs:
 
       - name: Check friend link availability
         # git push 由 actions/checkout 配置的仓库凭据完成，脚本无需 GITHUB_TOKEN。
+        # TARGET_BRANCH 必须与 checkout 的 ref 同源（都用 payload 的 repository.ref，
+        # 手动触发回退 github.ref_name）：CMS 在非默认分支打开时，若这里用
+        # github.ref_name（默认分支）而 checkout 在 CMS 分支，会把 A 分支的检查
+        # 结果 push 到 B 分支。
         env:
-          FRIEND_LINK_TARGET_BRANCH: ${{ github.ref_name }}
+          FRIEND_LINK_TARGET_BRANCH: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || github.ref_name }}
         run: node scripts/friend-link-check.mjs
