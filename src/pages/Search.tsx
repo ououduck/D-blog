@@ -2,7 +2,7 @@
  * 搜索页：全文搜索独立页（q 参数驱动，带 q 时 noindex）。
  */
 
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SearchField } from '@/components/SearchField';
 import { usePostSearch } from '@/hooks/usePostSearch';
@@ -41,6 +41,9 @@ const SEARCH_SCOPE_HINTS: Record<PostSearchScope, string> = {
 export const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryFromUrl = searchParams.get('q') || '';
+  // 用户最近一次通过输入框编辑的查询值：区分「URL 更新还在 startTransition
+  // 延迟中」与「URL 确实来自导航」（与 Home/Archive/Tags 页同一竞态防护）。
+  const lastEditedQueryRef = useRef<string | null>(null);
   const [searchScope, setSearchScope] = useState<PostSearchScope>('all');
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
   const { posts: savedPosts } = useOfflinePosts();
@@ -56,12 +59,20 @@ export const Search = () => {
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
+    // 单向同步（URL → 输入框），仅在「URL 值不是用户最近编辑产生」时生效：
+    // v7_startTransition 下 setSearchParams 提交异步延迟，击键期间 queryFromUrl
+    // 仍是旧值，若此时回写 setSearchQuery 会把刚输入的内容回退掉（闪变/丢字），
+    // 并让 usePostSearch 空查询分支把结果重置回全量列表。
+    if (lastEditedQueryRef.current !== null && lastEditedQueryRef.current !== queryFromUrl) {
+      return;
+    }
     if (queryFromUrl !== searchQuery) {
       setSearchQuery(queryFromUrl);
     }
   }, [queryFromUrl, searchQuery, setSearchQuery]);
 
   const handleSearchChange = (query: string) => {
+    lastEditedQueryRef.current = query;
     handleSearch(query);
     setSearchParams(
       (previous) => {
@@ -78,6 +89,7 @@ export const Search = () => {
   };
 
   const handleClearSearch = () => {
+    lastEditedQueryRef.current = '';
     clearSearch();
     setSearchParams(
       (previous) => {

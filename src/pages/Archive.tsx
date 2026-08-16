@@ -56,6 +56,9 @@ export const ArchivePage = () => {
   const initializedRef = useRef(false);
   const searchStartedRef = useRef<string | null>(null);
   const autoExpandedSearchRef = useRef<string | null>(null);
+  // 用户最近一次通过输入框编辑的查询值：区分「URL 更新还在 startTransition
+  // 延迟中」与「URL 确实来自导航」（与 Home 页同一竞态防护，见下）。
+  const lastEditedQueryRef = useRef<string | null>(null);
   const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } =
     // 不把 URL 的 ?q= 作为 useState 初始值（与 Search 页一致）：SSG 预渲染的是
     // 无 q 的默认界面，首帧用空查询渲染可保证带 q 直访时客户端首帧与服务端
@@ -104,6 +107,10 @@ export const ArchivePage = () => {
   }, [loadAttempt]);
 
   const handleSearchChange = (query: string) => {
+    // 单向同步守卫：本次编辑落地前（URL 尚未提交），URL → state 回写必须被
+    // 拦截，否则每次击键输入被回退一次（v7_startTransition 下 setSearchParams
+    // 的提交是异步延迟的，期间 queryFromUrl 仍是旧值）。
+    lastEditedQueryRef.current = query;
     handleSearch(query);
     setSearchParams(
       (previous) => {
@@ -121,6 +128,7 @@ export const ArchivePage = () => {
   };
 
   const handleClearSearch = () => {
+    lastEditedQueryRef.current = '';
     clearSearch();
     setSearchParams(
       (previous) => {
@@ -138,6 +146,15 @@ export const ArchivePage = () => {
   const allGroupsExpanded = isAllVisibleExpanded(groups, expandedYears, expandedMonths);
 
   useEffect(() => {
+    // 单向同步（URL → 输入框），仅在「URL 值不是用户最近编辑产生」时生效：
+    // 生产路由启用 v7_startTransition 后 setSearchParams 的提交是异步延迟的，
+    // 用户击键期间 queryFromUrl 仍是旧值 —— 若此时按 queryFromUrl 回写
+    // setSearchQuery，会把刚输入的内容回退掉（输入闪变/丢字），并让
+    // usePostSearch 的空查询分支把结果重置回全量列表。lastEditedQueryRef 与
+    // URL 一致说明本次编辑已落地（或本来就是导航带来的变化），才允许同步。
+    if (lastEditedQueryRef.current !== null && lastEditedQueryRef.current !== queryFromUrl) {
+      return;
+    }
     if (queryFromUrl !== searchQuery) {
       setSearchQuery(queryFromUrl);
     }

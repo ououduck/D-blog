@@ -2,7 +2,7 @@
  * 标签页：标签云聚合视图，支持标签筛选与搜索。
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock } from 'lucide-react';
@@ -56,6 +56,9 @@ export const Tags = () => {
   const shouldReduceMotion = useReducedMotion();
   const selectedTag = searchParams.get('tag');
   const queryFromUrl = searchParams.get('q') || '';
+  // 用户最近一次通过输入框编辑的查询值：区分「URL 更新还在 startTransition
+  // 延迟中」与「URL 确实来自导航」（与 Home/Search/Archive 页同一竞态防护）。
+  const lastEditedQueryRef = useRef<string | null>(null);
   const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } =
     // 不把 URL 的 ?q= 作为 useState 初始值（与 Search 页一致）：SSG 预渲染的是
     // 无 q 的默认界面，首帧用空查询渲染可保证带 q 直访时客户端首帧与服务端
@@ -106,6 +109,10 @@ export const Tags = () => {
   }, [loadAttempt]);
 
   const handleSearchChange = (query: string) => {
+    // 单向同步守卫：本次编辑落地前（URL 尚未提交），URL → state 回写必须被
+    // 拦截，否则每次击键输入被回退一次（v7_startTransition 下 setSearchParams
+    // 的提交是异步延迟的，期间 queryFromUrl 仍是旧值）。
+    lastEditedQueryRef.current = query;
     handleSearch(query);
     setSearchParams(
       (previous) => {
@@ -122,6 +129,7 @@ export const Tags = () => {
   };
 
   const handleClearSearch = () => {
+    lastEditedQueryRef.current = '';
     clearSearch();
     setSearchParams(
       (previous) => {
@@ -134,6 +142,12 @@ export const Tags = () => {
   };
 
   useEffect(() => {
+    // 单向同步（URL → 输入框），仅在「URL 值不是用户最近编辑产生」时生效：
+    // v7_startTransition 下 setSearchParams 提交异步延迟，击键期间 queryFromUrl
+    // 仍是旧值，若此时回写 setSearchQuery 会把刚输入的内容回退掉（闪变/丢字）。
+    if (lastEditedQueryRef.current !== null && lastEditedQueryRef.current !== queryFromUrl) {
+      return;
+    }
     if (queryFromUrl !== searchQuery) {
       setSearchQuery(queryFromUrl);
     }
