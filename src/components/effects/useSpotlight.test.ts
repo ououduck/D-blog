@@ -47,13 +47,12 @@ describe('useSpotlight', () => {
     mockMatchMedia(true);
     const { result } = renderHook(() => useSpotlight());
     const element = document.createElement('div');
-    element.getBoundingClientRect = () =>
-      ({ left: 10, top: 20, width: 100, height: 50 }) as DOMRect;
+    element.getBoundingClientRect = () => ({ left: 10, top: 20, width: 100, height: 50 }) as DOMRect;
     (result.current.bind.ref as { current: HTMLElement | null }).current = element;
 
     act(() => {
       result.current.bind.onMouseEnter(null as never);
-      result.current.bind.onMouseMove({ clientX: 60, clientY: 40 } as React.MouseEvent);
+      result.current.bind.onMouseMove({ clientX: 60, clientY: 40 } as React.MouseEvent<HTMLDivElement>);
     });
     expect(result.current.layerStyle['--spotlight-x']).toBe('50px');
     expect(result.current.layerStyle['--spotlight-y']).toBe('20px');
