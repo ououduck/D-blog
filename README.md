@@ -202,6 +202,14 @@ Service Worker 作用域跟随部署路径，在线按页面/静态资源/图片
 
 其他自动化：`ci.yml` 每次 push/PR 自动跑类型检查 + 单元测试 + 完整构建 + 双审计；友链申请审核（`friend-link-bot.yml`）、友链可用性检查（`friend-link-check.yml`）、评论 Akismet 反垃圾（`akismet-discussion-comment-check.yml`）与关键词过滤（`comment-keyword-filter.yml` / `comment-keyword-recheck.yml`）、文章更新订阅通知（`notify-post-update.yml`）均为独立 workflow。
 
+### 🔗 文章外链失效扫描（check-broken-links）
+
+博客内容会随外部站点改版/下线产生死链，且完全可以在构建期检测。`scripts/check-broken-links.mjs` 扫描 `posts/*.md` 中全部 http/https 外链（Markdown 链接 + HTML `<a href>`，排除图片与站内锚点），逐个请求检查可达性，失效链接按文章分组汇总（带行号与 HTTP 状态）推送到 Telegram。只读操作，不修改仓库、不触发部署。
+
+- **触发**：Pages CMS 侧边栏「🔗 检查失效外链」按钮（`check-broken-links.yml`，workflow_dispatch），或每周一 02:00 UTC 定时自动巡检（schedule）；
+- **本地运行**：`npm run check:links`（默认仅报告退出码 0）；`--dry-run` 只打印不上报；`--fail` 发现失效链接时非零退出（可用于 CI 红叉门禁）；
+- **通知配置**：复用 Telegram Secrets（`TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`，可选 `TELEGRAM_TOPIC_ID`），未配置时优雅跳过；报告发送复用 `scripts/lib/telegram.mjs`（与 `telegram-notify` 共享）。
+
 ## 许可证
 
 [MIT](./LICENSE)

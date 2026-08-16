@@ -207,6 +207,16 @@ actions:
       title: 确认检查全部友链？
       message: 将逐个访问所有友链网站：无法访问的站点会标记为「已失联」，重新上线的站点会自动恢复为正常状态。检查结果会以单个 commit 直接推送到仓库（不触发部署）。
       button: 开始检查
+  # ── 文章外链失效扫描：扫描 posts/*.md 全部 http/https 外链，失效链接汇总推送 Telegram ──
+  - name: check-broken-links
+    label: 🔗 检查失效外链
+    workflow: check-broken-links.yml
+    ref: current
+    confirm:
+      title: 确认扫描文章外链？
+      message: 将逐个请求 posts/ 中全部外链（Markdown 链接 + HTML 链接，排除图片与站内锚点）：发现的失效链接会按文章分组汇总（带行号与 HTTP 状态）推送到 Telegram，不修改仓库、不触发部署。
+      button: 开始扫描
+
   # ── Telegram 通知测试：验证 Bot Token / Chat ID 配置，并向 Telegram 发送测试消息 ──
   - name: test-telegram
     label: 🔔 测试 Telegram 通知

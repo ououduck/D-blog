@@ -38,7 +38,7 @@
  */
 
 import fs from 'node:fs';
-import { fetchWithRetry, readResponseText, RetryableHttpError } from './lib/http.mjs';
+import { sendTelegramMessage } from './lib/telegram.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
 const logger = createActionLogger('telegram');
@@ -46,13 +46,6 @@ const logger = createActionLogger('telegram');
 /* ------------------------------------------------------------------ */
 /* 常量                                                                 */
 /* ------------------------------------------------------------------ */
-
-/** 安全预算：HTML 标签也计长度，留余量避免踩线（Telegram 单条硬上限 4096 字符）。 */
-const TELEGRAM_SAFE_BUDGET = 4000;
-/** 单次发送超时（毫秒）。 */
-const TELEGRAM_TIMEOUT_MS = 15000;
-/** 发送重试次数（不含首次请求）。 */
-const TELEGRAM_RETRIES = 2;
 
 /** 单个 commit 消息预览上限（字符）。 */
 const MAX_COMMIT_MSG_CHARS = 100;
@@ -314,117 +307,8 @@ const BUILDERS = Object.freeze({
 /* ------------------------------------------------------------------ */
 /* 发送                                                                 */
 /* ------------------------------------------------------------------ */
-
-/**
- * 总长兜底截断：正常路径字段级截断后消息远低于上限，此处仅作防御；
- * 截断后清理末尾可能被切断的不完整标签 / HTML 实体，避免 Telegram 400。
- * @param {string} text
- * @returns {string}
- */
-const ensureSafeLength = (text) => {
-  if (text.length <= TELEGRAM_SAFE_BUDGET) return text;
-  const cut = text.slice(0, TELEGRAM_SAFE_BUDGET);
-  const cleaned = cut
-    // 去掉末尾不完整的 <...>（如 "查看" 标签被切断）
-    .replace(/<[^>]*$/, '')
-    // 去掉末尾不完整的实体（如 "&amp" 缺分号）
-    .replace(/&(?:amp|lt|gt|quot|#\d+)?;?$/, '')
-    .replace(/&[a-zA-Z#0-9]*$/, '');
-  return `${cleaned}\n\n…(消息过长，其余内容已省略)`;
-};
-
-/**
- * Telegram 常见业务错误码 → 排障提示。
- * 403（bot can't send messages to the bot / chat not found 等）多为
- * TELEGRAM_CHAT_ID 配置错误：getMe 返回的是「机器人自身 id」，不是你的 chat id；
- * 机器人之间无法互发消息，且机器人必须先被对方（或加入的群组）主动对话/添加过。
- */
-const TELEGRAM_ERROR_HINTS = Object.freeze({
-  401: 'Bot token 无效：检查 TELEGRAM_BOT_TOKEN 是否抄错或已被 BotFather 重置。',
-  403:
-    '机器人无权向该 chat 发消息：TELEGRAM_CHAT_ID 疑似指向机器人自身（getMe 的 id 是机器人不是你的 chat id），' +
-    '或机器人从未加入该群组/频道。先用你自己的账号向机器人发一条消息，' +
-    '再用 @userinfobot 或 getUpdates 确认 chat id（私聊为正数用户 id，群组为负数 id，频道用 @频道名）。',
-  400:
-    '请求参数错误：常见于 TELEGRAM_CHAT_ID 不存在（chat not found）、' +
-    'TELEGRAM_TOPIC_ID 与消息线程不匹配、或消息内容超长。',
-});
-
-/** 把 Telegram 错误 JSON 转为带排障提示的报错文案。 */
-const buildTelegramError = (json) => {
-  const base = `Telegram API error: ${json.description || 'unknown'} (error_code=${json.error_code ?? '?'})`;
-  const hint = TELEGRAM_ERROR_HINTS[json.error_code];
-  return hint ? `${base} — ${hint}` : base;
-};
-
-/**
- * 调用 Telegram Bot API sendMessage 发送消息。
- * 注意：Telegram 业务错误（chat 不存在、parse_mode 非法等）以 HTTP 200 +
- * ok:false 返回，必须检查 JSON 体而非只看 HTTP 状态码。
- * @param {string} text 消息体（HTML parse mode）。
- * @returns {Promise<{ message_id?: number }>} Telegram 返回的 result。
- */
-const sendTelegramMessage = async (text) => {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  const url = `https://api.telegram.org/bot${token}/sendMessage`;
-  const payload = {
-    chat_id: chatId,
-    text: ensureSafeLength(text),
-    parse_mode: 'HTML',
-    disable_web_page_preview: true,
-  };
-  // message_thread_id 必须为正整数：浮点值（如 "1.5"）会让 Telegram API 报错。
-  const topicId = Number(process.env.TELEGRAM_TOPIC_ID);
-  if (Number.isInteger(topicId) && topicId > 0) {
-    payload.message_thread_id = topicId;
-  }
-
-  let response;
-  try {
-    response = await fetchWithRetry(
-      url,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      },
-      {
-        timeoutMs: TELEGRAM_TIMEOUT_MS,
-        retries: TELEGRAM_RETRIES,
-        onRetry: ({ attempt, status, error, delayMs }) => {
-          logger.warn('Telegram API transient failure, retrying', {
-            attempt,
-            status: status ?? 'network',
-            error: error ? error.message : '',
-            delayMs,
-          });
-        },
-      },
-    );
-  } catch (error) {
-    if (error instanceof RetryableHttpError) {
-      logger.error('Telegram API request failed after retries', {
-        status: error.status,
-        attempts: error.attempts,
-        body: error.body?.slice(0, 200),
-      });
-    }
-    throw error;
-  }
-
-  const bodyText = await readResponseText(response, { maxBytes: 4096 });
-  let json;
-  try {
-    json = JSON.parse(bodyText);
-  } catch {
-    throw new Error(`Telegram API returned non-JSON response (HTTP ${response.status}): ${bodyText.slice(0, 200)}`);
-  }
-  if (json.ok !== true) {
-    throw new Error(buildTelegramError(json));
-  }
-  return json.result || {};
-};
+// 消息发送复用 lib/telegram.mjs 的 sendTelegramMessage（含配置缺失优雅跳过、
+// 字段级/总长截断、HTML 注入防护与错误提示）。本文件不再维护私有实现。
 
 /* ------------------------------------------------------------------ */
 /* 入口                                                                 */
@@ -458,15 +342,11 @@ const main = async () => {
     return 0;
   }
 
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) {
-    // 配置缺失：优雅跳过（::warning:: + 正常退出），与 akismet 的降级策略一致。
-    logger.warn('TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not configured; skipping notification', { event: eventName });
+  const result = await sendTelegramMessage(message);
+  if (result === null) {
+    // 配置缺失：lib 内已 warning，优雅跳过（正常退出），与 akismet 的降级策略一致。
     return 0;
   }
-
-  const result = await sendTelegramMessage(message);
   logger.info('Telegram notification sent', {
     event: eventName,
     messageId: result.message_id ?? 'unknown',

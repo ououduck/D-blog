@@ -1,0 +1,66 @@
+# check-broken-links.yml — 文章外链失效扫描（手动触发 + 每周定时）。
+#
+# 博客内容会随时间变老，外部站点改版/下线必然产生死链，且完全可以在
+# 构建期/CI 检测，不占运行时。本 workflow 执行 scripts/check-broken-links.mjs：
+# - 扫描 posts/*.md 中全部 http/https 外链（Markdown 链接 + HTML <a href>，
+#   排除图片与站内锚点），逐个请求检查可达性；
+# - 发现失效链接时汇总报告（按文章分组、带行号与状态/原因）推送到 Telegram
+#   （复用 scripts/lib/telegram.mjs，未配置 Token 时优雅跳过）；
+# - 只读操作（contents: read），不 push、不触发部署。
+#
+# 触发方式：
+#   1. Pages CMS 侧边栏「🔗 检查失效外链」按钮（见 .pages.yml 的 actions 段），
+#   2. GitHub Actions 页面手动 Run workflow（payload 最小可用 {"repository":{"ref":"main"}}），
+#   3. 每周一 02:00 UTC 定时自动执行（schedule）。
+#
+# 一次性配置（仓库 Settings → Secrets and variables → Actions）：
+#   TELEGRAM_BOT_TOKEN — BotFather 创建机器人得到的 token（形如 123456:ABC-...）；
+#   TELEGRAM_CHAT_ID   — 接收消息的 chat id（私聊 / 群组 / 频道均可）；
+#   TELEGRAM_TOPIC_ID  — 可选：论坛话题 id，设置后消息发往该话题。
+name: Check Broken Links
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: 'Pages CMS payload as JSON，手动触发可用 {"repository":{"ref":"main"}}'
+        required: true
+        type: string
+  schedule:
+    # 每周一 02:00 UTC（北京时间 10:00）自动巡检一次文章外链。
+    - cron: '0 2 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  # 手动触发与定时任务串行执行，避免同时扫描重复上报。
+  group: check-broken-links
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # 逐个请求外链（顺序检查、每链接 12s 超时 + 150ms 间隔），
+    # 几十个链接的量级下几分钟内完成，10 分钟上限留足余量。
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        # 只需读取 posts/ 与 scripts/，浅克隆即可（fetch-depth: 1 默认）。
+        uses: actions/checkout@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        # 脚本依赖 gray-matter，需安装生产依赖（--no-audit --no-fund 提速）。
+        run: npm ci --no-audit --no-fund
+
+      - name: Check broken links in posts
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_TOPIC_ID: ${{ secrets.TELEGRAM_TOPIC_ID }}
+        # 默认仅报告（exit 0），发现死链推 Telegram；如需 CI 红叉可加 --fail。
+        run: node scripts/check-broken-links.mjs

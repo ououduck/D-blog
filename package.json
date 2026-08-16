@@ -15,6 +15,7 @@
     "ssg": "node scripts/ssg.mjs",
     "audit:build": "node scripts/audit-build.mjs",
     "audit:seo": "node scripts/seo-audit.mjs",
+    "check:links": "node scripts/check-broken-links.mjs",
     "typecheck": "tsc -p config/tsconfig.json --noEmit",
     "check": "npm run gen:data && npm run typecheck",
     "dev": "npm run gen:data && vite",
