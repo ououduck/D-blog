@@ -205,8 +205,8 @@ const cloneImageDimensions = (value: unknown): PostMetadata['imageDimensions'] |
   return dimensions;
 };
 
-/** 校验并克隆来自 IndexedDB/localStorage 的不可信数据。 */
-const validateOfflinePost = (value: unknown): OfflinePost | undefined => {
+/** 校验并克隆来自 IndexedDB/localStorage 的不可信数据（导出供单元测试）。 */
+export const validateOfflinePost = (value: unknown): OfflinePost | undefined => {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -217,6 +217,7 @@ const validateOfflinePost = (value: unknown): OfflinePost | undefined => {
     typeof value.title !== 'string' ||
     !value.title.trim() ||
     typeof value.excerpt !== 'string' ||
+    !value.excerpt.trim() ||
     typeof value.date !== 'string' ||
     !value.date.trim() ||
     typeof value.category !== 'string' ||
