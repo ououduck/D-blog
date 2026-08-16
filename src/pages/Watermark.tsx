@@ -45,12 +45,28 @@ const loadImage = (file: File) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const image = new Image();
+    let settled = false;
+    const cleanup = () => URL.revokeObjectURL(url);
+    // 超时兜底：个别损坏/无法解码的格式可能 onload/onerror 都不触发，
+    // Promise 会永久 pending，handleFile 卡死、UI 无任何反馈。
+    const timeoutId = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error('图片加载超时，请更换图片后重试。'));
+    }, 10000);
     image.onload = () => {
-      URL.revokeObjectURL(url);
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      cleanup();
       resolve(image);
     };
     image.onerror = () => {
-      URL.revokeObjectURL(url);
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      cleanup();
       reject(new Error('图片加载失败，请选择有效的图片文件。'));
     };
     image.src = url;
@@ -143,6 +159,9 @@ export const Watermark: React.FC = () => {
 
   const exportImage = async () => {
     if (!imageState) return;
+    // 导出期间移除图片会让「成功提示」配「空界面」自相矛盾：记录导出起点代际，
+    // 结束时若代际已变（图片被移除/更换）则跳过 success 提示。
+    const exportGeneration = imageLoadGenerationRef.current;
     setIsExporting(true);
     setFeedback(null);
     try {
@@ -152,9 +171,13 @@ export const Watermark: React.FC = () => {
       renderWatermark(canvas, imageState.image, { text, fontSize, opacity, position, padding: 32 });
       const blob = await canvasToBlob(canvas, format, quality / 100);
       downloadBlob(blob, getWatermarkFilename(imageState.name, format));
-      setFeedback({ kind: 'success', message: '水印图片已下载。' });
+      if (exportGeneration === imageLoadGenerationRef.current) {
+        setFeedback({ kind: 'success', message: '水印图片已下载。' });
+      }
     } catch (error) {
-      setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '导出失败，请重试。' });
+      if (exportGeneration === imageLoadGenerationRef.current) {
+        setFeedback({ kind: 'error', message: error instanceof Error ? error.message : '导出失败，请重试。' });
+      }
     } finally {
       setIsExporting(false);
     }
@@ -189,12 +212,15 @@ export const Watermark: React.FC = () => {
               {imageState && (
                 <button
                   type="button"
-                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-400 hover:bg-zinc-100 hover:text-ink dark:hover:bg-zinc-800 dark:hover:text-white"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-400 hover:bg-zinc-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-zinc-800 dark:hover:text-white"
                   onClick={() => {
                     imageLoadGenerationRef.current += 1;
                     setImageState(null);
                     setFeedback(null);
                   }}
+                  // 导出进行中禁用移除：大图 toBlob 需数百毫秒，期间移除图片会
+                  // 造成「成功提示配空界面」的状态错位（下方 exportImage 另有代际防护）。
+                  disabled={isExporting}
                   aria-label="移除图片"
                   title="移除图片"
                 >

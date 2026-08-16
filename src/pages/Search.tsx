@@ -70,6 +70,12 @@ export const Search = () => {
     if (queryFromUrl !== searchQuery) {
       setSearchQuery(queryFromUrl);
     }
+    // URL 已追平最近编辑值：清空守卫，恢复 URL 驱动同步 —— 此前 ref 只写不重置，
+    // 用户编辑过一次后浏览器后退/前进（同 pathname）与粘贴带 ?q= 的链接都会被
+    // 永久短路，URL 与搜索 UI 失同步。
+    if (lastEditedQueryRef.current !== null && lastEditedQueryRef.current === queryFromUrl) {
+      lastEditedQueryRef.current = null;
+    }
   }, [queryFromUrl, searchQuery, setSearchQuery]);
 
   const handleSearchChange = (query: string) => {

@@ -134,6 +134,10 @@ export const Tags = () => {
     if (queryFromUrl !== searchQuery) {
       setSearchQuery(queryFromUrl);
     }
+    // URL 已追平最近编辑值：清空守卫，恢复 URL 驱动同步（后退/前进/粘贴链接）。
+    if (lastEditedQueryRef.current !== null && lastEditedQueryRef.current === queryFromUrl) {
+      lastEditedQueryRef.current = null;
+    }
   }, [queryFromUrl, searchQuery, setSearchQuery]);
 
   const tags = useMemo(() => buildTagList(results), [results]);

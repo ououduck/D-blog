@@ -140,6 +140,10 @@ export const ArchivePage = () => {
     if (queryFromUrl !== searchQuery) {
       setSearchQuery(queryFromUrl);
     }
+    // URL 已追平最近编辑值：清空守卫，恢复 URL 驱动同步（后退/前进/粘贴链接）。
+    if (lastEditedQueryRef.current !== null && lastEditedQueryRef.current === queryFromUrl) {
+      lastEditedQueryRef.current = null;
+    }
   }, [queryFromUrl, searchQuery, setSearchQuery]);
 
   // 仅初始化一次：SSR/水合首帧由 useState 惰性初始化展开最新年份；
