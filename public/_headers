@@ -42,12 +42,7 @@
 /assets/*.svg
   Cache-Control: public, max-age=31536000, immutable
 
-# Generated responsive images and original post images have stable URLs
-# (regenerated deterministically at build time), safe for long-lived caching.
-/generated-images/*
-  Cache-Control: public, max-age=31536000, immutable
-/posts-img/*
-  Cache-Control: public, max-age=31536000, immutable
+# 广告图（public/ads-img/，内容寻址外的人工管理资源）长期缓存。
 /ads-img/*
   Cache-Control: public, max-age=31536000, immutable
 

@@ -52,7 +52,7 @@ jobs:
         # 内部链接、本地图片引用是否有效）+ typecheck（tsc --noEmit）。
         run: npm run check
 
-  # ── 单元测试门禁：vitest 全量用例（349+），与类型检查并行，互不阻塞 ──
+  # ── 单元测试门禁：vitest 全量用例，与类型检查并行，互不阻塞 ──
   test:
     name: Unit tests
     runs-on: ubuntu-latest
