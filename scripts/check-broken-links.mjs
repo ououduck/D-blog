@@ -223,7 +223,12 @@ const main = async () => {
   const broken = []; // { url, status?, error? }
   let checkedCount = 0;
 
-  for (const url of urlsToCheck) {
+  /**
+   * 检查单个 URL（SSRF 防护 → fetchWithRetry），维护进度计数与礼貌间隔。
+   * 串行检查在链接多时（100+ × 最坏 25s）会远超 workflow 10 分钟上限，
+   * 用固定并发池 + 每请求 150ms 节流平衡速度与对目标站点的礼貌。
+   */
+  const checkOne = async (url) => {
     // SSRF 防护：文章外链经 Pages CMS / PR 可编辑，先确认目标是安全的公开地址
     //（协议/凭据检查 + DNS 解析后逐 IP 私网校验，fail-closed）；内网/回环/本地
     // 地址不发起请求，直接判为不可访问（这类链接对公网读者同样无效）。
@@ -231,25 +236,31 @@ const main = async () => {
     if (!isSafe) {
       broken.push({ url, error: 'blocked: 非公开 HTTP(S) 地址（SSRF 防护拦截）' });
       logger.warn('Blocked non-public URL', url);
-      checkedCount += 1;
-      if (checkedCount % 10 === 0) {
-        logger.info('Progress', `checked=${checkedCount}/${urlsToCheck.length} broken=${broken.length}`);
+    } else {
+      const result = await checkUrl(url);
+      if (!result.ok) {
+        broken.push({ url, ...result });
+        logger.warn('Broken link', `${url} (${result.status ? `HTTP ${result.status}` : result.error})`);
       }
-      await sleep(REQUEST_DELAY_MS);
-      continue;
     }
-
-    const result = await checkUrl(url);
     checkedCount += 1;
-    if (!result.ok) {
-      broken.push({ url, ...result });
-      logger.warn('Broken link', `${url} (${result.status ? `HTTP ${result.status}` : result.error})`);
-    }
     if (checkedCount % 10 === 0) {
       logger.info('Progress', `checked=${checkedCount}/${urlsToCheck.length} broken=${broken.length}`);
     }
     await sleep(REQUEST_DELAY_MS);
-  }
+  };
+
+  const CHECK_CONCURRENCY = 4;
+  let nextIndex = 0;
+  const workers = Array.from({ length: Math.min(CHECK_CONCURRENCY, urlsToCheck.length) }, async () => {
+    for (;;) {
+      const index = nextIndex;
+      nextIndex += 1;
+      if (index >= urlsToCheck.length) return;
+      await checkOne(urlsToCheck[index]);
+    }
+  });
+  await Promise.all(workers);
 
   const brokenLinks = broken.length;
   logger.info('Check complete', `checked=${urlsToCheck.length} broken=${brokenLinks}`);
