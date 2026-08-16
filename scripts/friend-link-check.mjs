@@ -33,6 +33,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { fetchWithRetry, sleep, computeBackoffDelay, RetryableHttpError } from './lib/http.mjs';
+import { parseEnvNumber } from './lib/env.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
 /* ------------------------------------------------------------------ */
@@ -43,13 +44,13 @@ import { createActionLogger, formatError, installGlobalErrorHandlers } from './l
 const FRIENDS_DIR = process.env.FRIEND_LINK_CHECK_DIR || 'friends';
 
 /** 单次请求超时（毫秒），覆盖 DNS+TLS+响应头全程。 */
-const CHECK_TIMEOUT_MS = Number(process.env.FRIEND_LINK_CHECK_TIMEOUT_MS) || 20000;
+const CHECK_TIMEOUT_MS = parseEnvNumber(process.env.FRIEND_LINK_CHECK_TIMEOUT_MS, 20000);
 
-/** 每个站点的额外重试次数（不含首次；总尝试 = retries + 1）。 */
-const CHECK_RETRIES = Number(process.env.FRIEND_LINK_CHECK_RETRIES) || 2;
+/** 每个站点的额外重试次数（不含首次；总尝试 = retries + 1）。显式 0 表示不重试。 */
+const CHECK_RETRIES = parseEnvNumber(process.env.FRIEND_LINK_CHECK_RETRIES, 2);
 
 /** 并发检查数：友链数量多时显著缩短总耗时。 */
-const CHECK_CONCURRENCY = Number(process.env.FRIEND_LINK_CHECK_CONCURRENCY) || 4;
+const CHECK_CONCURRENCY = parseEnvNumber(process.env.FRIEND_LINK_CHECK_CONCURRENCY, 4);
 
 /** dry-run：只输出检查报告，不写文件、不碰 git。 */
 const DRY_RUN = ['1', 'true', 'yes'].includes(String(process.env.FRIEND_LINK_CHECK_DRY_RUN || '').toLowerCase());
@@ -131,12 +132,20 @@ const checkUrlReachable = async (rawUrl) => {
 };
 
 /**
- * 检测 JSON 文件使用的缩进宽度（4 空格 / 2 空格），重写时保留原缩进，
+ * 检测 JSON 文件使用的缩进（4 空格 / 2 空格 / 制表符等），重写时保留原缩进，
  * 使每次执行只产生最小 diff（只增删 unavailable 行，不整文件重排）。
+ * 原实现只认 `^ {4}"`（4 空格）否则一律按 2 空格重写——制表符/其他缩进的
+ * 文件会被整文件重排成 2 空格，产生超大 diff。
  * @param {string} content
- * @returns {number}
+ * @returns {string | number} JSON.stringify 的缩进参数（数字空格数或 '\t'）
  */
-const detectIndent = (content) => (/^ {4}"/m.test(content) ? 4 : 2);
+const detectIndent = (content) => {
+  // 取第一个「行首空白 + 双引号键」的行，测其缩进单位。
+  const line = content.split(/\r?\n/).find((candidate) => /^\s+"/.test(candidate));
+  if (!line) return 2;
+  const whitespace = line.match(/^\s+/)?.[0] ?? '';
+  return whitespace.startsWith('\t') ? '\t' : whitespace.length;
+};
 
 /**
  * 带并发上限的 map（友链多时避免串行等待拖长 job）。

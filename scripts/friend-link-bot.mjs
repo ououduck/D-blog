@@ -65,6 +65,7 @@ import {
   GITHUB_API_VERSION,
 } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
+import { parseEnvNumber } from './lib/env.mjs';
 import { loadSiteConfig } from './site-config-loader.mjs';
 
 /* ------------------------------------------------------------------ */
@@ -73,8 +74,8 @@ import { loadSiteConfig } from './site-config-loader.mjs';
 
 const ISSUE_PREFIX = '[Friend Link]';
 
-/** 申请提交后等待的冷却时长：10 分钟（可环境变量覆盖，方便测试缩短）。 */
-const WAIT_MS = Number(process.env.FRIEND_LINK_WAIT_MS) || 10 * 60 * 1000;
+/** 申请提交后等待的冷却时长：10 分钟（可环境变量覆盖，显式 0 表示跳过冷却，方便测试）。 */
+const WAIT_MS = parseEnvNumber(process.env.FRIEND_LINK_WAIT_MS, 10 * 60 * 1000);
 
 /** review 模式原地等待冷却的封顶（毫秒）：低于 workflow timeout-minutes(15 分钟)，
  *  防止 FRIEND_LINK_WAIT_MS 被调大时 job 在等待期间被超时终止（白白占用队列）。 */

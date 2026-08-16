@@ -16,10 +16,12 @@
 
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parseEnvNumber } from './lib/env.mjs';
 
 /** 单阶段默认超时（毫秒）：20 分钟。 */
 const DEFAULT_STAGE_TIMEOUT_MS = 20 * 60 * 1000;
-const stageTimeoutMs = Number(process.env.BUILD_STAGE_TIMEOUT_MS) || DEFAULT_STAGE_TIMEOUT_MS;
+const stageTimeoutMs = parseEnvNumber(process.env.BUILD_STAGE_TIMEOUT_MS, DEFAULT_STAGE_TIMEOUT_MS);
 
 /**
  * 整条流水线的总预算（毫秒）：55 分钟。
@@ -30,7 +32,7 @@ const stageTimeoutMs = Number(process.env.BUILD_STAGE_TIMEOUT_MS) || DEFAULT_STA
  * 可通过环境变量 BUILD_TOTAL_TIMEOUT_MS 覆盖（本地调试用）。
  */
 const DEFAULT_TOTAL_TIMEOUT_MS = 55 * 60 * 1000;
-const totalTimeoutMs = Number(process.env.BUILD_TOTAL_TIMEOUT_MS) || DEFAULT_TOTAL_TIMEOUT_MS;
+const totalTimeoutMs = parseEnvNumber(process.env.BUILD_TOTAL_TIMEOUT_MS, DEFAULT_TOTAL_TIMEOUT_MS);
 
 const startedAt = Date.now();
 const verbose = process.env.BUILD_VERBOSE === '1' || process.argv.includes('--verbose');
@@ -49,7 +51,8 @@ const write = (status, message, detail = '') => {
   console.log(`[build] ${label} ${message}${detail ? ` ${detail}` : ''}`);
 };
 
-const viteCli = path.resolve('node_modules/vite/bin/vite.js');
+// 基于本模块位置解析（不受调用时 cwd 影响）：从任意目录执行 build.mjs 都能找到 vite。
+const viteCli = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../node_modules/vite/bin/vite.js');
 const stages = [
   { name: 'Generate site data', command: process.execPath, args: ['scripts/generate-site-data.mjs'] },
   { name: 'Generate social share card', command: process.execPath, args: ['scripts/generate-og-card.mjs'] },

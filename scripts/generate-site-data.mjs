@@ -744,7 +744,13 @@ const generateSitemap = () => {
   // 搜索引擎反复重新抓取，而内容未变时 lastmod 变化毫无信息量。
   const latestPostDate =
     posts.length > 0
-      ? new Date(Math.max(...posts.map((post) => new Date(post.updatedAt || post.date).getTime())))
+      ? // reduce 而非 Math.max(...spread)：帖子数千篇时展开参数列表有栈溢出风险。
+        new Date(
+          posts.reduce(
+            (latest, post) => Math.max(latest, new Date(post.updatedAt || post.date).getTime()),
+            Number.NEGATIVE_INFINITY,
+          ),
+        )
           .toISOString()
           .split('T')[0]
       : new Date().toISOString().split('T')[0];
@@ -1066,6 +1072,10 @@ ${body}`);
   logger.step('Generated llms-full.txt', `posts=${sections.length} size=${sizeKiB}KiB`);
 };
 
+// 产物文件数（generated/ 5 个 JSON + public/ 9 个生成文件），仅供 summary 日志展示；
+// 新增/移除产物时需同步调整。
+const OUTPUT_FILE_COUNT = 14;
+
 try {
   generateSitemap();
   generateRss();
@@ -1083,7 +1093,7 @@ if (process.exitCode) {
     posts: posts.length,
     friends: friends.length,
     shuoshuo: shuoshuo.length,
-    outputs: 7,
+    outputs: OUTPUT_FILE_COUNT,
     siteUrl: SITE_URL,
     status: 'failed',
   });
@@ -1092,7 +1102,7 @@ if (process.exitCode) {
     posts: posts.length,
     friends: friends.length,
     shuoshuo: shuoshuo.length,
-    outputs: 7,
+    outputs: OUTPUT_FILE_COUNT,
     siteUrl: SITE_URL,
   });
 }

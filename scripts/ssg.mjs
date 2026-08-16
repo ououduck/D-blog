@@ -8,6 +8,7 @@ import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { loadSiteConfig, getSiteBasePath, toAbsoluteUrl } from './site-config-loader.mjs';
 import { withBasePath } from './base-path.mjs';
+import { parseEnvNumber } from './lib/env.mjs';
 import { createBuildLogger } from './build-logger.mjs';
 import { loadPostsWithContent } from './ssg-data-loader.mjs';
 
@@ -57,7 +58,7 @@ const MAX_FLATTEN_ITERATIONS = 10000;
  * 此时 build.mjs 会 SIGKILL 整个阶段，failedPages 汇总永远打印不出来，排查线索丢失。
  * 本预算保证 SSG 阶段始终能在预算内结束并打印完整汇总（failed + skipped）。
  */
-const TOTAL_BUDGET_MS = Number(process.env.SSG_TOTAL_BUDGET_MS) || 10 * 60 * 1000;
+const TOTAL_BUDGET_MS = parseEnvNumber(process.env.SSG_TOTAL_BUDGET_MS, 10 * 60 * 1000);
 
 /**
  * framer-motion 等组件在 SSR 时会把 initial={{ opacity: 0 }} 写为内联样式。
