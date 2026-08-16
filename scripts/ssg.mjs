@@ -591,7 +591,7 @@ export const runSsg = async ({
   // 3. 首页。
   const homeHeroPost = (() => {
     const pinnedPosts = posts
-      .filter((post) => post.featured === true && post['featured-top'] !== undefined)
+      .filter((post) => post.featured === true && typeof post['featured-top'] === 'number')
       .sort((a, b) => a['featured-top'] - b['featured-top']);
     return pinnedPosts[0] || posts.find((post) => post.featured === true) || null;
   })();

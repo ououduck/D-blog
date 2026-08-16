@@ -8,9 +8,9 @@ type FeaturedPostFields = Pick<PostMetadata, 'featured' | 'featured-top'>;
 
 const isFeaturedPost = (post: Pick<PostMetadata, 'featured'>) => post.featured === true;
 
-/** 判断是否为置顶精选文章（featured 且带 featured-top 权重）。 */
+/** 判断是否为置顶精选文章（featured 且带数值型 featured-top 权重）。 */
 export const isPinnedFeaturedPost = (post: FeaturedPostFields) =>
-  isFeaturedPost(post) && post['featured-top'] !== undefined;
+  isFeaturedPost(post) && typeof post['featured-top'] === 'number';
 
 /**
  * 选取首页精选槽位的文章：显式置顶（featured-top）优先于普通 featured 标记，
