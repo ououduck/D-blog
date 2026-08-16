@@ -135,4 +135,34 @@ describe('SearchModal', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it('ArrowDown/ArrowUp 在结果间移动高亮', async () => {
+    await setupSearchHook({
+      results: [mockSearchResult({ id: 'a', title: '文章A' }), mockSearchResult({ id: 'b', title: '文章B' })],
+      hasQuery: true,
+    });
+    renderModal();
+    const input = screen.getByPlaceholderText(/搜索文章/);
+    const first = await screen.findByRole('option', { name: /打开文章：文章A/ });
+    const second = screen.getByRole('option', { name: /打开文章：文章B/ });
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(second).toHaveAttribute('aria-selected', 'true');
+    expect(first).toHaveAttribute('aria-selected', 'false');
+
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    expect(first).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('按 Enter 选中高亮结果并关闭弹窗', async () => {
+    await setupSearchHook({ results: [mockSearchResult()], hasQuery: true });
+    const onClose = vi.fn();
+    renderModal(true, onClose);
+    const input = screen.getByPlaceholderText(/搜索文章/);
+    await screen.findByRole('option', { name: /打开文章：搜索结果文章/ });
+
+    fireEvent.keyDown(input, { key: 'Enter' });
+    // 导航触发 + 弹窗关闭（handleSelect 直接调用 onClose，路径变化的 effect 可能再调一次）。
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
 });
