@@ -65,6 +65,7 @@ import {
   GITHUB_API_VERSION,
 } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
+import { loadSiteConfig } from './site-config-loader.mjs';
 
 /* ------------------------------------------------------------------ */
 /* 常量与可覆盖配置                                                     */
@@ -87,8 +88,16 @@ const INITIAL_MARKER = '<!-- d-blog-friend-bot:initial -->';
 const ACCEPTED_MARKER = '<!-- d-blog-friend-bot:accepted -->';
 const REJECTED_MARKER = '<!-- d-blog-friend-bot:rejected -->';
 
-/** 站点信息：反链检查目标。 */
-const SITE_URL = process.env.FRIEND_LINK_SITE_URL || 'https://blog.pldduck.com/';
+/** 站点信息：反链检查目标。从 site.config.json 读取，可 env 覆盖（移除硬编码）。 */
+const siteConfig = loadSiteConfig();
+const SITE_URL =
+  process.env.FRIEND_LINK_SITE_URL || `${String(siteConfig.url || '').replace(/\/+$/, '')}/`;
+
+/** 人工审核联系邮箱：从 site.config.json 的 social 读取，可 env 覆盖。 */
+const CONTACT_EMAIL =
+  process.env.FRIEND_LINK_CONTACT_EMAIL ||
+  siteConfig.social?.rawEmail ||
+  String(siteConfig.social?.email || '').replace(/^mailto:/, '');
 
 /** 缺省头像：申请缺 avatar 时用站点 logo 占位（可 env 覆盖）。 */
 const DEFAULT_AVATAR_URL = process.env.FRIEND_LINK_DEFAULT_AVATAR || new URL('logo.png', SITE_URL).toString();
@@ -593,9 +602,9 @@ const buildManualReviewSection = (issue) => {
   const subject = `D-blog 友链人工审核：${issue.title || `Issue #${issue.number}`}`;
   const body = issue.body?.trim() || '';
   const mailtoBody = sanitizeMailtoBody(body).slice(0, MAX_MAILTO_BODY_CHARS);
-  const mailto = `mailto:i@PLDDUCK.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(mailtoBody)}`;
+  const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(mailtoBody)}`;
 
-  return `### 人工审核\n\n部分框架会在浏览器运行 JavaScript 后才渲染友链，bot 可能无法从静态 HTML 中识别。若你已确认友链正常显示，可以发送邮件到 **i@PLDDUCK.com** 申请人工添加。\n\n[撰写人工审核邮件（已预填原 Issue 内容）](${mailto})\n\n邮件只需保留原 Issue 内容，无需重新整理资料。\n\n<details>\n<summary>查看并复制原 Issue 内容</summary>\n\n${markdownCodeBlock(body)}\n\n</details>`;
+  return `### 人工审核\n\n部分框架会在浏览器运行 JavaScript 后才渲染友链，bot 可能无法从静态 HTML 中识别。若你已确认友链正常显示，可以发送邮件到 **${CONTACT_EMAIL}** 申请人工添加。\n\n[撰写人工审核邮件（已预填原 Issue 内容）](${mailto})\n\n邮件只需保留原 Issue 内容，无需重新整理资料。\n\n<details>\n<summary>查看并复制原 Issue 内容</summary>\n\n${markdownCodeBlock(body)}\n\n</details>`;
 };
 
 /* ------------------------------------------------------------------ */

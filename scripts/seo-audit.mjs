@@ -10,6 +10,16 @@ import { loadSiteConfig } from './site-config-loader.mjs';
 
 const distDir = process.argv[2] ?? join(fileURLToPath(new URL('.', import.meta.url)), '..', 'dist');
 const SITE_URL = loadSiteConfig().url;
+// 站点 URL 精确比较：origin 相等才算站内（startsWith 前缀比较可被
+// blog.pldduck.com.evil.com 绕过，恶意域名会被误归为站内链接）。
+const SITE_ORIGIN = new URL(SITE_URL).origin;
+const isSameSiteUrl = (value) => {
+  try {
+    return new URL(value).origin === SITE_ORIGIN;
+  } catch {
+    return false;
+  }
+};
 
 // 与 audit-build.mjs 对齐：dist 缺失时给出指引而非裸 ENOENT 堆栈，
 // 便于本地单独运行 npm run audit:seo 时快速定位原因。
@@ -114,7 +124,7 @@ for (const file of files) {
   else {
     const href = canonicals[0].match(/href=["']([^"']+)["']/i)?.[1];
     if (!href) fail(relativePath, 'canonical', 'canonical href 为空');
-    else if (!href.startsWith(SITE_URL)) fail(relativePath, 'canonical', `canonical 非绝对站点 URL：${href}`);
+    else if (!isSameSiteUrl(href)) fail(relativePath, 'canonical', `canonical 非绝对站点 URL：${href}`);
   }
 
   // ---- RSS 自发现 ----
@@ -149,7 +159,7 @@ for (const file of files) {
   else if (!/^https?:\/\//i.test(ogProps.image))
     fail(relativePath, 'og', `og:image 非绝对 http(s) URL：${ogProps.image}`);
   if (!ogProps.url) fail(relativePath, 'og', '缺少 og:url');
-  else if (!ogProps.url.startsWith(SITE_URL)) fail(relativePath, 'og', `og:url 非站点 URL：${ogProps.url}`);
+  else if (!isSameSiteUrl(ogProps.url)) fail(relativePath, 'og', `og:url 非站点 URL：${ogProps.url}`);
   if (ogProps.type !== 'website' && ogProps.type !== 'article')
     warn(relativePath, 'og', `og:type 异常：${ogProps.type}`);
   if (!ogProps['image:width'] || !ogProps['image:height']) warn(relativePath, 'og', 'og:image 缺少尺寸声明');
@@ -228,7 +238,7 @@ for (const file of files) {
 
   // ---- 内部链接 ----
   const links = [...html.matchAll(/<a\b[^>]*href=["']([^"']+)["']/gi)].map((m) => m[1]);
-  const internalLinks = links.filter((href) => href.startsWith('/') || href.startsWith(SITE_URL));
+  const internalLinks = links.filter((href) => href.startsWith('/') || isSameSiteUrl(href));
   if (internalLinks.length === 0) warn(relativePath, 'links', '页面没有站内链接（内链对爬虫发现与权重传递重要）');
 }
 

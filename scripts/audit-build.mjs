@@ -132,13 +132,27 @@ if (localStylesheets.size === 0) {
   }
 }
 
-if (!entryHtml.includes('https://www.clarity.ms/tag/')) {
-  errors.push('entry HTML is missing the Clarity script URL');
+// 依赖第三方服务（Clarity/Busuanzi）的引用存在性检查：期望值从源模板
+// （index.html / public/_headers）推导 —— 从源码移除对应服务时审计自动放宽，
+// 无需再手动同步本文件的硬编码检查串（原实现在移除服务后构建会误红）。
+const sourceIndexHtml = fs.existsSync(path.resolve('index.html'))
+  ? fs.readFileSync(path.resolve('index.html'), 'utf8')
+  : '';
+const sourceHeadersFile = fs.existsSync(path.resolve('public/_headers'))
+  ? fs.readFileSync(path.resolve('public/_headers'), 'utf8')
+  : '';
+const sourceUsesClarity = sourceIndexHtml.includes('clarity.ms') || sourceHeadersFile.includes('clarity.ms');
+const sourceUsesBusuanzi = sourceIndexHtml.includes('busuanzi.cc') || sourceHeadersFile.includes('busuanzi.cc');
+
+if (sourceUsesClarity) {
+  if (!entryHtml.includes('https://www.clarity.ms/tag/')) {
+    errors.push('entry HTML is missing the Clarity script URL');
+  }
+  if (!entryHtml.includes("c.addEventListener('load', inject")) {
+    errors.push('entry HTML does not attach delayed Clarity injection to window.load');
+  }
 }
-if (!entryHtml.includes("c.addEventListener('load', inject")) {
-  errors.push('entry HTML does not attach delayed Clarity injection to window.load');
-}
-if (!entryHtml.includes('https://cdn.busuanzi.cc')) {
+if (sourceUsesBusuanzi && !entryHtml.includes('https://cdn.busuanzi.cc')) {
   errors.push('entry HTML is missing the Busuanzi API preconnect');
 }
 
@@ -147,14 +161,16 @@ if (!fs.existsSync(headersPath)) {
   errors.push('build output is missing the security headers file');
 } else {
   const headers = fs.readFileSync(headersPath, 'utf8');
-  if (!headers.includes('https://www.clarity.ms') || !headers.includes('https://scripts.clarity.ms')) {
+  if (
+    sourceUsesClarity &&
+    (!headers.includes('https://www.clarity.ms') || !headers.includes('https://scripts.clarity.ms'))
+  ) {
     errors.push('CSP script-src is missing a required Clarity origin');
   }
-  if (!headers.includes("connect-src 'self' https://cdn.busuanzi.cc")) {
+  if (sourceUsesBusuanzi && !headers.includes("connect-src 'self' https://cdn.busuanzi.cc")) {
     errors.push('CSP connect-src is missing the Busuanzi API origin');
   }
 }
-
 const assetsDir = path.join(DIST_DIR, 'assets');
 let initialScriptBytes = 0;
 let initialStyleBytes = 0;

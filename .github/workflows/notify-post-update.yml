@@ -111,6 +111,16 @@ jobs:
             }
             core.info(`Changed post files: ${changedFiles.join(', ') || 'none'}`);
 
+            // 站点 URL 从 config/site.config.json 读取（本 workflow 已 checkout 仓库），
+            // 可用 BLOG_SITE_URL 环境变量覆盖 —— 不再硬编码博客域名。
+            let siteConfig = {};
+            try {
+              siteConfig = JSON.parse(fs.readFileSync('config/site.config.json', 'utf8'));
+            } catch (error) {
+              core.warning(`Failed to read config/site.config.json (${error.message}); falling back to env.`);
+            }
+            const SITE_URL = (process.env.BLOG_SITE_URL || siteConfig.url || 'https://blog.pldduck.com').replace(/\/+$/, '');
+
             const posts = changedFiles.flatMap((file) => {
               if (!fs.existsSync(file)) {
                 core.warning(`Skipping ${file}: file does not exist in this workflow checkout.`);
@@ -141,7 +151,7 @@ jobs:
                 title: frontmatter.title || frontmatter.id,
                 excerpt: frontmatter.excerpt,
                 date: frontmatter.date,
-                url: `https://blog.pldduck.com/post/${encodeURIComponent(frontmatter.id)}`,
+                url: `${SITE_URL}/post/${encodeURIComponent(frontmatter.id)}`,
               }];
             });
 

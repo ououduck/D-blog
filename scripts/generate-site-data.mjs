@@ -539,6 +539,10 @@ const buildPost = (record) => {
 };
 
 postRecords.forEach((record) => {
+  // 草稿不参与内容级严格校验（图片 alt/本地图片文件/coverImage/站内链接与路由
+  // 目标）——未完成的草稿不应阻断构建；ID 唯一性（findDuplicatePostIds）与
+  // frontmatter 字段校验仍在 map 阶段保留（与系列重复 order 的跳过口径一致）。
+  if (record.draft) return;
   validationErrors.push(
     ...validatePostContent(record, {
       filename: record.filename,
