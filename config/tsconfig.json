@@ -22,7 +22,10 @@
     "esModuleInterop": true,
     "noEmit": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    // 低摩擦严格项（不在 strict 集合内）：switch 分支不落穿、override 显式声明。
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true
   },
   "include": ["../src", "../config/**/*.ts", "../vite.config.ts", "../vite.ssr.config.ts", "../vitest.config.ts"]
 }
