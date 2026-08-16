@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { computeBackoffDelay, createTimeoutSignal, sanitizeUrlForLogs } from './http.mjs';
+import { computeBackoffDelay, createTimeoutSignal, sanitizeUrlForLogs, isPrivateAddress } from './http.mjs';
 
 describe('computeBackoffDelay', () => {
   it('第 1 次重试延迟在 [0, base×2) 内', () => {
@@ -73,5 +73,37 @@ describe('sanitizeUrlForLogs', () => {
     expect(sanitizeUrlForLogs('https://api.github.com/repos/owner/repo/issues')).toBe(
       'https://api.github.com/repos/owner/repo/issues',
     );
+  });
+});
+
+describe('isPrivateAddress', () => {
+  it('识别常见私网段', () => {
+    expect(isPrivateAddress('127.0.0.1')).toBe(true);
+    expect(isPrivateAddress('10.1.2.3')).toBe(true);
+    expect(isPrivateAddress('192.168.1.1')).toBe(true);
+    expect(isPrivateAddress('172.16.0.1')).toBe(true);
+    expect(isPrivateAddress('169.254.169.254')).toBe(true);
+  });
+
+  it('放行公网地址', () => {
+    expect(isPrivateAddress('8.8.8.8')).toBe(false);
+    expect(isPrivateAddress('1.1.1.1')).toBe(false);
+  });
+
+  it('IPv4-mapped IPv6 私网地址解包后判定（::ffff:127.0.0.1）', () => {
+    expect(isPrivateAddress('::ffff:127.0.0.1')).toBe(true);
+    expect(isPrivateAddress('::ffff:8.8.8.8')).toBe(false);
+  });
+
+  it('IPv6 私网/回环识别', () => {
+    expect(isPrivateAddress('::1')).toBe(true);
+    expect(isPrivateAddress('fe80::1')).toBe(true);
+    expect(isPrivateAddress('fc00::1')).toBe(true);
+  });
+
+  it('畸形地址 fail-closed 判定为私网', () => {
+    expect(isPrivateAddress('999.999.999.999')).toBe(true);
+    expect(isPrivateAddress('not-an-ip')).toBe(true);
+    expect(isPrivateAddress('')).toBe(true);
   });
 });

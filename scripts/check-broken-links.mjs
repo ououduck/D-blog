@@ -24,6 +24,7 @@ import matter from 'gray-matter';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { maskFencedCodeBlocks } from '../src/utils/headings-core.mjs';
 import { sendTelegramMessage } from './lib/telegram.mjs';
+import { fetchWithRetry, RetryableHttpError, isSafePublicHttpUrl } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
 const logger = createActionLogger('link-check');
@@ -35,6 +36,8 @@ const POSTS_DIR = path.join(ROOT_DIR, 'posts');
 
 /** 单次请求超时（毫秒）：覆盖 DNS+TLS+响应头全程。 */
 const REQUEST_TIMEOUT_MS = 12000;
+/** 瞬时抖动/5xx 的重试次数（不含首次）；重试耗尽仍失败才判为死链。 */
+const REQUEST_RETRIES = 1;
 /** 相邻请求间隔（毫秒）：对外部站点保持礼貌，避免被封。 */
 const REQUEST_DELAY_MS = 150;
 
@@ -127,32 +130,41 @@ export const extractExternalLinks = (content) => {
 /**
  * 检查单个 URL 的可达性。
  * 返回 { ok: boolean, status?: number, error?: string }。
+ * 复用 fetchWithRetry：网络瞬时抖动（DNS/连接/5xx）自动退避重试，
+ * 单次超时不再是「一次抖动即判失效」的误报来源。
  */
 const checkUrl = async (url) => {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      redirect: 'follow',
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'D-blog-LinkChecker/1.0',
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    const response = await fetchWithRetry(
+      url,
+      {
+        method: 'GET',
+        redirect: 'follow',
+        headers: {
+          'User-Agent': 'D-blog-LinkChecker/1.0',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
       },
-    });
+      {
+        timeoutMs: REQUEST_TIMEOUT_MS,
+        retries: REQUEST_RETRIES,
+      },
+    );
     // 释放响应体（不下载页面内容），仅保留状态。
     await response.body?.cancel().catch(() => {});
     const ok = response.ok || (response.status >= 300 && response.status < 400);
     return ok ? { ok: true, status: response.status } : { ok: false, status: response.status };
   } catch (error) {
-    const aborted = error instanceof DOMException && error.name === 'AbortError';
+    // fetchWithRetry 重试耗尽后抛 RetryableHttpError（含最终状态/网络错误信息）。
     return {
       ok: false,
-      error: aborted ? 'timeout' : error instanceof Error ? error.message : String(error),
+      error:
+        error instanceof RetryableHttpError
+          ? `${error.status ? `HTTP ${error.status}` : 'network'} (${error.attempts} 次尝试)`
+          : error instanceof Error
+            ? error.message
+            : String(error),
     };
-  } finally {
-    clearTimeout(timer);
   }
 };
 
@@ -212,6 +224,21 @@ const main = async () => {
   let checkedCount = 0;
 
   for (const url of urlsToCheck) {
+    // SSRF 防护：文章外链经 Pages CMS / PR 可编辑，先确认目标是安全的公开地址
+    //（协议/凭据检查 + DNS 解析后逐 IP 私网校验，fail-closed）；内网/回环/本地
+    // 地址不发起请求，直接判为不可访问（这类链接对公网读者同样无效）。
+    const isSafe = await isSafePublicHttpUrl(url);
+    if (!isSafe) {
+      broken.push({ url, error: 'blocked: 非公开 HTTP(S) 地址（SSRF 防护拦截）' });
+      logger.warn('Blocked non-public URL', url);
+      checkedCount += 1;
+      if (checkedCount % 10 === 0) {
+        logger.info('Progress', `checked=${checkedCount}/${urlsToCheck.length} broken=${broken.length}`);
+      }
+      await sleep(REQUEST_DELAY_MS);
+      continue;
+    }
+
     const result = await checkUrl(url);
     checkedCount += 1;
     if (!result.ok) {

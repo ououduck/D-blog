@@ -22,6 +22,7 @@
  */
 
 import dns from 'node:dns/promises';
+import net from 'node:net';
 
 /* ------------------------------------------------------------------ */
 /* 常量与错误分类                                                       */
@@ -131,6 +132,130 @@ export const sanitizeUrlForLogs = (url) =>
     .replace(/\/\/[^/@\s]+@/, '//***@') // userinfo：https://user:pass@host → https://***@host
     .replace(/\/bot[^/\s]+/, '/bot***') // Telegram：/bot123456:ABC…/ → /bot***/
     .replace(/\/\/[a-z0-9_-]+\.rest\.akismet\.com/, '//***.rest.akismet.com'); // Akismet key 子域
+
+/* ------------------------------------------------------------------ */
+/* SSRF 防护（由 friend-link-bot 下沉共享，checker 类脚本复用）          */
+/* ------------------------------------------------------------------ */
+
+/** 私网地址判定（SSRF 防护）。使用 net.BlockList 按子网前缀匹配，覆盖：
+ *  - IPv4：0/8、10/8、127/8、169.254/16、172.16/12、192.168/16；
+ *  - IPv6：::1 回环、:: 未指定、fc00::/7（ULA）、fe80::/10（链路本地）。
+ *  IPv4-mapped/兼容 IPv6（如 ::ffff:127.0.0.1、::ffff:7f00:1、::127.0.0.1）
+ *  先解包成 IPv4 再走 IPv4 判定 —— 字符串前缀匹配会漏判这类地址，
+ *  攻击者可借 [::ffff:127.0.0.1] 之类的字面地址打到本机回环/内网。 */
+const privateIpv4BlockList = new net.BlockList();
+[
+  ['0.0.0.0', 8],
+  ['10.0.0.0', 8],
+  ['127.0.0.0', 8],
+  ['169.254.0.0', 16],
+  ['172.16.0.0', 12],
+  ['192.168.0.0', 16],
+  // RFC 2544 基准测试段：不应出现在公网，且是代理 TUN 的常见伪 DNS 段。
+  ['198.18.0.0', 15],
+].forEach(([subnet, prefix]) => privateIpv4BlockList.addSubnet(subnet, prefix, 'ipv4'));
+
+const privateIpv6BlockList = new net.BlockList();
+[
+  ['::', 128],
+  ['::1', 128],
+  ['fc00::', 7],
+  ['fe80::', 10],
+].forEach(([subnet, prefix]) => privateIpv6BlockList.addSubnet(subnet, prefix, 'ipv6'));
+
+/** 代理 TUN（Clash/Surge 等）伪 DNS 特征段：198.18.0.0/15 与 fc00::/7 内自定义段。
+ *  本地开发机开启代理时，所有域名都会被解析到这些段 —— 与真实私网目标无法区分，
+ *  此时跳过 IP 级私网判定（字面地址/localhost 检查仍生效），交由请求结果判断。 */
+const proxyArtifactBlockList = new net.BlockList();
+proxyArtifactBlockList.addSubnet('198.18.0.0', 15, 'ipv4');
+proxyArtifactBlockList.addSubnet('fc00::', 7, 'ipv6');
+
+const isProxyArtifactAddress = (value) => {
+  const address = String(value).toLowerCase();
+  if (address.includes(':')) {
+    const mappedIpv4 = unmapIpv4InIpv6(address);
+    if (mappedIpv4) return proxyArtifactBlockList.check(mappedIpv4, 'ipv4');
+    if (net.isIP(address) !== 6) return false;
+    return proxyArtifactBlockList.check(address, 'ipv6');
+  }
+  if (net.isIP(address) !== 4) return false;
+  return proxyArtifactBlockList.check(address, 'ipv4');
+};
+
+/** 把 IPv4-mapped/兼容的 IPv6 地址解包为点分 IPv4；非此类形式返回 undefined。 */
+const unmapIpv4InIpv6 = (value) => {
+  const toIpv4 = (high, low) => {
+    const words = (Number.parseInt(high, 16) << 16) | Number.parseInt(low, 16);
+    return [(words >>> 24) & 0xff, (words >>> 16) & 0xff, (words >>> 8) & 0xff, words & 0xff].join('.');
+  };
+  const mappedDotted = value.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+  if (mappedDotted) return mappedDotted[1];
+  const mappedHex = value.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (mappedHex) return toIpv4(mappedHex[1], mappedHex[2]);
+  const compatibleDotted = value.match(/^::(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+  if (compatibleDotted) return compatibleDotted[1];
+  const compatibleHex = value.match(/^::([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (compatibleHex) return toIpv4(compatibleHex[1], compatibleHex[2]);
+  return undefined;
+};
+
+/** 判定单个 IP 地址是否属于私网/保留段（畸形输入 fail-closed 视为私网）。 */
+export const isPrivateAddress = (address) => {
+  const value = String(address).toLowerCase();
+  try {
+    if (value.includes(':')) {
+      const mappedIpv4 = unmapIpv4InIpv6(value);
+      if (mappedIpv4) {
+        // 解包出的八位组来自正则（\d{1,3}），可能为 999 这类非法值；BlockList
+        // 对畸形输入不抛错而是返回 false，需先校验再查询（fail-closed）。
+        if (net.isIP(mappedIpv4) !== 4) return true;
+        return privateIpv4BlockList.check(mappedIpv4, 'ipv4');
+      }
+      // net.BlockList 对畸形 IPv6 同样不抛错而是返回 false，需先按 net.isIP 校验。
+      if (net.isIP(value) !== 6) return true;
+      return privateIpv6BlockList.check(value, 'ipv6');
+    }
+    // 畸形 IPv4（net.BlockList 不会抛错而是返回 false）无法确认非私网 → fail-closed。
+    if (net.isIP(value) !== 4) return true;
+    return privateIpv4BlockList.check(value, 'ipv4');
+  } catch {
+    // 畸形地址 fail-closed：无法确认非私网即视为私网。
+    return true;
+  }
+};
+
+/**
+ * 校验 URL 是否为"安全的公开 HTTP(S) 地址"：
+ * 协议/主机名/凭据检查 + DNS 解析后逐 IP 校验非私网。
+ * 任何一步异常均返回 false（fail-closed，绝不误放行内网目标）。
+ * 供对用户可控 URL（文章外链、友链地址等）发起请求的脚本在请求前调用。
+ * @param {string} value
+ * @returns {Promise<boolean>}
+ */
+export const isSafePublicHttpUrl = async (value) => {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password) {
+    return false;
+  }
+  if (url.hostname === 'localhost' || url.hostname.endsWith('.localhost')) {
+    return false;
+  }
+  // 带超时的 DNS 解析：返回 []（超时/失败）时 fail-closed 判定为不安全。
+  const addresses = await lookupWithTimeout(url.hostname);
+  if (addresses.length === 0) return false;
+  // 全部解析结果都是代理伪 DNS 段（本地开发机 Clash 等 TUN 的常见形态）：
+  // 无法据此区分真实域名与内网目标，跳过 IP 级判定（字面地址/localhost 检查
+  // 仍生效），避免本地运行把全部公网域名误拦。
+  if (addresses.every(({ address }) => isProxyArtifactAddress(address))) {
+    return true;
+  }
+  return addresses.every(({ address }) => !isPrivateAddress(address));
+};
 
 /**
  * 分页超限错误：strictPagination 模式下达到 maxPages 仍有下一页（数据被截断）。
