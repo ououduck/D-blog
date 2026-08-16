@@ -23,10 +23,7 @@ import * as shuoshuoService from '@/services/shuoshuo';
 
 const renderShuoShuo = (initialEntry = '/shuoshuo') =>
   render(
-    <MemoryRouter
-      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      initialEntries={[initialEntry]}
-    >
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/shuoshuo" element={<ShuoShuo />} />
       </Routes>
@@ -66,7 +63,7 @@ describe('ShuoShuo', () => {
     renderShuoShuo();
     const input = screen.getByLabelText('搜索说说内容');
 
-    await user.type(input, 'React');     // 大小写不敏感匹配 "React"（正文中的粗体标记已被剥离）。
+    await user.type(input, 'React'); // 大小写不敏感匹配 "React"（正文中的粗体标记已被剥离）。
     expect(screen.getByTestId('shuoshuo-one')).toBeInTheDocument();
     expect(screen.queryByTestId('shuoshuo-two')).not.toBeInTheDocument();
   });
@@ -76,14 +73,11 @@ describe('ShuoShuo', () => {
     renderShuoShuo();
     const input = screen.getByLabelText('搜索说说内容');
 
-    await user.type(input, 'Vite'); await new Promise(r => setTimeout(r, 50));
+    await user.type(input, 'Vite');
+    await new Promise((r) => setTimeout(r, 50));
     expect(screen.queryByTestId('shuoshuo-one')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '清除搜索' }));
     expect(screen.getByTestId('shuoshuo-one')).toBeInTheDocument();
     expect(screen.getByTestId('shuoshuo-two')).toBeInTheDocument();
   });
 });
-
-
-
-
