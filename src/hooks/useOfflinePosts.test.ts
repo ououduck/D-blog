@@ -14,7 +14,19 @@ vi.mock('@/services/offlinePosts', () => ({
 const mocked = vi.mocked(offlinePostsService);
 
 const makePost = (id: string) =>
-  ({ id, title: id, excerpt: '', date: '2026-01-01', category: '技术', filePath: `/posts/${id}.md`, readTime: '1分钟', tags: [], savedAt: 1, schema: 'd-blog-offline-post', version: 1 }) as const;
+  ({
+    id,
+    title: id,
+    excerpt: '',
+    date: '2026-01-01',
+    category: '技术',
+    filePath: `/posts/${id}.md`,
+    readTime: '1分钟',
+    tags: [],
+    savedAt: 1,
+    schema: 'd-blog-offline-post',
+    version: 1,
+  }) as const;
 
 describe('useOfflinePosts', () => {
   beforeEach(() => {

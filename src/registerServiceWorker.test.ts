@@ -24,16 +24,17 @@ const makeServiceWorker = (state: string) => {
   } as unknown as ServiceWorker & { _setState: (s: string) => void };
 };
 
-const makeRegistration = (worker: ServiceWorker) => ({
-  active: worker,
-  waiting: null,
-  installing: worker,
-  scope: '/',
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  update: vi.fn(),
-  unregister: vi.fn(),
-} as unknown as ServiceWorkerRegistration);
+const makeRegistration = (worker: ServiceWorker) =>
+  ({
+    active: worker,
+    waiting: null,
+    installing: worker,
+    scope: '/',
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    update: vi.fn(),
+    unregister: vi.fn(),
+  }) as unknown as ServiceWorkerRegistration;
 
 const mockNavigatorServiceWorker = (overrides: Record<string, unknown> = {}) => {
   const base = {
@@ -101,7 +102,10 @@ describe('registerServiceWorker', () => {
   it('有 controller 时新 worker 安装完成视为 update-available', async () => {
     const worker = makeServiceWorker('installing');
     const registration = makeRegistration(worker);
-    mockNavigatorServiceWorker({ controller: makeServiceWorker('activated'), register: vi.fn().mockResolvedValue(registration) });
+    mockNavigatorServiceWorker({
+      controller: makeServiceWorker('activated'),
+      register: vi.fn().mockResolvedValue(registration),
+    });
 
     const { registerServiceWorker, getServiceWorkerState } = await loadModule();
     registerServiceWorker();
@@ -135,7 +139,6 @@ describe('registerServiceWorker', () => {
   });
 
   it('applyServiceWorkerUpdate 对 waiting worker 发送 SKIP_WAITING', async () => {
-    const worker = makeServiceWorker('installed');
     const waitingWorker = makeServiceWorker('installed');
     const registration = {
       waiting: waitingWorker,
