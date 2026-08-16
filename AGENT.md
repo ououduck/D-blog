@@ -24,10 +24,12 @@
 4. **竞态防护**：异步操作（加载、导出、复制、搜索）必须处理竞态（generation/requestId/cancelled/mountedRef 等既有模式），卸载后不 setState。
 5. **资源清理**：事件监听器、定时器、IntersectionObserver/ResizeObserver、订阅必须成对清理。
 6. **无障碍**：交互元素有可访问名称；弹层有焦点管理；动态内容有 aria-live 或等效播报；不嵌套 `<main>`。
-7. **日志安全**：日志不得输出密钥（Telegram token、Akismet key 等）；对用户可控文本做净化，防 Actions 命令注入。
-8. **安全**：对用户可控 URL 发起请求前必须做 SSRF 防护（复用 `scripts/lib/http.mjs` 的 `isSafePublicHttpUrl`）。
+7. **日志安全**：日志不得输出密钥（Telegram token、Akismet key 等）；对用户可控文本做净化，防 Actions 命令注入；输出用户可控 URL 前必须脱敏（`sanitizeUrlForLogs`，URL 可能含 userinfo 凭据）。
+8. **安全**：对用户可控 URL 发起请求前必须做 SSRF 防护（复用 `scripts/lib/http.mjs` 的 `isSafePublicHttpUrl`）；**重定向必须手动逐跳跟随并重新校验**（`redirect: 'manual'`，公开站点可 302 到内网/回环地址形成跳转绕过），重定向超限判失败（防环）。
 9. **性能**：渲染期避免重复计算（useMemo/缓存）；事件高频路径（pointermove/scroll）用 rAF 节流；大列表用稳定 key。
 10. **测试**：修复 bug 必须补回归测试；新增逻辑补充单测；测试断言必须有真实行为验证（不得恒真）。
+11. **入口守卫**：Node 脚本（scripts/*.mjs）的 main() 只在作为主模块直接运行时执行（`import.meta.url === pathToFileURL(process.argv[1]).href` 判定），被 import 时不得触发网络/写文件副作用。
+12. **HTML 结构合法**：交互元素遵循内容模型（`<button>` 内不嵌套标题等 flow content；`<ol>` 直接子元素只允许 `<li>`）；弹层关闭态必须移出可访问性树（`visibility: hidden` 或条件渲染，不能只靠 opacity/pointer-events）。
 
 ## 四、目录约定
 
