@@ -12,7 +12,7 @@ import { assetUrl } from '@/utils/siteUrl';
 import { preloadPage } from '@/utils/preload';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
-import { useSpotlight } from '@/components/effects/useSpotlight';
+import { useSpotlight } from '@/hooks/useSpotlight';
 import { SpotlightLayer } from '@/components/effects/SpotlightLayer';
 import { easeOut, easeSmooth } from '@/utils/motion';
 import { isPinnedFeaturedPost } from '@/utils/postSelection';

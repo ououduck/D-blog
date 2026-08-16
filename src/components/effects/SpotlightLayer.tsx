@@ -4,7 +4,7 @@
  * 元素的第一个子节点位置，位于内容之下。
  */
 import React from 'react';
-import type { SpotlightLayerStyle } from './useSpotlight';
+import type { SpotlightLayerStyle } from '../../hooks/useSpotlight';
 
 export const SpotlightLayer: React.FC<{ style: SpotlightLayerStyle }> = ({ style }) => (
   <div

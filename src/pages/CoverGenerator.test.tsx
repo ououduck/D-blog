@@ -9,7 +9,7 @@ vi.mock('@/services/busuanzi', () => ({
   pingBusuanzi: vi.fn(),
   fillBusuanziSpans: vi.fn(),
 }));
-vi.mock('@/components/effects/useSpotlight', () => ({
+vi.mock('@/hooks/useSpotlight', () => ({
   useSpotlight: () => ({
     bind: {},
     layerStyle: {},
