@@ -45,7 +45,7 @@
 
 | 领域 | 选型 |
 | --- | --- |
-| 前端框架 | React 19 + React Router 6 |
+| 前端框架 | React 19 + React Router 7 |
 | 构建工具 | Vite 6（客户端 + SSR 双构建） |
 | 样式 | Tailwind CSS + PostCSS |
 | 动画 | Framer Motion + CSS View Transitions API |
@@ -80,7 +80,6 @@ D-blog/
 └── src/
     ├── components/          # Layout、PostCard、Seo、TableOfContents、SearchModal、ImageViewer 等
     ├── pages/               # 页面组件（懒加载）；cover/、watermark/、archive/、friends/ 为模块集
-    ├── config/              # 封面生成器配置：coverTemplates / coverPresets
     ├── services/            # posts / friends / shuoshuo / offlinePosts / readingHistory 等
     ├── hooks/ utils/        # 自定义 Hook 与工具函数（日期、排序、站点 URL、标题解析等）
     │                        # utils 下 *.mjs 为客户端与构建脚本共享的纯逻辑（frontmatter 剥离、标题提取）
