@@ -23,10 +23,7 @@ export const setSearchQueryParams = (
 };
 
 /** 清除搜索（删除 q 与传入的衍生参数）。 */
-export const clearSearchQueryParams = (
-  previous: URLSearchParams,
-  paramsToDelete: string[] = [],
-): URLSearchParams => {
+export const clearSearchQueryParams = (previous: URLSearchParams, paramsToDelete: string[] = []): URLSearchParams => {
   const nextParams = new URLSearchParams(previous);
   nextParams.delete('q');
   paramsToDelete.forEach((key) => nextParams.delete(key));

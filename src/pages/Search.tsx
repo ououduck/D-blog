@@ -75,10 +75,7 @@ export const Search = () => {
   const handleSearchChange = (query: string) => {
     lastEditedQueryRef.current = query;
     handleSearch(query);
-    setSearchParams(
-      (previous) => setSearchQueryParams(previous, query),
-      { replace: true },
-    );
+    setSearchParams((previous) => setSearchQueryParams(previous, query), { replace: true });
   };
 
   const handleClearSearch = () => {
