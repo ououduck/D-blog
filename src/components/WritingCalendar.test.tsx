@@ -36,4 +36,14 @@ describe('WritingCalendar', () => {
     expect(screen.getByText('少')).toBeInTheDocument();
     expect(screen.getByText('多')).toBeInTheDocument();
   });
+
+  it('aria 汇总只统计窗口（最近 53 周）内的发布，窗口外旧文章不计入', () => {
+    // 最新发布 2026-12-31，窗口起点约为 2025-12-30：
+    // 2024-01-01（窗口外）不应计入「最近一年」汇总。
+    const dates = ['2024-01-01', '2026-06-01', '2026-12-31'];
+    render(<WritingCalendar dates={dates} />);
+    const grid = screen.getByRole('img', { name: /写作日历/ });
+    expect(grid).toHaveAccessibleName(/共 2 篇发布/);
+    expect(grid).toHaveAccessibleName(/2 个活跃日期/);
+  });
 });

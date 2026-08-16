@@ -71,8 +71,8 @@ export const WritingCalendar: React.FC<WritingCalendarProps> = ({ dates, classNa
       if (!latest || date > latest) latest = date;
     }
 
-    const totalPosts = Array.from(counts.values()).reduce((sum, count) => sum + count, 0);
-    if (totalPosts === 0) {
+    const allPostsTotal = Array.from(counts.values()).reduce((sum, count) => sum + count, 0);
+    if (allPostsTotal === 0) {
       return { cells: [], totalPosts: 0, activeDays: 0, monthLabels: [] };
     }
 
@@ -86,7 +86,12 @@ export const WritingCalendar: React.FC<WritingCalendarProps> = ({ dates, classNa
     alignedStart.setDate(startDate.getDate() - ((startDate.getDay() + 6) % 7));
 
     const allCells: CalendarCell[] = [];
-    const activeDays = counts.size;
+    // 只统计窗口（网格实际展示的 53 周）内的发布数与活跃日期数：
+    // counts 覆盖全部历史日期，站点运行超过一年后若直接取其 size/sum，
+    // aria-label「最近一年共 X 篇发布，覆盖 Y 个活跃日期」会被窗口外的
+    // 旧文章灌大，与网格实际内容不一致。
+    let windowPosts = 0;
+    let windowActiveDays = 0;
     const monthLabels: Array<{ weekIndex: number; label: string }> = [];
 
     const cursor = new Date(alignedStart);
@@ -105,6 +110,10 @@ export const WritingCalendar: React.FC<WritingCalendarProps> = ({ dates, classNa
         const key = toDayKey(cellDate);
         const count = counts.get(key) ?? 0;
         const inWindow = cellDate >= startDate && cellDate <= endDate;
+        if (inWindow && count > 0) {
+          windowPosts += count;
+          windowActiveDays += 1;
+        }
         allCells.push({
           date: cellDate,
           count,
@@ -116,7 +125,7 @@ export const WritingCalendar: React.FC<WritingCalendarProps> = ({ dates, classNa
     }
 
     // 对齐后的第一列固定为周一，星期标签（一/三/五）在行内位置恒定。
-    return { cells: allCells, totalPosts, activeDays, monthLabels };
+    return { cells: allCells, totalPosts: windowPosts, activeDays: windowActiveDays, monthLabels };
   }, [dates]);
 
   if (cells.length === 0) {
