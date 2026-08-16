@@ -48,15 +48,7 @@ const PostCardTags: React.FC<{ tags: string[] }> = ({ tags }) =>
     </div>
   ) : null;
 
-export const PostCard: React.FC<PostCardProps> = ({
-  post,
-  index,
-  featured,
-  onShare,
-  isSaved,
-  isSaving,
-  onToggleSave,
-}) => {
+const PostCardImpl: React.FC<PostCardProps> = ({ post, index, featured, onShare, isSaved, isSaving, onToggleSave }) => {
   const shouldReduceMotion = useReducedMotion();
   // react-bits SpotlightCard 启发：光标在卡片内移动时跟随柔光，触屏/减弱动效下自动禁用。
   const spotlight = useSpotlight<HTMLDivElement>({ activeOpacity: 0.5 });
@@ -283,3 +275,8 @@ export const PostCard: React.FC<PostCardProps> = ({
     </motion.article>
   );
 };
+
+// memo：Home 列表任一张卡片收藏切换会触发全部卡片重渲染，props 均为原始值或
+// 稳定引用（post 引用不变、onShare=setState、onToggleSave=useCallback），
+// 浅比较可跳过未受影响卡片。
+export const PostCard = React.memo(PostCardImpl);

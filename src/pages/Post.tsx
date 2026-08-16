@@ -354,7 +354,6 @@ const PreBlock = ({
   const [copied, setCopied] = useState(false);
   const [copiedLine, setCopiedLine] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [needsExpand, setNeedsExpand] = useState(false);
   const [isWrapped, setIsWrapped] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
   const lang = extractLangFromChildren(children);
@@ -364,6 +363,9 @@ const PreBlock = ({
   );
   const code = getCodeText(children);
   const lineCount = Math.max(1, code ? code.split('\n').length : 1);
+  // 惰性初始化折叠态：超大代码块首帧即折叠，只渲染 MAX_CODE_LINES 行号；
+  // 此前初始 false 会让首帧为上千行生成上千个行号 span，再在 effect 里折叠。
+  const [needsExpand, setNeedsExpand] = useState(() => lineCount > MAX_CODE_LINES);
   const lineNumbers = Array.from({ length: lineCount }, (_, index) => index + 1);
   // 折叠状态下只渲染可见范围内的行号（MAX_CODE_LINES 行）：超大代码块首屏
   // 无需为上千行生成上千个行号 span，展开时才渲染全部，减少 DOM 节点数。

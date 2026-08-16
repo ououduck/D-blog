@@ -142,11 +142,18 @@ export const Tags = () => {
 
   const tags = useMemo(() => buildTagList(results), [results]);
   const allTags = useMemo(() => buildTagList(allPosts), [allPosts]);
-  const selectedTagInfo = selectedTag ? (allTags.find((tag) => tag.name === selectedTag) ?? null) : null;
-  const filteredSelectedTagPosts = selectedTagInfo
-    ? selectedTagInfo.posts.filter((post) => results.some((result) => result.id === post.id))
-    : [];
-  const maxCount = Math.max(...tags.map((tag) => tag.count), 1);
+  // 派生状态纳入 useMemo 链：selectedTagInfo 每次渲染对 allTags.find、
+  // maxCount 对 tags 全量 Math.max，列表增长后线性放大。
+  const { selectedTagInfo, filteredSelectedTagPosts, maxCount } = useMemo(() => {
+    const info = selectedTag ? (allTags.find((tag) => tag.name === selectedTag) ?? null) : null;
+    return {
+      selectedTagInfo: info,
+      filteredSelectedTagPosts: info
+        ? info.posts.filter((post) => results.some((result) => result.id === post.id))
+        : [],
+      maxCount: Math.max(...tags.map((tag) => tag.count), 1),
+    };
+  }, [allTags, results, selectedTag, tags]);
 
   const getTagSize = (count: number) => {
     const ratio = count / maxCount;

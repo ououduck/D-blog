@@ -156,16 +156,21 @@ export const ShuoShuo = () => {
             name: '说说列表',
             description: SHUOSHUO_DESCRIPTION,
             url: absoluteSiteUrl('/shuoshuo', siteConfig.url),
-            itemListElement: allItems.map((item, index) => ({
-              '@type': 'ListItem',
-              position: index + 1,
-              name:
-                stripMarkdown(item.content)
+            itemListElement: allItems.map((item, index) => {
+              // 复用 strippedContents 缓存（searchQuery 无关，内容不变即复用），
+              // 避免每次渲染对每条说说重跑 stripMarkdown。
+              const firstLine =
+                (strippedContents.get(item.id) ?? '')
                   .split('\n')
                   .map((line) => line.trim())
-                  .find((line) => line.length > 0) || item.date,
-              url: absoluteSiteUrl(`/shuoshuo/${item.id}`, siteConfig.url),
-            })),
+                  .find((line) => line.length > 0) || item.date;
+              return {
+                '@type': 'ListItem',
+                position: index + 1,
+                name: firstLine,
+                url: absoluteSiteUrl(`/shuoshuo/${item.id}`, siteConfig.url),
+              };
+            }),
           },
         ]}
       />
@@ -245,6 +250,7 @@ export const ShuoShuo = () => {
               onShare={handleShare}
               isHighlighted={highlightedId === item.id}
               shouldReduceMotion={shouldReduceMotion}
+              shareSnippet={(strippedContents.get(item.id) ?? '').slice(0, 24) || item.date}
             />
           ))}
         </motion.ol>

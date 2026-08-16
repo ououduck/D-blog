@@ -67,6 +67,12 @@ interface ShuoShuoItemProps {
   shouldReduceMotion?: boolean;
   /** 列表页展示「永久链接」入口指向独立页；详情页隐藏（自身即独立页）。 */
   showDetailLink?: boolean;
+  /**
+   * 预计算的分享摘要（stripMarkdown 结果）：列表页由 ShuoShuo.tsx 的
+   * strippedContents 缓存传入，避免每次击键重渲染对每条说说重跑 14 步正则链。
+   * 未传时回退组件内计算（详情页单条场景无成本顾虑）。
+   */
+  shareSnippet?: string;
 }
 
 export const ShuoShuoItem: React.FC<ShuoShuoItemProps> = ({
@@ -76,9 +82,10 @@ export const ShuoShuoItem: React.FC<ShuoShuoItemProps> = ({
   isHighlighted = false,
   shouldReduceMotion = false,
   showDetailLink = true,
+  shareSnippet,
 }) => {
   // 分享/永久链接的 aria-label 共用同一段文本，只计算一次。
-  const shareSnippet = stripMarkdown(item.content).slice(0, 24) || item.date;
+  const snippet = shareSnippet ?? (stripMarkdown(item.content).slice(0, 24) || item.date);
 
   return (
     <motion.li
@@ -123,7 +130,7 @@ export const ShuoShuoItem: React.FC<ShuoShuoItemProps> = ({
               <Link
                 to={`/shuoshuo/${item.id}`}
                 className="inline-flex min-h-9 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 active:scale-[0.98] dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100"
-                aria-label={`查看这条说说：${shareSnippet}`}
+                aria-label={`查看这条说说：${snippet}`}
               >
                 <Link2 size={14} aria-hidden="true" />
                 永久链接
@@ -136,7 +143,7 @@ export const ShuoShuoItem: React.FC<ShuoShuoItemProps> = ({
               type="button"
               onClick={() => onShare(item)}
               className="inline-flex min-h-9 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 active:scale-[0.98] dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 dark:focus-visible:outline-zinc-100"
-              aria-label={`分享这条说说：${shareSnippet}`}
+              aria-label={`分享这条说说：${snippet}`}
             >
               <Share2 size={14} aria-hidden="true" />
               分享
