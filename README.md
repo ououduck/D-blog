@@ -82,6 +82,7 @@ D-blog/
     ├── config/              # 封面生成器配置：coverTemplates / coverPresets
     ├── services/            # posts / friends / shuoshuo / offlinePosts / readingHistory 等
     ├── hooks/ utils/        # 自定义 Hook 与工具函数（日期、排序、站点 URL、标题解析等）
+    │                        # utils 下 *.mjs 为客户端与构建脚本共享的纯逻辑（frontmatter 剥离、标题提取）
     ├── ssr/routeData.tsx    # SSG 路由数据构造与客户端读取
     ├── App.tsx              # 路由 + 错误边界
     └── index.tsx            # 渲染入口（水合 / 客户端渲染）
