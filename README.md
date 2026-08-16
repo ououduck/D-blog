@@ -64,14 +64,24 @@ npm run check                 # 数据生成校验 + 类型检查
 npm run dev                   # 本地开发（http://localhost:3000）
 ```
 
+验证改动是否合规（提交前自查，详见 [AGENT.md](AGENT.md)）：
+
+```bash
+npm run typecheck             # TypeScript 类型检查
+npx eslint .                  # ESLint 检查
+npm test                      # Vitest 单元测试（先执行 gen:data）
+```
+
 其余命令见[构建与质量](#构建与质量)。Node.js >= 20，npm >= 10。
 
 ## 项目结构
 
 ```text
 D-blog/
-├── config/                  # 站点/内容/广告配置、tsconfig、tailwind、postcss
+├── config/                  # 站点/内容配置、tsconfig、tailwind、postcss
 ├── posts/ friends/ shuoshuo/  # Markdown 文章、友链 JSON、说说（短动态）
+├── ai-rules/                # 各功能模块的 AI 修改规则集（硬性约束，见下文）
+├── AGENT.md                 # AI 开发者总行为准则
 ├── .pages.yml               # PagesCMS 配置
 ├── generated/               # 构建产物：posts.json / posts-search.json / site-stats.json 等
 ├── public/                  # favicon、PWA 图标、sw.js、offline.html，以及构建生成的 feed/sitemap
@@ -84,6 +94,7 @@ D-blog/
     ├── hooks/ utils/        # 自定义 Hook 与工具函数（日期、排序、站点 URL、标题解析等）
     │                        # utils 下 *.mjs 为客户端与构建脚本共享的纯逻辑（frontmatter 剥离、标题提取）
     ├── ssr/routeData.tsx    # SSG 路由数据构造与客户端读取
+    ├── test/setup.ts        # Vitest 测试环境（jest-dom matchers 等）
     ├── App.tsx              # 路由 + 错误边界
     └── index.tsx            # 渲染入口（水合 / 客户端渲染）
 ```
