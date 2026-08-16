@@ -31,7 +31,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { fetchWithRetry, sleep, computeBackoffDelay, RetryableHttpError } from './lib/http.mjs';
 import { parseEnvNumber } from './lib/env.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
@@ -49,8 +49,10 @@ const CHECK_TIMEOUT_MS = parseEnvNumber(process.env.FRIEND_LINK_CHECK_TIMEOUT_MS
 /** 每个站点的额外重试次数（不含首次；总尝试 = retries + 1）。显式 0 表示不重试。 */
 const CHECK_RETRIES = parseEnvNumber(process.env.FRIEND_LINK_CHECK_RETRIES, 2);
 
-/** 并发检查数：友链数量多时显著缩短总耗时。 */
-const CHECK_CONCURRENCY = parseEnvNumber(process.env.FRIEND_LINK_CHECK_CONCURRENCY, 4);
+/** 并发检查数：友链数量多时显著缩短总耗时。
+ *  注意 parseEnvNumber 合法保留显式 0，但并发下限为 1：若为 0，并发 worker 数
+ *  为 0 → 全部友链「未检查」直接产出全 0 汇总并成功退出，检查形同虚设。 */
+const CHECK_CONCURRENCY = Math.max(1, parseEnvNumber(process.env.FRIEND_LINK_CHECK_CONCURRENCY, 4));
 
 /** dry-run：只输出检查报告，不写文件、不碰 git。 */
 const DRY_RUN = ['1', 'true', 'yes'].includes(String(process.env.FRIEND_LINK_CHECK_DRY_RUN || '').toLowerCase());
@@ -381,7 +383,9 @@ const main = async () => {
 // 全局异常兜底：任何未捕获 rejection / 异常都结构化记录并以非零码退出。
 installGlobalErrorHandlers(logger);
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+// 入口判定统一用 URL 比较（path.resolve 字符串比较在 Windows 大小写/短路径
+// 差异下可能静默不执行，exit 0 无事发生）；与 check-broken-links 一致。
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error) => {
     logger.error('Fatal: friend link check failed', { error: formatError(error) });
     process.exit(1);

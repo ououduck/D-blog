@@ -695,7 +695,9 @@ export const runSsg = async ({
   return true;
 };
 
-if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+// 入口判定统一用 URL 比较（path.resolve 字符串比较在 Windows 大小写/短路径
+// 差异下可能静默不执行，exit 0 无事发生）；与 check-broken-links 一致。
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   runSsg()
     .then((ok) => {
       if (!ok) process.exitCode = 1;

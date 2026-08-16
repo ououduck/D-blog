@@ -325,6 +325,14 @@ const main = async () => {
       if (!hit) continue;
       matched += 1;
 
+      // 已最小化（此前已处理）的评论不再重复执行 minimize/delete：
+      // 二次复查会对已处理评论重复操作（minimize 已最小化评论 GraphQL 报错），
+      // 产生 failed 计数噪音；删除场景下已最小化的垃圾评论同样无需再次处理。
+      if (comment.isMinimized) {
+        logger.info('Comment already minimized; skipped', { author: comment.author, url: comment.url });
+        continue;
+      }
+
       const action = config.action;
       let ok = true;
       if (action === 'none') {

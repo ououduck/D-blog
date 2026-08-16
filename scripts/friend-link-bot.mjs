@@ -52,7 +52,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import net from 'node:net';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import {
   fetchGithubJson,
   fetchWithRetry,
@@ -1013,7 +1013,9 @@ const main = async () => {
 // 全局异常兜底：任何未捕获 rejection / 异常都结构化记录并以非零码退出。
 installGlobalErrorHandlers(logger);
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+// 入口判定统一用 URL 比较（path.resolve 字符串比较在 Windows 大小写/短路径
+// 差异下可能静默不执行，exit 0 无事发生）；与 check-broken-links 一致。
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error) => {
     logger.error('Fatal: bot execution failed', { error: formatError(error) });
     process.exit(1);

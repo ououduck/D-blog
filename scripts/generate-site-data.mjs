@@ -947,7 +947,9 @@ const generateSitemap = () => {
     '',
     `Sitemap: ${siteAbsoluteUrl('/sitemap-index.xml')}`,
     '',
-  ].join('\r\n');
+    // LF 与仓库其余生成文件/ .gitattributes 的 eol=lf 约定一致（此前 \r\n 会在
+    // Linux CI 上产出 CRLF robots.txt，风格不统一）。
+  ].join('\n');
   fs.writeFileSync(path.join(PUBLIC_DIR, 'robots.txt'), robotsTxt);
   logger.step(
     'Generated sitemaps',

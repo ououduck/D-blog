@@ -115,7 +115,17 @@ for (const file of files) {
   // ---- Robots ----
   const robots = html.match(/<meta\b[^>]*name=["']robots["'][^>]*>/i)?.[0];
   if (!robots) fail(relativePath, 'robots', '缺少 robots meta');
-  else if (!/index,follow/.test(robots) && !/noindex/.test(robots)) warn(relativePath, 'robots', 'robots 指令不明确');
+  else {
+    // token 级判断：`index, follow`（带空格）也是合法指令，精确串匹配会误报。
+    const content = robots.match(/content=["']([\s\S]*?)["']/i)?.[1] ?? '';
+    const tokens = content
+      .toLowerCase()
+      .split(/[\s,]+/)
+      .filter(Boolean);
+    const hasNoIndex = tokens.includes('noindex') || tokens.includes('none');
+    const hasIndex = tokens.includes('index') || tokens.includes('all');
+    if (!hasNoIndex && !hasIndex) warn(relativePath, 'robots', 'robots 指令不明确');
+  }
 
   // ---- Canonical ----
   const canonicals = html.match(/<link\b[^>]*rel=["']canonical["'][^>]*>/gi) ?? [];

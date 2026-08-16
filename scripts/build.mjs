@@ -52,6 +52,7 @@ const write = (status, message, detail = '') => {
 };
 
 // 基于本模块位置解析（不受调用时 cwd 影响）：从任意目录执行 build.mjs 都能找到 vite。
+const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const viteCli = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../node_modules/vite/bin/vite.js');
 const stages = [
   { name: 'Generate site data', command: process.execPath, args: ['scripts/generate-site-data.mjs'] },
@@ -91,6 +92,10 @@ const stages = [
 const run = ({ command, args }) =>
   new Promise((resolve) => {
     const child = spawn(command, args, {
+      // 显式固定仓库根为子进程 cwd：阶段参数是相对路径（scripts/xxx.mjs、
+      // vite.config.ts 按 cwd 解析），从任意目录调用 build.mjs 时保证行为一致
+      // （否则 spawn ENOENT 或 vite 找不到配置，报错难以定位）。
+      cwd: ROOT_DIR,
       stdio: 'inherit',
       env: {
         ...process.env,

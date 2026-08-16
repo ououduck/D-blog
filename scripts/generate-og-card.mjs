@@ -41,7 +41,11 @@ const run = async () => {
     throw new Error('generate-og-card: cannot read logo dimensions');
   }
 
-  const logoHeight = Math.round(LOGO_TARGET_WIDTH * (metadata.height / metadata.width));
+  const aspectHeight = Math.round(LOGO_TARGET_WIDTH * (metadata.height / metadata.width));
+  // 竖图 logo（高度远大于宽度）等比放大后可能超过卡片高度（630）：clamp 到
+  // 卡片高度减安全边距，resize 的 fit:'contain' 会等比缩到盒内（不拉伸），
+  // 避免 composite 的 top 为负（负坐标在 sharp 中行为未定义，可能报错或裁切）。
+  const logoHeight = Math.min(aspectHeight, 630 - 96);
 
   // 生成品牌化分享卡片：logo 等比缩放为期望宽度（高度按原比例），
   // 叠加到纸张渐变背景中央，输出 1200×630 PNG。
