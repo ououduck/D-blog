@@ -43,19 +43,65 @@ describe('useSpotlight', () => {
     expect(result.current.layerStyle.opacity).toBe(0);
   });
 
-  it('鼠标移动更新光斑位置（相对元素坐标）', () => {
+  it('鼠标移动更新光斑位置（相对元素坐标，rAF 节流合并）', () => {
     mockMatchMedia(true);
     const { result } = renderHook(() => useSpotlight());
     const element = document.createElement('div');
     element.getBoundingClientRect = () => ({ left: 10, top: 20, width: 100, height: 50 }) as DOMRect;
     (result.current.bind.ref as { current: HTMLElement | null }).current = element;
 
-    act(() => {
-      result.current.bind.onMouseEnter(null as never);
-      result.current.bind.onMouseMove({ clientX: 60, clientY: 40 } as React.MouseEvent<HTMLDivElement>);
+    // rAF 节流：位置更新在下一帧回调中执行，测试里让 rAF 同步执行。
+    const rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      callback(0);
+      return 1;
     });
-    expect(result.current.layerStyle['--spotlight-x']).toBe('50px');
-    expect(result.current.layerStyle['--spotlight-y']).toBe('20px');
+    try {
+      act(() => {
+        result.current.bind.onMouseEnter(null as never);
+        result.current.bind.onMouseMove({ clientX: 60, clientY: 40 } as React.MouseEvent<HTMLDivElement>);
+      });
+      expect(result.current.layerStyle['--spotlight-x']).toBe('50px');
+      expect(result.current.layerStyle['--spotlight-y']).toBe('20px');
+    } finally {
+      rafSpy.mockRestore();
+    }
+  });
+
+  it('同帧内多次 mousemove 只触发一次位置更新（rAF 合并）', () => {
+    mockMatchMedia(true);
+    const { result } = renderHook(() => useSpotlight());
+    const element = document.createElement('div');
+    element.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100 }) as DOMRect;
+    (result.current.bind.ref as { current: HTMLElement | null }).current = element;
+
+    let callback: FrameRequestCallback | null = null;
+    const rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      callback = cb; // 挂起帧，不立即执行
+      return 1;
+    });
+    const cancelSpy = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {
+      callback = null;
+    });
+    try {
+      act(() => {
+        result.current.bind.onMouseEnter(null as never);
+        result.current.bind.onMouseMove({ clientX: 10, clientY: 10 } as React.MouseEvent<HTMLDivElement>);
+        result.current.bind.onMouseMove({ clientX: 90, clientY: 90 } as React.MouseEvent<HTMLDivElement>);
+        result.current.bind.onMouseMove({ clientX: 50, clientY: 50 } as React.MouseEvent<HTMLDivElement>);
+      });
+      // 帧未执行：位置保持初始 0，且只调度了一帧。
+      expect(result.current.layerStyle['--spotlight-x']).toBe('0px');
+      expect(rafSpy).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        callback?.(0); // 帧执行：取最后一次移动的坐标
+      });
+      expect(result.current.layerStyle['--spotlight-x']).toBe('50px');
+      expect(result.current.layerStyle['--spotlight-y']).toBe('50px');
+    } finally {
+      rafSpy.mockRestore();
+      cancelSpy.mockRestore();
+    }
   });
 
   it('触屏/不支持 hover 时禁用（enabled=false）', () => {

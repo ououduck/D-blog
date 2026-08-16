@@ -10,7 +10,7 @@
  * - 尊重 prefers-reduced-motion：直接禁用整个效果（纯装饰）。
  */
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
@@ -47,14 +47,32 @@ export const useSpotlight = <T extends HTMLElement = HTMLDivElement>({
   const hoverCapable = useMediaQuery('(hover: hover) and (pointer: fine)', false);
   const reducedMotion = useReducedMotion();
   const enabled = hoverCapable && !reducedMotion;
+  // rAF 合并帧：pointermove 频率可高于帧率，同帧内多次移动合并为一次
+  // setPosition，避免卡片子树（含图片/链接）随每次光标移动高频重渲染。
+  // pendingMoveRef 保存帧内最新坐标：帧执行时读取最新值（合并取末次而非首次）。
+  const moveFrameRef = useRef(0);
+  const pendingMoveRef = useRef({ x: 0, y: 0 });
 
   const handleMouseMove: React.MouseEventHandler<T> = (event) => {
     if (!enabled || !ref.current || isFocused) {
       return;
     }
-
-    const rect = ref.current.getBoundingClientRect();
-    setPosition({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+    // 坐标先拷贝出合成事件：rAF 回调在下一帧执行，此时事件对象字段仍可用
+    //（React 17+ 不再池化事件），但显式拷贝避免依赖事件生命周期。
+    pendingMoveRef.current = { x: event.clientX, y: event.clientY };
+    if (moveFrameRef.current) {
+      return;
+    }
+    moveFrameRef.current = window.requestAnimationFrame(() => {
+      moveFrameRef.current = 0;
+      const element = ref.current;
+      if (!element) {
+        return;
+      }
+      const { x, y } = pendingMoveRef.current;
+      const rect = element.getBoundingClientRect();
+      setPosition({ x: x - rect.left, y: y - rect.top });
+    });
   };
 
   const handleMouseEnter: React.MouseEventHandler<T> = () => {
@@ -78,6 +96,17 @@ export const useSpotlight = <T extends HTMLElement = HTMLDivElement>({
     setIsFocused(false);
     setOpacity(0);
   };
+
+  // 卸载时取消挂起的 rAF 帧，避免回调在卸载后 setState。
+  useEffect(
+    () => () => {
+      if (moveFrameRef.current) {
+        window.cancelAnimationFrame(moveFrameRef.current);
+        moveFrameRef.current = 0;
+      }
+    },
+    [],
+  );
 
   return {
     bind: {
