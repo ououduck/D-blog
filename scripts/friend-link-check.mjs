@@ -32,7 +32,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { fetchWithRetry, sleep, computeBackoffDelay, RetryableHttpError } from './lib/http.mjs';
+import {
+  fetchWithRetry,
+  sleep,
+  computeBackoffDelay,
+  RetryableHttpError,
+  isSafePublicHttpUrl,
+  sanitizeUrlForLogs,
+} from './lib/http.mjs';
 import { parseEnvNumber } from './lib/env.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
@@ -71,6 +78,9 @@ const TARGET_BRANCH = process.env.FRIEND_LINK_TARGET_BRANCH || process.env.GITHU
 
 const CHECK_USER_AGENT = 'D-blogFriendLinkChecker/1.0';
 
+/** 重定向最大跳数：超过即判定不可达（防重定向环/无限跳，与 friend-link-bot 一致）。 */
+const MAX_REDIRECTS = 3;
+
 const logger = createActionLogger('friend-link-check');
 
 /* ------------------------------------------------------------------ */
@@ -79,10 +89,17 @@ const logger = createActionLogger('friend-link-check');
 
 /**
  * 检查单个站点是否可正常访问。
+ *
+ * SSRF 防护（AGENT.md 三.8 硬性约束）：友链 URL 来自用户提交的申请
+ * （friend-link-bot 的 Issue 或 Pages CMS 直接编辑），属于用户可控输入。
+ * 请求前必须通过 isSafePublicHttpUrl 校验（协议/凭据检查 + DNS 解析后
+ * 逐 IP 私网判定，fail-closed），重定向的每一跳也重新校验 —— 否则公开
+ * 站点可 302 到 127.0.0.1 / 169.254.169.254 等内网地址形成跳转绕过。
  * @param {string} rawUrl 友链 url 字段。
  * @returns {Promise<{ reachable: boolean, detail: string }>}
+ * 导出供单元测试（SSRF 拦截/重定向逐跳校验）。
  */
-const checkUrlReachable = async (rawUrl) => {
+export const checkUrlReachable = async (rawUrl) => {
   let url;
   try {
     url = new URL(rawUrl);
@@ -93,44 +110,71 @@ const checkUrlReachable = async (rawUrl) => {
     return { reachable: false, detail: '非 HTTP(S) 协议' };
   }
 
-  try {
-    const response = await fetchWithRetry(
-      url.toString(),
-      {
-        // 跟随重定向（Node fetch 默认 follow，最多 20 跳，跳转环抛网络错误）。
-        redirect: 'follow',
-        headers: {
-          'User-Agent': CHECK_USER_AGENT,
-          Accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
-        },
-      },
-      {
-        retries: CHECK_RETRIES,
-        timeoutMs: CHECK_TIMEOUT_MS,
-        onRetry: (info) =>
-          logger.warn('Retrying friend check', {
-            host: url.hostname,
-            attempt: info.attempt,
-            status: info.status ?? 'network',
-            delayMs: info.delayMs,
-          }),
-      },
-    );
-
-    // 只关心状态码：立即取消 body 释放连接，不做内容读取（快且不会因
-    // 慢速 body 挂起）。状态码 < 500 视为站点存活（服务器已响应）。
-    await response.body?.cancel().catch(() => {});
-    const status = response.status;
-    return status < 500
-      ? { reachable: true, detail: `HTTP ${status}` }
-      : { reachable: false, detail: `HTTP ${status}` };
-  } catch (error) {
-    if (error instanceof RetryableHttpError) {
-      const kind = error.status ? `HTTP ${error.status}` : '网络错误';
-      return { reachable: false, detail: `${kind}（尝试 ${error.attempts} 次）` };
+  // 逐跳手动跟随重定向（redirect: 'manual'）：每次跳转前重新校验目标地址，
+  // 拦截「公开站点 → 内网/回环」的 SSRF 跳转绕过。
+  let current = url.toString();
+  for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
+    if (!(await isSafePublicHttpUrl(current))) {
+      return { reachable: false, detail: '非公开 HTTP(S) 地址（SSRF 防护拦截）' };
     }
-    return { reachable: false, detail: error instanceof Error ? error.message : String(error) };
+
+    try {
+      const response = await fetchWithRetry(
+        current,
+        {
+          // 不自动跟随：手动逐跳校验（Node fetch 默认 follow 会静默跳过校验）。
+          redirect: 'manual',
+          headers: {
+            'User-Agent': CHECK_USER_AGENT,
+            Accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
+          },
+        },
+        {
+          retries: CHECK_RETRIES,
+          timeoutMs: CHECK_TIMEOUT_MS,
+          onRetry: (info) =>
+            logger.warn('Retrying friend check', {
+              host: url.hostname,
+              attempt: info.attempt,
+              status: info.status ?? 'network',
+              delayMs: info.delayMs,
+            }),
+        },
+      );
+
+      // 3xx：解析 Location 继续下一跳（下一轮循环开头重新做 SSRF 校验）。
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        // 释放响应体（不下载重定向中间页内容）。
+        await response.body?.cancel().catch(() => {});
+        if (!location) {
+          return { reachable: false, detail: '重定向缺少 Location' };
+        }
+        try {
+          current = new URL(location, current).toString();
+        } catch {
+          return { reachable: false, detail: '重定向 Location 非法' };
+        }
+        continue;
+      }
+
+      // 只关心状态码：立即取消 body 释放连接，不做内容读取（快且不会因
+      // 慢速 body 挂起）。状态码 < 500 视为站点存活（服务器已响应）。
+      await response.body?.cancel().catch(() => {});
+      const status = response.status;
+      return status < 500
+        ? { reachable: true, detail: `HTTP ${status}` }
+        : { reachable: false, detail: `HTTP ${status}` };
+    } catch (error) {
+      if (error instanceof RetryableHttpError) {
+        const kind = error.status ? `HTTP ${error.status}` : '网络错误';
+        return { reachable: false, detail: `${kind}（尝试 ${error.attempts} 次）` };
+      }
+      return { reachable: false, detail: error instanceof Error ? error.message : String(error) };
+    }
   }
+  // 重定向超过 MAX_REDIRECTS 跳：判为不可达（防重定向环）。
+  return { reachable: false, detail: `重定向超过 ${MAX_REDIRECTS} 跳` };
 };
 
 /**
@@ -338,9 +382,10 @@ const main = async () => {
     CHECK_CONCURRENCY,
   );
 
-  // 逐条输出检查结果（供 Actions 日志检索）。
+  // 逐条输出检查结果（供 Actions 日志检索）。URL 可能含 userinfo 凭据
+  // （https://user:secret@host），日志输出前脱敏（sanitizeUrlForLogs）。
   for (const item of details) {
-    const line = `[${item.status}] ${item.name} ${item.url} — ${item.detail}`;
+    const line = `[${item.status}] ${item.name} ${sanitizeUrlForLogs(item.url)} — ${item.detail}`;
     if (item.status === 'ok' || item.status === 'recovered') {
       logger.info(line);
     } else {
