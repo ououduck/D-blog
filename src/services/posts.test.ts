@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { PostMetadata } from '../types';
+import { getDateTimestamp } from '@/utils/date';
 import { getFieldMatchScore, getInitialPosts, getPostById, getPosts, searchPosts } from './posts';
 
 /**
@@ -131,6 +132,14 @@ describe('searchPosts 排序与匹配', () => {
   it('部分词缺失时返回空', async () => {
     const results = await searchPosts('zzzz-不存在的词-qqqq-另外一个');
     expect(results).toEqual([]);
+  });
+
+  it('同分结果按日期倒序（dateTimestamp 本地时区口径回归）', async () => {
+    const results = await searchPosts('教程', { scope: 'category' });
+    // category 精确匹配得分相同，应整体按日期倒序（newest first）。
+    for (let i = 1; i < results.length; i += 1) {
+      expect(getDateTimestamp(results[i - 1].date)).toBeGreaterThanOrEqual(getDateTimestamp(results[i].date));
+    }
   });
 });
 
