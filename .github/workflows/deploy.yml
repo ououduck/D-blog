@@ -66,11 +66,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         # 直传（direct upload）部署：平台不构建，不消耗构建额度。
-        run: npx --yes wrangler@4 pages deploy dist --project-name=d-blog --branch=main --commit-dirty=true
+        # wrangler 固定精确版本：浮动 major tag 每次从 npm 拉取，部署行为不可复现且不可审计。
+        run: npx --yes wrangler@4.123.0 pages deploy dist --project-name=d-blog --branch=main --commit-dirty=true
 
       - name: Deploy to EdgeOne Pages
         env:
           EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
         # 直传部署（EdgeOne CLI 仅支持直传类型项目），-e production 为生产环境。
         # 命令为 makers deploy（pages deploy 为改名前的旧命令，官方文档页尚未更新）。
-        run: npx --yes edgeone@1 makers deploy ./dist -n d-blog -e production -t "$EDGEONE_API_TOKEN"
+        # edgeone 固定精确版本，理由同上。
+        run: npx --yes edgeone@1.6.28 makers deploy ./dist -n d-blog -e production -t "$EDGEONE_API_TOKEN"
