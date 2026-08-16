@@ -1074,9 +1074,21 @@ ${body}`);
   logger.step('Generated llms-full.txt', `posts=${sections.length} size=${sizeKiB}KiB`);
 };
 
-// 产物文件数（generated/ 5 个 JSON + public/ 9 个生成文件），仅供 summary 日志展示；
-// 新增/移除产物时需同步调整。
-const OUTPUT_FILE_COUNT = 14;
+// summary 日志展示用：从 generated/ 与 public/ 实际统计产物文件数
+// （此前硬编码 14，新增/移除产物时 summary 数字失真）。
+const countGeneratedOutputs = () => {
+  let count = 0;
+  for (const dir of [path.join(__dirname, '../generated'), PUBLIC_DIR]) {
+    try {
+      count += fs
+        .readdirSync(dir)
+        .filter((name) => name.endsWith('.json') || name.endsWith('.xml') || name.endsWith('.txt')).length;
+    } catch {
+      // 目录不存在时计 0，仅影响展示。
+    }
+  }
+  return count;
+};
 
 try {
   generateSitemap();
@@ -1095,7 +1107,7 @@ if (process.exitCode) {
     posts: posts.length,
     friends: friends.length,
     shuoshuo: shuoshuo.length,
-    outputs: OUTPUT_FILE_COUNT,
+    outputs: countGeneratedOutputs(),
     siteUrl: SITE_URL,
     status: 'failed',
   });
@@ -1104,7 +1116,7 @@ if (process.exitCode) {
     posts: posts.length,
     friends: friends.length,
     shuoshuo: shuoshuo.length,
-    outputs: OUTPUT_FILE_COUNT,
+    outputs: countGeneratedOutputs(),
     siteUrl: SITE_URL,
   });
 }
