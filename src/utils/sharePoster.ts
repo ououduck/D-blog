@@ -52,8 +52,8 @@ const isCjkChar = (char: string) =>
   /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef\u2014\u2018\u2019\u201c\u201d]/.test(char);
 const isLatinRun = (char: string) => /[A-Za-z0-9]/.test(char);
 
-/** 按 CJK 单字 / 拉丁连续串分词，支持混合中英文的自然换行。 */
-const tokenizeText = (text: string): string[] => {
+/** 按 CJK 单字 / 拉丁连续串分词，支持混合中英文的自然换行（导出供单元测试）。 */
+export const tokenizeText = (text: string): string[] => {
   const tokens: string[] = [];
   let latinBuffer = '';
   const flushLatin = () => {
@@ -79,9 +79,10 @@ const tokenizeText = (text: string): string[] => {
 
 /**
  * 在 canvas 上按最大宽度 + 最大行数排版文本，超长行截断加省略号。
- * 返回每行文本数组（已去除行首多余空白）。
+ * 返回每行文本数组（已去除行首多余空白）。导出供单元测试（该函数经历两轮
+ * 截断 bug 修复，需要直接回归覆盖）。
  */
-const wrapCanvasText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number): string[] => {
+export const wrapCanvasText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number): string[] => {
   const lines: string[] = [];
   let currentLine = '';
   const tokens = tokenizeText(text.replace(/\s+/g, ' ').trim());
