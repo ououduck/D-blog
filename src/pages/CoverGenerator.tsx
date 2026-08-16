@@ -1187,7 +1187,10 @@ export const CoverGenerator: React.FC = () => {
 
   const generateCover = useCallback(async () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    // 批量导出期间跳过预览渲染：导出循环逐项渲染封面（高倍率下每帧很重），
+    // 预览若继续随输入重绘会与导出抢占主线程，双向卡顿。导出结束后 effect
+    // 因 generateCover 引用变化自动补一帧最新预览。
+    if (!canvas || isExporting) return;
     const renderId = ++renderIdRef.current;
     setIsGenerating(true);
     try {
@@ -1212,7 +1215,7 @@ export const CoverGenerator: React.FC = () => {
     } finally {
       if (renderId === renderIdRef.current) setIsGenerating(false);
     }
-  }, [canvasSize, renderCanvas]);
+  }, [canvasSize, isExporting, renderCanvas]);
 
   const downloadCover = useCallback(async () => {
     if (isGenerating || isExporting) return;

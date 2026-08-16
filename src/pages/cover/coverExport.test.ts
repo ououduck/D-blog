@@ -29,8 +29,16 @@ describe('coverImageCache', () => {
 });
 
 describe('coverExport', () => {
-  const makeCanvas = (blob: Blob | null) =>
-    ({ toBlob: (cb: (b: Blob | null) => void) => cb(blob) }) as unknown as HTMLCanvasElement;
+  const makeCanvas = (blob: Blob | null, tainted = false) =>
+    ({
+      toBlob: (cb: (b: Blob | null) => void) => cb(blob),
+      toDataURL: () => {
+        if (tainted) {
+          throw new DOMException('The canvas has been tainted by cross-origin data.', 'SecurityError');
+        }
+        return 'data:image/png;base64,';
+      },
+    }) as unknown as HTMLCanvasElement;
 
   beforeEach(() => {
     vi.clearAllMocks();

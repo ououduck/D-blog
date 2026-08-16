@@ -7,8 +7,28 @@ import type { ExportFormat } from './coverTypes';
 export function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     try {
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('图片编码失败，请重试'))), type, quality);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+            return;
+          }
+          // toBlob 对跨域污染的 canvas 会回调 null（不抛同步异常），无法与真实
+          // 编码失败区分。用 toDataURL 探测：tainted canvas 会抛 SecurityError，
+          // 借此给出针对性错误文案（原实现 catch 分支实际不可达，跨域场景
+          // 用户只会看到笼统的「图片编码失败」）。
+          try {
+            canvas.toDataURL(type, quality);
+            reject(new Error('图片编码失败，请重试'));
+          } catch {
+            reject(new Error('素材跨域限制导致无法导出，请更换图标或图片'));
+          }
+        },
+        type,
+        quality,
+      );
     } catch {
+      // 同步抛错（极罕见，如参数非法）：按跨域限制兜底文案处理。
       reject(new Error('素材跨域限制导致无法导出，请更换图标或图片'));
     }
   });
