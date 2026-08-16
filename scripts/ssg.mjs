@@ -108,7 +108,7 @@ const escapeJsonForHtml = (value) =>
  * 极端畸形输出导致死循环；单边界配对失败时只摘除 $RC 调用文本，避免
  * 无限扫描同一位点，其余序列化标记原样保留（浏览器仍能按未展平方式水合）。
  */
-const flattenSuspenseBoundaries = (html) => {
+export const flattenSuspenseBoundaries = (html) => {
   // React 19 把恢复函数与调用写在同一 <script> 里：`<script>...;$RC("B:x","S:x")</script>`。
   const rcCallPattern = /\$RC\("([^"]+)","([^"]+)"\)/;
 
