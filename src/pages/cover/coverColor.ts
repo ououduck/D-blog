@@ -85,17 +85,26 @@ export function sampleRegion(
     const bottom = Math.min(canvasHeight, Math.ceil(y + height));
     if (right <= left || bottom <= top) return null;
     const data = ctx.getImageData(left, top, right - left, bottom - top).data;
+    // 网格抽样：每 stride 像素取一点（行/列双步进，16× 降本）。autoTextColor
+    // 默认开启、预览拖拽/输入时对每块文本频繁触发，逐像素遍历（icon-split 三块
+    // 共约 36 万像素）成本高；网格均值对纯色/渐变背景足够稳定。
+    const rowWidth = right - left;
+    const stride = 4;
     let r = 0;
     let g = 0;
     let b = 0;
     let count = 0;
-    for (let index = 0; index < data.length; index += 4) {
-      const alpha = data[index + 3] / 255;
-      if (alpha < 0.05) continue;
-      r += data[index] * alpha;
-      g += data[index + 1] * alpha;
-      b += data[index + 2] * alpha;
-      count += alpha;
+    for (let row = 0; row < bottom - top; row += stride) {
+      const rowOffset = row * rowWidth * 4;
+      for (let col = 0; col < rowWidth; col += stride) {
+        const offset = rowOffset + col * 4;
+        const alpha = data[offset + 3] / 255;
+        if (alpha < 0.05) continue;
+        r += data[offset] * alpha;
+        g += data[offset + 1] * alpha;
+        b += data[offset + 2] * alpha;
+        count += alpha;
+      }
     }
     return count ? { r: r / count, g: g / count, b: b / count } : null;
   } catch {
