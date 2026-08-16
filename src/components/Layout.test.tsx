@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { Layout } from './Layout';
@@ -49,6 +49,11 @@ describe('Layout', () => {
     });
   });
 
+  afterEach(() => {
+    // 移动端导航锁定 body 滚动：重置避免跨用例污染。
+    document.body.style.overflow = '';
+  });
+
   it('渲染导航栏主导航项（桌面端可见）', () => {
     renderLayout();
     expect(screen.getByRole('navigation')).toBeInTheDocument();
@@ -77,7 +82,6 @@ describe('Layout', () => {
     renderLayout();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   });
-
   it('Ctrl+K 打开搜索弹层', async () => {
     const user = userEvent.setup();
     renderLayout();
@@ -92,5 +96,44 @@ describe('Layout', () => {
     renderLayout();
     await user.click(screen.getAllByRole('button', { name: '打开站内搜索' })[0]);
     expect(await screen.findByTestId('mock-search-modal')).toBeInTheDocument();
+  });
+
+  it('移动端菜单按钮打开导航面板并可关闭', async () => {
+    const user = userEvent.setup();
+    renderLayout();
+    const menuButton = screen.getByRole('button', { name: '打开导航菜单' });
+    await user.click(menuButton);
+    expect(await screen.findByRole('dialog', { name: '移动端导航菜单' })).toBeInTheDocument();
+    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+    // 等待打开动画完成（340ms），否则切换关闭会被 isMobileNavAnimating 守卫忽略。
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+
+    // 再次点击切换关闭。
+    await user.click(menuButton);
+    // 关闭动画后面板卸载。
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+    expect(screen.queryByRole('dialog', { name: '移动端导航菜单' })).not.toBeInTheDocument();
+  });
+
+  it('点击移动端导航项后菜单关闭（close-then-navigate 守卫回归）', async () => {
+    const user = userEvent.setup();
+    renderLayout();
+    await user.click(screen.getByRole('button', { name: '打开导航菜单' }));
+    await screen.findByRole('dialog', { name: '移动端导航菜单' });
+    // 等待打开动画完成。
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+
+    // 点击「归档」导航项：菜单应关闭且不吞掉导航动作。
+    await user.click(screen.getByRole('button', { name: /归档/ }));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+    expect(screen.queryByRole('dialog', { name: '移动端导航菜单' })).not.toBeInTheDocument();
   });
 });
