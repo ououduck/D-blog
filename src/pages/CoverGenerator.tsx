@@ -632,8 +632,14 @@ export const CoverGenerator: React.FC = () => {
 
   const savePreset = useCallback(() => {
     const name = presetName.trim() || `预设 ${presets.length + 1}`;
-    setPresets(writePreset(name, serializableDraft));
+    const result = writePreset(name, serializableDraft);
     setPresetName('');
+    if (result === null) {
+      // 写入失败（存储不可用/配额满）：如实反馈，不假装保存成功。
+      setFeedback({ kind: 'error', message: '预设保存失败：浏览器存储不可用或已满，请清理后重试。' });
+      return;
+    }
+    setPresets(result);
     setFeedback({ kind: 'success', message: `已保存预设“${name}”（图片和字体需重新上传）` });
   }, [presetName, presets.length, serializableDraft]);
 
@@ -646,7 +652,12 @@ export const CoverGenerator: React.FC = () => {
   );
 
   const removePreset = useCallback((name: string) => {
-    setPresets(deletePreset(name));
+    const result = deletePreset(name);
+    if (result === null) {
+      setFeedback({ kind: 'error', message: '删除预设失败：浏览器存储不可用，请重试。' });
+      return;
+    }
+    setPresets(result);
     setFeedback({ kind: 'success', message: `已删除预设“${name}”` });
   }, []);
 

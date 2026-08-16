@@ -107,7 +107,12 @@ export function readPresets(): StoredPreset[] {
     : [];
 }
 
-export function writePreset(name: string, state: CoverDraft): StoredPreset[] {
+/**
+ * 保存自定义预设；写入失败（localStorage 不可用 / 配额已满）返回 null，
+ * 调用方据此给出真实反馈（原实现吞掉 setItem 异常却返回内存列表，UI 显示
+ * "已保存"但刷新后预设丢失）。
+ */
+export function writePreset(name: string, state: CoverDraft): StoredPreset[] | null {
   const preset: StoredPreset = {
     name: name.trim() || '未命名预设',
     createdAt: Date.now(),
@@ -117,17 +122,18 @@ export function writePreset(name: string, state: CoverDraft): StoredPreset[] {
   try {
     storage()?.setItem(COVER_PRESETS_KEY, JSON.stringify(next));
   } catch {
-    /* localStorage 不可用时不阻塞编辑 */
+    return null;
   }
   return next;
 }
 
-export function deletePreset(name: string): StoredPreset[] {
+/** 删除自定义预设；写入失败返回 null（与 writePreset 一致的成功语义）。 */
+export function deletePreset(name: string): StoredPreset[] | null {
   const next = readPresets().filter((preset) => preset.name !== name);
   try {
     storage()?.setItem(COVER_PRESETS_KEY, JSON.stringify(next));
   } catch {
-    /* ignore */
+    return null;
   }
   return next;
 }
