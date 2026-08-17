@@ -1,6 +1,13 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { computeBackoffDelay, createTimeoutSignal, sanitizeUrlForLogs, isPrivateAddress } from './http.mjs';
+import {
+  computeBackoffDelay,
+  createTimeoutSignal,
+  sanitizeUrlForLogs,
+  isPrivateAddress,
+  isResolvedAddressesSafe,
+  safeFetchAgent,
+} from './http.mjs';
 
 describe('computeBackoffDelay', () => {
   it('第 1 次重试延迟在 [0, base×2) 内', () => {
@@ -105,5 +112,36 @@ describe('isPrivateAddress', () => {
     expect(isPrivateAddress('999.999.999.999')).toBe(true);
     expect(isPrivateAddress('not-an-ip')).toBe(true);
     expect(isPrivateAddress('')).toBe(true);
+  });
+});
+
+describe('isResolvedAddressesSafe', () => {
+  it('全部公网地址 → 安全', () => {
+    expect(isResolvedAddressesSafe([{ address: '8.8.8.8' }, { address: '1.1.1.1' }])).toBe(true);
+  });
+
+  it('任一私网地址 → 不安全', () => {
+    expect(isResolvedAddressesSafe([{ address: '8.8.8.8' }, { address: '127.0.0.1' }])).toBe(false);
+    expect(isResolvedAddressesSafe([{ address: '10.0.0.1' }])).toBe(false);
+    expect(isResolvedAddressesSafe([{ address: '::1' }])).toBe(false);
+  });
+
+  it('代理伪 DNS 段（198.18.0.0/15、fc00::/7）默认视为不安全', () => {
+    expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }])).toBe(false);
+    expect(isResolvedAddressesSafe([{ address: 'fc00::1' }])).toBe(false);
+  });
+
+  it('ALLOW_PROXY_ARTIFACT_DNS=1 时放行代理伪 DNS 段（本地 TUN 专用）', () => {
+    process.env.ALLOW_PROXY_ARTIFACT_DNS = '1';
+    try {
+      expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }])).toBe(true);
+      expect(isResolvedAddressesSafe([{ address: 'fc00::1' }])).toBe(true);
+    } finally {
+      delete process.env.ALLOW_PROXY_ARTIFACT_DNS;
+    }
+  });
+
+  it('safeFetchAgent 暴露连接期校验 dispatcher', () => {
+    expect(safeFetchAgent).toBeDefined();
   });
 });

@@ -24,7 +24,13 @@ import matter from 'gray-matter';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { maskFencedCodeBlocks } from '../src/utils/headings-core.mjs';
 import { sendTelegramMessage } from './lib/telegram.mjs';
-import { fetchWithRetry, RetryableHttpError, isSafePublicHttpUrl, sanitizeUrlForLogs } from './lib/http.mjs';
+import {
+  fetchWithRetry,
+  RetryableHttpError,
+  isSafePublicHttpUrl,
+  safeFetchAgent,
+  sanitizeUrlForLogs,
+} from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
 const logger = createActionLogger('link-check');
@@ -162,6 +168,8 @@ export const checkUrl = async (url) => {
         {
           timeoutMs: REQUEST_TIMEOUT_MS,
           retries: REQUEST_RETRIES,
+          // 连接期逐 IP 私网校验（防 pre-flight 通过后的 DNS 重绑定）。
+          dispatcher: safeFetchAgent,
         },
       );
 

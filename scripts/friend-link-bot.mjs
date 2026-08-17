@@ -62,6 +62,7 @@ import {
   readResponseText,
   GITHUB_API_VERSION,
   isSafePublicHttpUrl,
+  safeFetchAgent,
   sanitizeUrlForLogs,
 } from './lib/http.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
@@ -315,6 +316,9 @@ const fetchPublicPage = async (value) => {
         {
           retries: 3,
           signal,
+          // 连接期逐 IP 私网校验：即使 isSafePublicHttpUrl 通过后发生 DNS 重绑定，
+          // 实际 TCP 连接也只会打到已验证的公开地址。
+          dispatcher: safeFetchAgent,
           onRetry: (info) =>
             logger.warn('Retrying friend-page fetch', {
               url: sanitizeUrlForLogs(current),

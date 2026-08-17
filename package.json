@@ -50,6 +50,7 @@
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.0",
     "remark-math": "^6.0.0",
+    "undici": "^8.10.0",
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {

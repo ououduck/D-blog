@@ -23,6 +23,7 @@
 
 import dns from 'node:dns/promises';
 import net from 'node:net';
+import { Agent } from 'undici';
 
 /* ------------------------------------------------------------------ */
 /* 常量与错误分类                                                       */
@@ -225,6 +226,55 @@ export const isPrivateAddress = (address) => {
 };
 
 /**
+ * 判断一组已解析地址是否全部为公开地址（SSRF 判定的核心，pre-flight 与连接期共用）。
+ * 代理伪 DNS（Clash/Surge TUN 把全部域名解析到 198.18.0.0/15 / fc00::/7）的放行
+ * 只在显式设置 ALLOW_PROXY_ARTIFACT_DNS=1 时生效（本地开发专用）——CI/生产默认关闭，
+ * 因为这些段本身就在私网黑名单里，无条件放行等于把 ULA/基准段当作安全地址（SSRF 绕过）。
+ * @param {Array<{ address: string, family?: number }>} addresses
+ * @returns {boolean}
+ */
+export const isResolvedAddressesSafe = (addresses) => {
+  const allowProxyArtifact = ['1', 'true', 'yes'].includes(
+    String(process.env.ALLOW_PROXY_ARTIFACT_DNS || '').toLowerCase(),
+  );
+  if (allowProxyArtifact && addresses.every(({ address }) => isProxyArtifactAddress(address))) {
+    return true;
+  }
+  return addresses.every(({ address }) => !isPrivateAddress(address));
+};
+
+/**
+ * 连接期 DNS 校验 lookup（undici Agent 的 connect.lookup）：在真正发起 TCP 连接前，
+ * 用「同一次」解析结果做私网判定 —— 消除 isSafePublicHttpUrl（pre-flight）与 fetch
+ * 各自独立解析 DNS 之间的 TOCTOU（TTL=0 重绑定域名可让校验拿到公网 IP、实际请求
+ * 解析到内网/元数据地址，从而绕过校验）。任何解析结果落在私网/保留段即拒绝连接。
+ */
+const safeLookup = (hostname, options, callback) => {
+  dns.lookup(hostname, { ...options, all: true }, (err, addresses) => {
+    if (err) {
+      callback(err);
+      return;
+    }
+    if (!isResolvedAddressesSafe(addresses)) {
+      const block = new Error(`SSRF 防护：${hostname} 解析到私网/保留地址，已拒绝连接`);
+      block.code = 'ERR_SSRF_BLOCKED';
+      callback(block);
+      return;
+    }
+    // 返回形态与 net.connect 对 lookup 的约定一致：all 时回数组，否则回 (address, family)。
+    if (options.all) {
+      callback(null, addresses);
+      return;
+    }
+    const first = addresses[0];
+    callback(null, first.address, first.family);
+  });
+};
+
+/** 供对用户可控 URL 发起请求的脚本注入的 Agent：连接期逐 IP 私网校验（防 DNS 重绑定）。 */
+export const safeFetchAgent = new Agent({ connect: { lookup: safeLookup } });
+
+/**
  * 校验 URL 是否为"安全的公开 HTTP(S) 地址"：
  * 协议/主机名/凭据检查 + DNS 解析后逐 IP 校验非私网。
  * 任何一步异常均返回 false（fail-closed，绝不误放行内网目标）。
@@ -248,13 +298,7 @@ export const isSafePublicHttpUrl = async (value) => {
   // 带超时的 DNS 解析：返回 []（超时/失败）时 fail-closed 判定为不安全。
   const addresses = await lookupWithTimeout(url.hostname);
   if (addresses.length === 0) return false;
-  // 全部解析结果都是代理伪 DNS 段（本地开发机 Clash 等 TUN 的常见形态）：
-  // 无法据此区分真实域名与内网目标，跳过 IP 级判定（字面地址/localhost 检查
-  // 仍生效），避免本地运行把全部公网域名误拦。
-  if (addresses.every(({ address }) => isProxyArtifactAddress(address))) {
-    return true;
-  }
-  return addresses.every(({ address }) => !isPrivateAddress(address));
+  return isResolvedAddressesSafe(addresses);
 };
 
 /**
@@ -563,6 +607,8 @@ export const isNetworkError = (error) => {
  * @param {number} [config.baseDelayMs=DEFAULT_BASE_DELAY_MS] 基础退避。
  * @param {number} [config.maxDelayMs=DEFAULT_MAX_DELAY_MS] 退避上限。
  * @param {AbortSignal} [config.signal] 外部取消信号。
+ * @param {import('undici').Agent} [config.dispatcher] 自定义 undici dispatcher（对用户可控
+ *        URL 传 safeFetchAgent，连接期逐 IP 私网校验，防 DNS 重绑定 TOCTOU）。
  * @param {(info: { attempt: number, status: number | null, error: Error | null, delayMs: number, url: string }) => void} [config.onRetry]
  *        每次决定重试前的回调（供结构化日志记录重试事件）。
  * @returns {Promise<Response>} 成功时返回 response（由调用方按需消费 body）。
@@ -574,6 +620,7 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
   const maxDelayMs = config.maxDelayMs ?? DEFAULT_MAX_DELAY_MS;
   const maxRetryAfterMs = config.maxRetryAfterMs ?? DEFAULT_MAX_RETRY_AFTER_MS;
   const externalSignal = config.signal;
+  const dispatcher = config.dispatcher;
 
   let lastStatus = null;
   let lastBody = '';
@@ -584,6 +631,7 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
     try {
       response = await fetch(url, {
         ...options,
+        ...(dispatcher ? { dispatcher } : {}),
         signal,
         // 默认用户代理：GitHub 拒绝无 UA 的 API 请求，Akismet 也要求合法 UA。
         headers: {

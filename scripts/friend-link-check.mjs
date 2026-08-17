@@ -38,6 +38,7 @@ import {
   computeBackoffDelay,
   RetryableHttpError,
   isSafePublicHttpUrl,
+  safeFetchAgent,
   sanitizeUrlForLogs,
 } from './lib/http.mjs';
 import { parseEnvNumber } from './lib/env.mjs';
@@ -132,6 +133,8 @@ export const checkUrlReachable = async (rawUrl) => {
         {
           retries: CHECK_RETRIES,
           timeoutMs: CHECK_TIMEOUT_MS,
+          // 连接期逐 IP 私网校验（防 pre-flight 通过后的 DNS 重绑定）。
+          dispatcher: safeFetchAgent,
           onRetry: (info) =>
             logger.warn('Retrying friend check', {
               host: url.hostname,
