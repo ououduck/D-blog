@@ -45,7 +45,7 @@ export default defineConfig({
         'scripts/**/*.test.mjs',
       ],
       // 按当前实际覆盖率定基（全量 Stmts≈53/Branch≈47），防止覆盖率继续下滑；
-      // 门槛仅约束本地 test:coverage 运行（CI 跑 test 不带 coverage）。
+      // 本地 test:coverage 与 CI（ci.yml 的 test job 跑 test:coverage）都受门槛约束。
       thresholds: {
         statements: 50,
         lines: 50,

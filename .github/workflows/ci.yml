@@ -71,8 +71,9 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        # npm test = gen:data（测试数据依赖生成的 posts/shuoshuo JSON）+ vitest run。
-        run: npm test
+        # npm run test:coverage = gen:data + vitest run --coverage：带覆盖率门禁
+        #（vitest.config.ts thresholds），CI 中同样强制，覆盖率下滑会红叉。
+        run: npm run test:coverage
 
   # ── 完整门禁：生产构建（客户端 + SSR + SSG）+ 构建审计 + SEO 审计 ──
   build:
