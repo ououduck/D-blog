@@ -692,7 +692,12 @@ logger.step('Generated posts data', `posts=${posts.length} sourceFiles=${files.l
 
 const requiredFriendFields = ['name', 'description', 'avatar', 'url'];
 const friendFiles = fs.existsSync(FRIENDS_DIR)
-  ? fs.readdirSync(FRIENDS_DIR).filter((file) => file.endsWith('.json'))
+  ? // .sort() 保证 friends.json 输出顺序确定：fs.readdirSync 的顺序是文件系统相关的
+    //（ext4 哈希序等），两次构建同源码会产生不同顺序的产物，破坏 SSG 确定性。
+    fs
+      .readdirSync(FRIENDS_DIR)
+      .filter((file) => file.endsWith('.json'))
+      .sort()
   : [];
 
 const seenFriendUrls = new Set();
