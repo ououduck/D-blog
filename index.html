@@ -1,103 +1,96 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>D-blog</title>
-    <link rel="icon" href="%BASE_URL%favicon.ico" />
-    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="%BASE_URL%pwa-192.png" />
-    <!-- 首屏 CSS 预取：入口样式表为内容哈希文件名（构建后才可知），preload 由
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>D-blog</title>
+  <link rel="icon" href="%BASE_URL%favicon.ico" />
+  <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="%BASE_URL%pwa-192.png" />
+  <!-- 首屏 CSS 预取：入口样式表为内容哈希文件名（构建后才可知），preload 由
          vite.config.ts 的 inject-entry-css-preload 插件在构建时注入产物 index.html，
          与 Vite 注入的样式表（含 crossorigin）保持一致，避免重复下载。 -->
-    <!-- 模板级兜底 meta：生产构建时会被 SSG 的 mergeHead 移除（每页以 Seo 组件的
+  <!-- 模板级兜底 meta：生产构建时会被 SSG 的 mergeHead 移除（每页以 Seo 组件的
          实际输出为准），仅作为开发模式 / 未跑 SSG 时的后备。文案与 siteConfig 保持一致。 -->
-    <meta name="description" content="跑路的duck的技术分享" />
-    <meta name="keywords" content="D-blog,跑路的duck,前端博客,技术分享,编程教程,React,TypeScript,Web开发" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f0e9" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a" />
-    <!-- color-scheme：声明明暗双模式，让 UA 组件（滚动条/表单控件/默认 canvas 色）在 CSS 加载前适配深色，避免深色模式首帧闪白。mergeHead 不移除该标签，生产构建安全保留。 -->
-    <meta name="color-scheme" content="light dark" />
-    <script>
-      (function () {
-        try {
-          var theme = localStorage.getItem('theme');
-          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (theme === 'dark' || (theme !== 'light' && prefersDark)) {
-            document.documentElement.classList.add('dark');
-          }
-        } catch (_) {}
-      })();
-    </script>
+  <meta name="description" content="跑路的duck的技术分享" />
+  <meta name="keywords" content="D-blog,跑路的duck,前端博客,技术分享,编程教程,React,TypeScript,Web开发" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f0e9" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a" />
+  <!-- color-scheme：声明明暗双模式，让 UA 组件（滚动条/表单控件/默认 canvas 色）在 CSS 加载前适配深色，避免深色模式首帧闪白。mergeHead 不移除该标签，生产构建安全保留。 -->
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('theme');
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (theme === 'dark' || (theme !== 'light' && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (_) { }
+    })();
+  </script>
 
-    <!-- DNS 预解析和预连接优化 -->
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- 图床域名提前建连：文章封面图（LCP 元素）托管于 img.pldduck.com，
+  <!-- DNS 预解析和预连接优化 -->
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- 图床域名提前建连：文章封面图（LCP 元素）托管于 img.pldduck.com，
          移动端 4G 下提前完成 DNS→TCP→TLS 可显著缩短首张封面图下载延迟。
          crossorigin 与 SSG 注入的 <link rel=preload as=image> 及 <img> 的跨域
          请求保持一致，确保连接可被复用而非重新握手。 -->
-    <link rel="preconnect" href="https://img.pldduck.com" crossorigin />
-    <link rel="dns-prefetch" href="https://img.pldduck.com" />
-    <!-- 不蒜子访问统计 API：提前完成 DNS/TLS，路由级统计请求由应用代码发起。 -->
-    <link rel="preconnect" href="https://cdn.busuanzi.cc" crossorigin />
-    <link rel="dns-prefetch" href="https://cdn.busuanzi.cc" />
+  <link rel="preconnect" href="https://img.pldduck.com" crossorigin />
+  <link rel="dns-prefetch" href="https://img.pldduck.com" />
+  <!-- 不蒜子访问统计 API：提前完成 DNS/TLS，路由级统计请求由应用代码发起。 -->
+  <link rel="preconnect" href="https://cdn.busuanzi.cc" crossorigin />
+  <link rel="dns-prefetch" href="https://cdn.busuanzi.cc" />
 
-    <!-- 字体加载优化：异步加载避免阻塞渲染，减少不常用权重。
+  <!-- 字体加载优化：异步加载避免阻塞渲染，减少不常用权重。
          preload 与正式 stylesheet 的 crossorigin 必须一致：浏览器按
          (URL, 请求模式, 凭据模式) 匹配 preload 缓存；不一致则 preload 作废、
          CSS 被下载两次（Chrome 报 "request credentials mode does not match"）。
          preload 默认 cors/anonymous，而 <link rel=stylesheet> 不带 crossorigin 时
          以 no-cors 请求——两者本不匹配，故 stylesheet 须显式加 crossorigin 对齐。
          Google Fonts CSS 返回 Access-Control-Allow-Origin: *，anonymous 跨域安全。 -->
-    <link
-      rel="preload"
-      as="style"
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap"
-      crossorigin
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap"
-      rel="stylesheet"
-      crossorigin
-      media="print"
-      onload="this.media = 'all'"
-    />
-    <noscript>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap"
-        rel="stylesheet"
-        crossorigin
-      />
-    </noscript>
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet"
+    crossorigin media="print" onload="this.media = 'all'" />
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet"
+      crossorigin />
+  </noscript>
 
-    <!-- Clarity Analytics：等 load 事件后再注入标签，避免与分析/智能体无关的脚本抢占首屏主线程 -->
-    <script>
-      (function (c, l, a, r, i, t, y) {
-        var inject = function () {
-          c[a] =
-            c[a] ||
-            function () {
-              (c[a].q = c[a].q || []).push(arguments);
-            };
-          t = l.createElement(r);
-          t.async = 1;
-          t.src = 'https://www.clarity.ms/tag/' + i;
-          y = l.getElementsByTagName(r)[0];
-          y.parentNode.insertBefore(t, y);
-        };
-        if (l.readyState === 'complete' || l.readyState === 'interactive') {
-          inject();
-        } else {
-          c.addEventListener('load', inject, { once: true });
-        }
-      })(window, document, 'clarity', 'script', 'wloc3f723i');
-    </script>
-  </head>
-  <body class="bg-paper text-ink dark:bg-void dark:text-gray-200 overflow-x-hidden">
-    <div id="root"></div>
-    <script type="module" src="/src/index.tsx"></script>
-  </body>
+  <!-- Clarity Analytics：等 load 事件后再注入标签，避免与分析/智能体无关的脚本抢占首屏主线程 -->
+  <script>
+    (function (c, l, a, r, i, t, y) {
+      var inject = function () {
+        c[a] =
+          c[a] ||
+          function () {
+            (c[a].q = c[a].q || []).push(arguments);
+          };
+        t = l.createElement(r);
+        t.async = 1;
+        t.src = 'https://www.clarity.ms/tag/' + i;
+        y = l.getElementsByTagName(r)[0];
+        y.parentNode.insertBefore(t, y);
+      };
+      if (l.readyState === 'complete' || l.readyState === 'interactive') {
+        inject();
+      } else {
+        c.addEventListener('load', inject, { once: true });
+      }
+    })(window, document, 'clarity', 'script', 'wloc3f723i');
+  </script>
+</head>
+
+<body class="bg-paper text-ink dark:bg-void dark:text-gray-200 overflow-x-hidden">
+  <div id="root"></div>
+  <script type="module" src="/src/index.tsx"></script>
+</body>
+
+<meta name="baidu_union_verify" content="d70acf925cd16b63ba09b10ae4decd45">
+
 </html>
