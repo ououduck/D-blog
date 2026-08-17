@@ -1418,92 +1418,6 @@ html.dark .mermaid-diagram > svg {
   );
 }
 
-/* ===== react-bits 启发：Aurora 柔光背景（纯 CSS 版）=====
-   首页 Hero 背后的柔和渐变光斑，缓慢漂移；零 JS、无额外请求，
-   亮暗主题各用一组低饱和中性色，保持编辑风的克制观感。 */
-.editorial-aurora {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.editorial-aurora-blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(72px);
-  will-change: transform;
-}
-
-.editorial-aurora-blob:nth-child(1) {
-  width: 34rem;
-  height: 34rem;
-  left: -8rem;
-  top: -12rem;
-  opacity: 0.55;
-  background: radial-gradient(circle at 35% 35%, #e7e5e4 0%, rgba(231, 229, 228, 0) 70%);
-  animation: editorial-aurora-drift-1 17s ease-in-out infinite alternate;
-}
-
-.editorial-aurora-blob:nth-child(2) {
-  width: 40rem;
-  height: 40rem;
-  right: -11rem;
-  top: -6rem;
-  opacity: 0.5;
-  background: radial-gradient(circle at 60% 40%, #d6d3d1 0%, rgba(214, 211, 209, 0) 70%);
-  animation: editorial-aurora-drift-2 21s ease-in-out infinite alternate;
-}
-
-.editorial-aurora-blob:nth-child(3) {
-  width: 30rem;
-  height: 30rem;
-  left: 32%;
-  bottom: -15rem;
-  opacity: 0.45;
-  background: radial-gradient(circle at 50% 50%, #e4e4e7 0%, rgba(228, 228, 231, 0) 70%);
-  animation: editorial-aurora-drift-3 19s ease-in-out infinite alternate;
-}
-
-.dark .editorial-aurora-blob:nth-child(1) {
-  background: radial-gradient(circle at 35% 35%, #27272a 0%, rgba(39, 39, 42, 0) 70%);
-}
-
-.dark .editorial-aurora-blob:nth-child(2) {
-  background: radial-gradient(circle at 60% 40%, #3f3f46 0%, rgba(63, 63, 70, 0) 70%);
-}
-
-.dark .editorial-aurora-blob:nth-child(3) {
-  background: radial-gradient(circle at 50% 50%, #18181b 0%, rgba(24, 24, 27, 0) 70%);
-}
-
-@keyframes editorial-aurora-drift-1 {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  to {
-    transform: translate3d(3.5rem, 2rem, 0) scale(1.12);
-  }
-}
-
-@keyframes editorial-aurora-drift-2 {
-  from {
-    transform: translate3d(0, 0, 0) scale(1.05);
-  }
-  to {
-    transform: translate3d(-3rem, 2.5rem, 0) scale(0.94);
-  }
-}
-
-@keyframes editorial-aurora-drift-3 {
-  from {
-    transform: translate3d(0, 0, 0) scale(0.96);
-  }
-  to {
-    transform: translate3d(2.5rem, -2rem, 0) scale(1.1);
-  }
-}
-
 /* ===== react-bits 启发：GlitchText 故障字（编辑风 404）=====
    双层伪元素以 clip-path 切片 + 微偏移循环，配色采用低饱和
    灰阶而不是霓虹红青，暗色/亮色主题分别适配。 */
@@ -1641,17 +1555,12 @@ html.dark .mermaid-diagram > svg {
 }
 
 @media print {
-  .editorial-grain,
-  .editorial-aurora {
+  .editorial-grain {
     display: none !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .editorial-aurora-blob {
-    animation: none;
-  }
-
   .editorial-glitch::before,
   .editorial-glitch::after {
     display: none;

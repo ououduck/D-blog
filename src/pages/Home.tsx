@@ -230,13 +230,6 @@ const Hero = () => {
 
   return (
     <div className="relative overflow-hidden px-4 pb-8 pt-5 text-center md:pb-10 md:pt-8">
-      {/* react-bits「Aurora」启发：纯 CSS 柔光渐变背景，零 JS、无额外请求，
-          缓慢漂移仅在减弱动效偏好下关闭；光斑在内容层之下。 */}
-      <div className="editorial-aurora" aria-hidden="true">
-        <div className="editorial-aurora-blob" />
-        <div className="editorial-aurora-blob" />
-        <div className="editorial-aurora-blob" />
-      </div>
       <motion.div className="relative" style={shouldReduceMotion ? undefined : { y: heroY, opacity: heroOpacity }}>
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
           {siteConfig.subtitle}
