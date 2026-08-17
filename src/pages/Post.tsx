@@ -1943,6 +1943,18 @@ export const Post = () => {
     }
   }, [isReadingMode, shareModalOpen]);
 
+  // 键盘快捷键通过 ref 读取最新值，而不是把 state 闭包进 listener：
+  // 否则每次 adjacentPosts/previewImage/shareModalOpen 变化都要卸载重挂
+  // listener，存在「状态已更新、listener 尚未换新」的竞态窗口 —— 期间
+  // Alt+←/→ 会命中旧闭包（如 adjacentPosts 仍为空）静默不导航。
+  // ref 在渲染期同步最新值，一旦 UI 已展示相邻导航，快捷键必然拿到最新数据。
+  const adjacentPostsRef = useRef(adjacentPosts);
+  adjacentPostsRef.current = adjacentPosts;
+  const previewImageRef = useRef(previewImage);
+  previewImageRef.current = previewImage;
+  const shareModalOpenRef = useRef(shareModalOpen);
+  shareModalOpenRef.current = shareModalOpen;
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (hasOpenOverlay()) {
@@ -1950,18 +1962,18 @@ export const Post = () => {
       }
 
       // 按住不放时 keydown 以 ~30ms 间隔连续触发（repeat），而首次 navigate 后
-      // adjacentPosts 要到 effect 阶段才清空 —— 期间的 repeat 事件仍持有旧闭包，
+      // adjacentPosts 要到 effect 阶段才清空 —— 期间的 repeat 事件仍持有旧值，
       // 会对同一篇文章重复入栈（浏览器返回要多按几次才能回原页）。
       if (e.repeat) {
         return;
       }
 
       if (e.key === 'Escape') {
-        if (previewImage) {
+        if (previewImageRef.current) {
           setPreviewImage(null);
           return;
         }
-        if (shareModalOpen) {
+        if (shareModalOpenRef.current) {
           setShareModalOpen(false);
           return;
         }
@@ -1970,20 +1982,20 @@ export const Post = () => {
       // 否则退化为浏览器历史后退/前进，用户会意外离开当前页面。
       if (e.key === 'ArrowLeft' && e.altKey) {
         e.preventDefault();
-        if (adjacentPosts.prev) {
-          navigate(`/post/${adjacentPosts.prev.id}`);
+        if (adjacentPostsRef.current.prev) {
+          navigate(`/post/${adjacentPostsRef.current.prev.id}`);
         }
       }
       if (e.key === 'ArrowRight' && e.altKey) {
         e.preventDefault();
-        if (adjacentPosts.next) {
-          navigate(`/post/${adjacentPosts.next.id}`);
+        if (adjacentPostsRef.current.next) {
+          navigate(`/post/${adjacentPostsRef.current.next.id}`);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [previewImage, shareModalOpen, adjacentPosts, navigate]);
+  }, [navigate]);
 
   // 依赖必须覆盖 remarkPlugins/rehypePlugins：heading id 解析的出现次数游标活在
   // createMarkdownComponents 的闭包里，而组件对象被 useMemo 缓存。异步 rehype/remark
