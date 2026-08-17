@@ -141,10 +141,12 @@ export const WritingCalendar: React.FC<WritingCalendarProps> = ({ dates, classNa
     <div className={className}>
       <div className="overflow-x-auto no-scrollbar">
         <div className="min-w-max">
-          {/* 月份标签行 */}
-          <div className="flex" aria-hidden="true">
+          {/* 月份标签行：占位列（w-8/sm:w-9）与网格行一致，且外层 gap 必须与
+              网格行完全相同（gap-[3px] sm:gap-[4px]），否则标签整体偏移一个
+              gap（移动端 3px / sm+ 4px），看起来错位。 */}
+          <div className="flex gap-[3px] sm:gap-[4px]" aria-hidden="true">
             <span className="w-8 shrink-0 sm:w-9" />
-            <div className="relative flex gap-[3px] sm:gap-[4px] [--cell-pitch:14px] sm:[--cell-pitch:16px]">
+            <div className="relative [--cell-pitch:14px] sm:[--cell-pitch:16px]">
               {monthLabels.map(({ weekIndex, label }) => (
                 <span
                   key={`${weekIndex}-${label}`}
@@ -161,10 +163,16 @@ export const WritingCalendar: React.FC<WritingCalendarProps> = ({ dates, classNa
           </div>
 
           <div className="mt-1 flex gap-[3px] sm:gap-[4px]">
-            {/* 星期标签列（一/三/五） */}
-            <div className="flex w-8 shrink-0 flex-col justify-between py-[1px] sm:w-9" aria-hidden="true">
-              {WEEKDAY_LABELS.map((label) => (
-                <span key={label} className="text-[10px] leading-[13px] text-zinc-400 dark:text-zinc-500">
+            {/* 星期标签列（一/三/五）：垂直位置按单元格节距定位到行 0/2/4，
+                与网格行严格对齐。此前 justify-between 会把三个标签摊到
+                0/3/6 行，导致「三」落在周四行、「五」落在周日行。 */}
+            <div className="relative w-8 shrink-0 sm:w-9 [--cell-pitch:14px] sm:[--cell-pitch:16px]" aria-hidden="true">
+              {WEEKDAY_LABELS.map((label, i) => (
+                <span
+                  key={label}
+                  className="absolute left-0 text-[10px] leading-none text-zinc-400 dark:text-zinc-500"
+                  style={{ top: `calc(${i * 2} * var(--cell-pitch))` }}
+                >
                   {label}
                 </span>
               ))}
