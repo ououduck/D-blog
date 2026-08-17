@@ -23,7 +23,6 @@
 
 import dns from 'node:dns/promises';
 import net from 'node:net';
-import { Agent } from 'undici';
 
 /* ------------------------------------------------------------------ */
 /* 常量与错误分类                                                       */
@@ -271,8 +270,40 @@ const safeLookup = (hostname, options, callback) => {
   });
 };
 
-/** 供对用户可控 URL 发起请求的脚本注入的 Agent：连接期逐 IP 私网校验（防 DNS 重绑定）。 */
-export const safeFetchAgent = new Agent({ connect: { lookup: safeLookup } });
+/**
+ * 懒加载 undici 的连接期 SSRF 防护 Agent（单例，首次调用时创建）。
+ *
+ * undici 只在「对用户可控 URL 发起请求」的脚本（friend-link-bot /
+ * friend-link-check / check-broken-links）中才被真正需要；telegram-notify /
+ * akismet-comment-check / comment-keyword-* 等脚本只访问可信固定域名
+ * （api.telegram.org / api.github.com / rest.akismet.com），用 Node 内置 fetch
+ * 即可，完全零 npm 依赖。因此这里必须用动态 import 懒加载：任何不调用本函数的
+ * 脚本都不再被 http.mjs 的顶层 `import { Agent } from 'undici'` 强绑 undici ——
+ * 否则未执行 npm install 的 workflow（telegram-notify.yml 等）会在模块加载期
+ * 直接 ERR_MODULE_NOT_FOUND 崩溃。
+ *
+ * @returns {Promise<import('undici').Agent>} 连接期逐 IP 私网校验（防 DNS 重绑定）的 Agent。
+ */
+let safeFetchAgentPromise = null;
+export const getSafeFetchAgent = () => {
+  if (!safeFetchAgentPromise) {
+    safeFetchAgentPromise = (async () => {
+      let undici;
+      try {
+        undici = await import('undici');
+      } catch (error) {
+        // fail-closed：SSRF 防护无法建立时绝不静默降级为无防护请求。
+        throw new Error(
+          'getSafeFetchAgent requires the "undici" package: run `npm ci` in the workflow ' +
+            '(SSRF 连接期防护依赖它，缺少时拒绝发出未防护请求)。',
+          { cause: error },
+        );
+      }
+      return new undici.Agent({ connect: { lookup: safeLookup } });
+    })();
+  }
+  return safeFetchAgentPromise;
+};
 
 /**
  * 校验 URL 是否为"安全的公开 HTTP(S) 地址"：
@@ -608,7 +639,7 @@ export const isNetworkError = (error) => {
  * @param {number} [config.maxDelayMs=DEFAULT_MAX_DELAY_MS] 退避上限。
  * @param {AbortSignal} [config.signal] 外部取消信号。
  * @param {import('undici').Agent} [config.dispatcher] 自定义 undici dispatcher（对用户可控
- *        URL 传 safeFetchAgent，连接期逐 IP 私网校验，防 DNS 重绑定 TOCTOU）。
+ *        URL 传 await getSafeFetchAgent() 的结果，连接期逐 IP 私网校验，防 DNS 重绑定 TOCTOU）。
  * @param {(info: { attempt: number, status: number | null, error: Error | null, delayMs: number, url: string }) => void} [config.onRetry]
  *        每次决定重试前的回调（供结构化日志记录重试事件）。
  * @returns {Promise<Response>} 成功时返回 response（由调用方按需消费 body）。

@@ -49,6 +49,11 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install dependencies
+        # 脚本经 http.mjs 的 getSafeFetchAgent 使用 undici（SSRF 连接期逐 IP
+        # 防护，防 DNS 重绑定），需安装依赖（--no-audit --no-fund 提速）。
+        run: npm ci --no-audit --no-fund
+
       - name: Show dispatch context
         run: |
           echo "Ref: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || github.ref }}"

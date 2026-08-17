@@ -6,7 +6,7 @@ import {
   sanitizeUrlForLogs,
   isPrivateAddress,
   isResolvedAddressesSafe,
-  safeFetchAgent,
+  getSafeFetchAgent,
 } from './http.mjs';
 
 describe('computeBackoffDelay', () => {
@@ -141,7 +141,13 @@ describe('isResolvedAddressesSafe', () => {
     }
   });
 
-  it('safeFetchAgent 暴露连接期校验 dispatcher', () => {
-    expect(safeFetchAgent).toBeDefined();
+  it('getSafeFetchAgent 懒加载并暴露连接期校验 dispatcher', async () => {
+    // 单例：两次调用返回同一 Agent 实例。
+    const agent = await getSafeFetchAgent();
+    const agentAgain = await getSafeFetchAgent();
+    expect(agent).toBeDefined();
+    expect(agent).toBe(agentAgain);
+    // 是 undici Agent（具备 dispatch 能力，可作 fetch dispatcher）。
+    expect(typeof agent.dispatch).toBe('function');
   });
 });

@@ -6,7 +6,7 @@ import { extractExternalLinks, parseIgnoreHosts } from './check-broken-links.mjs
 vi.mock('./lib/http.mjs', () => ({
   isSafePublicHttpUrl: vi.fn(async () => true),
   fetchWithRetry: vi.fn(async () => ({ status: 200, body: { cancel: async () => {} }, headers: new Headers() })),
-  safeFetchAgent: {},
+  getSafeFetchAgent: vi.fn(async () => ({})),
   RetryableHttpError: class RetryableHttpError extends Error {
     constructor(message, status = 0, attempts = 1) {
       super(message);
