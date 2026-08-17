@@ -1985,6 +1985,11 @@ export const Post = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [previewImage, shareModalOpen, adjacentPosts, navigate]);
 
+  // 依赖必须覆盖 remarkPlugins/rehypePlugins：heading id 解析的出现次数游标活在
+  // createMarkdownComponents 的闭包里，而组件对象被 useMemo 缓存。异步 rehype/remark
+  // 插件（高亮/公式）加载后 ReactMarkdown 用新插件重渲染正文，若仍复用旧组件对象，
+  // 游标已走到末尾，所有标题 id 退化为 slug 兜底（与构建期 headings 仅“巧合”一致，
+  // 标题撞 slug-2 后缀时发散）。把插件纳入依赖，插件加载即重建组件、游标归零。
   const markdownComponents = useMemo(
     () =>
       createMarkdownComponents(
@@ -1995,7 +2000,8 @@ export const Post = () => {
         headings,
         shouldReduceMotion,
       ),
-    [mermaidRenderer, mermaidTheme, post?.imageDimensions, headings, shouldReduceMotion],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 插件仅作缓存失效：异步加载后须重建组件以重置 heading id 游标。
+    [mermaidRenderer, mermaidTheme, post?.imageDimensions, headings, shouldReduceMotion, remarkPlugins, rehypePlugins],
   );
 
   if (loading) {
