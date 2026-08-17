@@ -60,6 +60,9 @@ jobs:
         run: npm run build
         env:
           VITE_SITE_URL: https://blog.pldduck.com
+          # GITHUB_TOKEN 是 secret，不会自动导出到 shell run 步骤，必须显式注入；
+          # fetch-giscus-comments.mjs 读取它拉取评论数（discussions: read 已声明）。
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy to Cloudflare Pages
         env:

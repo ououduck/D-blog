@@ -80,7 +80,9 @@ export const fetchCommentCounts = async ({ posts, token = process.env.GITHUB_TOK
     return null;
   }
   if (!token) {
-    logger.warn('未设置 GITHUB_TOKEN/GH_TOKEN，跳过评论数获取（本地构建可接受，CI 中会自动使用 GITHUB_TOKEN）');
+    // GITHUB_TOKEN 是 secret，GitHub Actions 不会自动导出到 shell run 步骤 ——
+    // workflow 的 build 步骤必须显式 env: GITHUB_TOKEN 注入（ci.yml / deploy.yml）。
+    logger.warn('未设置 GITHUB_TOKEN/GH_TOKEN，跳过评论数获取（本地构建可接受，CI 需在 build 步骤显式注入）');
     return null;
   }
 

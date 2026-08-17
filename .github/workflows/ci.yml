@@ -102,6 +102,9 @@ jobs:
         run: npm run build
         env:
           VITE_SITE_URL: https://blog.pldduck.com
+          # GITHUB_TOKEN 是 secret，不会自动导出到 shell run 步骤，必须显式注入；
+          # fetch-giscus-comments.mjs 读取它拉取评论数（discussions: read 已声明）。
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload dist artifact
         # 上传构建产物，便于下载检查 / 本地预览（部署仍由 deploy.yml 独立构建）。
