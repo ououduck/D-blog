@@ -40,7 +40,7 @@ export const Favorites = () => {
     <div className="pb-8 md:pb-14">
       <Seo
         title="我的收藏"
-        description="查看你收藏并离线保存的 D-blog 文章列表，支持无网络离线阅读，随时重温感兴趣的技术分享内容，收藏数据保存在浏览器本地。"
+        description="查看你收藏并离线保存的 D-blog 文章列表，支持无网络离线阅读，随时重温感兴趣的技术分享与生活随笔内容，收藏数据保存在浏览器本地。"
         noindex
       />
 

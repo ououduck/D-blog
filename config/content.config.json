@@ -1,4 +1,4 @@
 {
-  "postCategories": ["教程", "技术", "分享", "其他"],
+  "postCategories": ["教程", "技术", "随笔", "分享", "其他"],
   "fallbackCategory": "其他"
 }

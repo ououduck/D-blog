@@ -4,7 +4,7 @@ title: 元宝被微信封了？
 excerpt: 腾讯内斗还是别有用心？
 date: 2026-02-04
 updatedAt: 2026-02-04
-category: 分享
+category: 随笔
 tags:
   - 腾讯元宝
   - 腾讯

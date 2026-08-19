@@ -291,7 +291,7 @@ export const ArchivePage = () => {
   // 归档页结构化数据：站点级 schema + CollectionPage + BreadcrumbList。
   // 页面级 schema 与 SSG 注入互补：SSG 静态页已标记 schemaFromSeo，不再重复注入。
   const archivePageDescription =
-    'D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评与折腾记录，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。';
+    'D-blog 全站文章时间线，按年份与月份归档全部技术分享、工具测评、折腾记录与生活随笔，快速回顾历史内容与更新轨迹，一键定位任意时期的文章。';
   const archiveStructuredData = [
     ...buildSiteSchemas(archivePageDescription),
     {
