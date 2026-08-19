@@ -324,11 +324,9 @@ export const TableOfContents: React.FC<{
       behavior: shouldReduceMotion ? 'auto' : 'smooth',
     });
 
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.hash = id;
-      window.history.replaceState({}, '', url.toString());
-    }
+    const url = new URL(window.location.href);
+    url.hash = id;
+    window.history.replaceState({}, '', url.toString());
 
     setIsOpen(false);
   };

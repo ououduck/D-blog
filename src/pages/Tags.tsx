@@ -75,9 +75,7 @@ export const Tags = () => {
     // 或初始数据缺失时才有必要走异步重取。
     if (loadAttempt === 0 && initialPosts.length > 0) {
       setLoading(false);
-      return () => {
-        cancelled = true;
-      };
+      return;
     }
 
     setLoading(true);

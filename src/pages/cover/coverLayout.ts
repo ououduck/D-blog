@@ -184,7 +184,7 @@ export function calculateLayoutMetrics(options: LayoutMetricsOptions): LayoutMet
   // icon-split 布局中图标与主文字左右并排，垂直高度取两者最大值（与
   // coverRenderer 的 groupHeight 口径一致）；其余带图标布局为上下堆叠，直接相加。
   const iconHeight =
-    options.showIcon && options.hasIcon && effectiveLayout !== 'text-only'
+    effectiveLayout !== 'text-only'
       ? effectiveLayout === 'icon-split'
         ? Math.max(options.iconSize, hasText ? mainLineHeight * mainLines : 0)
         : options.iconSize

@@ -3,12 +3,7 @@
  * latest 为最近一条（供"继续阅读"卡片使用）。
  */
 import { useCallback, useEffect, useState } from 'react';
-import {
-  getReadingHistory,
-  saveReadingHistory,
-  subscribeReadingHistory,
-  type ReadingHistoryEntry,
-} from '@/services/readingHistory';
+import { getReadingHistory, subscribeReadingHistory, type ReadingHistoryEntry } from '@/services/readingHistory';
 
 export const useReadingHistory = () => {
   const [entries, setEntries] = useState<ReadingHistoryEntry[]>([]);
@@ -23,7 +18,6 @@ export const useReadingHistory = () => {
   return {
     entries,
     latest: entries[0],
-    save: saveReadingHistory,
     refresh,
   };
 };

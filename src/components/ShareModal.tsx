@@ -275,11 +275,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             >
               {isGeneratingPoster ? (
                 <>
-                  <LoaderCircle
-                    size={16}
-                    className={isGeneratingPoster ? 'animate-spin' : undefined}
-                    aria-hidden="true"
-                  />
+                  <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
                   正在生成海报…
                 </>
               ) : (

@@ -122,7 +122,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(
             style={placeholderStyle}
           />
         )}
-        {showBlurPlaceholder && src && !hasError && (
+        {showBlurPlaceholder && !hasError && (
           <div
             aria-hidden="true"
             className={mergeClassName(

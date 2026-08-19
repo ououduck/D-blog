@@ -2774,9 +2774,7 @@ export const CoverGenerator: React.FC = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            if (exportFormat === 'png') setTransparentBackground(true);
-                          }}
+                          onClick={() => setTransparentBackground(true)}
                           disabled={exportFormat !== 'png'}
                           aria-pressed={transparentBackground && exportFormat === 'png'}
                           className={`min-h-11 rounded-control border-2 px-3 py-2 text-xs font-semibold ${transparentBackground && exportFormat === 'png' ? 'border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink' : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'} disabled:cursor-not-allowed disabled:opacity-40`}
