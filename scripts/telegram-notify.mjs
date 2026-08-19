@@ -32,8 +32,9 @@
  *   TELEGRAM_BOT_TOKEN（BotFather 获取）、TELEGRAM_CHAT_ID（接收 chat id）、
  *   TELEGRAM_TOPIC_ID（可选：论坛话题 id，设置后消息发往该话题）。
  *
- * 本地调试（只打印消息体，不发送）：
- *   GITHUB_EVENT_NAME=push GITHUB_EVENT_PATH=.trash/tg-test/push.json \
+ * 本地调试（只打印消息体，不发送；GITHUB_EVENT_PATH 指向任意手动构造的
+ * GitHub 事件 JSON 文件，如 path/to/push-event.json）：
+ *   GITHUB_EVENT_NAME=push GITHUB_EVENT_PATH=path/to/push-event.json \
  *     node scripts/telegram-notify.mjs --print
  */
 
