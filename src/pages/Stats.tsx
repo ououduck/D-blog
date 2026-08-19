@@ -16,17 +16,12 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { easeOut } from '@/utils/motion';
 import { getSiteStats, getInitialSiteStats, EMPTY_SITE_STATS } from '../services/siteStats';
 import type { SiteStats } from '../services/siteStats';
-import { getInitialPosts } from '@/services/posts';
-import { WritingCalendar } from '@/components/WritingCalendar';
 import { fillBusuanziSpans } from '@/services/busuanzi';
 import { siteConfig } from '@config/site.config';
 
 // 构建期 SSG：site-stats.json 已通过 eager glob 内联，SSR 阶段即可同步渲染全部统计卡片，
 // 客户端水合首帧与 SSR 输出一致；异步加载仅作为初始数据缺失时的兜底。
 const initialSiteStats = getInitialSiteStats();
-
-// 写作日历数据源：文章日期列表（与站点概览同源的构建期内联数据）。
-const initialPosts = getInitialPosts();
 
 // 非有限数值（NaN/Infinity，如生成数据异常）显示占位符，避免页面出现 "NaN"。
 const NUMBER_FORMATTER = new Intl.NumberFormat('zh-CN');
@@ -352,25 +347,6 @@ export const Stats = () => {
                   detail="正文内 Markdown 图片累计数量"
                 />
               </div>
-            </section>
-          </Reveal>
-
-          <Reveal delay={0.05}>
-            <section className="mt-6 md:mt-8" aria-labelledby="writing-calendar-title">
-              <Surface className="min-w-0 p-5 sm:p-6">
-                <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-                  <h2
-                    id="writing-calendar-title"
-                    className="font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100"
-                  >
-                    写作日历
-                  </h2>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    最近一年发布频率 · 共 {initialPosts.length} 篇
-                  </p>
-                </div>
-                <WritingCalendar dates={initialPosts.map((post) => post.date)} />
-              </Surface>
             </section>
           </Reveal>
 

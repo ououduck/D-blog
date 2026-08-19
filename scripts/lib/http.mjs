@@ -17,6 +17,10 @@
  * 4. 【响应体限量读取】readResponseText 限量消费 body（防超大响应体拖垮 Runner 内存）。
  * 5. 【分页严格化】strictPagination=true 时达到 maxPages 仍存在 next 链接 → 抛
  *    PaginationLimitError，杜绝 1000 条以上数据被静默截断（fail-closed）。
+ * 6. 【TUN 代理自动识别】DNS 全部解析到 198.18.0.0/15（Clash/Surge fake-IP 标准段）
+ *    时自动放行 IP 级校验（请求经代理转发到真实公网目标），消除本地 TUN 环境下
+ *    死链扫描/友链检查的整批误报；fc00::/7（ULA）仍须显式
+ *    ALLOW_PROXY_ARTIFACT_DNS=1，ALLOW_PROXY_ARTIFACT_DNS=0 可硬性关闭自动识别。
  *
  * 全部函数均为纯函数/可注入依赖，便于单测与本地无网络环境复现。
  */
@@ -163,23 +167,42 @@ const privateIpv6BlockList = new net.BlockList();
   ['fe80::', 10],
 ].forEach(([subnet, prefix]) => privateIpv6BlockList.addSubnet(subnet, prefix, 'ipv6'));
 
-/** 代理 TUN（Clash/Surge 等）伪 DNS 特征段：198.18.0.0/15 与 fc00::/7 内自定义段。
- *  本地开发机开启代理时，所有域名都会被解析到这些段 —— 与真实私网目标无法区分，
- *  此时跳过 IP 级私网判定（字面地址/localhost 检查仍生效），交由请求结果判断。 */
-const proxyArtifactBlockList = new net.BlockList();
-proxyArtifactBlockList.addSubnet('198.18.0.0', 15, 'ipv4');
-proxyArtifactBlockList.addSubnet('fc00::', 7, 'ipv6');
+/** 代理 TUN（Clash/Surge 等）伪 DNS 特征段：
+ *  - 198.18.0.0/15（IPv4）：Clash/Surge/sing-box TUN fake-IP 的标准段。该段是 RFC 2544
+ *    基准测试段，真实网络不会使用，因此「全部解析结果落在此段」可作为本地 TUN 代理的
+ *    可靠指纹，自动识别放行（请求经代理转发到真实公网目标，不构成 SSRF 面）。
+ *  - fc00::/7（IPv6 ULA）：fake-ip6 也会使用该段，但真实内网 IPv6 同样广泛使用 ULA，
+ *    与私网目标无法区分，**必须显式 ALLOW_PROXY_ARTIFACT_DNS=1 才放行**（防内网 SSRF）。 */
+const proxyArtifactIpv4BlockList = new net.BlockList();
+proxyArtifactIpv4BlockList.addSubnet('198.18.0.0', 15, 'ipv4');
+const proxyArtifactIpv6BlockList = new net.BlockList();
+proxyArtifactIpv6BlockList.addSubnet('fc00::', 7, 'ipv6');
 
-const isProxyArtifactAddress = (value) => {
+/** 判定单个地址是否为 TUN 代理伪 DNS 特征地址（IPv4 198.18/15 或 IPv6 fc00::/7）。
+ *  导出供调用方检测「本地是否处于 TUN 代理环境」（如死链检查器的诊断日志）。 */
+export const isProxyArtifactAddress = (value) => {
   const address = String(value).toLowerCase();
   if (address.includes(':')) {
     const mappedIpv4 = unmapIpv4InIpv6(address);
-    if (mappedIpv4) return proxyArtifactBlockList.check(mappedIpv4, 'ipv4');
+    if (mappedIpv4) return proxyArtifactIpv4BlockList.check(mappedIpv4, 'ipv4');
     if (net.isIP(address) !== 6) return false;
-    return proxyArtifactBlockList.check(address, 'ipv6');
+    return proxyArtifactIpv6BlockList.check(address, 'ipv6');
   }
   if (net.isIP(address) !== 4) return false;
-  return proxyArtifactBlockList.check(address, 'ipv4');
+  return proxyArtifactIpv4BlockList.check(address, 'ipv4');
+};
+
+/** 判定单个地址是否为「可自动识别」的 IPv4 TUN 伪 DNS 特征地址（198.18.0.0/15）。
+ *  仅该段可自动放行：真实网络不使用 RFC 2544 基准段，见到它必然是本地 TUN 代理。 */
+const isAutoAllowableProxyArtifactAddress = (value) => {
+  const address = String(value).toLowerCase();
+  if (address.includes(':')) {
+    const mappedIpv4 = unmapIpv4InIpv6(address);
+    if (!mappedIpv4 || net.isIP(mappedIpv4) !== 4) return false;
+    return proxyArtifactIpv4BlockList.check(mappedIpv4, 'ipv4');
+  }
+  if (net.isIP(address) !== 4) return false;
+  return proxyArtifactIpv4BlockList.check(address, 'ipv4');
 };
 
 /** 把 IPv4-mapped/兼容的 IPv6 地址解包为点分 IPv4；非此类形式返回 undefined。 */
@@ -226,18 +249,36 @@ export const isPrivateAddress = (address) => {
 
 /**
  * 判断一组已解析地址是否全部为公开地址（SSRF 判定的核心，pre-flight 与连接期共用）。
- * 代理伪 DNS（Clash/Surge TUN 把全部域名解析到 198.18.0.0/15 / fc00::/7）的放行
- * 只在显式设置 ALLOW_PROXY_ARTIFACT_DNS=1 时生效（本地开发专用）——CI/生产默认关闭，
- * 因为这些段本身就在私网黑名单里，无条件放行等于把 ULA/基准段当作安全地址（SSRF 绕过）。
+ *
+ * 代理伪 DNS（Clash/Surge TUN 把全部域名解析到 198.18.0.0/15 / fc00::/7）的处理：
+ * - 全部地址为 198.18.0.0/15（IPv4 fake-IP 标准段）时**自动识别放行** —— 该段是
+ *   RFC 2544 基准测试段，真实网络不会使用，见到它即本地 TUN 代理在转发请求，
+ *   连接目标是代理后的真实公网地址，不构成 SSRF 面；CI/服务器环境 DNS 解析到
+ *   公网真实 IP，本分支不会触发，防护保持有效。
+ * - 含 fc00::/7（IPv6 ULA）时**不自动放行**：真实内网 IPv6 同样使用 ULA，无法与
+ *   私网目标区分，必须显式设置 ALLOW_PROXY_ARTIFACT_DNS=1 才放行（本地双栈 TUN 专用）。
+ * - ALLOW_PROXY_ARTIFACT_DNS=0 强制关闭自动识别（偏执部署/自建 Runner 可硬性封禁）。
+ *
  * @param {Array<{ address: string, family?: number }>} addresses
  * @returns {boolean}
  */
 export const isResolvedAddressesSafe = (addresses) => {
-  const allowProxyArtifact = ['1', 'true', 'yes'].includes(
-    String(process.env.ALLOW_PROXY_ARTIFACT_DNS || '').toLowerCase(),
-  );
-  if (allowProxyArtifact && addresses.every(({ address }) => isProxyArtifactAddress(address))) {
-    return true;
+  if (addresses.length === 0) return false;
+  const flag = String(process.env.ALLOW_PROXY_ARTIFACT_DNS || '')
+    .trim()
+    .toLowerCase();
+  const explicitAllow = ['1', 'true', 'yes'].includes(flag);
+  const explicitDeny = ['0', 'false', 'no'].includes(flag);
+
+  const allArtifact = addresses.every(({ address }) => isProxyArtifactAddress(address));
+  if (allArtifact) {
+    if (explicitAllow) return true;
+    // 未显式配置时：仅自动识别「全部为 IPv4 198.18/15」这一 Clash/Surge TUN 指纹；
+    // 含 ULA（fc00::/7）或其他段一律保持 fail-closed。
+    if (!explicitDeny && addresses.every(({ address }) => isAutoAllowableProxyArtifactAddress(address))) {
+      return true;
+    }
+    return false;
   }
   return addresses.every(({ address }) => !isPrivateAddress(address));
 };
@@ -247,27 +288,33 @@ export const isResolvedAddressesSafe = (addresses) => {
  * 用「同一次」解析结果做私网判定 —— 消除 isSafePublicHttpUrl（pre-flight）与 fetch
  * 各自独立解析 DNS 之间的 TOCTOU（TTL=0 重绑定域名可让校验拿到公网 IP、实际请求
  * 解析到内网/元数据地址，从而绕过校验）。任何解析结果落在私网/保留段即拒绝连接。
+ *
+ * 注意：dns 来自 node:dns/promises（Promise 风格），lookup 不接受回调参数 ——
+ * 曾因把 (hostname, options, cb) 直接传给 Promise 版 lookup 导致回调永不被调用，
+ * 所有连接静默超时（UND_ERR_CONNECT_TIMEOUT），死链扫描整批误报 network。此处
+ * 必须先 await 再以 net.connect 约定的回调形态返回（options.all 时回数组）。
  */
-const safeLookup = (hostname, options, callback) => {
-  dns.lookup(hostname, { ...options, all: true }, (err, addresses) => {
-    if (err) {
-      callback(err);
-      return;
-    }
-    if (!isResolvedAddressesSafe(addresses)) {
-      const block = new Error(`SSRF 防护：${hostname} 解析到私网/保留地址，已拒绝连接`);
-      block.code = 'ERR_SSRF_BLOCKED';
-      callback(block);
-      return;
-    }
-    // 返回形态与 net.connect 对 lookup 的约定一致：all 时回数组，否则回 (address, family)。
-    if (options.all) {
-      callback(null, addresses);
-      return;
-    }
-    const first = addresses[0];
-    callback(null, first.address, first.family);
-  });
+const safeLookup = async (hostname, options, callback) => {
+  let addresses;
+  try {
+    addresses = await dns.lookup(hostname, { ...options, all: true });
+  } catch (error) {
+    callback(error);
+    return;
+  }
+  if (!isResolvedAddressesSafe(addresses)) {
+    const block = new Error(`SSRF 防护：${hostname} 解析到私网/保留地址，已拒绝连接`);
+    block.code = 'ERR_SSRF_BLOCKED';
+    callback(block);
+    return;
+  }
+  // 返回形态与 net.connect 对 lookup 的约定一致：all 时回数组，否则回 (address, family)。
+  if (options.all) {
+    callback(null, addresses);
+    return;
+  }
+  const first = addresses[0];
+  callback(null, first.address, first.family);
 };
 
 /**
@@ -284,25 +331,51 @@ const safeLookup = (hostname, options, callback) => {
  *
  * @returns {Promise<import('undici').Agent>} 连接期逐 IP 私网校验（防 DNS 重绑定）的 Agent。
  */
+let undiciModulePromise = null;
+const loadUndiciModule = () => {
+  if (!undiciModulePromise) {
+    undiciModulePromise = import('undici').catch((error) => {
+      undiciModulePromise = null; // 允许后续重试
+      throw new Error(
+        'SSRF 防护需要 "undici" 包：请在 workflow 中运行 `npm ci`（连接期防护依赖它，缺少时拒绝发出未防护请求）。',
+        { cause: error },
+      );
+    });
+  }
+  return undiciModulePromise;
+};
+
 let safeFetchAgentPromise = null;
 export const getSafeFetchAgent = () => {
   if (!safeFetchAgentPromise) {
-    safeFetchAgentPromise = (async () => {
-      let undici;
-      try {
-        undici = await import('undici');
-      } catch (error) {
-        // fail-closed：SSRF 防护无法建立时绝不静默降级为无防护请求。
-        throw new Error(
-          'getSafeFetchAgent requires the "undici" package: run `npm ci` in the workflow ' +
-            '(SSRF 连接期防护依赖它，缺少时拒绝发出未防护请求)。',
-          { cause: error },
-        );
-      }
-      return new undici.Agent({ connect: { lookup: safeLookup } });
-    })();
+    safeFetchAgentPromise = loadUndiciModule().then((undici) => new undici.Agent({ connect: { lookup: safeLookup } }));
   }
   return safeFetchAgentPromise;
+};
+
+/**
+ * 返回 npm undici 自带的 fetch（与 getSafeFetchAgent 返回的 Agent 同一版本族）。
+ *
+ * 为什么必须用它而不是全局 fetch：Node 内置 fetch 的 dispatcher 接口与 npm undici
+ * 的 Agent 存在版本兼容问题 —— 当 Node 捆绑的 undici 版本（如 Node 22≈6.x、
+ * Node 24≈7.x）与 package.json 安装的 undici（^8.10.0）不一致时，向全局 fetch 传入
+ * npm Agent 会抛 UND_ERR_INVALID_ARG "invalid onRequestStart method"，所有请求静默
+ * 失败（死链扫描曾因此整批误报 network 错误）。npm undici 的 fetch 与它自己的
+ * Agent 永远同版本，且返回标准 Response（ok/status/headers/body.cancel 等接口一致），
+ * 调用方无需感知差异。
+ * @returns {Promise<typeof fetch>}
+ */
+let undiciFetchPromise = null;
+export const getSafeUndiciFetch = () => {
+  if (!undiciFetchPromise) {
+    undiciFetchPromise = loadUndiciModule().then((undici) => {
+      if (typeof undici.fetch !== 'function') {
+        throw new Error('undici package does not export fetch');
+      }
+      return undici.fetch;
+    });
+  }
+  return undiciFetchPromise;
 };
 
 /**
@@ -653,6 +726,11 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
   const externalSignal = config.signal;
   const dispatcher = config.dispatcher;
 
+  // 传入自定义 dispatcher（如 getSafeFetchAgent 的 SSRF Agent）时必须使用 npm undici
+  // 自己的 fetch：Node 内置 fetch 的 handler 接口与 npm undici Agent 版本不匹配时
+  // 会抛 UND_ERR_INVALID_ARG "invalid onRequestStart method"（详见 getSafeUndiciFetch）。
+  const doFetch = dispatcher ? await getSafeUndiciFetch() : fetch;
+
   let lastStatus = null;
   let lastBody = '';
 
@@ -660,7 +738,7 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
     const { signal, cleanup } = createTimeoutSignal(timeoutMs, externalSignal);
     let response;
     try {
-      response = await fetch(url, {
+      response = await doFetch(url, {
         ...options,
         ...(dispatcher ? { dispatcher } : {}),
         signal,

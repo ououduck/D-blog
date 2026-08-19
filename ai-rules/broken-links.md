@@ -15,6 +15,7 @@
 
 1. **代码块/行内代码屏蔽**：外链提取前必须经 `maskFencedCodeBlocks`（headings-core 共享）+ 行内代码屏蔽 —— 代码示例中的 URL 不得被当作真实外链检查（已修事故）。
 2. **SSRF 防护（含重定向逐跳）**：请求任意 URL 前必须调用 `isSafePublicHttpUrl`（lib/http.mjs），内网/回环/带凭据地址不发起请求直接判为不可访问；**重定向链必须手动逐跳跟随**（`redirect: 'manual'`），每一跳重新 `isSafePublicHttpUrl` —— 初始 URL 安全不代表跳转目标安全，公开站点可 302 到 127.0.0.1/169.254.169.254 形成绕过（与 friend-link-bot 的 fetchPublicPage 口径一致）。重定向超过上限（MAX_REDIRECTS）判失效（防环）。
+   - **本地 TUN 代理例外（自动识别）**：Clash/Surge 等 TUN 代理会把全部域名解析到 198.18.0.0/15（fake-IP 标准段），`isResolvedAddressesSafe` 对该指纹**自动放行 IP 级校验**（请求经代理转发到真实公网目标，不构成 SSRF 面），否则本地跑脚本会整批误报「非公开地址」；fc00::/7（IPv6 ULA，真实内网同样使用）仍需显式 `ALLOW_PROXY_ARTIFACT_DNS=1`，`ALLOW_PROXY_ARTIFACT_DNS=0` 可强制关闭自动识别（偏执部署）。
 3. **重试语义**：单 URL 检查必须复用 `fetchWithRetry`（瞬时抖动不误判死链）。
 4. **忽略名单**：`--ignore-hosts` 语义保持（已知反爬站点如 Cloudflare Dashboard 的 403 误报）。
 5. **并发与礼貌**：固定并发池（4）+ 每请求 150ms 间隔的平衡保持。
@@ -25,6 +26,8 @@
 ## 常见陷阱
 
 - 不要在本脚本内重新实现 fetch/重试/脱敏（lib/http.mjs 已有）；
+- **dispatcher 必须配 npm undici 自己的 fetch**：Node 内置 fetch 的 handler 接口与 npm undici Agent 版本不匹配时（Node 捆绑 undici 6/7 vs 安装的 ^8），`fetch(url, { dispatcher })` 会抛 UND_ERR_INVALID_ARG「invalid onRequestStart method」，所有请求静默失败、死链检查整批误报 network —— fetchWithRetry 已内置处理（传 dispatcher 时自动切 `getSafeUndiciFetch()`），改动时勿再回退到全局 fetch；
+- **safeLookup 必须 await Promise 版 dns.lookup**：http.mjs 的 `dns` 来自 `node:dns/promises`，`dns.lookup(host, opts, cb)` 的回调参数会被忽略、回调永不被调用，连接期校验会静默超时（UND_ERR_CONNECT_TIMEOUT）整批误报 —— 先 await 再按 net.connect 约定回调（options.all 回数组）；
 - 重定向 Location 为相对路径时必须 `new URL(location, current)` 解析后再校验，直接拼接会漏掉跳转目标；
 - Telegram 消息为 HTML parse mode，URL/错误文本必须 escapeHtml；
 - workflow 的 npm ci 只为 gray-matter（headings-core 无依赖）。

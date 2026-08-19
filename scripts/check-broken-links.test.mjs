@@ -7,6 +7,8 @@ vi.mock('./lib/http.mjs', () => ({
   isSafePublicHttpUrl: vi.fn(async () => true),
   fetchWithRetry: vi.fn(async () => ({ status: 200, body: { cancel: async () => {} }, headers: new Headers() })),
   getSafeFetchAgent: vi.fn(async () => ({})),
+  isProxyArtifactAddress: vi.fn(() => false),
+  lookupWithTimeout: vi.fn(async () => [{ address: '1.1.1.1', family: 4 }]),
   RetryableHttpError: class RetryableHttpError extends Error {
     constructor(message, status = 0, attempts = 1) {
       super(message);
@@ -15,8 +17,8 @@ vi.mock('./lib/http.mjs', () => ({
     }
   },
 }));
-import { isSafePublicHttpUrl, fetchWithRetry } from './lib/http.mjs';
-import { checkUrl } from './check-broken-links.mjs';
+import { isSafePublicHttpUrl, fetchWithRetry, isProxyArtifactAddress, lookupWithTimeout } from './lib/http.mjs';
+import { checkUrl, isProxyArtifactDnsEnvironment } from './check-broken-links.mjs';
 
 const mockResponse = (status, location) => {
   const headers = new Headers();
@@ -94,6 +96,19 @@ describe('parseIgnoreHosts', () => {
     expect(parseIgnoreHosts(['--ignore-hosts=One.Dash.Cloudflare.com, example.com , ,B.com'])).toEqual(
       new Set(['one.dash.cloudflare.com', 'example.com', 'b.com']),
     );
+  });
+});
+
+describe('isProxyArtifactDnsEnvironment', () => {
+  it('DNS 解析全部落在代理伪 DNS 段时判定为 TUN 环境', async () => {
+    isProxyArtifactAddress.mockReturnValue(true);
+    expect(await isProxyArtifactDnsEnvironment()).toBe(true);
+    expect(lookupWithTimeout).toHaveBeenCalledWith('github.com');
+  });
+
+  it('解析结果为普通公网地址时判定为非 TUN 环境', async () => {
+    isProxyArtifactAddress.mockReturnValue(false);
+    expect(await isProxyArtifactDnsEnvironment()).toBe(false);
   });
 });
 

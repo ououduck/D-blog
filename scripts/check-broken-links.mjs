@@ -28,6 +28,8 @@ import {
   fetchWithRetry,
   RetryableHttpError,
   isSafePublicHttpUrl,
+  isProxyArtifactAddress,
+  lookupWithTimeout,
   getSafeFetchAgent,
   sanitizeUrlForLogs,
 } from './lib/http.mjs';
@@ -40,12 +42,22 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 const POSTS_DIR = path.join(ROOT_DIR, 'posts');
 
-/** 单次请求超时（毫秒）：覆盖 DNS+TLS+响应头全程。 */
-const REQUEST_TIMEOUT_MS = 12000;
+/** 单次请求超时（毫秒）：覆盖 DNS+TLS+响应头全程。
+ *  12s 曾对慢站点（TTFB 较长）造成误报，放宽到 20s。 */
+const REQUEST_TIMEOUT_MS = 20000;
 /** 瞬时抖动/5xx 的重试次数（不含首次）；重试耗尽仍失败才判为死链。 */
 const REQUEST_RETRIES = 1;
 /** 相邻请求间隔（毫秒）：对外部站点保持礼貌，避免被封。 */
 const REQUEST_DELAY_MS = 150;
+
+/** 请求头：模拟真实浏览器 UA，避免被反爬/机器人拦截（Cloudflare 等对非浏览器
+ *  GET 返回 403，会把有效链接误报为死链）。 */
+const REQUEST_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+};
 
 const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
@@ -160,10 +172,7 @@ export const checkUrl = async (url) => {
         {
           method: 'GET',
           redirect: 'manual',
-          headers: {
-            'User-Agent': 'D-blog-LinkChecker/1.0',
-            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          },
+          headers: REQUEST_HEADERS,
         },
         {
           timeoutMs: REQUEST_TIMEOUT_MS,
@@ -212,6 +221,18 @@ export const checkUrl = async (url) => {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * 检测本地是否处于 TUN 代理环境（Clash/Surge 等 fake-IP DNS）：
+ * 解析一个已知公网域名，若全部解析结果都落在代理伪 DNS 特征段，说明本机 DNS 被
+ * 代理接管 —— lib/http.mjs 的 isResolvedAddressesSafe 会自动跳过 IP 级 SSRF 校验，
+ * 请求经代理转发到真实公网目标。这里仅输出一条诊断日志，帮助理解为何不拦截。
+ * @returns {Promise<boolean>}
+ */
+export const isProxyArtifactDnsEnvironment = async () => {
+  const addresses = await lookupWithTimeout('github.com');
+  return addresses.length > 0 && addresses.every(({ address }) => isProxyArtifactAddress(address));
+};
+
 const escapeHtml = (value) =>
   String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -220,6 +241,12 @@ const escapeHtml = (value) =>
     .replace(/"/g, '&quot;');
 
 const main = async () => {
+  if (await isProxyArtifactDnsEnvironment()) {
+    logger.info(
+      'Detected local TUN proxy (DNS fake-IP 198.18.0.0/15) — IP-level SSRF checks auto-skipped, requests go through the proxy',
+    );
+  }
+
   if (!fs.existsSync(POSTS_DIR)) {
     logger.warn('posts 目录不存在，跳过外链检查', { path: POSTS_DIR });
     return 0;

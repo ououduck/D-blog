@@ -228,6 +228,7 @@ Service Worker 作用域跟随部署路径，在线按页面/静态资源/图片
 
 - **触发**：Pages CMS 侧边栏「🔗 检查失效外链」按钮（`check-broken-links.yml`，workflow_dispatch），或每周一 02:00 UTC 定时自动巡检（schedule）；
 - **本地运行**：`npm run check:links`（默认仅报告退出码 0）；`--dry-run` 只打印不上报；`--fail` 发现失效链接时非零退出（可用于 CI 红叉门禁）；`--ignore-hosts=a.com,b.com` 跳过指定域名（用于已知反爬/机器人拦截的站点，如 Cloudflare Dashboard 对非浏览器 GET 返回 403 属误报，CI 中已内置该域名）；
+- **本地 TUN 代理**：开着 Clash/Surge 等 TUN 代理时，DNS 会把全部域名解析到 198.18.0.0/15 fake-IP 段，脚本会自动识别（日志提示 `Detected local TUN proxy`）并跳过 IP 级 SSRF 校验、经代理转发请求，不会误报死链；如需强制禁用自动识别可设 `ALLOW_PROXY_ARTIFACT_DNS=0`；
 - **通知配置**：复用 Telegram Secrets（`TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`，可选 `TELEGRAM_TOPIC_ID`），未配置时优雅跳过；报告发送复用 `scripts/lib/telegram.mjs`（与 `telegram-notify` 共享）。
 
 ## 许可证

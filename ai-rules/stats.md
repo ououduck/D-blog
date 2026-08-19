@@ -2,28 +2,19 @@
 
 ## 功能概述
 
-站点数据面板：概览卡片（文章数/字数/评论等）、GitHub 风格写作日历热力图、分类/标签/字数/图片排行、外部统计链接（不蒜子/Busuanzi）。
+站点数据面板：概览卡片（文章数/字数/评论等）、分类/标签/字数/图片排行、外部统计链接（不蒜子/Busuanzi）。
 
 ## 关键文件
 
 - `src/pages/Stats.tsx`
-- `src/components/WritingCalendar.tsx`（写作日历热力图）
 - `src/services/siteStats.ts` / `busuanzi.ts`
-- `src/services/posts.ts`（getInitialPosts 提供文章日期）
 
 ## 修改规则（必须遵守）
 
-1. **SSG/水合确定性**：写作日历窗口**必须锚定「最近发布日期」而非「今天」**（构建与客户端水合数据一致）；月份标签节距必须与单元格实际尺寸联动（移动端 14px / sm+ 16px，用 CSS 变量，禁止写死单值导致移动端漂移）。
-2. **日历 aria 汇总口径**：WritingCalendar 的 totalPosts/activeDays 必须只统计**窗口（53 周网格）内**的发布数与活跃天数 —— 直接取全量 counts 的 sum/size 会让站点运行一年后的 aria-label 被窗口外旧文章灌大，与网格实际内容不一致。
-3. **数据源**：统计值来自 `getInitialSiteStats()`（构建期内联）与 `getInitialPosts()`；异步加载仅作兜底，不得作为主路径。
-4. **数字格式化**：`Intl.NumberFormat('zh-CN')` 必须是模块级单例；NaN/Infinity 显示占位符「—」。
-5. **动画**：CountUp 尊重 prefers-reduced-motion（SSR 首帧渲染最终值）；柱状图 width 动画进入视口触发，不得影响首帧可读性。
-6. **布局**：站点概览 → 写作日历 → 分类/标签/最近更新三列 → 字数/图片两列 → 外部统计；新增板块需与既有栅格协调。
-
-## 常见陷阱
-
-- WritingCalendar 的 aria-label 汇总（总篇数/活跃天数）是读屏主要信息来源，改动计数逻辑要同步更新；
-- 日历颜色分级（LEVEL_CLASSES）与图例必须保持一致。
+1. **SSG/水合确定性**：统计值必须来自 `getInitialSiteStats()`（构建期内联，eager glob）；异步加载仅作兜底，不得作为主路径。
+2. **数字格式化**：`Intl.NumberFormat('zh-CN')` 必须是模块级单例；NaN/Infinity 显示占位符「—」。
+3. **动画**：CountUp 尊重 prefers-reduced-motion（SSR 首帧渲染最终值）；柱状图 width 动画进入视口触发，不得影响首帧可读性。
+4. **布局**：站点概览 → 分类/标签/最近更新三列 → 字数/图片两列 → 外部统计；新增板块需与既有栅格协调。
 
 ## 破例条款
 

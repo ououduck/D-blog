@@ -7,7 +7,19 @@ import {
   isPrivateAddress,
   isResolvedAddressesSafe,
   getSafeFetchAgent,
+  getSafeUndiciFetch,
 } from './http.mjs';
+
+/** 沿 cause 链查找错误码（undici 会把连接错误层层包装）。 */
+const findErrorCode = (error, code) => {
+  let current = error;
+  while (current) {
+    if (current.code === code) return true;
+    if (Array.isArray(current.errors) && current.errors.some((e) => findErrorCode(e, code))) return true;
+    current = current.cause;
+  }
+  return false;
+};
 
 describe('computeBackoffDelay', () => {
   it('第 1 次重试延迟在 [0, base×2) 内', () => {
@@ -126,16 +138,38 @@ describe('isResolvedAddressesSafe', () => {
     expect(isResolvedAddressesSafe([{ address: '::1' }])).toBe(false);
   });
 
-  it('代理伪 DNS 段（198.18.0.0/15、fc00::/7）默认视为不安全', () => {
-    expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }])).toBe(false);
+  it('IPv4 代理伪 DNS 段（198.18.0.0/15）自动识别放行（Clash/Surge TUN 指纹）', () => {
+    expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }])).toBe(true);
+    expect(isResolvedAddressesSafe([{ address: '198.18.2.60' }])).toBe(true);
+  });
+
+  it('IPv6 ULA 代理伪 DNS 段（fc00::/7）默认不放行（内网 IPv6 同样使用该段）', () => {
     expect(isResolvedAddressesSafe([{ address: 'fc00::1' }])).toBe(false);
   });
 
-  it('ALLOW_PROXY_ARTIFACT_DNS=1 时放行代理伪 DNS 段（本地 TUN 专用）', () => {
+  it('混合代理伪 DNS 地址（198.18 + fc00）默认不放行，须显式开启', () => {
+    expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }, { address: 'fc00::1' }])).toBe(false);
+  });
+
+  it('公网与代理伪 DNS 地址混合时视为不安全（解析结果不可信）', () => {
+    expect(isResolvedAddressesSafe([{ address: '8.8.8.8' }, { address: '198.18.0.1' }])).toBe(false);
+  });
+
+  it('ALLOW_PROXY_ARTIFACT_DNS=1 时显式放行全部代理伪 DNS 段（本地双栈 TUN 专用）', () => {
     process.env.ALLOW_PROXY_ARTIFACT_DNS = '1';
     try {
       expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }])).toBe(true);
       expect(isResolvedAddressesSafe([{ address: 'fc00::1' }])).toBe(true);
+      expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }, { address: 'fc00::1' }])).toBe(true);
+    } finally {
+      delete process.env.ALLOW_PROXY_ARTIFACT_DNS;
+    }
+  });
+
+  it('ALLOW_PROXY_ARTIFACT_DNS=0 时强制关闭自动识别（偏执部署/自建 Runner）', () => {
+    process.env.ALLOW_PROXY_ARTIFACT_DNS = '0';
+    try {
+      expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }])).toBe(false);
     } finally {
       delete process.env.ALLOW_PROXY_ARTIFACT_DNS;
     }
@@ -149,5 +183,25 @@ describe('isResolvedAddressesSafe', () => {
     expect(agent).toBe(agentAgain);
     // 是 undici Agent（具备 dispatch 能力，可作 fetch dispatcher）。
     expect(typeof agent.dispatch).toBe('function');
+  });
+
+  it('getSafeUndiciFetch 返回 npm undici 的 fetch（缓存单例）', async () => {
+    const undiciFetch = await getSafeUndiciFetch();
+    expect(typeof undiciFetch).toBe('function');
+    expect(await getSafeUndiciFetch()).toBe(undiciFetch);
+  });
+
+  it('连接期 SSRF 防护：safeLookup 拒绝私网解析（localhost → ERR_SSRF_BLOCKED）', async () => {
+    // 通过真实 Agent + npm undici fetch 触发连接期 lookup：localhost 解析到
+    // 127.0.0.1/::1（私网），应在建立 TCP 前被拒绝。端口须避开 undici 的保留端口
+    // 列表（如 9），否则 URL 校验阶段就报 bad port；本测试不依赖外网。
+    const agent = await getSafeFetchAgent();
+    const undiciFetch = await getSafeUndiciFetch();
+    try {
+      await undiciFetch('http://localhost:65432/', { dispatcher: agent, signal: AbortSignal.timeout(5000) });
+      expect.unreachable('私网目标应被连接期 SSRF 防护拒绝');
+    } catch (error) {
+      expect(findErrorCode(error, 'ERR_SSRF_BLOCKED')).toBe(true);
+    }
   });
 });
