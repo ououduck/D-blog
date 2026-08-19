@@ -19,14 +19,14 @@ import {
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
-export interface RotatingTextRef {
+interface RotatingTextRef {
   next: () => void;
   previous: () => void;
   jumpTo: (index: number) => void;
   reset: () => void;
 }
 
-export interface RotatingTextProps extends Omit<
+interface RotatingTextProps extends Omit<
   React.ComponentPropsWithoutRef<typeof motion.span>,
   'children' | 'transition' | 'initial' | 'animate' | 'exit'
 > {

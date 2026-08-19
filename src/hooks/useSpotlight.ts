@@ -24,7 +24,7 @@ interface UseSpotlightOptions {
   activeOpacity?: number;
 }
 
-export interface SpotlightBind<T extends HTMLElement = HTMLElement> {
+interface SpotlightBind<T extends HTMLElement = HTMLElement> {
   ref: React.RefObject<T | null>;
   onMouseMove: React.MouseEventHandler<T>;
   onMouseEnter: React.MouseEventHandler<T>;
