@@ -9,7 +9,7 @@ tags:
   - 阿里云盘
   - 油猴脚本
   - 工具
-coverImage: https://img.pldduck.com/D-blog/20260812115946789.png
+coverImage: https://img.pldduck.com/20260812115946789.png
 author: 跑路的duck
 featured: false
 featured-top: 0
@@ -23,11 +23,11 @@ draft: false
 ---
 
 # 截图  
-[![截图1](https://img.pldduck.com/D-blog/20260812115946790.png)](https://img.pldduck.com/D-blog/20260812115946790.png "截图1") 
-[![截图 2](https://img.pldduck.com/D-blog/20260812115946791.png)](https://img.pldduck.com/D-blog/20260812115946791.png "截图 2") 
-[![截图 3](https://img.pldduck.com/D-blog/20260812115946792.png)](https://img.pldduck.com/D-blog/20260812115946792.png "截图 3") 
-[![截图 4](https://img.pldduck.com/D-blog/20260812115946793.png)](https://img.pldduck.com/D-blog/20260812115946793.png "截图 4") 
-[![截图 5](https://img.pldduck.com/D-blog/20260812115946794.png)](https://img.pldduck.com/D-blog/20260812115946794.png "截图 5") 
+[![截图1](https://img.pldduck.com/20260812115946790.png)](https://img.pldduck.com/20260812115946790.png "截图1") 
+[![截图 2](https://img.pldduck.com/20260812115946791.png)](https://img.pldduck.com/20260812115946791.png "截图 2") 
+[![截图 3](https://img.pldduck.com/20260812115946792.png)](https://img.pldduck.com/20260812115946792.png "截图 3") 
+[![截图 4](https://img.pldduck.com/20260812115946793.png)](https://img.pldduck.com/20260812115946793.png "截图 4") 
+[![截图 5](https://img.pldduck.com/20260812115946794.png)](https://img.pldduck.com/20260812115946794.png "截图 5") 
 
 ---
 

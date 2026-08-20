@@ -9,7 +9,7 @@ tags:
   - D-blog
   - 不蒜子统计
   - 网页统计
-coverImage: https://img.pldduck.com/D-blog/20260812212210467.png
+coverImage: https://img.pldduck.com/20260812212210467.png
 author: 跑路的duck
 featured: false
 series: false
@@ -21,7 +21,7 @@ draft: false
 由于不需要后端 简直是静态博客的福音  
 
 # 不蒜子统计首页截图
-![不蒜子首页截图](https://img.pldduck.com/D-blog/20260812212236934.png)  
+![不蒜子首页截图](https://img.pldduck.com/20260812212236934.png)  
 
 # D-blog 的不蒜子统计
 你可以通过一下两个方式查看 D-blog 的不蒜子统计

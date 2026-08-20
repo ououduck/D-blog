@@ -9,7 +9,7 @@ tags:
   - 派小星DNS
   - PXXDNS
   - 模板
-coverImage: https://img.pldduck.com/D-blog/20260812115918186.png
+coverImage: https://img.pldduck.com/20260812115918186.png
 author: 跑路的duck
 featured: false
 featured-top: 0
@@ -19,7 +19,7 @@ draft: false
 
 # D-pxxdns-index
 ## 为PXXDNS定制的企业级首页模板  
-![D-pxxdns-index](https://img.pldduck.com/D-blog/20260812115918186.png)
+![D-pxxdns-index](https://img.pldduck.com/20260812115918186.png)
 ### 特点：不同于其他固定模板 实时从数据库中获取站点信息
 
 ---

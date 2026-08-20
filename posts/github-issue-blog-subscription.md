@@ -11,7 +11,7 @@ tags:
   - 静态博客
   - 自动化
   - RSS
-coverImage: https://img.pldduck.com/D-blog/20260812115932869.png
+coverImage: https://img.pldduck.com/20260812115932869.png
 author: 跑路的duck
 featured: false
 featured-top: 0

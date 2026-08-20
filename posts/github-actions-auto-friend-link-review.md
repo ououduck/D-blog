@@ -11,7 +11,7 @@ tags:
   - 自动化
   - GitHub Issue
   - Node.js
-coverImage: https://img.pldduck.com/D-blog/20260812115931823.png
+coverImage: https://img.pldduck.com/20260812115931823.png
 author: 跑路的duck
 featured: false
 featured-top: 0

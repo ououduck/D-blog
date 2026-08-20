@@ -11,7 +11,7 @@ tags:
   - 宝塔面板 Swoole 安装失败
   - brotli-devel 安装
   - PHP Swoole 扩展安装
-coverImage: https://img.pldduck.com/D-blog/20260812115907071.png
+coverImage: https://img.pldduck.com/20260812115907071.png
 author: 跑路的duck
 featured: false
 featured-top: 0
@@ -47,7 +47,7 @@ draft: false
 yum update
 ```
 
-![centos-bt-install-swoole5-step-01](https://img.pldduck.com/D-blog/20260812115907072.png)
+![centos-bt-install-swoole5-step-01](https://img.pldduck.com/20260812115907072.png)
 
 ### ⚠️注意
 
@@ -70,7 +70,7 @@ yum update
 yum install brotli-devel
 ```
 
-![centos-bt-install-swoole5-step-02](https://img.pldduck.com/D-blog/20260812115907074.png)
+![centos-bt-install-swoole5-step-02](https://img.pldduck.com/20260812115907074.png)
 
 安装完成后，可使用以下命令确认依赖是否已安装：
 
@@ -88,7 +88,7 @@ rpm -q brotli-devel
 3. 安装 Swoole5  
 
 此时应该可以正常编译并安装成功：
-![centos-bt-install-swoole5-step-03](https://img.pldduck.com/D-blog/20260812115907075.png)
+![centos-bt-install-swoole5-step-03](https://img.pldduck.com/20260812115907075.png)
 
 ---
 

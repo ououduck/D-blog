@@ -10,7 +10,7 @@ tags:
   - 音乐
   - 小黄鱼
   - 捡漏
-coverImage: https://img.pldduck.com/D-blog/20260812115933843.png
+coverImage: https://img.pldduck.com/20260812115933843.png
 author: 跑路的duck
 featured: false
 featured-top: 0
@@ -26,12 +26,12 @@ Duck在拼夕夕上逛着，突然看到一个商品封面写着“曾经1000圆
 要知道，这耳机在14年出来的时候，可是要卖上千元    
 
 # 商品图  
-![JBL REFLECT AWARE C 耳机包装正面，展示主动降噪和运动耳机特性](https://img.pldduck.com/D-blog/20260812115933844.jpg)  
-![JBL REFLECT AWARE C 包装内盒与耳机配件](https://img.pldduck.com/D-blog/20260812115933845.jpg)   
-![JBL REFLECT AWARE C 包装内的耳机和控制器](https://img.pldduck.com/D-blog/20260812115933846.jpg)  
-![JBL REFLECT AWARE C 包装背面和产品功能说明](https://img.pldduck.com/D-blog/20260812115933847.jpg)  
-![JBL REFLECT AWARE C 耳机本体与 USB Type-C 接头](https://img.pldduck.com/D-blog/20260812115933848.jpg)  
-![JBL REFLECT AWARE C 包装内的耳机线缆和收纳槽](https://img.pldduck.com/D-blog/20260812115933849.jpg)  
+![JBL REFLECT AWARE C 耳机包装正面，展示主动降噪和运动耳机特性](https://img.pldduck.com/20260812115933844.jpg)  
+![JBL REFLECT AWARE C 包装内盒与耳机配件](https://img.pldduck.com/20260812115933845.jpg)   
+![JBL REFLECT AWARE C 包装内的耳机和控制器](https://img.pldduck.com/20260812115933846.jpg)  
+![JBL REFLECT AWARE C 包装背面和产品功能说明](https://img.pldduck.com/20260812115933847.jpg)  
+![JBL REFLECT AWARE C 耳机本体与 USB Type-C 接头](https://img.pldduck.com/20260812115933848.jpg)  
+![JBL REFLECT AWARE C 包装内的耳机线缆和收纳槽](https://img.pldduck.com/20260812115933849.jpg)  
 
 # 自用评价  
 1. 音质确实比T110要好一点(这里又得表扬Apple Music了)  

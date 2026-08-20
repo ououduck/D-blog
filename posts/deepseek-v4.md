@@ -11,7 +11,7 @@ tags:
   - DeepSeek-V4
   - DeepSeek
   - 深度求索
-coverImage: https://img.pldduck.com/D-blog/20260812115919449.png
+coverImage: https://img.pldduck.com/20260812115919449.png
 author: 跑路的duck
 featured: false
 featured-top: 0
@@ -27,14 +27,14 @@ draft: false
 ### 分别为 **Pro** 和 **Flash** 版本  
 **Pro** 是 **1.6T** 总参 **49B** 激活  
 **Flash** 是 **284B** 总参 **13B** 激活  
-[![DeepSeek介绍](https://img.pldduck.com/D-blog/20260812115919451.png)](https://img.pldduck.com/D-blog/20260812115919451.png "DeepSeek介绍")  
+[![DeepSeek介绍](https://img.pldduck.com/20260812115919451.png)](https://img.pldduck.com/20260812115919451.png "DeepSeek介绍")  
 **两档都支持1M上下文**  
 **相较于上一代 V3 仍有明显提升**
 
 ---
 
 ## 话不多说 先看看价格  
-[![DeepSeek-V4价格](https://img.pldduck.com/D-blog/20260812115919452.png)](https://img.pldduck.com/D-blog/20260812115919452.png "DeepSeek-V4价格")  
+[![DeepSeek-V4价格](https://img.pldduck.com/20260812115919452.png)](https://img.pldduck.com/20260812115919452.png "DeepSeek-V4价格")  
 **其实我觉得这个价格 特别是现在打折的话 还是挺便宜的**  
 
 ---
@@ -42,7 +42,7 @@ draft: false
 ## 重点：这次DeepSeek-V4开创了一种全新的注意力机制  
 **DeepSeek-V4 开创了一种全新的注意力机制，在 token 维度进行压缩，结合 DSA 稀疏注意力（DeepSeek Sparse Attention），实现了全球领先的长上下文能力，并且相比于传统方法大幅降低了对计算和显存的需求**  
 - 相比于上一代V3.2降低了3-10倍的算力需求  
-[![DeepSeek-V4算力需求降低](https://img.pldduck.com/D-blog/20260812115919453.png)](https://img.pldduck.com/D-blog/20260812115919453.png "DeepSeek-V4算力需求降低")
+[![DeepSeek-V4算力需求降低](https://img.pldduck.com/20260812115919453.png)](https://img.pldduck.com/20260812115919453.png "DeepSeek-V4算力需求降低")
 
 - V4-Pro 比 V3.2 降低 3.7 倍  
 - V4-Flash 比 V3.2 降低 9.8 倍  
@@ -51,7 +51,7 @@ draft: false
 ---
 
 ## 接下来看跑分(仅作参考 你懂的)  
-[![DeepSeek-V4跑分](https://img.pldduck.com/D-blog/20260812115919454.png)](https://img.pldduck.com/D-blog/20260812115919454.png "DeepSeek-V4跑分")  
+[![DeepSeek-V4跑分](https://img.pldduck.com/20260812115919454.png)](https://img.pldduck.com/20260812115919454.png "DeepSeek-V4跑分")  
 
 ---
 
