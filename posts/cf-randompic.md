@@ -25,6 +25,9 @@ draft: false
 
 访问 `https://randompic.pldduck.com/ecy-v` 之类的地址即可获得一张随机图片。
 
+# 演示
+![随机图演示](https://randompic.pldduck.com/ecy-h) 
+
 ## 工作原理
 
 不依赖任何后端服务，完全由静态文件与 Cloudflare 规则实现随机取图：
@@ -89,37 +92,37 @@ python gen_pic.py
 
 #### CLOUDFLARE_API_TOKEN 获取方法
 
-![](https://img.pldduck.com/20260820141442479.png)  
+![获取API-1](https://img.pldduck.com/20260820141442479.png)  
 点击右上角 支持 右边的 账户图标  
-![](https://img.pldduck.com/20260820141557432.png)  
+![获取API-2](https://img.pldduck.com/20260820141557432.png)  
 点击配置文件  
-![](https://img.pldduck.com/20260820141715821.png)  
+![获取API-3](https://img.pldduck.com/20260820141715821.png)  
 选择API令牌 点击右上角创建令牌  
-![](https://img.pldduck.com/20260820141900773.png)
+![获取API-4](https://img.pldduck.com/20260820141900773.png)
 选择创建自定令牌  
-![](https://img.pldduck.com/20260820141803560.png)  
+![获取API-5](https://img.pldduck.com/20260820141803560.png)  
 按照上图配置权限  
 最后点击获取令牌就可以得到令牌了  
 
 #### CLOUDFLARE_ACCOUNT_ID 获取方法
 
-![](https://img.pldduck.com/20260820142109415.png)  
+![获取账户ID](https://img.pldduck.com/20260820142109415.png)  
 红色码住的这一段就是 也可以随便找个域名的页面进去的右侧下滑就有  
 
 ### 4.配置 404 规则
 
-配置Rule 为 404 状态码配置重写规则 表达式见 `rule.txt`  
+配置Rules 为 404 状态码配置重写规则 表达式见 `rule.txt`  
 
 找到随机图要使用的域名 点击进入  
-![](https://img.pldduck.com/20260820142333847.png)
+![配置Rules-1](https://img.pldduck.com/20260820142333847.png)
 在左侧菜单栏里找到 规则>概述 
-![](https://img.pldduck.com/20260820142520728.png)  
+![配置Rules-2](https://img.pldduck.com/20260820142520728.png)  
 点击创建规则  
-![](https://img.pldduck.com/20260820142603272.png)  
+![配置Rules-3](https://img.pldduck.com/20260820142603272.png)  
 选择URL重写规则  
-![](https://img.pldduck.com/20260820142708391.png)  
+![配置Rules-4](https://img.pldduck.com/20260820142708391.png)  
 选择自定义表达式
-![](https://img.pldduck.com/20260820142849486.png)  
+![配置Rules-5](https://img.pldduck.com/20260820142849486.png)  
 按照上图配置 
 重写到 后面的内容如下  
 
