@@ -40,7 +40,7 @@ import { ISSUE_SUBSCRIPTION_URL } from './IssueSubscriptionCard';
 import { useReducedMotion as useSiteReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay, lockBodyScroll, unlockBodyScroll } from '@/hooks/useModalOverlay';
 import { useReadingMode, ReadingModeProvider } from './ReadingModeContext';
-import { easeSmooth, routeTransition } from '@/utils/motion';
+import { routeTransition } from '@/utils/motion';
 
 const SearchModal = lazy(() => import('./SearchModal').then((m) => ({ default: m.SearchModal })));
 const BackToTop = lazy(() => import('./BackToTop').then((m) => ({ default: m.BackToTop })));
@@ -73,20 +73,6 @@ const shuoshuoNavItem: NavPathItem = {
   label: TEXT.navShuoShuo,
   hint: '朋友圈式动态',
   icon: MessageCircle,
-};
-
-// 模块级常量：导航项入场动画变体（组件内定义会在每次渲染时创建新对象，
-// 导致 framer-motion 的 variants 引用变化，轻微增加协调开销）。
-const navItemVariants = {
-  hidden: { opacity: 0, y: -6 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.25,
-      ease: easeSmooth,
-    },
-  },
 };
 
 const navItems: NavPathItem[] = [
@@ -153,7 +139,6 @@ const isEditableTarget = (target: EventTarget | null) => {
 const ThemeToggle = () => {
   type Theme = 'light' | 'dark' | 'system';
   const hasInitializedThemeRef = useRef(false);
-  const themeSwitchTimerRef = useRef<number | null>(null);
   const prefersReducedMotion = useSiteReducedMotion();
   const [theme, setTheme] = useState<Theme>('system');
 
@@ -190,6 +175,7 @@ const ThemeToggle = () => {
       // 仅当主题 class 实际需要变化时才播动画：水合恢复保存的主题后，setTheme
       // 触发的 effect 重跑是幂等应用（class 已正确），不应再产生可见过渡；
       // 首次恢复（hasInitializedThemeRef 尚为 false）也直接生效、跳过动画。
+      // 统一只走原生 View Transitions（不支持时直接应用，无全局 CSS 过渡）。
       const themeActuallyChanges = shouldBeDark !== isDarkApplied;
       if (
         themeActuallyChanges &&
@@ -208,16 +194,6 @@ const ThemeToggle = () => {
           applyChanges();
         }
       } else {
-        if (themeActuallyChanges && hasInitializedThemeRef.current && !prefersReducedMotion) {
-          root.classList.add('theme-switching');
-          if (themeSwitchTimerRef.current !== null) {
-            window.clearTimeout(themeSwitchTimerRef.current);
-          }
-          themeSwitchTimerRef.current = window.setTimeout(() => {
-            themeSwitchTimerRef.current = null;
-            root.classList.remove('theme-switching');
-          }, 260);
-        }
         applyChanges();
       }
     };
@@ -256,10 +232,6 @@ const ThemeToggle = () => {
     const detachSystemListener = attachSystemListener();
     return () => {
       detachSystemListener();
-      if (themeSwitchTimerRef.current !== null) {
-        window.clearTimeout(themeSwitchTimerRef.current);
-        themeSwitchTimerRef.current = null;
-      }
     };
   }, [prefersReducedMotion, theme]);
 
@@ -289,10 +261,10 @@ const ThemeToggle = () => {
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={theme}
-          initial={prefersReducedMotion ? false : { y: -10, opacity: 0, rotate: -45 }}
-          animate={{ y: 0, opacity: 1, rotate: 0 }}
-          exit={prefersReducedMotion ? undefined : { y: 10, opacity: 0, rotate: 45 }}
-          transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+          initial={prefersReducedMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={prefersReducedMotion ? undefined : { opacity: 0 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
         >
           {theme === 'light' && <Sun size={18} />}
           {theme === 'dark' && <Moon size={18} />}
@@ -845,37 +817,35 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           </Link>
 
           <div className="hidden min-w-0 shrink items-center gap-4 lg:flex">
-            <motion.div className="flex min-w-0 shrink gap-2" initial={false} animate="visible">
+            <div className="flex min-w-0 shrink gap-2">
               {navItems.map((item) => {
                 const isActive = isNavItemActive(item.path);
 
                 return (
-                  <motion.div key={item.path} variants={navItemVariants}>
-                    <Link
-                      to={item.path}
-                      onMouseEnter={() => preloadPage(item.path)}
-                      aria-current={isActive ? 'page' : undefined}
-                      className={`group relative inline-flex h-10 items-center px-2 py-1 text-sm font-semibold tracking-wide transition-colors ${
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onMouseEnter={() => preloadPage(item.path)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`group relative inline-flex h-10 items-center px-2 py-1 text-sm font-semibold tracking-wide transition-colors ${
+                      isActive
+                        ? 'text-ink dark:text-white'
+                        : 'text-zinc-700 hover:text-ink dark:text-zinc-300 dark:hover:text-white'
+                    }`}
+                  >
+                    <span className="relative z-10">{item.label}</span>
+                    <span
+                      aria-hidden="true"
+                      className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-none bg-zinc-900 dark:bg-zinc-100 transition-[transform,opacity] duration-[250ms] ${
                         isActive
-                          ? 'text-ink dark:text-white'
-                          : 'text-zinc-700 hover:text-ink dark:text-zinc-300 dark:hover:text-white'
+                          ? 'scale-x-100 opacity-100'
+                          : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
                       }`}
-                    >
-                      <span className="relative z-10">{item.label}</span>
-                      <span
-                        aria-hidden="true"
-                        className={`absolute bottom-[2px] left-2 right-2 h-[2px] origin-center rounded-none bg-zinc-900 dark:bg-zinc-100 transition-[transform,opacity] duration-[250ms] ${
-                          isActive
-                            ? 'scale-x-100 opacity-100'
-                            : 'scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-70'
-                        }`}
-                      />
-                    </Link>
-                  </motion.div>
+                    />
+                  </Link>
                 );
               })}
-              <motion.div
-                variants={navItemVariants}
+              <div
                 className="nav-more-menu relative"
                 onMouseEnter={() => setIsMoreMenuOpen(true)}
                 onMouseLeave={() => setIsMoreMenuOpen(false)}
@@ -945,12 +915,11 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                     );
                   })}
                 </div>
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
 
             <div className="flex shrink-0 items-center gap-2 border-l border-zinc-300 pl-4 dark:border-zinc-700">
-              <motion.button
-                variants={navItemVariants}
+              <button
                 onClick={onSearchClick}
                 className="group flex h-11 items-center gap-2 rounded-control border border-zinc-300 bg-zinc-100 px-3 text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-200 active:bg-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:active:bg-zinc-700"
                 aria-label="打开站内搜索"
@@ -959,10 +928,8 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
                 <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">
                   Ctrl+K
                 </span>
-              </motion.button>
-              <motion.div variants={navItemVariants}>
-                <ThemeToggle />
-              </motion.div>
+              </button>
+              <ThemeToggle />
             </div>
           </div>
 
@@ -1214,13 +1181,7 @@ const Footer = () => {
 };
 
 const Background = () => {
-  return (
-    <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden bg-paper dark:bg-void">
-      {/* 静态胶片颗粒（react-bits Noise 启发）：内联 SVG 噪点纹理，
-          零 JS 零动画，为纸张底色增加一层细微的编辑质感。 */}
-      <div className="editorial-grain" aria-hidden="true" />
-    </div>
-  );
+  return <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden bg-paper dark:bg-void" />;
 };
 
 interface LayoutProps {
@@ -1242,7 +1203,7 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
   const closeSearch = useCallback(() => setIsSearchOpen(false), []);
   const prefersReducedMotion = useSiteReducedMotion();
   const routeVariants = prefersReducedMotion
-    ? { initial: { opacity: 1 }, animate: { opacity: 1 }, exit: { opacity: 1 } }
+    ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
     : routeShellVariants;
   // View Transitions 模式下视觉过渡由浏览器原生接管，framer 侧用恒等变体
   // （无淡入淡出），避免双重动画。
@@ -1307,9 +1268,9 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
             容器，水合后 hasViewTransition 翻转会使父容器类型变化，导致整棵页面子树
             卸载重挂（页面 state 丢失、图片重新加载、effect 重跑重复上报统计）。
             现在容器类型恒定，仅按需切换：
-            - hasViewTransition：挂 viewTransitionName，exit 置空（退出动画交给
-              原生 View Transition，AppRoutes 负责 startViewTransition 包裹）；
-            - 否则：走 framer-motion 的退出/进入动画。 */}
+            - hasViewTransition：挂 viewTransitionName，视觉过渡交给原生
+              View Transition（AppRoutes 负责 startViewTransition 包裹）；
+            - 否则：仅进入淡入（无退出动画，避免旧页淡出造成的空白间隙）。 */}
         <AnimatePresence
           mode="wait"
           initial={false}
@@ -1320,7 +1281,6 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
             variants={hasViewTransition ? viewTransitionRouteVariants : routeVariants}
             initial="initial"
             animate="animate"
-            exit={hasViewTransition ? undefined : 'exit'}
             style={hasViewTransition ? { viewTransitionName: 'route-content' } : undefined}
             className="mx-auto min-w-0 w-full max-w-7xl"
           >

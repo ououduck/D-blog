@@ -48,7 +48,7 @@ const renderHome = (initialEntry = '/') =>
 describe('Home', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // jsdom 不实现 matchMedia：PostCard 的 useSpotlight 等依赖媒体查询。
+    // jsdom 不实现 matchMedia：useReducedMotion/useMediaQuery 等依赖媒体查询。
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: vi.fn((query: string) => ({

@@ -17,7 +17,6 @@ import { usePostSearch } from '@/hooks/usePostSearch';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { sortPosts } from '@/utils/postSorting';
-import { easeSmooth, fadeInUp, staggerContainer } from '@/utils/motion';
 import { getHeroPost } from '@/utils/postSelection';
 import { useReadingHistory } from '@/hooks/useReadingHistory';
 import { useOfflinePosts } from '@/hooks/useOfflinePosts';
@@ -27,7 +26,6 @@ import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';
 import { Pagination } from '@/components/Pagination';
 import { canonicalizeHomeQuery, getHomeQueryState, setHomeQueryParam } from '@/utils/homeQuery';
 import { clearSearchQueryParams, setSearchQueryParams } from '@/utils/searchParams';
-import { Magnet } from '@/components/effects/Magnet';
 
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
 
@@ -38,33 +36,13 @@ const POSTS_PER_PAGE = 9;
 const HERO_SLOTS = 3;
 const initialPosts = getInitialPosts();
 
-const listSwapTransition = {
-  duration: 0.2,
-  ease: easeSmooth,
-} as const;
-
-const gridLayoutTransition = {
-  duration: 0.28,
-  ease: easeSmooth,
-} as const;
-
-const gridExitVariants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.018,
-      delayChildren: 0.01,
-    },
-  },
-} as const;
-
 const getCategories = (posts: PostMetadata[]) => Array.from(new Set(posts.map((post) => post.category)));
 
 const SkeletonBlock: React.FC<{ className?: string; shouldReduceMotion: boolean }> = ({
   className,
   shouldReduceMotion,
 }) => (
-  <div className={`${shouldReduceMotion ? '' : 'editorial-shimmer'} bg-zinc-200 dark:bg-zinc-800 ${className || ''}`} />
+  <div className={`bg-zinc-200 dark:bg-zinc-800 ${shouldReduceMotion ? '' : 'animate-pulse'} ${className || ''}`} />
 );
 
 const FeaturedPostSkeleton: React.FC<{ shouldReduceMotion: boolean }> = ({ shouldReduceMotion }) => (
@@ -119,17 +97,13 @@ const LoadingGrid: React.FC<{ heroSlots: number; label: string; hasFeatured: boo
   const regularSkeletonCount = Math.max(0, POSTS_PER_PAGE - featuredSlots);
 
   return (
-    <motion.div
-      variants={shouldReduceMotion ? undefined : fadeInUp}
-      className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
-      aria-busy="true"
-    >
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
       <LoadingStatus label={label} className="col-span-full" />
       {hasFeatured && <FeaturedPostSkeleton shouldReduceMotion={shouldReduceMotion} />}
       {Array.from({ length: regularSkeletonCount }).map((_, index) => (
         <PostCardSkeleton key={index} shouldReduceMotion={shouldReduceMotion} />
       ))}
-    </motion.div>
+    </div>
   );
 };
 
@@ -148,22 +122,9 @@ interface FilterBarProps {
   onToggleSort: () => void;
 }
 
-const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
-  categories,
-  selected,
-  onSelect,
-  sortOrder,
-  onToggleSort,
-  shouldReduceMotion,
-}) => {
+const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, sortOrder, onToggleSort }) => {
   return (
-    <motion.div
-      variants={fadeInUp}
-      initial={shouldReduceMotion ? false : 'hidden'}
-      animate="visible"
-      transition={shouldReduceMotion ? { duration: 0 } : undefined}
-      className="flex items-center justify-between gap-2 border-y border-zinc-200 py-3 sm:gap-3 dark:border-zinc-800"
-    >
+    <div className="flex items-center justify-between gap-2 border-y border-zinc-200 py-3 sm:gap-3 dark:border-zinc-800">
       <div className="filter-scroll-mask min-w-0 flex-1 overflow-x-auto overscroll-x-contain scroll-smooth no-scrollbar">
         <div className="flex items-center gap-2" role="group" aria-label="文章分类筛选">
           {[ALL_CATEGORY, ...categories].map((category) => (
@@ -214,23 +175,22 @@ const FilterBar: React.FC<FilterBarProps & { shouldReduceMotion: boolean }> = ({
           );
         })}
       </div>
-    </motion.div>
+    </div>
   );
 };
 
 const Hero = () => {
   const shouldReduceMotion = useReducedMotion();
-  // 滚动视差：首屏内容随页面滚动轻微上移、淡出（react-bits「ScrollFloat」
-  // 启发）。仅作用于滚动变换，不设入场动画——LCP 元素首帧即渲染最终可见
-  // 状态：SSR HTML 中不可见（opacity:0）会拖慢 LCP 且 JS 失败时内容完全
-  // 不可见。减弱动效偏好下跳过视差。
+  // 滚动视差（仅淡出）：首屏内容随页面滚动轻微淡出（react-bits「ScrollFloat」
+  // 启发）。不设入场动画——LCP 元素首帧即渲染最终可见状态：SSR HTML 中
+  // 不可见（opacity:0）会拖慢 LCP 且 JS 失败时内容完全不可见。减弱动效
+  // 偏好下跳过视差。
   const { scrollY } = useScroll();
-  const heroY = useTransform(scrollY, [0, 520], [0, 56]);
   const heroOpacity = useTransform(scrollY, [0, 340], [1, 0.3]);
 
   return (
     <div className="relative overflow-hidden px-4 pb-8 pt-5 text-center md:pb-10 md:pt-8">
-      <motion.div className="relative" style={shouldReduceMotion ? undefined : { y: heroY, opacity: heroOpacity }}>
+      <motion.div className="relative" style={shouldReduceMotion ? undefined : { opacity: heroOpacity }}>
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
           {siteConfig.subtitle}
         </p>
@@ -596,10 +556,7 @@ export const Home = () => {
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">
                 继续阅读
               </p>
-              <h2
-                id="continue-reading-heading"
-                className="truncate font-serif text-xl font-bold text-ink dark:text-white"
-              >
+              <h2 id="continue-reading-heading" className="truncate text-xl font-bold text-ink dark:text-white">
                 {continueReading.post.title}
               </h2>
               <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
@@ -607,15 +564,13 @@ export const Home = () => {
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <Magnet>
-                <Link
-                  to={`/post/${continueReading.post.id}`}
-                  className="editorial-button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold"
-                  aria-label={`继续阅读：${continueReading.post.title}`}
-                >
-                  继续阅读 <ChevronRight size={15} />
-                </Link>
-              </Magnet>
+              <Link
+                to={`/post/${continueReading.post.id}`}
+                className="editorial-button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold"
+                aria-label={`继续阅读：${continueReading.post.title}`}
+              >
+                继续阅读 <ChevronRight size={15} />
+              </Link>
               <button
                 type="button"
                 onClick={handleAbandonReading}
@@ -636,19 +591,13 @@ export const Home = () => {
         </section>
       )}
 
-      <motion.div
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-        className="space-y-6 px-4 md:space-y-8 md:px-0"
-      >
+      <div className="space-y-6 px-4 md:space-y-8 md:px-0">
         <FilterBar
           categories={categories}
           selected={selectedCategory}
           onSelect={handleSelectCategory}
           sortOrder={sortOrder}
           onToggleSort={handleToggleSort}
-          shouldReduceMotion={shouldReduceMotion}
         />
 
         <div className="mx-auto max-w-2xl">
@@ -668,7 +617,7 @@ export const Home = () => {
             hasFeatured={hasFeaturedPost}
           />
         ) : loadError || searchError ? (
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={listSwapTransition}>
+          <div>
             <ContentStatus
               variant="error"
               title={loadError ? '文章加载失败' : '搜索失败'}
@@ -676,7 +625,7 @@ export const Home = () => {
               actionLabel={loadError ? '重新加载' : '清除搜索'}
               onAction={loadError ? () => setLoadAttempt((attempt) => attempt + 1) : handleClearSearch}
             />
-          </motion.div>
+          </div>
         ) : (
           <div id="posts-panel" className="space-y-7" aria-live="polite" tabIndex={-1}>
             {hasSearchQuery && results.length > 0 && (
@@ -690,20 +639,11 @@ export const Home = () => {
               </div>
             )}
 
-            <motion.div
-              layout={!shouldReduceMotion}
-              id="posts-grid"
-              className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
-              variants={gridExitVariants}
-              initial="hidden"
-              animate="visible"
-              transition={shouldReduceMotion ? { duration: 0 } : gridLayoutTransition}
-            >
+            <div id="posts-grid" className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {featuredPost && (
                 <PostCard
                   key={featuredPost.id}
                   post={featuredPost}
-                  index={0}
                   featured
                   onShare={setSharePost}
                   isSaved={savedIds.has(featuredPost.id)}
@@ -712,11 +652,10 @@ export const Home = () => {
                 />
               )}
               {remainingPosts.length > 0 ? (
-                remainingPosts.map((post, index) => (
+                remainingPosts.map((post) => (
                   <PostCard
                     key={post.id}
                     post={post}
-                    index={index + (featuredPost ? 1 : 0)}
                     onShare={setSharePost}
                     isSaved={savedIds.has(post.id)}
                     isSaving={savingId === post.id}
@@ -724,11 +663,7 @@ export const Home = () => {
                   />
                 ))
               ) : !featuredPost ? (
-                <motion.div
-                  layout
-                  variants={fadeInUp}
-                  className="col-span-full border-y border-zinc-200 py-14 text-center dark:border-zinc-800"
-                >
+                <div className="col-span-full border-y border-zinc-200 py-14 text-center dark:border-zinc-800">
                   <p className="text-base text-zinc-500 dark:text-zinc-400">
                     {hasSearchQuery ? '未找到匹配的文章' : '暂无相关文章'}
                   </p>
@@ -741,14 +676,14 @@ export const Home = () => {
                       清除搜索条件
                     </button>
                   )}
-                </motion.div>
+                </div>
               ) : null}
-            </motion.div>
+            </div>
 
             <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={paginate} />
           </div>
         )}
-      </motion.div>
+      </div>
 
       {sharePost && (
         <Suspense fallback={null}>

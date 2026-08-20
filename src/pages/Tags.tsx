@@ -3,7 +3,6 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
@@ -17,7 +16,6 @@ import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { getDateTimestamp } from '@/utils/date';
-import { easeOut } from '@/utils/motion';
 
 const buildTagList = (posts: PostMetadata[]) => {
   const tagMap = new Map<string, PostMetadata[]>();
@@ -240,9 +238,7 @@ export const Tags = () => {
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
           Tags Collection
         </p>
-        <h1 className="font-serif text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
-          标签集合
-        </h1>
+        <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">标签集合</h1>
         <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-400 md:text-base">
           共 {allTags.length} 个标签，{allTags.reduce((sum, tag) => sum + tag.count, 0)} 篇文章
         </p>
@@ -289,16 +285,9 @@ export const Tags = () => {
             tags.length > 0 ? (
               <div className="mt-2 border-y border-zinc-200 py-8 dark:border-zinc-800 md:py-10">
                 <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-6">
-                  {tags.map((tag, index) => (
-                    <motion.button
+                  {tags.map((tag) => (
+                    <button
                       key={tag.name}
-                      initial={shouldReduceMotion ? false : { opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={
-                        shouldReduceMotion
-                          ? { duration: 0 }
-                          : { duration: 0.16, delay: Math.min(index * 0.012, 0.06), ease: easeOut }
-                      }
                       onClick={() => updateTagParam(tag.name)}
                       className={`${getTagSize(tag.count)} relative inline-flex min-h-11 max-w-full items-center justify-center break-words border-b border-zinc-300 px-2 py-1.5 text-center font-bold leading-tight text-zinc-700 transition-colors [overflow-wrap:anywhere] hover:border-zinc-900 hover:text-zinc-900 focus-visible:border-zinc-900 focus-visible:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 sm:px-3 sm:py-2 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-100 dark:hover:text-zinc-100 dark:focus-visible:border-zinc-100 dark:focus-visible:text-zinc-100 dark:focus-visible:outline-zinc-100`}
                       aria-label={`查看标签 ${tag.name}，共 ${tag.count} 篇文章`}
@@ -307,7 +296,7 @@ export const Tags = () => {
                       <span className="ml-1.5 flex-shrink-0 text-[10px] opacity-60 sm:ml-2 sm:text-xs">
                         ({tag.count})
                       </span>
-                    </motion.button>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -323,7 +312,7 @@ export const Tags = () => {
           ) : (
             <div>
               <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="min-w-0 font-serif text-2xl font-bold text-zinc-900 dark:text-zinc-100 md:text-3xl">
+                <h2 className="min-w-0 text-2xl font-bold text-zinc-900 dark:text-zinc-100 md:text-3xl">
                   标签:{' '}
                   <span className="break-words underline decoration-zinc-400 underline-offset-4 dark:decoration-zinc-600">
                     {selectedTag}
@@ -343,17 +332,8 @@ export const Tags = () => {
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
-                {filteredSelectedTagPosts.map((post, index) => (
-                  <motion.div
-                    key={post.id}
-                    initial={shouldReduceMotion ? false : { opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={
-                      shouldReduceMotion
-                        ? { duration: 0 }
-                        : { duration: 0.16, delay: Math.min(index * 0.015, 0.06), ease: easeOut }
-                    }
-                  >
+                {filteredSelectedTagPosts.map((post) => (
+                  <div key={post.id}>
                     <Link
                       to={`/post/${post.id}`}
                       className="group block border-t border-zinc-200 py-5 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
@@ -363,7 +343,7 @@ export const Tags = () => {
                           {post.category}
                         </span>
                       </div>
-                      <h3 className="mb-3 font-serif text-xl font-bold text-zinc-900 transition-colors group-hover:text-zinc-700 dark:text-zinc-100 dark:group-hover:text-zinc-300">
+                      <h3 className="mb-3 text-xl font-bold text-zinc-900 transition-colors group-hover:text-zinc-700 dark:text-zinc-100 dark:group-hover:text-zinc-300">
                         {post.title}
                       </h3>
                       <p className="mb-4 line-clamp-2 text-sm text-zinc-500 dark:text-zinc-400">{post.excerpt}</p>
@@ -378,7 +358,7 @@ export const Tags = () => {
                         </span>
                       </div>
                     </Link>
-                  </motion.div>
+                  </div>
                 ))}
 
                 {selectedTagInfo && filteredSelectedTagPosts.length === 0 && (

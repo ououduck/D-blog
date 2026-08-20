@@ -139,14 +139,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(
               `pointer-events-none absolute inset-0 flex items-center justify-center bg-zinc-100/55 transition-opacity ${transitionDurationClass} dark:bg-zinc-900/55`,
               isLoaded || hasError ? 'opacity-0' : 'opacity-100',
             )}
-          >
-            <div
-              className={mergeClassName(
-                'h-5 w-5 rounded-full border-2 border-zinc-300/80 border-t-ink dark:border-zinc-700/80 dark:border-t-white',
-                prefersReducedMotion ? undefined : 'animate-spin',
-              )}
-            />
-          </div>
+          />
         )}
         {hasError || !hasUsableSrc ? (
           <div className="relative flex min-h-[6rem] h-full w-full items-center justify-center rounded-[inherit] border border-dashed border-zinc-200 bg-zinc-100/90 px-4 py-6 text-center text-xs font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400">

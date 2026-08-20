@@ -222,7 +222,7 @@ export const Watermark: React.FC = () => {
         <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.28em] text-zinc-500 dark:text-zinc-400">
           Image Watermark
         </p>
-        <h1 className="mb-4 font-serif text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
+        <h1 className="mb-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
           图片水印
         </h1>
         <p className="max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-400 md:text-base">
@@ -412,7 +412,7 @@ export const Watermark: React.FC = () => {
               <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
                 Preview
               </p>
-              <h2 className="font-serif text-xl font-bold text-ink dark:text-white">实时预览</h2>
+              <h2 className="text-xl font-bold text-ink dark:text-white">实时预览</h2>
             </div>
             {imageState && <span className="text-xs text-zinc-500 dark:text-zinc-400">{format.toUpperCase()}</span>}
           </div>

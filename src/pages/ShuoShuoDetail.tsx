@@ -17,7 +17,6 @@ import { NotFoundState } from '@/components/NotFoundState';
 import { formatDate } from '@/utils/date';
 import { stripMarkdown } from '@/utils/markdownText';
 import { copyTextToClipboard } from '@/utils/clipboard';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 /**
  * 说说独立页：每条说说一个可索引的静态 URL /shuoshuo/<id>。
@@ -52,7 +51,6 @@ export const ShuoShuoDetail = () => {
   // 重复 find（详情页单条场景也遵循列表页的缓存口径）。
   const item = useMemo(() => allItems.find((candidate) => candidate.id === id), [allItems, id]);
   const itemContent = useMemo(() => stripMarkdown(item?.content ?? ''), [item?.content]);
-  const shouldReduceMotion = useReducedMotion();
   const [previewImage, setPreviewImage] = useState<{ src: string; alt?: string } | null>(null);
   const [shareTarget, setShareTarget] = useState<ShuoShuoEntry | null>(null);
   const [shareUrl, setShareUrl] = useState('');
@@ -195,9 +193,7 @@ export const ShuoShuoDetail = () => {
           <MessageCircle size={14} aria-hidden="true" />
           ShuoShuo · Moments
         </p>
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-4xl">
-          {snippet}
-        </h1>
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-4xl">{snippet}</h1>
         <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
           <time dateTime={item.date}>
             {formatDate(item.date, 'zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -217,7 +213,6 @@ export const ShuoShuoDetail = () => {
             onPreview={(src, alt) => setPreviewImage({ src, alt })}
             onShare={handleShare}
             showDetailLink={false}
-            shouldReduceMotion={shouldReduceMotion}
           />
         </ol>
       </div>

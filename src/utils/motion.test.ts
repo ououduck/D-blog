@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { easeOut, easeSmooth, fadeInUp, staggerContainer, routeTransition } from './motion';
+import { easeOut, easeSmooth, routeTransition } from './motion';
 import { HEADING_SCROLL_OFFSET } from './scroll';
 
 describe('motion 常量', () => {
@@ -11,14 +11,10 @@ describe('motion 常量', () => {
     }
   });
 
-  it('变体结构完整（hidden/visible 或 initial/animate/exit）', () => {
-    expect(fadeInUp.hidden).toBeDefined();
-    expect(fadeInUp.visible).toBeDefined();
-    expect(staggerContainer.hidden).toBeDefined();
-    expect(staggerContainer.visible).toBeDefined();
+  it('路由变体只保留进入淡入（无退出动画）', () => {
     expect(routeTransition.initial).toBeDefined();
     expect(routeTransition.animate).toBeDefined();
-    expect(routeTransition.exit).toBeDefined();
+    expect(routeTransition).not.toHaveProperty('exit');
   });
 });
 

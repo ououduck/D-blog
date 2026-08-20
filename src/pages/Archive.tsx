@@ -324,9 +324,7 @@ export const ArchivePage = () => {
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-zinc-200 pb-5 dark:border-zinc-800 md:pb-6">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Archive</p>
-          <h1 className="font-serif text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-4xl">
-            归档
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-4xl">归档</h1>
         </div>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           共 {totalPosts} 篇文章 · {groups.length} 年
@@ -394,20 +392,11 @@ export const ArchivePage = () => {
         ) : (
           <div aria-live="polite">
             <div className="space-y-10 md:space-y-12">
-              {groups.map((group, groupIndex) => {
+              {groups.map((group) => {
                 const isYearExpanded = expandedYears.has(group.year);
 
                 return (
-                  <motion.section
-                    key={group.year}
-                    initial={shouldReduceMotion ? false : { opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={
-                      shouldReduceMotion
-                        ? { duration: 0 }
-                        : { duration: 0.2, delay: Math.min(groupIndex * 0.02, 0.08), ease: easeOut }
-                    }
-                  >
+                  <section key={group.year}>
                     <button
                       onClick={() => toggleYear(group.year)}
                       className="group flex min-h-11 w-full items-center justify-between gap-4 border-b border-zinc-300 pb-3 text-left transition-colors hover:border-zinc-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:hover:border-zinc-500 dark:focus-visible:outline-zinc-100"
@@ -425,7 +414,7 @@ export const ArchivePage = () => {
                         {/* 按钮内容模型只允许 phrasing content，不能嵌套标题：
                               年份层级由按钮自身承担（aria-label 已带可访问名），
                               这里用 span 保留视觉样式。 */}
-                        <span className="font-serif text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-3xl">
+                        <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-3xl">
                           {group.year}
                         </span>
                       </span>
@@ -442,21 +431,18 @@ export const ArchivePage = () => {
                           className="overflow-hidden"
                         >
                           <div className="pt-6 md:pt-7">
-                            {group.months.map((monthGroup, monthIndex) => {
+                            {group.months.map((monthGroup) => {
                               const monthKey = getMonthKey(group.year, monthGroup.monthNum);
                               const isMonthExpanded = expandedMonths.has(monthKey);
 
                               return (
-                                <motion.div
+                                <div
                                   key={monthKey}
-                                  initial={shouldReduceMotion ? false : { opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  transition={
-                                    shouldReduceMotion
-                                      ? { duration: 0 }
-                                      : { duration: 0.16, delay: Math.min(monthIndex * 0.015, 0.06), ease: easeOut }
+                                  className={
+                                    monthGroup.monthNum < group.months[group.months.length - 1].monthNum
+                                      ? 'mb-7 md:mb-8'
+                                      : undefined
                                   }
-                                  className={monthIndex < group.months.length - 1 ? 'mb-7 md:mb-8' : undefined}
                                 >
                                   <button
                                     onClick={() => toggleMonth(group.year, monthGroup.monthNum)}
@@ -474,7 +460,7 @@ export const ArchivePage = () => {
                                       <ChevronDown size={14} />
                                     </motion.span>
                                     {/* 同年份按钮：按钮内不嵌套标题，span 保留视觉样式 */}
-                                    <span className="font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                                    <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
                                       {monthGroup.month}
                                     </span>
                                     <span className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -494,21 +480,8 @@ export const ArchivePage = () => {
                                         className="overflow-hidden"
                                       >
                                         <div className="border-t border-zinc-200 dark:border-zinc-800">
-                                          {monthGroup.posts.map((post, postIndex) => (
-                                            <motion.div
-                                              key={post.id}
-                                              initial={shouldReduceMotion ? false : { opacity: 0 }}
-                                              animate={{ opacity: 1 }}
-                                              transition={
-                                                shouldReduceMotion
-                                                  ? { duration: 0 }
-                                                  : {
-                                                      duration: 0.14,
-                                                      delay: Math.min(postIndex * 0.01, 0.05),
-                                                      ease: easeOut,
-                                                    }
-                                              }
-                                            >
+                                          {monthGroup.posts.map((post) => (
+                                            <div key={post.id}>
                                               <Link
                                                 to={`/post/${post.id}`}
                                                 className="group grid min-w-0 gap-x-5 gap-y-1 border-b border-zinc-200 py-4 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600 md:grid-cols-[4.25rem_minmax(0,1fr)_auto] md:items-baseline md:py-4"
@@ -520,7 +493,7 @@ export const ArchivePage = () => {
                                                     即为 h1 之后的下一级内容标题，用 h2 保持层级连续（h1 → h2），
                                                     避免 SEO 审计「标题层级跳级」告警。字号由 className 控制，
                                                     与 h 级别无关，视觉不变。 */}
-                                                <h2 className="min-w-0 break-words font-serif text-lg font-bold leading-snug text-zinc-900 transition-colors [overflow-wrap:anywhere] group-hover:text-zinc-600 dark:text-zinc-100 dark:group-hover:text-zinc-300 md:text-xl">
+                                                <h2 className="min-w-0 break-words text-lg font-bold leading-snug text-zinc-900 transition-colors [overflow-wrap:anywhere] group-hover:text-zinc-600 dark:text-zinc-100 dark:group-hover:text-zinc-300 md:text-xl">
                                                   {post.title}
                                                   <ArrowUpRight
                                                     className="ml-1 inline-block -translate-y-0.5 opacity-0 transition-opacity group-hover:opacity-100"
@@ -542,20 +515,20 @@ export const ArchivePage = () => {
                                                   )}
                                                 </p>
                                               </Link>
-                                            </motion.div>
+                                            </div>
                                           ))}
                                         </div>
                                       </motion.div>
                                     )}
                                   </AnimatePresence>
-                                </motion.div>
+                                </div>
                               );
                             })}
                           </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
-                  </motion.section>
+                  </section>
                 );
               })}
             </div>

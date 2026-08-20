@@ -9,16 +9,6 @@ vi.mock('@/services/busuanzi', () => ({
   pingBusuanzi: vi.fn(),
   fillBusuanziSpans: vi.fn(),
 }));
-vi.mock('@/hooks/useSpotlight', () => ({
-  useSpotlight: () => ({
-    bind: {},
-    layerStyle: {},
-    enabled: false,
-  }),
-}));
-vi.mock('@/components/effects/SpotlightLayer', () => ({
-  SpotlightLayer: () => null,
-}));
 
 const renderCover = () =>
   render(

@@ -95,7 +95,7 @@ export const Sponsor: React.FC = () => {
         <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.28em] text-zinc-500 dark:text-zinc-400">
           Support D-blog
         </p>
-        <h1 className="mb-4 font-serif text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
+        <h1 className="mb-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
           没有收款码的赞助
         </h1>
         <p className="mx-auto max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-400 md:text-base">
@@ -111,7 +111,7 @@ export const Sponsor: React.FC = () => {
               <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-control bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
                 <Icon size={21} />
               </div>
-              <h2 className="mb-2 font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100">{option.title}</h2>
+              <h2 className="mb-2 text-xl font-bold text-zinc-900 dark:text-zinc-100">{option.title}</h2>
               <p className="mb-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{option.description}</p>
               <p className="mb-5 text-xs leading-5 text-zinc-500 dark:text-zinc-500">{option.detail}</p>
               <span
@@ -158,7 +158,7 @@ export const Sponsor: React.FC = () => {
             <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">
               Sponsor Ads
             </p>
-            <h2 className="font-serif text-2xl font-bold text-zinc-900 dark:text-zinc-100">赞助商链接</h2>
+            <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">赞助商链接</h2>
           </div>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">共 {adsConfig.length} 个赞助项</p>
         </div>

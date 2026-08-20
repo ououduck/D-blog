@@ -25,16 +25,11 @@ export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(
           </div>
 
           <div>
-            {/* react-bits「GlitchText」启发：编辑风故障字（灰阶切片而非霓虹红青），
-                减弱动效偏好下自动退化为静态 404。 */}
-            <div
-              data-text="404"
-              className="editorial-glitch mb-5 font-serif text-7xl font-black leading-none text-zinc-200 dark:text-zinc-800 md:text-8xl"
-            >
+            <div className="mb-5 font-serif text-7xl font-black leading-none text-zinc-200 dark:text-zinc-800 md:text-8xl">
               404
             </div>
 
-            <h1 className="mb-4 font-serif text-3xl font-bold text-ink dark:text-white md:text-4xl">{title}</h1>
+            <h1 className="mb-4 text-3xl font-bold text-ink dark:text-white md:text-4xl">{title}</h1>
 
             <p className="max-w-xl text-sm leading-7 text-zinc-700 dark:text-zinc-300 md:text-base">{description}</p>
 

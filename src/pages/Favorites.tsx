@@ -47,9 +47,7 @@ export const Favorites = () => {
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-zinc-200 pb-5 dark:border-zinc-800 md:pb-6">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Favorites</p>
-          <h1 className="font-serif text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-4xl">
-            我的收藏
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-4xl">我的收藏</h1>
         </div>
         {!loading && !error && <p className="text-sm text-zinc-500 dark:text-zinc-400">共 {posts.length} 篇</p>}
       </header>
@@ -77,7 +75,7 @@ export const Favorites = () => {
               <div
                 key={index}
                 aria-hidden="true"
-                className="h-32 editorial-shimmer rounded-surface border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-900"
+                className="h-32 animate-pulse rounded-surface border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-900"
               />
             ))}
           </div>
@@ -101,7 +99,7 @@ export const Favorites = () => {
             {posts.map((post) => (
               <article
                 key={post.id}
-                className="flex h-full min-w-0 flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-zinc-400 hover:shadow-[0_4px_12px_rgba(24,24,27,0.08)] dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:shadow-black/20"
+                className="flex h-full min-w-0 flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600"
               >
                 <Link
                   to={`/post/${post.id}`}
@@ -136,7 +134,7 @@ export const Favorites = () => {
                     <span className="normal-case tracking-normal">已收藏</span>
                   </div>
                   <Link to={`/post/${post.id}`} aria-label={`阅读文章：${post.title}`}>
-                    <h2 className="mb-1.5 line-clamp-2 min-h-11 md:mb-2 font-serif text-base font-bold leading-snug text-ink hover:underline dark:text-zinc-100 md:text-lg">
+                    <h2 className="mb-1.5 line-clamp-2 min-h-11 md:mb-2 text-base font-bold leading-snug text-ink hover:underline dark:text-zinc-100 md:text-lg">
                       {post.title}
                     </h2>
                   </Link>

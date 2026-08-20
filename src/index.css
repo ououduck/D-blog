@@ -8,9 +8,9 @@
 }
 
 @layer base {
-  /* 平滑滚动 */
   html {
-    scroll-behavior: smooth;
+    /* 滚动行为统一由 JS 显式控制（behavior: smooth/auto），不做全局平滑，
+       避免与文章页 hash 校正、阅读位置恢复等程序化滚动双重叠加。 */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -77,23 +77,6 @@
   }
 }
 
-html.theme-switching,
-html.theme-switching body,
-html.theme-switching #root,
-html.theme-switching .editorial-surface,
-html.theme-switching .editorial-overlay,
-html.theme-switching .editorial-button,
-html.theme-switching .editorial-button-primary,
-html.theme-switching .editorial-input {
-  transition:
-    background-color 200ms ease,
-    border-color 200ms ease,
-    color 200ms ease,
-    fill 200ms ease,
-    stroke 200ms ease,
-    box-shadow 200ms ease;
-}
-
 @layer components {
   .editorial-surface {
     @apply rounded-surface border border-zinc-300 bg-paper shadow-none dark:border-zinc-700 dark:bg-zinc-900;
@@ -113,28 +96,7 @@ html.theme-switching .editorial-input {
   }
 
   .editorial-button-primary {
-    @apply inline-flex relative isolate overflow-hidden min-h-11 items-center justify-center gap-2 rounded-control border border-zinc-950 bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(24,24,27,0.18)] transition-[background-color,border-color,color,opacity,transform,box-shadow] duration-150 hover:bg-zinc-800 hover:shadow-[0_2px_4px_rgba(24,24,27,0.22)] active:scale-[.98] active:bg-black active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)] dark:hover:bg-zinc-300;
-  }
-
-  /* uiverse button shine：单色对角高光，hover 时从左扫到右。z-index:-1 使扫光
-     位于按钮底色之上、文字/图标之下；暗色模式下按钮为浅底，改用黑色高光。 */
-  .editorial-button-primary::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    transform: translateX(-100%);
-    background-image: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
-    transition: transform 0.6s ease;
-    pointer-events: none;
-  }
-
-  .editorial-button-primary:not(:disabled):hover::before {
-    transform: translateX(100%);
-  }
-
-  .dark .editorial-button-primary::before {
-    background-image: linear-gradient(110deg, transparent 30%, rgba(0, 0, 0, 0.14) 50%, transparent 70%);
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-zinc-950 bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(24,24,27,0.18)] transition-[background-color,border-color,color,opacity,transform,box-shadow] duration-150 hover:bg-zinc-800 hover:shadow-[0_2px_4px_rgba(24,24,27,0.22)] active:scale-[.98] active:bg-black active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)] dark:hover:bg-zinc-300;
   }
 
   .editorial-icon-button {
@@ -230,37 +192,6 @@ html.theme-switching .editorial-input {
       transparent 100%
     );
     mask-image: linear-gradient(to right, transparent 0, black 0.375rem, black calc(100% - 0.375rem), transparent 100%);
-  }
-}
-
-/* 骨架屏 shimmer 扫光（Ant Design / Element / TDesign Skeleton 模式）：
-   单色高光带横向扫过，与元素既有 bg-* 底色叠加；不强制 background-color，
-   仅加定位上下文与 ::after 扫光层，便于复用在任意骨架块上。 */
-.editorial-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-
-.editorial-shimmer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  transform: translateX(-100%);
-  background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%);
-  animation: editorial-shimmer-sweep 1.6s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.dark .editorial-shimmer::after {
-  background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.14) 50%, transparent 100%);
-}
-
-@keyframes editorial-shimmer-sweep {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
   }
 }
 
@@ -397,10 +328,15 @@ html.theme-switching .editorial-input {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
   }
+}
 
-  .editorial-shimmer::after,
-  .editorial-button-primary::before {
-    display: none;
+/* 触屏设备禁用按钮按下缩放（active:scale-[.98]）：触屏上 :active 会在点按
+   瞬间触发缩放闪烁，观感廉价；桌面悬停设备保留按压反馈。 */
+@media (hover: none) {
+  button:active,
+  a:active,
+  [role='button']:active {
+    transform: none !important;
   }
 }
 
@@ -1441,173 +1377,5 @@ html.dark .mermaid-diagram > svg {
   .post-article [role='button'] {
     background: transparent !important;
     border-color: transparent !important;
-  }
-}
-
-/* ===== react-bits 启发：SpotlightCard 指针跟随光斑 =====
-   光斑颜色/位置由 CSS 变量驱动（--spotlight-x/y 由 JS 写入），
-   亮暗主题自动适配，纯装饰、不拦截事件。 */
-.editorial-spotlight {
-  background: radial-gradient(
-    150px circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
-    rgba(63, 63, 70, 0.09),
-    transparent 72%
-  );
-}
-
-.dark .editorial-spotlight {
-  background: radial-gradient(
-    150px circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
-    rgba(244, 244, 245, 0.08),
-    transparent 72%
-  );
-}
-
-/* ===== react-bits 启发：GlitchText 故障字（编辑风 404）=====
-   双层伪元素以 clip-path 切片 + 微偏移循环，配色采用低饱和
-   灰阶而不是霓虹红青，暗色/亮色主题分别适配。 */
-.editorial-glitch {
-  position: relative;
-  display: inline-block;
-  /* 伪元素微偏移 ±3px，允许轻微溢出而不是裁切字形（避免大字裁剪）。 */
-  overflow: visible;
-}
-
-.editorial-glitch::before,
-.editorial-glitch::after {
-  content: attr(data-text);
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  user-select: none;
-}
-
-.editorial-glitch::before {
-  color: #a8a29e;
-  animation: editorial-glitch-slice-a 3.4s infinite steps(1);
-}
-
-.editorial-glitch::after {
-  color: #d6d3d1;
-  animation: editorial-glitch-slice-b 3.4s infinite steps(1);
-}
-
-.dark .editorial-glitch::before {
-  color: #71717a;
-}
-
-.dark .editorial-glitch::after {
-  color: #3f3f46;
-}
-
-@keyframes editorial-glitch-slice-a {
-  0% {
-    clip-path: inset(0 0 100% 0);
-    transform: translate(0, 0);
-  }
-  10% {
-    clip-path: inset(12% 0 58% 0);
-    transform: translate(-3px, 0);
-  }
-  20% {
-    clip-path: inset(48% 0 28% 0);
-    transform: translate(2px, 0);
-  }
-  30% {
-    clip-path: inset(72% 0 6% 0);
-    transform: translate(-2px, 0);
-  }
-  40% {
-    clip-path: inset(28% 0 52% 0);
-    transform: translate(3px, 0);
-  }
-  50% {
-    clip-path: inset(58% 0 22% 0);
-    transform: translate(-3px, 0);
-  }
-  60% {
-    clip-path: inset(8% 0 74% 0);
-    transform: translate(2px, 0);
-  }
-  70% {
-    clip-path: inset(38% 0 42% 0);
-    transform: translate(-2px, 0);
-  }
-  80% {
-    clip-path: inset(82% 0 4% 0);
-    transform: translate(3px, 0);
-  }
-  90% {
-    clip-path: inset(18% 0 62% 0);
-    transform: translate(-3px, 0);
-  }
-  100% {
-    clip-path: inset(0 0 100% 0);
-    transform: translate(0, 0);
-  }
-}
-
-@keyframes editorial-glitch-slice-b {
-  0% {
-    clip-path: inset(0 0 100% 0);
-    transform: translate(0, 0);
-  }
-  15% {
-    clip-path: inset(66% 0 12% 0);
-    transform: translate(3px, 0);
-  }
-  30% {
-    clip-path: inset(22% 0 60% 0);
-    transform: translate(-3px, 0);
-  }
-  45% {
-    clip-path: inset(52% 0 30% 0);
-    transform: translate(2px, 0);
-  }
-  60% {
-    clip-path: inset(6% 0 80% 0);
-    transform: translate(-2px, 0);
-  }
-  75% {
-    clip-path: inset(42% 0 38% 0);
-    transform: translate(3px, 0);
-  }
-  90% {
-    clip-path: inset(78% 0 8% 0);
-    transform: translate(-2px, 0);
-  }
-  100% {
-    clip-path: inset(0 0 100% 0);
-    transform: translate(0, 0);
-  }
-}
-
-/* ===== react-bits 启发：Noise 胶片颗粒（静态版）=====
-   使用内联 SVG feTurbulence 生成单帧噪点纹理，无 JS 无动画，
-   成本为零；亮色下正片叠底轻微加深纸张，暗色下滤色轻微提亮。 */
-.editorial-grain {
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
-  mix-blend-mode: multiply;
-  opacity: 0.06;
-}
-
-.dark .editorial-grain {
-  mix-blend-mode: screen;
-  opacity: 0.09;
-}
-
-@media print {
-  .editorial-grain {
-    display: none !important;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .editorial-glitch::before,
-  .editorial-glitch::after {
-    display: none;
   }
 }

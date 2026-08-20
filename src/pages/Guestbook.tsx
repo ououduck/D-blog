@@ -44,9 +44,7 @@ export const Guestbook = () => {
           <MessageSquareText size={14} aria-hidden="true" />
           Guestbook
         </p>
-        <h1 className="font-serif text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
-          留言板
-        </h1>
+        <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">留言板</h1>
       </header>
 
       <Surface className="mb-8 p-5 sm:p-6">

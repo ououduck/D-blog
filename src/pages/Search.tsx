@@ -141,9 +141,7 @@ export const Search = () => {
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-zinc-200 pb-5 dark:border-zinc-800 md:pb-6">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Search</p>
-          <h1 className="font-serif text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-4xl">
-            搜索
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-4xl">搜索</h1>
         </div>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           {hasSearchQuery ? `找到 ${results.length} 条结果` : '全站文章检索'}
@@ -213,11 +211,10 @@ export const Search = () => {
           results.length > 0 ? (
             <div aria-live="polite">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {results.map((post, index) => (
+                {results.map((post) => (
                   <PostCard
                     key={post.id}
                     post={post}
-                    index={index}
                     onShare={setSharePost}
                     isSaved={savedIds.has(post.id)}
                     isSaving={savingId === post.id}

@@ -1395,9 +1395,7 @@ export const CoverGenerator: React.FC = () => {
           <Wand2 size={14} />
           COVER STUDIO
         </div>
-        <h1 className="mb-3 font-serif text-3xl font-bold tracking-tight text-ink dark:text-white md:text-5xl">
-          封面生成器
-        </h1>
+        <h1 className="mb-3 text-3xl font-bold tracking-tight text-ink dark:text-white md:text-5xl">封面生成器</h1>
         <p className="mx-auto max-w-3xl text-sm leading-6 text-zinc-500 dark:text-zinc-400 md:text-base">
           聚焦博客封面生成体验，保留现有的 <strong>纯黑</strong> 与 <strong>纯白</strong>{' '}
           两种背景模板，补足更顺手的编辑、预览与导出能力。

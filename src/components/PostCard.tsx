@@ -4,24 +4,17 @@
  * （首页若做路由级懒加载会连锁影响搜索页）。
  */
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, MessageCircle, Bookmark, Share2, Pin, Sparkles } from 'lucide-react';
 import type { PostMetadata } from '@/types';
 import { assetUrl } from '@/utils/siteUrl';
 import { preloadPage } from '@/utils/preload';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
-import { useSpotlight } from '@/hooks/useSpotlight';
-import { SpotlightLayer } from '@/components/effects/SpotlightLayer';
-import { easeOut, easeSmooth } from '@/utils/motion';
 import { isPinnedFeaturedPost } from '@/utils/postSelection';
-import { useMemo } from 'react';
 
 // 组件 props 类型（全仓库仅本文件使用，不导出避免公共 API 承诺）。
 interface PostCardProps {
   post: PostMetadata;
-  index: number;
   featured?: boolean;
   onShare: (post: PostMetadata) => void;
   isSaved: boolean;
@@ -50,29 +43,7 @@ const PostCardTags: React.FC<{ tags: string[] }> = ({ tags }) =>
     </div>
   ) : null;
 
-const PostCardImpl: React.FC<PostCardProps> = ({ post, index, featured, onShare, isSaved, isSaving, onToggleSave }) => {
-  const shouldReduceMotion = useReducedMotion();
-  // react-bits SpotlightCard 启发：光标在卡片内移动时跟随柔光，触屏/减弱动效下自动禁用。
-  const spotlight = useSpotlight<HTMLDivElement>({ activeOpacity: 0.5 });
-  // 变体对象依赖 index（错峰 delay）与 shouldReduceMotion：useMemo 缓存避免
-  // 每次渲染（收藏切换/搜索击键/父级状态）新建对象，减少 framer-motion 的
-  // 变体重评估与协调开销（React.memo 只挡父级渲染，挡不住 motion 层开销）。
-  const cardVariants = useMemo(
-    () => ({
-      hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 8 },
-      visible: {
-        opacity: 1,
-        y: 0,
-        transition: {
-          duration: shouldReduceMotion ? 0 : 0.25,
-          ease: easeSmooth,
-          delay: shouldReduceMotion ? 0 : index * 0.02,
-        },
-      },
-    }),
-    [index, shouldReduceMotion],
-  );
-
+const PostCardImpl: React.FC<PostCardProps> = ({ post, featured, onShare, isSaved, isSaving, onToggleSave }) => {
   const handleShareClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -87,18 +58,8 @@ const PostCardImpl: React.FC<PostCardProps> = ({ post, index, featured, onShare,
 
   if (featured) {
     return (
-      <motion.article
-        layout={!shouldReduceMotion}
-        variants={cardVariants}
-        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.25, ease: easeOut }}
-        className="col-span-full w-full"
-        onMouseEnter={() => preloadPage(`/post/${post.id}`)}
-      >
-        <div
-          {...spotlight.bind}
-          className="relative overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-within:border-zinc-500 md:grid md:grid-cols-5"
-        >
-          <SpotlightLayer style={spotlight.layerStyle} />
+      <article className="col-span-full w-full" onMouseEnter={() => preloadPage(`/post/${post.id}`)}>
+        <div className="relative overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-within:border-zinc-500 md:grid md:grid-cols-5">
           <Link
             to={`/post/${post.id}`}
             className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:col-span-3 md:aspect-auto md:min-h-80"
@@ -137,7 +98,7 @@ const PostCardImpl: React.FC<PostCardProps> = ({ post, index, featured, onShare,
               )}
             </div>
             <Link to={`/post/${post.id}`} aria-label={`阅读文章：${post.title}`}>
-              <h2 className="mb-2 font-serif text-xl md:mb-3 font-bold leading-tight text-ink hover:underline dark:text-white md:text-3xl">
+              <h2 className="mb-2 text-xl md:mb-3 font-bold leading-tight text-ink hover:underline dark:text-white md:text-3xl">
                 {post.title}
               </h2>
             </Link>
@@ -183,23 +144,13 @@ const PostCardImpl: React.FC<PostCardProps> = ({ post, index, featured, onShare,
             </div>
           </div>
         </div>
-      </motion.article>
+      </article>
     );
   }
 
   return (
-    <motion.article
-      layout={!shouldReduceMotion}
-      variants={cardVariants}
-      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.25, ease: easeOut }}
-      className="flex h-full min-w-0 flex-col"
-      onMouseEnter={() => preloadPage(`/post/${post.id}`)}
-    >
-      <div
-        {...spotlight.bind}
-        className="relative flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-zinc-400 hover:shadow-[0_4px_12px_rgba(24,24,27,0.08)] focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:shadow-black/20 dark:focus-within:border-zinc-500"
-      >
-        <SpotlightLayer style={spotlight.layerStyle} />
+    <article className="flex h-full min-w-0 flex-col" onMouseEnter={() => preloadPage(`/post/${post.id}`)}>
+      <div className="relative flex h-full flex-col overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-400 focus-within:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-within:border-zinc-500">
         <Link
           to={`/post/${post.id}`}
           className="block aspect-[16/9] overflow-hidden bg-zinc-100 dark:bg-zinc-800 md:aspect-[16/10]"
@@ -236,7 +187,7 @@ const PostCardImpl: React.FC<PostCardProps> = ({ post, index, featured, onShare,
             )}
           </div>
           <Link to={`/post/${post.id}`} aria-label={`阅读文章：${post.title}`}>
-            <h3 className="mb-1.5 line-clamp-2 min-h-11 font-serif text-base font-bold leading-snug md:mb-2 text-ink hover:underline dark:text-zinc-100 md:text-lg">
+            <h3 className="mb-1.5 line-clamp-2 min-h-11 text-base font-bold leading-snug md:mb-2 text-ink hover:underline dark:text-zinc-100 md:text-lg">
               {post.title}
             </h3>
           </Link>
@@ -280,7 +231,7 @@ const PostCardImpl: React.FC<PostCardProps> = ({ post, index, featured, onShare,
           </div>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 };
 

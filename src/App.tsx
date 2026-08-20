@@ -33,9 +33,7 @@ const CookieNotice = lazy(() => import('./components/CookieNotice').then((m) => 
 
 const RouteFallback: React.FC = () => (
   <div className="mx-auto flex min-h-[50vh] max-w-7xl items-center justify-center">
-    <div className="flex flex-col items-center gap-3">
-      <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-500 dark:border-zinc-700 dark:border-t-zinc-400" />
-    </div>
+    <p className="text-sm text-zinc-400 dark:text-zinc-500">加载中…</p>
   </div>
 );
 

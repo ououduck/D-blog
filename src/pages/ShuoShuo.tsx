@@ -3,7 +3,6 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
 import { MessageCircle, Search as SearchIcon } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Seo, buildSiteSchemas } from '../components/Seo';
@@ -19,7 +18,6 @@ import { ShuoShuoShareModal } from '@/components/ShuoShuoShareModal';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { stripMarkdown } from '@/utils/markdownText';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { staggerContainer } from '@/utils/motion';
 
 const SHUOSHUO_DESCRIPTION =
   'D-blog 说说：类似朋友圈的短动态分享，用一句话、一张图记录当下的想法与生活片段，Markdown 书写，随性更新。';
@@ -191,9 +189,7 @@ export const ShuoShuo = () => {
           <MessageCircle size={14} aria-hidden="true" />
           ShuoShuo · Moments
         </p>
-        <h1 className="font-serif text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
-          说说
-        </h1>
+        <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">说说</h1>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400 md:text-base">
           这里是一块类似PLDDUCK朋友圈的短动态小天地
         </p>
@@ -249,12 +245,7 @@ export const ShuoShuo = () => {
           {/* 时间轴竖线：贯穿整条动态流。放在 ol 外（ol 的直接子元素只允许 li，
               直接放 span 属无效 HTML，部分读屏会误读列表边界/条目数）。 */}
           <span aria-hidden="true" className="absolute bottom-2 left-5 top-2 w-px bg-zinc-200 dark:bg-zinc-800" />
-          <motion.ol
-            variants={shouldReduceMotion ? undefined : staggerContainer}
-            initial={shouldReduceMotion ? false : 'hidden'}
-            animate="visible"
-            className="space-y-8"
-          >
+          <ol className="space-y-8">
             {filteredItems.map((item) => (
               <ShuoShuoItem
                 key={item.id}
@@ -262,11 +253,10 @@ export const ShuoShuo = () => {
                 onPreview={(src, alt) => setPreviewImage({ src, alt })}
                 onShare={handleShare}
                 isHighlighted={highlightedId === item.id}
-                shouldReduceMotion={shouldReduceMotion}
                 shareSnippet={(strippedContents.get(item.id) ?? '').slice(0, 24) || item.date}
               />
             ))}
-          </motion.ol>
+          </ol>
         </div>
       )}
 

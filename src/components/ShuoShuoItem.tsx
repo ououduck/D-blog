@@ -4,7 +4,6 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Link2, Share2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -14,7 +13,6 @@ import type { ShuoShuo as ShuoShuoEntry } from '../types';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
 import { formatDate } from '@/utils/date';
 import { stripMarkdown } from '@/utils/markdownText';
-import { fadeInUp } from '@/utils/motion';
 
 const getImageGridClass = (count: number) => {
   if (count === 1) return 'grid-cols-1';
@@ -51,7 +49,7 @@ const ImageGrid: React.FC<{ images: string[]; onPreview: (src: string, alt?: str
                   : '(max-width: 640px) 30vw, 160px'
             }
             wrapperClassName="h-full w-full"
-            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+            className="h-full w-full object-cover"
           />
         </button>
       ))}
@@ -64,7 +62,6 @@ interface ShuoShuoItemProps {
   onPreview: (src: string, alt?: string) => void;
   onShare: (item: ShuoShuoEntry) => void;
   isHighlighted?: boolean;
-  shouldReduceMotion?: boolean;
   /** 列表页展示「永久链接」入口指向独立页；详情页隐藏（自身即独立页）。 */
   showDetailLink?: boolean;
   /**
@@ -80,7 +77,6 @@ export const ShuoShuoItem: React.FC<ShuoShuoItemProps> = ({
   onPreview,
   onShare,
   isHighlighted = false,
-  shouldReduceMotion = false,
   showDetailLink = true,
   shareSnippet,
 }) => {
@@ -88,12 +84,7 @@ export const ShuoShuoItem: React.FC<ShuoShuoItemProps> = ({
   const snippet = shareSnippet ?? (stripMarkdown(item.content).slice(0, 24) || item.date);
 
   return (
-    <motion.li
-      variants={shouldReduceMotion ? undefined : fadeInUp}
-      id={`shuoshuo-${item.id}`}
-      data-shuoshuo-id={item.id}
-      className="relative flex gap-4 scroll-mt-24 sm:gap-5"
-    >
+    <li id={`shuoshuo-${item.id}`} data-shuoshuo-id={item.id} className="relative flex gap-4 scroll-mt-24 sm:gap-5">
       {/* 头像：左列固定，朋友圈式布局 */}
       <div className="relative z-10 mt-0.5 h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-zinc-300 bg-zinc-100 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
         <ProgressiveImage
@@ -151,6 +142,6 @@ export const ShuoShuoItem: React.FC<ShuoShuoItemProps> = ({
           </div>
         </div>
       </div>
-    </motion.li>
+    </li>
   );
 };

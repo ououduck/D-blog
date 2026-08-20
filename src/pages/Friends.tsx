@@ -4,7 +4,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Check, ExternalLink, Github, Sparkles, ChevronDown, Globe2, X } from 'lucide-react';
+import { ArrowRight, Check, Github, Sparkles, ChevronDown, Globe2, X } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
 import { siteConfig } from '@config/site.config';
 import { getFriends, getInitialFriends } from '@/services/friends';
@@ -16,9 +16,7 @@ import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { SlideModal } from '@/components/SlideModal';
 import { Surface } from '@/components/ui/Surface';
-import { easeOut, fadeInUp, staggerContainer } from '@/utils/motion';
-import { useSpotlight } from '@/hooks/useSpotlight';
-import { SpotlightLayer } from '@/components/effects/SpotlightLayer';
+import { easeOut } from '@/utils/motion';
 import {
   createFriendLinkApplication,
   type FriendLinkApplicationValues,
@@ -55,14 +53,8 @@ interface FriendCardProps {
  * `"unavailable": true` 标记（详见 scripts/friend-link-check.mjs）。
  */
 const FriendCard = ({ friend, unavailable = false }: FriendCardProps) => {
-  const shouldReduceMotion = useReducedMotion();
-  // react-bits SpotlightCard 启发：光标跟随柔光，触屏/减弱动效下自动禁用。
-  const spotlight = useSpotlight<HTMLAnchorElement>({ activeOpacity: 0.5 });
   return (
-    <motion.a
-      {...spotlight.bind}
-      variants={shouldReduceMotion ? undefined : fadeInUp}
-      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.14, ease: easeOut }}
+    <a
       href={friend.url}
       target="_blank"
       rel="noopener noreferrer"
@@ -72,15 +64,11 @@ const FriendCard = ({ friend, unavailable = false }: FriendCardProps) => {
           : 'border-zinc-300 hover:border-ink dark:border-zinc-700 dark:hover:border-white dark:focus-visible:border-white'
       }`}
     >
-      <SpotlightLayer style={spotlight.layerStyle} />
       {unavailable && (
         <span className="absolute left-0 top-0 z-10 rounded-br-lg border-b border-r border-red-300/70 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600 dark:border-red-900/60 dark:bg-red-950/60 dark:text-red-400">
           已失联
         </span>
       )}
-      <div className="absolute right-0 top-0 p-4 text-zinc-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 group-focus-visible:opacity-100 dark:text-zinc-500">
-        <ExternalLink size={16} />
-      </div>
       <div className="flex items-start gap-4 pr-5">
         <div className="relative h-14 w-14 flex-shrink-0">
           <div className="h-14 w-14 overflow-hidden rounded-full border border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900">
@@ -101,7 +89,7 @@ const FriendCard = ({ friend, unavailable = false }: FriendCardProps) => {
         </div>
         <div className="min-w-0 flex-1">
           <h2
-            className={`mb-1 truncate font-serif text-lg font-bold transition-colors group-hover:text-zinc-700 dark:group-hover:text-zinc-300 ${
+            className={`mb-1 truncate text-lg font-bold transition-colors group-hover:text-zinc-700 dark:group-hover:text-zinc-300 ${
               unavailable ? 'text-zinc-700 dark:text-zinc-300' : 'text-zinc-900 dark:text-zinc-100'
             }`}
           >
@@ -120,7 +108,7 @@ const FriendCard = ({ friend, unavailable = false }: FriendCardProps) => {
           </div>
         </div>
       </div>
-    </motion.a>
+    </a>
   );
 };
 
@@ -187,9 +175,6 @@ export const Friends = () => {
       cancelled = true;
     };
   }, [loadAttempt]);
-
-  const containerVariants = shouldReduceMotion ? undefined : staggerContainer;
-  const itemVariants = shouldReduceMotion ? undefined : fadeInUp;
 
   const siteInfo = {
     name: siteConfig.title,
@@ -322,9 +307,7 @@ export const Friends = () => {
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
           Friends Directory
         </p>
-        <h1 className="font-serif text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">
-          友情链接
-        </h1>
+        <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-5xl">友情链接</h1>
         <p className="mt-4 max-w-2xl text-zinc-600 dark:text-zinc-400">
           这里汇集了一些优秀的技术博客和有趣的网站。如果你也想交换友链，可以在线填写申请信息。
         </p>
@@ -424,9 +407,9 @@ export const Friends = () => {
                     {currentApplicationStep === 1 && (
                       <motion.div
                         key="friend-link-step-1"
-                        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+                        initial={shouldReduceMotion ? false : { opacity: 0 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
+                        exit={shouldReduceMotion ? undefined : { opacity: 0 }}
                       >
                         <Surface variant="card" className="p-4 sm:p-5" aria-labelledby="friend-link-site-info">
                           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -474,9 +457,9 @@ export const Friends = () => {
                     {currentApplicationStep === 2 && (
                       <motion.div
                         key="friend-link-step-2"
-                        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+                        initial={shouldReduceMotion ? false : { opacity: 0 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
+                        exit={shouldReduceMotion ? undefined : { opacity: 0 }}
                       >
                         <Surface variant="card" className="p-4 sm:p-5">
                           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -515,9 +498,9 @@ export const Friends = () => {
                     {currentApplicationStep === 3 && (
                       <motion.div
                         key="friend-link-step-3"
-                        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+                        initial={shouldReduceMotion ? false : { opacity: 0 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
+                        exit={shouldReduceMotion ? undefined : { opacity: 0 }}
                       >
                         <form
                           noValidate
@@ -674,7 +657,7 @@ export const Friends = () => {
                     {currentApplicationStep === 4 && (
                       <motion.div
                         key="friend-link-step-4"
-                        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+                        initial={shouldReduceMotion ? false : { opacity: 0 }}
                         animate={{ opacity: 1, y: 0 }}
                       >
                         <Surface variant="panel" className="p-4 sm:p-5">
@@ -729,13 +712,7 @@ export const Friends = () => {
         />
       )}
 
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
-        aria-busy={loading}
-      >
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" aria-busy={loading}>
         {!loading &&
           !loadError &&
           activeFriends.length > 0 &&
@@ -744,11 +721,10 @@ export const Friends = () => {
         {loading && <LoadingStatus label="正在加载友情链接" className="col-span-full" />}
         {loading &&
           Array.from({ length: 3 }).map((_, index) => (
-            <motion.div
+            <div
               key={`skeleton-${index}`}
               aria-hidden="true"
-              variants={itemVariants}
-              className="editorial-shimmer rounded-surface border border-zinc-200 bg-paper p-5 dark:border-zinc-800 dark:bg-zinc-900"
+              className="animate-pulse rounded-surface border border-zinc-200 bg-paper p-5 dark:border-zinc-800 dark:bg-zinc-900"
             >
               <div className="flex items-start gap-4">
                 <div className="h-14 w-14 flex-shrink-0 rounded-full bg-zinc-100 dark:bg-zinc-800" />
@@ -758,7 +734,7 @@ export const Friends = () => {
                   <div className="h-4 w-2/3 bg-zinc-100 dark:bg-zinc-800" />
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
 
         {!loading && !loadError && filteredFriends.length > 0 && activeFriends.length === 0 && (
@@ -772,7 +748,7 @@ export const Friends = () => {
             没有找到匹配的友链，试试更短的关键词。
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* 已失联的博客：由友链可用状态检查 Action（scripts/friend-link-check.mjs）维护，
           每次运行后失联/恢复状态会随 friends/*.json 更新并在此处体现。 */}
@@ -823,16 +799,11 @@ export const Friends = () => {
             >
               <div className="border-t border-zinc-200 pb-5 pt-5 dark:border-zinc-800 sm:pb-6 sm:pt-6">
                 {unavailableFriends.length > 0 ? (
-                  <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
-                  >
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {unavailableFriends.map((friend) => (
                       <FriendCard key={`${friend.url}-${friend.name}`} friend={friend} unavailable />
                     ))}
-                  </motion.div>
+                  </div>
                 ) : (
                   <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
                     目前没有失联的友链，所有友链均可正常访问 🎉
@@ -865,10 +836,7 @@ export const Friends = () => {
           <div>
             <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
               <div>
-                <h2
-                  id="friend-link-result-title"
-                  className="font-serif text-xl font-bold text-zinc-900 dark:text-zinc-100"
-                >
+                <h2 id="friend-link-result-title" className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
                   Issue 草稿已准备
                 </h2>
                 <p

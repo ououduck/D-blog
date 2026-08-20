@@ -36,7 +36,7 @@ export const ContentStatus: React.FC<ContentStatusProps> = ({
   >
     <p
       className={mergeClassName(
-        'font-serif text-lg font-semibold',
+        'text-lg font-semibold',
         variant === 'error' ? 'text-zinc-950 dark:text-zinc-100' : 'text-zinc-700 dark:text-zinc-300',
       )}
     >
