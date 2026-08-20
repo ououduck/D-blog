@@ -134,7 +134,7 @@ concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 3), ".jp
 
 ### 5.触发Action
 
-![](https://img.pldduck.com/20260820143052442.png)  
+![触发Action](https://img.pldduck.com/20260820143052442.png)  
 进入action页面后 找到左侧的Build and Deploy to Cloudflare Pages 
 点击右侧的Run workflow  
 再次点击绿色的Run workflow  
