@@ -278,7 +278,7 @@ export const GiscusComments = ({ postId, mapping = 'pathname', term }: GiscusCom
     >
       <div className="mb-6 flex items-center gap-2">
         <MessageSquareText size={18} className="text-zinc-400" aria-hidden="true" />
-        <h2 id="comments-heading" className="font-serif text-xl font-bold text-ink dark:text-white">
+        <h2 id="comments-heading" className="text-xl font-bold text-ink dark:text-white">
           评论
         </h2>
       </div>

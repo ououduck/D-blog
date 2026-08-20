@@ -1084,6 +1084,8 @@ const createMarkdownComponents = (
       { ...props, id, className: 'heading-anchor-wrapper' },
       // 锚点用 span+role 模拟按钮而非 <button>：标题内部可能已有链接/交互元素，
       // 嵌套 <button> 属非法 HTML，会导致水合告警与点击行为异常。
+      // 锚点置于标题文本之后（GitHub 风格：悬停标题时在文字末尾显示 #）。
+      children,
       React.createElement(
         'span',
         {
@@ -1106,7 +1108,6 @@ const createMarkdownComponents = (
         },
         '#',
       ),
-      children,
     );
   };
 
@@ -1235,11 +1236,11 @@ const createMarkdownComponents = (
       const isNoDarkAdapt = title === 'no-dark';
       const captionText = isNoDarkAdapt ? alt : alt || title;
       return (
-        <figure data-role="markdown-figure" className="group/myimage my-7 md:my-10">
+        <figure data-role="markdown-figure" className="group/myimage my-6 md:my-8">
           <button
             type="button"
             onClick={() => onPreviewImage({ src: previewTarget, alt })}
-            className="relative block w-full overflow-hidden rounded-media border border-zinc-300 bg-zinc-50 shadow-none transition-colors duration-200 hover:border-zinc-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-500 dark:focus-visible:outline-zinc-100"
+            className="relative block w-full overflow-hidden rounded-[6px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100"
             aria-label={alt ? `预览图片：${alt}` : '预览图片'}
           >
             <ProgressiveImage
@@ -1250,10 +1251,10 @@ const createMarkdownComponents = (
               decoding="async"
               width={dimensions?.width ?? props.width}
               height={dimensions?.height ?? props.height}
-              wrapperClassName="w-full rounded-media"
-              className={`h-auto w-full cursor-zoom-in rounded-media object-contain transition-opacity duration-200 group-hover/myimage:opacity-95 ${isNoDarkAdapt ? 'no-dark-adapt' : ''}`}
+              wrapperClassName="w-full rounded-[6px]"
+              className={`h-auto w-full cursor-zoom-in rounded-[6px] object-contain ${isNoDarkAdapt ? 'no-dark-adapt' : ''}`}
             />
-            <span className="pointer-events-none absolute right-3 top-3 rounded-micro border border-white/20 bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 opacity-0 transition-opacity duration-200 group-hover/myimage:opacity-100 group-focus-visible/myimage:opacity-100">
+            <span className="pointer-events-none absolute right-3 top-3 rounded-[6px] border border-white/20 bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 opacity-0 transition-opacity duration-200 group-hover/myimage:opacity-100 group-focus-visible/myimage:opacity-100">
               预览
             </span>
           </button>
@@ -1296,10 +1297,7 @@ const createMarkdownComponents = (
       }
 
       return (
-        <code
-          className="rounded-micro border border-zinc-200/80 bg-zinc-100 px-1.5 py-0.5 font-mono font-medium text-zinc-900 before:content-none after:content-none dark:border-zinc-700/70 dark:bg-zinc-900 dark:text-zinc-100"
-          {...props}
-        >
+        <code className="font-mono font-medium before:content-none after:content-none" {...props}>
           {children}
         </code>
       );
@@ -2251,35 +2249,32 @@ export const Post = () => {
 
           {/* LCP 元素首帧即渲染最终可见状态，不设入场动画（避免 SSR 输出 opacity:0） */}
           <div>
-            <h1 className="mb-5 break-words text-balance font-serif text-3xl font-bold leading-[1.18] tracking-[-0.02em] text-ink [overflow-wrap:anywhere] dark:text-white md:mb-6 md:text-5xl lg:text-[3.5rem]">
+            <h1 className="mb-5 break-words text-balance text-[1.875rem] font-bold leading-[1.25] tracking-[-0.01em] text-ink [overflow-wrap:anywhere] dark:text-white md:mb-6 md:text-[2.5rem] lg:text-[2.75rem]">
               {post.title}
             </h1>
 
             {!isReadingMode && (
-              <div className="post-meta print-hidden mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 sm:gap-2 md:gap-2.5">
-                <span className="inline-flex max-w-full items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
-                  <Users size={14} />
-                  <span className="truncate">{authorsLabel}</span>
+              <div className="post-meta print-hidden mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-zinc-600 dark:text-zinc-400 sm:gap-x-5">
+                <span className="inline-flex max-w-full items-center gap-1.5">
+                  <Users size={14} className="shrink-0 opacity-70" />
+                  <span className="truncate font-semibold text-zinc-800 dark:text-zinc-200">{authorsLabel}</span>
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
-                  <Calendar size={14} />
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar size={14} className="shrink-0 opacity-70" />
                   <span>发布于 {formatMetaDate(post.date)}</span>
                 </span>
                 {post.updatedAt && post.updatedAt !== post.date && (
-                  <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
-                    <Calendar size={14} />
+                  <span className="inline-flex items-center gap-1.5">
+                    <Calendar size={14} className="shrink-0 opacity-70" />
                     <span>更新 {formatMetaDate(post.updatedAt)}</span>
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
-                  <Clock size={14} />
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock size={14} className="shrink-0 opacity-70" />
                   <span>{post.readTime}</span>
                 </span>
-                <span
-                  className="inline-flex items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 tabular-nums dark:border-zinc-700 dark:bg-zinc-900/70"
-                  title="由不蒜子提供本页阅读量"
-                >
-                  <Eye size={14} />
+                <span className="inline-flex items-center gap-1.5 tabular-nums" title="由不蒜子提供本页阅读量">
+                  <Eye size={14} className="shrink-0 opacity-70" />
                   <span>
                     <span id="busuanzi_page_pv">加载中</span> 次阅读
                   </span>
@@ -2290,7 +2285,7 @@ export const Post = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`在 GitHub 上编辑此文：${post.title}`}
-                    className="print-hidden inline-flex min-h-11 items-center gap-1.5 rounded-control border border-zinc-400 bg-zinc-100 px-3 py-2 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400"
+                    className="print-hidden inline-flex min-h-10 items-center gap-1.5 rounded-[6px] border border-[#d0d7de] bg-white px-3 py-1.5 text-xs font-semibold text-[#57606a] transition-colors hover:border-[#0969da] hover:text-[#0969da] dark:border-[#30363d] dark:bg-transparent dark:text-[#8b949e] dark:hover:border-[#58a6ff] dark:hover:text-[#58a6ff]"
                   >
                     <Github size={14} />
                     编辑
@@ -2299,7 +2294,7 @@ export const Post = () => {
                 <button
                   type="button"
                   onClick={() => setShareModalOpen(true)}
-                  className="print-hidden inline-flex min-h-11 items-center gap-1.5 rounded-control border border-zinc-400 bg-zinc-100 px-3 py-2 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400"
+                  className="print-hidden inline-flex min-h-10 items-center gap-1.5 rounded-[6px] border border-[#d0d7de] bg-white px-3 py-1.5 text-xs font-semibold text-[#57606a] transition-colors hover:border-[#0969da] hover:text-[#0969da] dark:border-[#30363d] dark:bg-transparent dark:text-[#8b949e] dark:hover:border-[#58a6ff] dark:hover:text-[#58a6ff]"
                   aria-label={`分享文章：${post.title}`}
                 >
                   <Share2 size={14} />
@@ -2322,7 +2317,7 @@ export const Post = () => {
                   disabled={isSaving}
                   aria-pressed={isSaved}
                   aria-label={isSaved ? `取消收藏：${post.title}` : `收藏文章：${post.title}`}
-                  className="print-hidden inline-flex min-h-11 items-center gap-1.5 rounded-control border border-zinc-400 bg-zinc-100 px-3 py-2 text-zinc-800 transition-colors active:scale-[.98] hover:border-zinc-600 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60 disabled:active:scale-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-400"
+                  className="print-hidden inline-flex min-h-10 items-center gap-1.5 rounded-[6px] border border-[#d0d7de] bg-white px-3 py-1.5 text-xs font-semibold text-[#57606a] transition-colors hover:border-[#0969da] hover:text-[#0969da] disabled:cursor-wait disabled:opacity-60 dark:border-[#30363d] dark:bg-transparent dark:text-[#8b949e] dark:hover:border-[#58a6ff] dark:hover:text-[#58a6ff]"
                 >
                   <Bookmark size={14} fill={isSaved ? 'currentColor' : 'none'} />
                   {isSaving ? '保存中' : isSaved ? '已收藏' : '收藏'}
@@ -2342,7 +2337,7 @@ export const Post = () => {
             onClick={() => setPreviewImage({ src: resolveBrowserAsset(post.coverImage!)!, alt: post.title })}
             aria-label={`预览文章封面：${post.title}`}
           >
-            <div className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-media border border-zinc-300 bg-zinc-100 shadow-none dark:border-zinc-700 dark:bg-zinc-900 sm:aspect-[16/8] md:mb-14 lg:aspect-[21/9]">
+            <div className="mb-8 aspect-[16/10] cursor-zoom-in overflow-hidden rounded-[6px] sm:aspect-[16/8] md:mb-14 lg:aspect-[21/9]">
               <ProgressiveImage
                 src={resolveBrowserAsset(post.coverImage)}
                 alt={post.title}
@@ -2360,7 +2355,7 @@ export const Post = () => {
 
         <div ref={articleBodyRef} className="post-body mx-auto w-full max-w-5xl px-3 pb-12 sm:px-4 md:pb-20 lg:px-0">
           <div className="mx-auto max-w-[46rem]">
-            <div className="post-prose prose prose-stone max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:tracking-tight prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-3 dark:prose-h2:border-zinc-800 prose-a:break-words prose-a:underline-offset-4 prose-img:rounded-media prose-img:shadow-none prose-blockquote:rounded-none prose-blockquote:border-l-zinc-600 prose-blockquote:bg-zinc-100/70 prose-blockquote:not-italic dark:prose-blockquote:border-l-zinc-400 dark:prose-blockquote:bg-zinc-900 prose-pre:rounded-none prose-pre:border prose-pre:border-zinc-700 prose-pre:bg-[#0d0d0f] prose-pre:p-0">
+            <div className="post-prose prose max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-a:break-words">
               <ReactMarkdown
                 remarkPlugins={remarkPlugins}
                 rehypePlugins={rehypePlugins}
@@ -2430,7 +2425,7 @@ export const Post = () => {
                         <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">
                           系列文章
                         </p>
-                        <h2 id="series-heading" className="font-serif text-xl font-bold text-ink dark:text-white">
+                        <h2 id="series-heading" className="text-xl font-bold text-ink dark:text-white">
                           {seriesNavigation.name}
                         </h2>
                       </div>
@@ -2548,7 +2543,7 @@ export const Post = () => {
                   >
                     <div className="mb-5 flex items-center gap-2">
                       <BookOpen size={16} className="text-zinc-400" />
-                      <h2 id="related-heading" className="font-serif text-xl font-bold text-ink dark:text-white">
+                      <h2 id="related-heading" className="text-xl font-bold text-ink dark:text-white">
                         你可能还喜欢
                       </h2>
                     </div>
@@ -2567,7 +2562,7 @@ export const Post = () => {
                               width={relatedPost.coverWidth}
                               height={relatedPost.coverHeight}
                               wrapperClassName="aspect-video h-24 w-auto flex-none bg-zinc-100 dark:bg-zinc-800 sm:h-auto sm:w-full sm:aspect-[16/10]"
-                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                              className="h-full w-full object-cover"
                             />
                           ) : (
                             <div className="flex aspect-video h-24 w-auto flex-none items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500 sm:h-auto sm:w-full sm:aspect-[16/10]">

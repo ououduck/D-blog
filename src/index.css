@@ -437,37 +437,29 @@ html.theme-switching .editorial-input {
   font-variant-numeric: tabular-nums;
 }
 
-.prose thead {
-  @apply border-b-2 border-zinc-200 dark:border-zinc-700;
-}
-
+/* GitHub 风格表格：全网格边框、表头浅底加粗，无斑马纹/行悬停。 */
 .prose thead th {
-  @apply px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 md:px-4 md:py-3 md:text-sm;
-  background: rgba(228, 228, 231, 0.55);
+  @apply px-3 py-2 text-left font-semibold text-zinc-800 dark:text-zinc-100 md:px-4;
+  border: 1px solid #d0d7de;
+  background: #f6f8fa;
 }
 
 .dark .prose thead th {
-  background: rgba(63, 63, 70, 0.4);
-}
-
-.prose tbody tr {
-  @apply border-b border-zinc-100 transition-colors dark:border-zinc-800/60;
-}
-
-.prose tbody tr:nth-child(even) {
-  @apply bg-zinc-50/60 dark:bg-zinc-800/30;
-}
-
-.prose tbody tr:hover {
-  @apply bg-zinc-100/60 dark:bg-zinc-800/50;
+  border-color: #30363d;
+  background: #161b22;
 }
 
 .prose tbody td {
-  @apply px-3 py-2.5 align-middle text-zinc-700 dark:text-zinc-300 md:px-4 md:py-3;
+  @apply px-3 py-2 align-middle text-zinc-700 dark:text-zinc-300 md:px-4;
+  border: 1px solid #d0d7de;
+}
+
+.dark .prose tbody td {
+  border-color: #30363d;
 }
 
 .table-wrapper {
-  @apply my-7 overflow-x-auto rounded-surface border border-zinc-300 bg-paper shadow-none dark:border-zinc-700 dark:bg-zinc-950/40 md:my-9;
+  @apply my-7 overflow-x-auto md:my-9;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-inline: contain;
   scrollbar-width: thin;
@@ -480,12 +472,16 @@ html.theme-switching .editorial-input {
   content: '';
 }
 
+/* GitHub 风格分隔线：整行 4px 色块（替代旧版居中短横线）。 */
 .prose hr {
-  @apply relative border-0;
+  @apply border-0;
+  height: 4px;
+  margin-top: 2.5em;
+  margin-bottom: 2.5em;
+  background-color: #d0d7de;
 }
-.prose hr::after {
-  content: '';
-  @apply absolute left-1/2 top-1/2 h-px w-16 -translate-x-1/2 -translate-y-1/2 rounded-none bg-zinc-300 dark:bg-zinc-600;
+.dark .prose hr {
+  background-color: #30363d;
 }
 
 .prose ol > li::marker {
@@ -493,10 +489,12 @@ html.theme-switching .editorial-input {
 }
 
 .heading-anchor-wrapper {
-  @apply relative group/heading;
+  @apply group/heading;
 }
+/* GitHub 风格标题锚点：位于标题文字之后，悬停/聚焦时显现。 */
 .heading-anchor {
-  @apply absolute -left-8 top-1/2 hidden -translate-y-1/2 text-zinc-300 opacity-0 transition-opacity hover:text-zinc-900 dark:text-zinc-600 dark:hover:text-zinc-100 md:inline-flex;
+  @apply ml-2 hidden items-center text-[0.7em] font-semibold text-zinc-400 opacity-0 transition-opacity hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300 md:inline-flex;
+  vertical-align: middle;
 }
 .group\/heading:hover .heading-anchor,
 .group\/heading:focus-within .heading-anchor,
@@ -546,20 +544,22 @@ html.theme-switching .editorial-input {
     'Courier New', monospace;
 }
 
-.post-prose :not(pre) > code {
-  font-size: 0.9em;
+.code-block {
+  @apply overflow-hidden rounded-[6px] border border-[#d0d7de] bg-[#f6f8fa] dark:border-[#30363d] dark:bg-[#161b22];
 }
 
-.code-block {
-  @apply overflow-hidden rounded-surface border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-[#111827];
+/* highlight.js 主题自带底色（白/#0d1117），改透明以透出 .code-block
+   的统一背景，得到 GitHub 式整块同底色的代码区。 */
+.code-block .hljs {
+  background: transparent;
 }
 
 .code-toolbar {
-  @apply flex min-h-12 items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600 dark:border-slate-700 dark:bg-[#172033] dark:text-slate-200;
+  @apply flex min-h-12 items-center justify-between gap-3 border-b border-[#d0d7de] bg-[#eef1f4] px-3 py-1.5 text-xs text-[#57606a] dark:border-[#30363d] dark:bg-[#1c2128] dark:text-[#8b949e];
 }
 
 .code-language {
-  @apply min-w-0 truncate font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300;
+  @apply min-w-0 truncate font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6e7781] dark:text-[#8b949e];
 }
 
 .code-toolbar-actions {
@@ -567,7 +567,7 @@ html.theme-switching .editorial-input {
 }
 
 .code-action-btn {
-  @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 active:scale-[.98] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-blue-400 dark:hover:bg-blue-500/15 dark:hover:text-blue-100 dark:focus-visible:outline-blue-300;
+  @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-[6px] border border-[#d0d7de] bg-white px-2.5 py-1.5 text-xs font-medium text-[#57606a] transition-colors hover:border-[#0969da] hover:bg-[#ddf4ff] hover:text-[#0969da] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0969da] active:scale-[.98] dark:border-[#30363d] dark:bg-[#21262d] dark:text-[#8b949e] dark:hover:border-[#58a6ff] dark:hover:bg-[#1f6feb33] dark:hover:text-[#58a6ff] dark:focus-visible:outline-[#58a6ff];
 }
 
 .code-action-btn-success {
@@ -614,11 +614,11 @@ html.theme-switching .editorial-input {
 .code-scroll {
   @apply relative overflow-x-auto touch-pan-x;
   scrollbar-width: thin;
-  scrollbar-color: #94a3b8 transparent;
+  scrollbar-color: #d0d7de transparent;
 }
 
 .dark .code-scroll {
-  scrollbar-color: #64748b transparent;
+  scrollbar-color: #30363d transparent;
 }
 
 .code-content {
@@ -628,10 +628,12 @@ html.theme-switching .editorial-input {
 .code-content > pre {
   @apply flex-1;
   min-width: max-content;
+  /* 容器（.code-block）已有单一边框，pre 自身不再重复描边。 */
+  border: 0;
 }
 
 .code-line-numbers {
-  @apply flex shrink-0 flex-col select-none border-r border-slate-200 bg-slate-50 px-3 py-3.5 text-right font-mono text-[0.8125rem] leading-6 text-slate-400 dark:border-slate-700 dark:bg-[#172033] dark:text-slate-500 md:py-5;
+  @apply flex shrink-0 flex-col select-none border-r border-[#d0d7de] px-3 py-3.5 text-right font-mono text-[0.8125rem] leading-6 text-[#6e7781] dark:border-[#30363d] dark:text-[#8b949e] md:py-5;
 }
 
 .code-line-numbers span {
@@ -1138,20 +1140,20 @@ html.dark .mermaid-diagram > svg {
 .dark .prose {
   --tw-prose-body: #e4e4e7;
   --tw-prose-headings: #fafafa;
-  --tw-prose-lead: #d4d4d8;
-  --tw-prose-links: #fafafa;
+  --tw-prose-lead: #8b949e;
+  --tw-prose-links: #58a6ff;
   --tw-prose-bold: #fafafa;
-  --tw-prose-counters: #a1a1aa;
-  --tw-prose-bullets: #71717a;
-  --tw-prose-hr: #3f3f46;
-  --tw-prose-quotes: #e4e4e7;
-  --tw-prose-quote-borders: #52525b;
-  --tw-prose-captions: #a1a1aa;
-  --tw-prose-code: #f4f4f5;
-  --tw-prose-pre-code: #e4e4e7;
-  --tw-prose-pre-bg: #09090b;
-  --tw-prose-th-borders: #3f3f46;
-  --tw-prose-td-borders: #27272a;
+  --tw-prose-counters: #8b949e;
+  --tw-prose-bullets: #30363d;
+  --tw-prose-hr: #30363d;
+  --tw-prose-quotes: #8b949e;
+  --tw-prose-quote-borders: #30363d;
+  --tw-prose-captions: #8b949e;
+  --tw-prose-code: #e6edf3;
+  --tw-prose-pre-code: #e6edf3;
+  --tw-prose-pre-bg: #161b22;
+  --tw-prose-th-borders: #30363d;
+  --tw-prose-td-borders: #30363d;
 }
 
 @media (max-width: 1023px) {

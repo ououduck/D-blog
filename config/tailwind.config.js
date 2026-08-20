@@ -93,6 +93,8 @@ export default {
         viewer: '120',
       },
       typography: (theme) => ({
+        // GitHub 风格正文渲染：无衬线标题（粗体 + h1/h2 下边框）、蓝色链接、
+        // 灰边引用、等宽行内代码，去除衬线字体与装饰性样式。
         DEFAULT: {
           css: {
             fontFamily: theme('fontFamily.sans').join(', '),
@@ -103,104 +105,139 @@ export default {
             maxWidth: 'none',
             letterSpacing: '0.01em',
 
+            // 颜色变量：GitHub 浅色系（不使用 prose-stone 时兜底）。
+            '--tw-prose-body': theme('colors.ink'),
+            '--tw-prose-headings': theme('colors.ink'),
+            '--tw-prose-lead': '#57606a',
+            '--tw-prose-links': '#0969da',
+            '--tw-prose-bold': theme('colors.ink'),
+            '--tw-prose-counters': '#57606a',
+            '--tw-prose-bullets': '#d0d7de',
+            '--tw-prose-hr': '#d0d7de',
+            '--tw-prose-quotes': '#57606a',
+            '--tw-prose-quote-borders': '#d0d7de',
+            '--tw-prose-captions': '#57606a',
+            '--tw-prose-code': '#1f2328',
+            '--tw-prose-pre-code': '#1f2328',
+            '--tw-prose-pre-bg': '#f6f8fa',
+            '--tw-prose-th-borders': '#d0d7de',
+            '--tw-prose-td-borders': '#d0d7de',
+            '--tw-prose-kbd': '#1f2328',
+            '--tw-prose-kbd-shadows': 'rgba(31,35,40,0.1)',
+
             // 中文正文两端对齐：消除参差右缘，避免汉字行出现明显空隙。
             'p, li': {
               textAlign: 'justify',
               textJustify: 'inter-ideograph',
             },
 
-            'p + p': { marginTop: '1.6em' },
+            'p + p': { marginTop: '1.5em' },
             'li + li': { marginTop: '0.35em' },
             'ul > li > *:first-child': { marginTop: '0' },
             'ol > li > *:first-child': { marginTop: '0' },
 
+            // GitHub 标题：无衬线粗体，h1/h2 带下边框。
             h1: {
-              fontFamily: theme('fontFamily.serif').join(', '),
-              fontWeight: '800',
+              fontFamily: theme('fontFamily.sans').join(', '),
+              fontWeight: '700',
+              fontSize: '2em',
               color: theme('colors.ink'),
-              letterSpacing: '-0.015em',
+              marginTop: '0',
+              marginBottom: '1em',
+              lineHeight: '1.25',
+              paddingBottom: '0.3em',
+              borderBottom: '1px solid #d0d7de',
+              letterSpacing: '-0.01em',
             },
             h2: {
-              fontFamily: theme('fontFamily.serif').join(', '),
+              fontFamily: theme('fontFamily.sans').join(', '),
               fontWeight: '700',
-              color: theme('colors.ink'),
-              marginTop: '2.5em',
-              marginBottom: '0.8em',
-              letterSpacing: '-0.01em',
-              lineHeight: '1.35',
-              paddingBottom: '0.35em',
-              borderBottom: '1px solid #e7e5e4',
-            },
-            h3: {
-              fontFamily: theme('fontFamily.serif').join(', '),
-              fontWeight: '600',
+              fontSize: '1.5em',
               color: theme('colors.ink'),
               marginTop: '2em',
-              marginBottom: '0.7em',
+              marginBottom: '0.8em',
+              letterSpacing: '-0.01em',
+              lineHeight: '1.3',
+              paddingBottom: '0.3em',
+              borderBottom: '1px solid #d0d7de',
+            },
+            h3: {
+              fontFamily: theme('fontFamily.sans').join(', '),
+              fontWeight: '600',
+              fontSize: '1.25em',
+              color: theme('colors.ink'),
+              marginTop: '1.75em',
+              marginBottom: '0.6em',
               letterSpacing: '-0.005em',
               lineHeight: '1.4',
             },
             h4: {
-              fontFamily: theme('fontFamily.serif').join(', '),
+              fontFamily: theme('fontFamily.sans').join(', '),
               fontWeight: '600',
+              fontSize: '1em',
               color: theme('colors.ink'),
-              marginTop: '1.6em',
-              marginBottom: '0.6em',
-              lineHeight: '1.45',
+              marginTop: '1.5em',
+              marginBottom: '0.5em',
+              lineHeight: '1.5',
             },
             strong: { color: theme('colors.ink'), fontWeight: '700' },
 
+            // GitHub 引用：无背景、灰左框、弱化文字色。
             blockquote: {
-              fontFamily: theme('fontFamily.serif').join(', '),
+              fontFamily: theme('fontFamily.sans').join(', '),
               fontStyle: 'normal',
-              borderLeftColor: theme('colors.accent.DEFAULT'),
-              borderLeftWidth: '4px',
-              backgroundColor: 'rgba(63,63,70,0.04)',
-              padding: '1.3em 1.7em',
-              marginTop: '1.8em',
-              marginBottom: '1.8em',
+              fontWeight: '400',
+              color: '#57606a',
+              borderLeftColor: '#d0d7de',
+              borderLeftWidth: '0.25em',
+              backgroundColor: 'transparent',
+              padding: '0 1em',
+              marginTop: '1.6em',
+              marginBottom: '1.6em',
               borderRadius: '0',
             },
             'blockquote p:first-of-type::before': { content: 'none' },
             'blockquote p:last-of-type::after': { content: 'none' },
 
+            // GitHub 行内代码：等宽、浅底、圆角、无边框。
             code: {
-              color: theme('colors.ink'),
-              backgroundColor: 'rgba(63,63,70,0.08)',
-              padding: '0.15em 0.45em',
-              borderRadius: '0',
-              fontWeight: '600',
+              color: '#1f2328',
+              backgroundColor: 'rgba(175,184,193,0.22)',
+              padding: '0.2em 0.4em',
+              borderRadius: '6px',
+              fontWeight: '500',
               fontSize: '0.875em',
-              // 行内代码统一等宽字体：与正文黑体明显区分，代码更易扫读。
               fontFamily: theme('fontFamily.mono').join(', '),
             },
             'code::before': { content: '""' },
             'code::after': { content: '""' },
 
             pre: {
-              backgroundColor: '#0d0d0f',
-              borderRadius: '0',
-              padding: '0',
-              border: '1px solid rgba(63,63,70,0.8)',
+              backgroundColor: '#f6f8fa',
+              borderRadius: '6px',
+              padding: '1rem 1.1rem',
+              border: '1px solid #d0d7de',
               boxShadow: 'none',
+              fontSize: '0.9em',
+              lineHeight: '1.7',
             },
 
+            // GitHub 链接：蓝色、默认无下划线、悬停显示下划线。
             a: {
-              color: theme('colors.ink'),
-              fontWeight: '600',
-              textDecoration: 'underline',
-              textDecorationColor: 'rgba(28,25,23,0.28)',
-              textUnderlineOffset: '3px',
-              textDecorationThickness: '2px',
+              color: '#0969da',
+              fontWeight: '500',
+              textDecoration: 'none',
             },
             'a:hover': {
-              textDecorationColor: theme('colors.ink'),
+              textDecoration: 'underline',
+              textDecorationThickness: '2px',
+              textUnderlineOffset: '3px',
             },
 
             img: {
-              borderRadius: theme('borderRadius.media'),
-              marginTop: '2em',
-              marginBottom: '2em',
+              borderRadius: '6px',
+              marginTop: '1.5em',
+              marginBottom: '1.5em',
             },
 
             table: {
@@ -209,7 +246,7 @@ export default {
             },
 
             hr: {
-              borderColor: '#e7e5e4',
+              borderColor: '#d0d7de',
               marginTop: '2.5em',
               marginBottom: '2.5em',
             },
@@ -220,36 +257,56 @@ export default {
             color: '#e4e4e7',
             lineHeight: '1.9',
 
-            h1: { color: '#fafafa' },
+            '--tw-prose-body': '#e4e4e7',
+            '--tw-prose-headings': '#fafafa',
+            '--tw-prose-lead': '#8b949e',
+            '--tw-prose-links': '#58a6ff',
+            '--tw-prose-bold': '#fafafa',
+            '--tw-prose-counters': '#8b949e',
+            '--tw-prose-bullets': '#30363d',
+            '--tw-prose-hr': '#30363d',
+            '--tw-prose-quotes': '#8b949e',
+            '--tw-prose-quote-borders': '#30363d',
+            '--tw-prose-captions': '#8b949e',
+            '--tw-prose-code': '#e6edf3',
+            '--tw-prose-pre-code': '#e6edf3',
+            '--tw-prose-pre-bg': '#161b22',
+            '--tw-prose-th-borders': '#30363d',
+            '--tw-prose-td-borders': '#30363d',
+            '--tw-prose-kbd': '#e6edf3',
+            '--tw-prose-kbd-shadows': 'rgba(230,237,243,0.1)',
+
+            h1: {
+              color: '#fafafa',
+              borderBottomColor: '#30363d',
+            },
             h2: {
               color: '#fafafa',
-              borderBottomColor: '#27272a',
+              borderBottomColor: '#30363d',
             },
             h3: { color: '#fafafa' },
             h4: { color: '#fafafa' },
             strong: { color: '#fafafa', fontWeight: '700' },
 
             blockquote: {
-              borderLeftColor: theme('colors.accent.light'),
-              backgroundColor: 'rgba(212,212,216,0.06)',
-              color: '#e4e4e7',
+              color: '#8b949e',
+              borderLeftColor: '#30363d',
             },
 
             code: {
-              color: '#f4f4f5',
-              backgroundColor: 'rgba(212,212,216,0.1)',
+              color: '#e6edf3',
+              backgroundColor: 'rgba(110,118,129,0.4)',
             },
 
             a: {
-              color: '#fafafa',
-              textDecorationColor: 'rgba(250,250,250,0.2)',
+              color: '#58a6ff',
             },
             'a:hover': {
-              textDecorationColor: '#fafafa',
+              textDecorationColor: '#58a6ff',
             },
 
             hr: {
-              borderColor: '#3f3f46',
+              borderColor: '#30363d',
             },
 
             img: {

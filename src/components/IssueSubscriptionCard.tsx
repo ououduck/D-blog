@@ -20,7 +20,7 @@ export const IssueSubscriptionCard = () => {
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             Article updates
           </p>
-          <h2 id="issue-subscription-heading" className="font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">
+          <h2 id="issue-subscription-heading" className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
             订阅新文章提醒
           </h2>
           <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
