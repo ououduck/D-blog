@@ -18,6 +18,7 @@ import {
   buildParentMap,
   collectInitialExpandedState,
   findTocNodeById,
+  getActiveItemScrollTarget,
   getAncestorIds,
   getRootBranchId,
   type TocNode,
@@ -281,11 +282,17 @@ export const TableOfContents: React.FC<{
 
     const navRect = navElement.getBoundingClientRect();
     const itemRect = activeElement.getBoundingClientRect();
-    const currentScrollTop = navElement.scrollTop;
-    const targetScrollTop = currentScrollTop + (itemRect.top - navRect.top) - navRect.height / 2 + itemRect.height / 2;
+    const maxScrollTop = Math.max(0, navElement.scrollHeight - navElement.clientHeight);
 
     navElement.scrollTo({
-      top: Math.max(0, targetScrollTop),
+      top: getActiveItemScrollTarget({
+        currentScrollTop: navElement.scrollTop,
+        itemTop: itemRect.top,
+        itemHeight: itemRect.height,
+        navTop: navRect.top,
+        navHeight: navRect.height,
+        maxScrollTop,
+      }),
       behavior: shouldReduceMotion ? 'auto' : 'smooth',
     });
   }, [activeHeadingId, expandedMap, isOpen, shouldReduceMotion]);

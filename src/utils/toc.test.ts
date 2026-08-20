@@ -6,6 +6,7 @@ import {
   getAncestorIds,
   getRootBranchId,
   findTocNodeById,
+  getActiveItemScrollTarget,
   type TocNode,
 } from './toc';
 import type { MarkdownHeading } from './headings';
@@ -137,5 +138,59 @@ describe('findTocNodeById', () => {
   it('未找到时返回 null', () => {
     expect(findTocNodeById(tree, 'missing')).toBeNull();
     expect(findTocNodeById([], 'a')).toBeNull();
+  });
+});
+
+describe('getActiveItemScrollTarget', () => {
+  it('激活项可完整居中时按居中计算', () => {
+    const target = getActiveItemScrollTarget({
+      currentScrollTop: 40,
+      itemTop: 60,
+      itemHeight: 32,
+      navTop: 20,
+      navHeight: 200,
+      maxScrollTop: 500,
+    });
+    // 40 + (60-20) - 100 + 16 = -4 → 下限钳制为 0
+    expect(target).toBe(0);
+  });
+
+  it('激活项位于面板下方时滚动到居中位置', () => {
+    const target = getActiveItemScrollTarget({
+      currentScrollTop: 0,
+      itemTop: 300,
+      itemHeight: 32,
+      navTop: 20,
+      navHeight: 200,
+      maxScrollTop: 500,
+    });
+    // 0 + 280 - 100 + 16 = 196
+    expect(target).toBe(196);
+  });
+
+  it('激活项高于面板时对齐顶部而非居中（避免列表顶部被推出可视区）', () => {
+    // 单个 H1 承载整篇子标题时激活 li 高于面板，居中会把开头条目推离可视区。
+    const target = getActiveItemScrollTarget({
+      currentScrollTop: 300,
+      itemTop: 100,
+      itemHeight: 500,
+      navTop: 20,
+      navHeight: 200,
+      maxScrollTop: 800,
+    });
+    // 300 + (100-20) = 380（对齐顶部；居中会得 300 + 80 - 100 + 250 = 530）
+    expect(target).toBe(380);
+  });
+
+  it('结果限制在 [0, maxScrollTop] 内', () => {
+    const overMax = getActiveItemScrollTarget({
+      currentScrollTop: 800,
+      itemTop: 500,
+      itemHeight: 32,
+      navTop: 20,
+      navHeight: 200,
+      maxScrollTop: 100,
+    });
+    expect(overMax).toBe(100);
   });
 });

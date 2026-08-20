@@ -86,4 +86,27 @@ describe('TableOfContents', () => {
     await waitFor(() => expect(screen.queryByText('文章目录')).not.toBeInTheDocument());
     expect(document.activeElement).toBe(trigger);
   });
+
+  it('点击目录条目滚动到对应标题并更新 hash（跳转回归）', async () => {
+    const user = userEvent.setup();
+    // 在文档中放置与目录 id 对应的标题锚点：id 不匹配时 getElementById 落空，
+    // 点击将静默失效（目录无法跳转的根因）。
+    const headingElement = document.createElement('h2');
+    headingElement.id = 'usage';
+    document.body.appendChild(headingElement);
+
+    const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    render(<TableOfContents headings={makeHeadings()} />);
+    await user.click(await screen.findByRole('button', { name: /打开目录/ }));
+    await screen.findByText('文章目录');
+
+    await user.click(screen.getByText('使用方法'));
+    expect(scrollToSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ top: expect.any(Number), behavior: expect.any(String) }),
+    );
+    expect(window.location.hash).toContain('usage');
+
+    scrollToSpy.mockRestore();
+    headingElement.remove();
+  });
 });

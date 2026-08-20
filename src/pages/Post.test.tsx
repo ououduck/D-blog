@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { Post } from './Post';
 import { ReadingModeProvider } from '@/components/ReadingModeContext';
+import { extractMarkdownHeadings } from '@/utils/headings';
 
 // Post 依赖大量服务与弹层组件：逐一 stub，聚焦页面自身行为。
 vi.mock('@/services/posts', () => ({
@@ -148,5 +149,29 @@ describe('Post', () => {
     await waitFor(() => {
       expect(postsService.getPostById).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('正文标题 id 在多次重渲染后保持与 headings 数组一致（目录点击跳转回归）', async () => {
+    renderPost();
+    await screen.findByText('测试文章标题');
+
+    const headingIds = extractMarkdownHeadings(makePost().content as string).map((heading) => heading.id);
+    expect(headingIds.length).toBeGreaterThan(0);
+    const assertHeadingIdsInDom = () => headingIds.every((id) => document.getElementById(id) !== null);
+
+    // 首帧渲染后 DOM 即包含与 TOC 一致的标题锚点 id。
+    await waitFor(() => expect(assertHeadingIdsInDom()).toBe(true));
+    // 等待异步增强（rehype-highlight）落定：插件加载会重建渲染组件（游标归零），
+    // 之后任何状态变化触发的重渲染都复用同一闭包——这正是 id 漂移的触发条件。
+    await waitFor(() => expect(document.querySelector('.post-prose .hljs')).toBeTruthy());
+
+    // 触发多次 Post 重渲染（阅读模式开/关等状态变化）：若渲染组件对象被 useMemo
+    // 缓存复用，resolveHeadingId 游标已走到末尾，标题 id 会退化为 slug-N 兜底并
+    // 逐次递增（-1、-2…），与 headings 数组发散，目录点击找不到锚点。
+    fireEvent.click(screen.getByRole('button', { name: '进入专注阅读' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '退出专注阅读' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: '退出专注阅读' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '进入专注阅读' })).toBeInTheDocument());
+    await waitFor(() => expect(assertHeadingIdsInDom()).toBe(true));
   });
 });

@@ -126,3 +126,32 @@ export const findTocNodeById = (nodes: TocNode[], id: string): TocNode | null =>
 
   return null;
 };
+
+/**
+ * 计算目录面板自动滚动目标：让激活项尽量在面板内居中显示。
+ * 激活项高度 ≥ 面板可视高度时无法居中（居中将把列表顶部推出可视区，如单
+ * 个 H1 承载整篇子标题的文章），改为让激活项顶部对齐面板顶部；结果限制在
+ * [0, maxScrollTop] 内，避免越界滚动。
+ */
+export const getActiveItemScrollTarget = ({
+  currentScrollTop,
+  itemTop,
+  itemHeight,
+  navTop,
+  navHeight,
+  maxScrollTop,
+}: {
+  currentScrollTop: number;
+  itemTop: number;
+  itemHeight: number;
+  navTop: number;
+  navHeight: number;
+  maxScrollTop: number;
+}): number => {
+  const offsetWithinNav = itemTop - navTop;
+  const target =
+    itemHeight >= navHeight
+      ? currentScrollTop + offsetWithinNav
+      : currentScrollTop + offsetWithinNav - navHeight / 2 + itemHeight / 2;
+  return Math.min(Math.max(0, target), Math.max(0, maxScrollTop));
+};

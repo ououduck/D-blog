@@ -1997,23 +1997,19 @@ export const Post = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [navigate]);
 
-  // 依赖必须覆盖 remarkPlugins/rehypePlugins：heading id 解析的出现次数游标活在
-  // createMarkdownComponents 的闭包里，而组件对象被 useMemo 缓存。异步 rehype/remark
-  // 插件（高亮/公式）加载后 ReactMarkdown 用新插件重渲染正文，若仍复用旧组件对象，
-  // 游标已走到末尾，所有标题 id 退化为 slug 兜底（与构建期 headings 仅“巧合”一致，
-  // 标题撞 slug-2 后缀时发散）。把插件纳入依赖，插件加载即重建组件、游标归零。
-  const markdownComponents = useMemo(
-    () =>
-      createMarkdownComponents(
-        (image) => setPreviewImage(image),
-        mermaidRenderer,
-        mermaidTheme,
-        post?.imageDimensions,
-        headings,
-        shouldReduceMotion,
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 插件仅作缓存失效：异步加载后须重建组件以重置 heading id 游标。
-    [mermaidRenderer, mermaidTheme, post?.imageDimensions, headings, shouldReduceMotion, remarkPlugins, rehypePlugins],
+  // 每次渲染重建渲染组件对象（不做 useMemo 缓存）：resolveHeadingId 的
+  // heading id 游标/兜底计数活在 createMarkdownComponents 的闭包里，缓存复用
+  // 时 ReactMarkdown 在任意状态变化（相邻/相关文章加载、收藏反馈、弹窗开关等）
+  // 后重渲染正文都会沿用已走到末尾的游标，全部标题 id 退化为 slug-N 兜底并逐
+  // 次递增（-1、-2…），与构建期 headings 数组的 id 发散——目录点击找不到
+  // 锚点、hash 深链失效。每次渲染重建即游标归零，DOM id 恒与 headings 一致。
+  const markdownComponents = createMarkdownComponents(
+    (image) => setPreviewImage(image),
+    mermaidRenderer,
+    mermaidTheme,
+    post?.imageDimensions,
+    headings,
+    shouldReduceMotion,
   );
 
   if (loading) {
