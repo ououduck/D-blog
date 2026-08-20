@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { PostMetadata } from '../types';
 import { getDateTimestamp } from '@/utils/date';
-import { getFieldMatchScore, getInitialPosts, getPostById, getPosts, searchPosts } from './posts';
+import { getFieldMatchScore, getInitialPosts, getPostById, getPosts, normalizeSearchText, searchPosts } from './posts';
 
 /**
  * 搜索逻辑测试。
@@ -192,17 +192,24 @@ describe('searchPosts scope 筛选', () => {
   });
 
   it('scope=content 命中正文但标题不含查询词的文章', async () => {
-    const allPosts = await getPosts();
+    // 「标题不含查询词」的前提必须与 searchPosts 的匹配口径一致：
+    // 标题集合取搜索索引本身（generated/posts-search.json），而不是
+    // generated/posts.json —— 两者是独立构建产物，历史上曾漂移（搜索索引
+    // 含某篇而 posts.json 缺失），导致前提失真、scope=title 误返回命中。
+    // 归一化也复用搜索的 normalizeSearchText（NFKC + locale 无关小写），
+    // 避免 toLocaleLowerCase 等口径差异再次制造「前提以为没有、搜索却命中」。
     const searchData = (await import('../../generated/posts-search.json')).default as Array<
       PostMetadata & { searchText?: string }
     >;
-    const allTitles = allPosts.map((post) => post.title.toLocaleLowerCase());
+    const allTitles = searchData.map((post) => normalizeSearchText(post.title));
 
     // 找一个只出现在正文、不出现在任何标题里的词。
     let contentOnlyTerm: string | null = null;
     let ownerId: string | null = null;
     for (const post of searchData) {
-      const words = (post.searchText ?? '').split(' ').filter((word) => word.length >= 2);
+      const words = normalizeSearchText(post.searchText ?? '')
+        .split(' ')
+        .filter((word) => word.length >= 2);
       const term = words.find((word) => !allTitles.some((title) => title.includes(word)));
       if (term) {
         contentOnlyTerm = term;

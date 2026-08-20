@@ -31,7 +31,8 @@ const loadPostsSearchData = async (): Promise<Array<PostMetadata & { searchText?
 // toLowerCase（非 toLocaleLowerCase）：locale 无关的大小写归一化。土耳其语等
 // locale 下 'I'.toLocaleLowerCase() 会变成点无点 'ı'，导致含 I 的查询（如
 // "String"/"JSON" 代码片段）与内容失配。
-const normalizeSearchText = (value: string) => value.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ');
+// 导出供测试复刻同一匹配口径（posts.test.ts 的「标题不含查询词」前提判定）。
+export const normalizeSearchText = (value: string) => value.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ');
 
 const splitSearchTerms = (value: string) => normalizeSearchText(value).split(' ').filter(Boolean);
 
