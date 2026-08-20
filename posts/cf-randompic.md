@@ -11,6 +11,7 @@ tags:
   - Cloudfalre Rule
   - RandomPIC
   - 随机图
+coverImage: https://img.pldduck.com/20260820143641322.png
 author: 跑路的duck
 featured: false
 series: false
@@ -78,11 +79,13 @@ python gen_pic.py
 
 ### 3.配置 GitHub Actions Secrets
 
+
 | 名称 | 说明 |
-| --- | --- |
+| ------------------------- | ---------------------------------------- |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API Token，需具备 Pages 编辑权限 |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账号 ID（Dashboard 首页右下角可查看） |
 | `CLOUDFLARE_PROJECT_NAME` | 创建Pages时填写的项目名称(如果填写 d-randompic 可忽略此变量) |
+
 
 #### CLOUDFLARE_API_TOKEN 获取方法
 
@@ -123,9 +126,11 @@ python gen_pic.py
 ```
 concat(http.request.uri.path, "/", substring(uuidv4(cf.random_seed), 0, 3), ".jpg")
 ```
+
 最后保存即可 
 
 ### 5.触发Action
+
 ![](https://img.pldduck.com/20260820143052442.png)  
 进入action页面后 找到左侧的Build and Deploy to Cloudflare Pages 
 点击右侧的Run workflow  
