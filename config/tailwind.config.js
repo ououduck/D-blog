@@ -7,10 +7,18 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        // 中文阅读优先系统最优无衬线：Windows 微软雅黑、macOS 苹方；
+        // 其次常见国产黑体（鸿蒙/小米/阿里巴巴普惠体）与思源黑体，
+        // 避免 Linux/Android 落到低质量的通用 sans-serif。
         sans: [
           '"Microsoft YaHei"',
           '"PingFang SC"',
-          '"Plus Jakarta Sans"',
+          '"HarmonyOS Sans SC"',
+          '"MiSans"',
+          '"Alibaba PuHuiTi"',
+          '"Noto Sans SC"',
+          '"Source Han Sans SC"',
+          '"Noto Sans CJK SC"',
           'ui-sans-serif',
           'system-ui',
           '-apple-system',
@@ -19,6 +27,7 @@ export default {
           'Roboto',
           '"Helvetica Neue"',
           'Arial',
+          '"Plus Jakarta Sans"',
           '"Noto Sans"',
           'sans-serif',
           '"Apple Color Emoji"',
@@ -26,10 +35,17 @@ export default {
           '"Segoe UI Symbol"',
           '"Noto Color Emoji"',
         ],
+        // 衬线标题：拉丁字符用 Playfair Display（已随站点加载），中文回退链
+        // 优先思源宋体/华文宋体；Windows 无宋体系字体时回退微软雅黑（比 SimSun
+        // 在大字号下更清晰），SimSun 仅作最后兜底。
         serif: [
           '"Playfair Display"',
           '"Noto Serif SC"',
+          '"Source Han Serif SC"',
+          '"Source Han Serif CN"',
           '"Songti SC"',
+          '"STSong"',
+          '"Microsoft YaHei"',
           '"SimSun"',
           '"Times New Roman"',
           'Times',
@@ -81,12 +97,19 @@ export default {
           css: {
             fontFamily: theme('fontFamily.sans').join(', '),
             color: theme('colors.ink'),
-            fontSize: '1.125rem',
-            lineHeight: '1.85',
+            // 移动端 17px 起底；桌面端由 md:prose-lg 提升到 1.125rem。
+            fontSize: '1.0625rem',
+            lineHeight: '1.9',
             maxWidth: 'none',
-            letterSpacing: '0.005em',
+            letterSpacing: '0.01em',
 
-            'p + p': { marginTop: '1.4em' },
+            // 中文正文两端对齐：消除参差右缘，避免汉字行出现明显空隙。
+            'p, li': {
+              textAlign: 'justify',
+              textJustify: 'inter-ideograph',
+            },
+
+            'p + p': { marginTop: '1.6em' },
             'li + li': { marginTop: '0.35em' },
             'ul > li > *:first-child': { marginTop: '0' },
             'ol > li > *:first-child': { marginTop: '0' },
@@ -101,29 +124,29 @@ export default {
               fontFamily: theme('fontFamily.serif').join(', '),
               fontWeight: '700',
               color: theme('colors.ink'),
-              marginTop: '2.2em',
-              marginBottom: '0.7em',
+              marginTop: '2.5em',
+              marginBottom: '0.8em',
               letterSpacing: '-0.01em',
-              lineHeight: '1.3',
+              lineHeight: '1.35',
               paddingBottom: '0.35em',
-              borderBottom: '1px solid #e5e7eb',
+              borderBottom: '1px solid #e7e5e4',
             },
             h3: {
               fontFamily: theme('fontFamily.serif').join(', '),
               fontWeight: '600',
               color: theme('colors.ink'),
-              marginTop: '1.8em',
-              marginBottom: '0.6em',
+              marginTop: '2em',
+              marginBottom: '0.7em',
               letterSpacing: '-0.005em',
-              lineHeight: '1.35',
+              lineHeight: '1.4',
             },
             h4: {
               fontFamily: theme('fontFamily.serif').join(', '),
               fontWeight: '600',
               color: theme('colors.ink'),
-              marginTop: '1.5em',
-              marginBottom: '0.5em',
-              lineHeight: '1.4',
+              marginTop: '1.6em',
+              marginBottom: '0.6em',
+              lineHeight: '1.45',
             },
             strong: { color: theme('colors.ink'), fontWeight: '700' },
 
@@ -133,7 +156,7 @@ export default {
               borderLeftColor: theme('colors.accent.DEFAULT'),
               borderLeftWidth: '4px',
               backgroundColor: 'rgba(63,63,70,0.04)',
-              padding: '1.4em 1.8em',
+              padding: '1.3em 1.7em',
               marginTop: '1.8em',
               marginBottom: '1.8em',
               borderRadius: '0',
@@ -148,6 +171,8 @@ export default {
               borderRadius: '0',
               fontWeight: '600',
               fontSize: '0.875em',
+              // 行内代码统一等宽字体：与正文黑体明显区分，代码更易扫读。
+              fontFamily: theme('fontFamily.mono').join(', '),
             },
             'code::before': { content: '""' },
             'code::after': { content: '""' },
@@ -184,7 +209,7 @@ export default {
             },
 
             hr: {
-              borderColor: '#e5e7eb',
+              borderColor: '#e7e5e4',
               marginTop: '2.5em',
               marginBottom: '2.5em',
             },
@@ -192,8 +217,8 @@ export default {
         },
         invert: {
           css: {
-            color: '#d4d4d8',
-            lineHeight: '1.85',
+            color: '#e4e4e7',
+            lineHeight: '1.9',
 
             h1: { color: '#fafafa' },
             h2: {

@@ -1297,7 +1297,7 @@ const createMarkdownComponents = (
 
       return (
         <code
-          className="rounded-none bg-zinc-100 px-1.5 py-0.5 font-bold text-zinc-900 before:content-none after:content-none dark:bg-zinc-900 dark:text-zinc-100"
+          className="rounded-micro border border-zinc-200/80 bg-zinc-100 px-1.5 py-0.5 font-mono font-medium text-zinc-900 before:content-none after:content-none dark:border-zinc-700/70 dark:bg-zinc-900 dark:text-zinc-100"
           {...props}
         >
           {children}
@@ -2225,7 +2225,7 @@ export const Post = () => {
 
         <header className="post-header mx-auto mb-8 max-w-3xl px-3 pt-4 text-center md:mb-12 md:pt-8">
           {!isReadingMode && (
-            <div className="print-hidden mb-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400 md:mb-7">
+            <div className="print-hidden mb-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400 md:mb-7">
               <Link
                 to="/"
                 className="inline-flex items-center gap-1 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
@@ -2256,7 +2256,7 @@ export const Post = () => {
             </h1>
 
             {!isReadingMode && (
-              <div className="post-meta print-hidden mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-1.5 text-[11px] font-semibold text-zinc-500 dark:text-zinc-500 sm:gap-2 md:gap-2.5 md:text-xs">
+              <div className="post-meta print-hidden mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 sm:gap-2 md:gap-2.5">
                 <span className="inline-flex max-w-full items-center gap-1.5 rounded-micro border border-zinc-300 bg-white/70 px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-900/70">
                   <Users size={14} />
                   <span className="truncate">{authorsLabel}</span>
@@ -2360,7 +2360,7 @@ export const Post = () => {
 
         <div ref={articleBodyRef} className="post-body mx-auto w-full max-w-5xl px-3 pb-12 sm:px-4 md:pb-20 lg:px-0">
           <div className="mx-auto max-w-[46rem]">
-            <div className="post-prose prose prose-stone max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:tracking-tight prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-3 dark:prose-h2:border-zinc-800 prose-p:leading-8 prose-li:leading-8 prose-a:break-words prose-a:underline-offset-4 prose-img:rounded-media prose-img:shadow-none prose-blockquote:rounded-none prose-blockquote:border-l-zinc-600 prose-blockquote:bg-zinc-100/70 prose-blockquote:not-italic dark:prose-blockquote:border-l-zinc-400 dark:prose-blockquote:bg-zinc-900 prose-pre:rounded-none prose-pre:border prose-pre:border-zinc-700 prose-pre:bg-[#0d0d0f] prose-pre:p-0">
+            <div className="post-prose prose prose-stone max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-headings:font-serif prose-headings:tracking-tight prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-3 dark:prose-h2:border-zinc-800 prose-a:break-words prose-a:underline-offset-4 prose-img:rounded-media prose-img:shadow-none prose-blockquote:rounded-none prose-blockquote:border-l-zinc-600 prose-blockquote:bg-zinc-100/70 prose-blockquote:not-italic dark:prose-blockquote:border-l-zinc-400 dark:prose-blockquote:bg-zinc-900 prose-pre:rounded-none prose-pre:border prose-pre:border-zinc-700 prose-pre:bg-[#0d0d0f] prose-pre:p-0">
               <ReactMarkdown
                 remarkPlugins={remarkPlugins}
                 rehypePlugins={rehypePlugins}

@@ -507,6 +507,49 @@ html.theme-switching .editorial-input {
   @apply rounded-micro outline outline-2 outline-offset-2 outline-zinc-900 dark:outline-zinc-100;
 }
 
+/* ===== 文章正文排版（post-prose）=====
+   文章页专属排版增强：正文在 prose 插件（1.125rem/1.85）基础上再精细化，
+   让中文长文阅读更舒适。非 @layer 规则优先级高于插件生成的 components 层。 */
+.post-prose {
+  font-size: 1.0625rem; /* 移动端 17px，避免过大的行宽导致换行频繁 */
+  line-height: 1.9;
+}
+
+@media (min-width: 768px) {
+  .post-prose {
+    font-size: 1.125rem; /* 桌面端 18px（md:prose-lg 同值，这里统一行高） */
+  }
+}
+
+/* 中文正文两端对齐：消除参差右缘，行尾不留明显空隙。
+   inter-ideograph 在 Safari/Firefox/Chrome 均可正确压缩 CJK 字间空隙。 */
+.post-prose p,
+.post-prose li,
+.post-prose blockquote {
+  text-align: justify;
+  text-justify: inter-ideograph;
+}
+
+.post-prose p {
+  /* 段落末行避免孤字（text-wrap: pretty 兼容性差时自动退化为 normal） */
+  text-wrap: pretty;
+  orphans: 3;
+  widows: 3;
+}
+
+/* 代码统一等宽字体：typography 插件默认让 pre code 继承正文 sans
+   （Windows 上即微软雅黑），技术博客代码块必须使用等宽字体才可读。 */
+.post-prose :not(pre) > code,
+.post-prose pre code {
+  font-family:
+    'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+}
+
+.post-prose :not(pre) > code {
+  font-size: 0.9em;
+}
+
 .code-block {
   @apply overflow-hidden rounded-surface border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-[#111827];
 }
@@ -1093,7 +1136,7 @@ html.dark .mermaid-diagram > svg {
 }
 
 .dark .prose {
-  --tw-prose-body: #d4d4d8;
+  --tw-prose-body: #e4e4e7;
   --tw-prose-headings: #fafafa;
   --tw-prose-lead: #d4d4d8;
   --tw-prose-links: #fafafa;
@@ -1151,13 +1194,13 @@ html.dark .mermaid-diagram > svg {
 }
 
 .reading-mode-article .post-prose {
-  font-size: 1.125rem;
-  line-height: 2;
+  font-size: 1.1875rem;
+  line-height: 1.95;
 }
 
 .reading-mode-article .post-prose p,
 .reading-mode-article .post-prose li {
-  line-height: 2;
+  line-height: 1.95;
 }
 
 .reading-mode-article .post-prose h2,
@@ -1192,7 +1235,7 @@ html.dark .mermaid-diagram > svg {
   }
 
   .reading-mode-article .post-prose {
-    font-size: 1.0625rem;
+    font-size: 1.125rem;
     line-height: 1.9;
   }
 
