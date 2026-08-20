@@ -29,6 +29,8 @@ draft: false
 
 ![随机图演示](https://randompic.pldduck.com/ecy-h) 
 
+# 介绍
+
 ## 工作原理
 
 不依赖任何后端服务，完全由静态文件与 Cloudflare 规则实现随机取图：
@@ -69,6 +71,10 @@ python gen_pic.py
 ```
 
 构建完成后检查 `dist/` 目录，每个分类下应生成 4096 个文件（`000.jpg` 到 `fff.jpg`）。
+
+
+
+# 搭建部署
 
 ## 部署方法
 
