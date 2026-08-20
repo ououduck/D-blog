@@ -17,7 +17,7 @@ featured: false
 series: false
 draft: false
 ---
-# 通过Cloudflare规则实现纯静态随机图
+# 通过Cloudflare规则实现纯静态随机图API
 
 参考项目 [D-RandomPIC](https://github.com/ououduck/D-RandomPIC/)
 
@@ -26,6 +26,7 @@ draft: false
 访问 `https://randompic.pldduck.com/ecy-v` 之类的地址即可获得一张随机图片。
 
 # 演示
+
 ![随机图演示](https://randompic.pldduck.com/ecy-h) 
 
 ## 工作原理
