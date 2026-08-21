@@ -134,7 +134,7 @@ draft: false                  # 草稿不会发布
 
 ### 友链申请
 
-友链页展开「申请友链」→ 先添加本站友链 → 登录 GitHub → 填写资料 → 提交 Issue → Actions 自动校验反链后写入 `friends/`。友链数据为 `friends/*.json`，可在 PagesCMS「友链」集合直接编辑；「检查友链可用状态」会为失联站点写入 `"unavailable": true` 并归入页面的「已失联的博客」板块，恢复后自动回到主列表。
+友链页展开「申请友链」→ 先添加本站友链 → 登录 GitHub → 填写资料 → 提交 Issue → Actions 自动校验反链后写入 `friends/`。友链数据为 `friends/*.json`，可在 PagesCMS「友链」集合直接编辑；勾选「已失联」会为站点写入 `"unavailable": true` 并归入页面的「已失联的博客」板块（未勾选时默认视为正常访问），恢复上线后取消勾选即可回到主列表。
 
 ### 说说
 
@@ -220,7 +220,7 @@ Service Worker 作用域跟随部署路径，在线按页面/静态资源/图片
 
 仓库事件通过 [`telegram-notify.yml`](.github/workflows/telegram-notify.yml) 实时推送到 Telegram：新评论/新讨论/新 Issue、push 到 main 的提交、任一 Action 运行结果（成功/失败/取消，通知自身的结果被跳过）。**一次性配置**：在 [@BotFather](https://t.me/BotFather) 创建机器人获取 `TELEGRAM_BOT_TOKEN`，通过 [@userinfobot](https://t.me/userinfobot) 获取 `TELEGRAM_CHAT_ID`，在仓库 **Settings → Secrets and variables → Actions** 添加（可选 `TELEGRAM_TOPIC_ID` 指定论坛话题）。未配置时 workflow 优雅跳过（`::warning::` 正常退出，不红叉）。
 
-其他自动化：`ci.yml` 每次 push/PR 自动跑类型检查 + 单元测试 + 完整构建 + 双审计；友链申请审核（`friend-link-bot.yml`）、友链可用性检查（`friend-link-check.yml`）、评论 Akismet 反垃圾（`akismet-discussion-comment-check.yml`）与关键词过滤（`comment-keyword-filter.yml` / `comment-keyword-recheck.yml`）、文章更新订阅通知（`notify-post-update.yml`）均为独立 workflow。
+其他自动化：`ci.yml` 每次 push/PR 自动跑类型检查 + 单元测试 + 完整构建 + 双审计；友链申请审核（`friend-link-bot.yml`）、评论 Akismet 反垃圾（`akismet-discussion-comment-check.yml`）与关键词过滤（`comment-keyword-filter.yml` / `comment-keyword-recheck.yml`）、文章更新订阅通知（`notify-post-update.yml`）均为独立 workflow。
 
 ### 🔗 文章外链失效扫描（check-broken-links）
 

@@ -195,7 +195,7 @@
   }
 }
 
-/* 已失联友链头像右下角的红色闪烁小点（由 friend-link-check Action 标记） */
+/* 已失联友链头像右下角的红色闪烁小点（由站长在 Pages CMS「友链」集合手动标记） */
 .friend-dead-dot {
   animation: friend-dead-dot-blink 1.2s ease-in-out infinite;
 }

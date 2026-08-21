@@ -271,7 +271,7 @@ const computeCooldownWaitMs = (issues, now = Date.now()) => {
 
 /**
  * 私网地址判定（SSRF 防护）与 isSafePublicHttpUrl 已下沉至 lib/http.mjs 共享
- * （check-broken-links / friend-link-check 等对用户可控 URL 发请求的脚本复用）。
+ * （check-broken-links 等对用户可控 URL 发请求的脚本复用）。
  */
 
 /**

@@ -2,7 +2,7 @@
 
 ## 功能概述
 
-友情链接展示（正常/失联分组）与友链申请向导（表单校验 → 生成 Issue 草稿）。失联状态由 `friend-link-check` Action 自动维护。
+友情链接展示（正常/失联分组）与友链申请向导（表单校验 → 生成 Issue 草稿）。失联状态由站长在 Pages CMS「友链」集合手动维护（勾选「已失联」写入 `unavailable: true`）；未配置时默认视为正常。
 
 ## 关键文件
 
@@ -13,7 +13,7 @@
 
 ## 修改规则（必须遵守）
 
-1. **失联分组**：`friend.unavailable === true` 的友链必须归入「已失联的博客」折叠板块，不混入主列表；标记由 Action 维护，前端只读。
+1. **失联分组**：`friend.unavailable === true` 的友链必须归入「已失联的博客」折叠板块，不混入主列表；标记由站长在 Pages CMS 手动维护，前端只读。
 2. **申请向导**：多步表单状态、校验规则、Issue 草稿生成在 `friendLinkApplication.ts` 中，不在组件内重写；`mailto` 预填正文必须净化换行（防头注入）。
 3. **搜索过滤**：`getFriendDomain`（new URL 解析）结果必须预计算 Map 缓存（禁止每次击键对全部友链重复解析）；大小写统一用 toLowerCase（非 toLocaleLowerCase，locale 无关）。
 4. **SSG 确定性**：友链列表与失联分组首帧由 `getInitialFriends()` 渲染。

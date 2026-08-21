@@ -7,21 +7,19 @@
 ## 关键文件
 
 - `scripts/friend-link-bot.mjs`（约 1000 行）
-- `scripts/friend-link-check.mjs`（友链可用性检查，写 unavailable 标记）
-- `.github/workflows/friend-link-bot.yml` / `friend-link-check.yml`
-- `.pages.yml`（「🩺 检查友链可用状态」动作）
+- `.github/workflows/friend-link-bot.yml`
+- `.pages.yml`（友链集合字段配置）
 
 ## 修改规则（必须遵守）
 
-1. **SSRF 防护（含重定向逐跳）**：对用户提交的 URL（站点/友链页/头像）发请求前必须 `isSafePublicHttpUrl`（含 DNS 解析逐 IP 私网校验）；重定向必须手动逐跳跟随并重新校验（`fetchPublicPage` 模式）—— 公开站点可 302 到内网/回环地址形成跳转绕过。friend-link-check 的 `checkUrlReachable` 同样必须逐跳校验。
+1. **SSRF 防护（含重定向逐跳）**：对用户提交的 URL（站点/友链页/头像）发请求前必须 `isSafePublicHttpUrl`（含 DNS 解析逐 IP 私网校验）；重定向必须手动逐跳跟随并重新校验（`fetchPublicPage` 模式）—— 公开站点可 302 到内网/回环地址形成跳转绕过。
 2. **反链校验协议**：申请方必须在本站有友链（友链页包含本站 URL）才可通过 —— 该校验逻辑不得移除。
 3. **冷却期**：WAIT_COOLDOWN 语义保持（防止重复处理同一申请）。
 4. **Git 纪律**：push 采用 fetch + rebase 再推（吸收远端并发提交）；失败必须告警并留下可诊断信息。
-5. **幂等**：同一申请重复触发不得重复创建/覆盖友链文件；`unavailable` 标记由 check 脚本维护，bot 只负责创建。
+5. **幂等**：同一申请重复触发不得重复创建/覆盖友链文件；`unavailable` 标记由站长在 Pages CMS 手动维护，bot 只负责创建。
 6. **密钥安全**：GITHUB_TOKEN 只读/写所需最小 scope；日志不得输出 token。
 7. **入口判定**：main() 仅在主模块运行时执行（pathToFileURL 比较）。
-8. **分支一致性**：friend-link-check 的检出分支（checkout ref）与推送分支（FRIEND_LINK_TARGET_BRANCH）必须同源 —— Pages CMS 在非默认分支触发时，检查结果应推回同一分支而非默认分支。
-9. **日志脱敏**：输出用户可控 URL 前必须 `sanitizeUrlForLogs`（URL 可能含 userinfo 凭据）。
+8. **日志脱敏**：输出用户可控 URL 前必须 `sanitizeUrlForLogs`（URL 可能含 userinfo 凭据）。
 
 ## 常见陷阱
 

@@ -321,7 +321,7 @@ const safeLookup = async (hostname, options, callback) => {
  * 懒加载 undici 的连接期 SSRF 防护 Agent（单例，首次调用时创建）。
  *
  * undici 只在「对用户可控 URL 发起请求」的脚本（friend-link-bot /
- * friend-link-check / check-broken-links）中才被真正需要；telegram-notify /
+ * check-broken-links）中才被真正需要；telegram-notify /
  * akismet-comment-check / comment-keyword-* 等脚本只访问可信固定域名
  * （api.telegram.org / api.github.com / rest.akismet.com），用 Node 内置 fetch
  * 即可，完全零 npm 依赖。因此这里必须用动态 import 懒加载：任何不调用本函数的

@@ -51,7 +51,8 @@ export interface Friend {
   description: string;
   avatar: string;
   url: string;
-  /** 已失联标记：由友链可用状态检查 Action 自动维护，true 时在友链页归入「已失联的博客」板块。 */
+  /** 已失联标记：在 Pages CMS「友链」集合中手动维护；未配置（缺失/false）默认视为正常，
+   *  true 时在友链页归入「已失联的博客」板块。 */
   unavailable?: boolean;
 }
 

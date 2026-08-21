@@ -49,8 +49,8 @@ interface FriendCardProps {
 
 /**
  * 友链卡片：正常友链与已失联友链共用同一布局，保证两板块视觉一致。
- * 已失联状态由 friend-link-check Action 在 friends/*.json 中写入
- * `"unavailable": true` 标记（详见 scripts/friend-link-check.mjs）。
+ * 已失联状态由站长在 Pages CMS「友链」集合中手动勾选「已失联」，在 friends/*.json
+ * 中写入 `"unavailable": true` 标记；未配置（缺失/false）默认视为正常。
  */
 const FriendCard = ({ friend, unavailable = false }: FriendCardProps) => {
   return (
@@ -245,7 +245,7 @@ export const Friends = () => {
     });
   }, [friendDomains, friends, searchQuery]);
 
-  // 已失联友链（friend.unavailable === true，由检查 Action 维护）与正常友链分开渲染：
+  // 已失联友链（friend.unavailable === true，由站长在 Pages CMS 手动标记）与正常友链分开渲染：
   // 正常友链留在主列表，失联友链全部归入下方「已失联的博客」折叠板块。
   const activeFriends = useMemo(
     () => filteredFriends.filter((friend) => friend.unavailable !== true),
@@ -750,8 +750,8 @@ export const Friends = () => {
         )}
       </div>
 
-      {/* 已失联的博客：由友链可用状态检查 Action（scripts/friend-link-check.mjs）维护，
-          每次运行后失联/恢复状态会随 friends/*.json 更新并在此处体现。 */}
+      {/* 已失联的博客：失联状态由站长在 Pages CMS「友链」集合中手动标记（勾选「已失联」），
+          随 friends/*.json 更新并在此处体现。 */}
       <div className="mb-3 border-y border-zinc-200 dark:border-zinc-800">
         <button
           type="button"
@@ -774,7 +774,7 @@ export const Friends = () => {
               </span>
             </span>
             <p className="mt-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-              以下友链暂时无法正常访问，恢复上线后将自动回到上方列表
+              以下友链暂时无法正常访问，恢复上线后请在 Pages CMS 取消勾选「已失联」即可回到上方列表
             </p>
           </div>
           <motion.div
