@@ -1,7 +1,8 @@
 {
   "name": "小慧博客",
   "filename": "xiaohui",
-  "url": "https://www.itxiaohui.top/",
+  "description": "小慧的技术博客",
   "avatar": "https://blogoss.itxiaohui.top/logo%20-uhlgnmrf.png",
-  "description": "小慧的技术博客"
+  "url": "https://www.itxiaohui.top/",
+  "unavailable": true
 }
