@@ -1,6 +1,6 @@
 ---
 id: D-pxxdns-index
-title: D-pxxdns-index
+title: D-pxxdns-index-为PXXDNS定制的企业级首页模板
 excerpt: 为PXXDNS定制的企业级首页模板
 date: 2026-02-22
 updatedAt: 2026-05-03
@@ -16,23 +16,30 @@ featured-top: 0
 series: false
 draft: false
 ---
-
 # D-pxxdns-index
-## 为PXXDNS定制的企业级首页模板  
+
+## 为PXXDNS定制的企业级首页模板
+
 ![D-pxxdns-index](https://img.pldduck.com/20260812115918186.png)
+
 ### 特点：不同于其他固定模板 实时从数据库中获取站点信息
 
 ---
-  
-## 使用方法  
-### 下载本项目的.zip整合文件  
-### 将zip文件上传到网站目录/public/template 目录下并解压  
+
+## 使用方法
+
+### 下载本项目的.zip整合文件
+
+### 将zip文件上传到网站目录/public/template 目录下并解压
+
 ### 确保目录下有一个D-pxxdns-index 的文件夹
-### 最后到PXXDNS系统》后台》系统》模板配置》点击启用即可 
+
+### 最后到PXXDNS系统》后台》系统》模板配置》点击启用即可
 
 ---
-  
-## 开源地址  
+
+## 开源地址
+
 ### [Github-ououduck-D-pxxdns-index](https://github.com/ououduck/D-pxxdns-index/)
 
 ---
