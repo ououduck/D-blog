@@ -582,16 +582,21 @@ const validateApplication = async (application) => {
 
 /**
  * 写入 friends/<filename>.json（字段白名单序列化，防多余字段注入）。
+ * 同时写入 filename 键（不含 .json 后缀的 stem）—— 与 PagesCMS friends
+ * 集合的 filename 字段（模板 {fields.filename}.json）保持一致，否则 bot
+ * 创建的文件在 CMS 中编辑会因缺少必填字段而校验失败。
  * @param {object} application
+ * @param {string} [friendsDir='friends'] 输出目录（测试可注入临时目录）。
  * @returns {Promise<string>} 写入的文件路径。
  */
-const writeFriendFile = async (application) => {
+export const writeFriendFile = async (application, friendsDir = 'friends') => {
   const filename = application.filename.toLowerCase().endsWith('.json')
     ? application.filename
     : `${application.filename}.json`;
-  const filePath = path.join('friends', filename);
+  const filePath = path.join(friendsDir, filename);
   const data = {
     name: application.name,
+    filename: filename.replace(/\.json$/i, ''),
     description: application.description,
     avatar: application.avatar || DEFAULT_AVATAR_URL,
     url: application.url,

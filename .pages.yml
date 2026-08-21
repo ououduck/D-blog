@@ -66,11 +66,23 @@ content:
     type: collection
     path: friends
     format: json
-    filename: "{fields.name}.json"
+    # 文件名取自独立的 filename 字段（ASCII slug）：站点名称多为中文，按名称
+    # 直接 slugify 会得到空串并生成 ".json" 点文件，PagesCMS 保存时报
+    # Invalid extension "" for content "friends"（回归测试见 scripts/pagescms-config.test.mjs）
+    filename: "{fields.filename}.json"
     view:
       primary: name
     fields:
       - { name: name, label: 站点名称, type: string, required: true }
+      - name: filename
+        label: 文件名（英文字母/数字/下划线/短横线，例如 my-blog）
+        type: string
+        required: true
+        pattern:
+          regex: "^[A-Za-z0-9_-]+$"
+          message: 文件名仅支持英文字母、数字、下划线和短横线（不含 .json 后缀）
+        options:
+          maxlength: 64
       - { name: description, label: 站点简介, type: text, required: true }
       - { name: avatar, label: 头像地址, type: string, required: true }
       - { name: url, label: 站点地址, type: string, required: true }
