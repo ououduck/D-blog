@@ -9,7 +9,13 @@ content:
     format: yaml-frontmatter
     filename: "{fields.id}.md"
     fields:
-      - { name: id, label: URL标识, type: string, required: true }
+      - name: id
+        label: URL标识（英文字母/数字/下划线/短横线，作为文件名与 /post/ 路径）
+        type: string
+        required: true
+        pattern:
+          regex: "^[A-Za-z0-9_-]+$"
+          message: URL标识仅支持英文字母、数字、下划线和短横线（中文等字符会使文件名生成失败）
       - { name: title, label: 标题, type: string }
       - { name: excerpt, label: 摘要, type: text }
       - { name: date, label: 发布日期, type: date }
@@ -47,7 +53,13 @@ content:
       sort: date
       order: desc
     fields:
-      - { name: id, label: URL标识, type: string, required: true }
+      - name: id
+        label: URL标识（英文字母/数字/下划线/短横线，作为文件名与 /shuoshuo/ 路径）
+        type: string
+        required: true
+        pattern:
+          regex: "^[A-Za-z0-9_-]+$"
+          message: URL标识仅支持英文字母、数字、下划线和短横线（中文等字符会使文件名生成失败）
       - { name: date, label: 发布时间, type: date, required: true }
       - name: images
         label: 图片链接（可选，九宫格展示）
