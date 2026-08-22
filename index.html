@@ -64,26 +64,22 @@
       crossorigin />
   </noscript>
 
-  <!-- Clarity Analytics：等 load 事件后再注入标签，避免与分析/智能体无关的脚本抢占首屏主线程 -->
+  <!-- Clarity Analytics：标准异步标签，解析即注入（不等待 window load）。
+       延迟注入会漏掉快速离开或首屏即交互的会话（漏记录），因此刻意提前；
+       脚本体积小且 async，不阻塞渲染。项目 ID 直接写死于此，不得拆到
+       config/ 或环境变量（见 ai-rules/clarity-analytics.md）。 -->
   <script>
     (function (c, l, a, r, i, t, y) {
-      var inject = function () {
-        c[a] =
-          c[a] ||
-          function () {
-            (c[a].q = c[a].q || []).push(arguments);
-          };
-        t = l.createElement(r);
-        t.async = 1;
-        t.src = 'https://www.clarity.ms/tag/' + i;
-        y = l.getElementsByTagName(r)[0];
-        y.parentNode.insertBefore(t, y);
-      };
-      if (l.readyState === 'complete' || l.readyState === 'interactive') {
-        inject();
-      } else {
-        c.addEventListener('load', inject, { once: true });
-      }
+      c[a] =
+        c[a] ||
+        function () {
+          (c[a].q = c[a].q || []).push(arguments);
+        };
+      t = l.createElement(r);
+      t.async = 1;
+      t.src = 'https://www.clarity.ms/tag/' + i;
+      y = l.getElementsByTagName(r)[0];
+      y.parentNode.insertBefore(t, y);
     })(window, document, 'clarity', 'script', 'wloc3f723i');
   </script>
 </head>

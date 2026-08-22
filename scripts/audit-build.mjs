@@ -153,8 +153,11 @@ if (sourceUsesClarity) {
   if (!entryHtml.includes('https://www.clarity.ms/tag/')) {
     errors.push('entry HTML is missing the Clarity script URL');
   }
-  if (!entryHtml.includes("c.addEventListener('load', inject")) {
-    errors.push('entry HTML does not attach delayed Clarity injection to window.load');
+  // 注入时机：Clarity 标签必须解析即异步注入（不等待 window load），
+  // 延迟注入会漏掉快速离开/首屏即交互的会话。检测到 load 延迟注入即失败。
+  // （双引号兼容 esbuild 压缩产物对字符串引号的改写。）
+  if (/addEventListener\(["']load["']/.test(entryHtml)) {
+    errors.push('entry HTML delays Clarity injection to window.load, which can miss sessions');
   }
 }
 if (sourceUsesBusuanzi && !entryHtml.includes('https://cdn.busuanzi.cc')) {
