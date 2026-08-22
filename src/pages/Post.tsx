@@ -93,8 +93,17 @@ const getMermaidConfig = (isDark: boolean) =>
     // 标签保留在 SVG 文本节点中，DOMPurify 的 SVG 配置才能保留它们。
     htmlLabels: false,
     theme: 'base',
-    flowchart: { htmlLabels: false, curve: 'basis', padding: 16, useMaxWidth: true },
-    sequence: { useMaxWidth: true, diagramMarginX: 24, diagramMarginY: 20 },
+    // GitHub 式渲染：字号提到 18px 并加大节点/层级间距，配合下方
+    // 「按自然宽度渲染、宽图横向滚动」的基础视图，保证图表文字清晰可读。
+    flowchart: { htmlLabels: false, curve: 'basis', padding: 20, nodeSpacing: 55, rankSpacing: 70, useMaxWidth: true },
+    sequence: {
+      useMaxWidth: true,
+      diagramMarginX: 36,
+      diagramMarginY: 28,
+      actorMargin: 60,
+      boxMargin: 12,
+      messageMargin: 40,
+    },
     themeVariables: isDark
       ? {
           primaryColor: '#1e293b',
@@ -123,7 +132,7 @@ const getMermaidConfig = (isDark: boolean) =>
           noteBkgColor: '#422006',
           noteBorderColor: '#fbbf24',
           noteTextColor: '#fef3c7',
-          fontSize: '16px',
+          fontSize: '18px',
           fontFamily: '"Microsoft YaHei", "PingFang SC", ui-sans-serif, system-ui, sans-serif',
         }
       : {
@@ -153,7 +162,7 @@ const getMermaidConfig = (isDark: boolean) =>
           noteBkgColor: '#fffbeb',
           noteBorderColor: '#d97706',
           noteTextColor: '#78350f',
-          fontSize: '16px',
+          fontSize: '18px',
           fontFamily: '"Microsoft YaHei", "PingFang SC", ui-sans-serif, system-ui, sans-serif',
         },
   }) as const;
@@ -608,7 +617,6 @@ function MermaidBlock({
   const dragFrameRef = useRef(0);
   const diagramRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement | null>(null);
   const scaleRef = useRef(scale);
 
   useEffect(() => {
@@ -675,15 +683,42 @@ function MermaidBlock({
     };
   }, [children, renderer, theme]);
 
-  // 拿到注入后的 <svg>，读取其自然宽度（viewBox），用于限制拉伸并作为矢量缩放基准。
+  // 读取图表自然宽度（viewBox / 数值 width / 内联 max-width 取最大），
+  // 作为基础视图宽度与矢量缩放基准；svg 内容变化时重新测量。
   useLayoutEffect(() => {
     const element = svg ? (diagramRef.current?.querySelector('svg') ?? null) : null;
-    svgRef.current = element;
     setNaturalWidth(element ? getMermaidNaturalWidth(element) : 0);
   }, [svg]);
 
+  // 套用显示尺寸。
+  //
+  // 注意本 effect 不带依赖数组：Post 每次重渲染都会重建 createMarkdownComponents
+  // 返回的渲染组件对象，ReactMarkdown 判定组件类型引用变化后可能重建正文子树，
+  // 使 .mermaid-diagram 的 dangerouslySetInnerHTML 重新写入、旧 <svg> 节点被
+  // 替换为全新节点（内联尺寸随之丢失）。无依赖 + 每次重新 querySelector 保证
+  // 任意一次提交后都基于「当前连接中的节点」套用尺寸，宽图永不退回容器宽度
+  // 而把文字压缩到看不清（曾出现此问题：ref 指向被替换的旧节点，样式写到了
+  // 已脱离文档的节点上）。
+  useLayoutEffect(() => {
+    const element = svg ? (diagramRef.current?.querySelector('svg') ?? null) : null;
+    if (!element) return;
+    if (scale > MERMAID_MIN_SCALE && fitWidth > 0) {
+      element.style.width = `${fitWidth * scale}px`;
+      element.style.maxWidth = 'none';
+    } else {
+      // GitHub 式基础视图：按图表自然宽度渲染，绝不把宽图压缩到容器宽度
+      // （压缩会让图表文字等比缩小、小到看不清）。超出容器宽度时由
+      // .mermaid-viewport 横向滚动查看，文字始终保持自然大小。
+      element.style.width = naturalWidth > 0 ? `${naturalWidth}px` : '100%';
+      element.style.maxWidth = 'none';
+    }
+    element.style.height = 'auto';
+  });
+
   // 采样 scale=1 时图表容器的实际宽度作为缩放基准；缩放状态下容器会随 SVG
-  // 变宽（.is-zoomed 的 max-content），因此只在未缩放时更新，避免反馈循环。
+  // 变宽（max-content），因此只在未缩放时更新，避免反馈循环。
+  // 同样不带依赖数组：正文子树重建后重新观察当前节点，避免观察器绑定到
+  // 已被替换的旧节点上。
   useEffect(() => {
     const element = diagramRef.current;
     if (!element) return;
@@ -696,23 +731,7 @@ function MermaidBlock({
     const observer = new ResizeObserver(updateFitWidth);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [svg]);
-
-  // 矢量缩放：直接调整 <svg> 的显示宽度，让浏览器按 viewBox 重新光栅化。
-  // 不使用 CSS transform: scale —— 那会直接放大已光栅化的图层，文字必然变糊。
-  useLayoutEffect(() => {
-    const element = svgRef.current;
-    if (!element) return;
-    if (scale > MERMAID_MIN_SCALE && fitWidth > 0) {
-      element.style.width = `${fitWidth * scale}px`;
-      element.style.maxWidth = 'none';
-    } else {
-      element.style.width = '100%';
-      // 基础视图：不超过容器宽度，同时不超过图表自然宽度（防止被拉伸放大变糊）。
-      element.style.maxWidth = naturalWidth > 0 ? `min(100%, ${naturalWidth}px)` : '100%';
-    }
-    element.style.height = 'auto';
-  }, [svg, scale, fitWidth, naturalWidth]);
+  });
 
   useEffect(() => {
     if (scale <= MERMAID_MIN_SCALE) {
@@ -1234,7 +1253,6 @@ const createMarkdownComponents = (
       // 深色模式图片适配的豁免约定：![alt](url "no-dark") 表示保持原亮度
       // （如深色截图/图表），其余正文图片在暗色下自动柔和降亮。
       const isNoDarkAdapt = title === 'no-dark';
-      const captionText = isNoDarkAdapt ? alt : alt || title;
       return (
         <figure data-role="markdown-figure" className="group/myimage my-6 md:my-8">
           <button
@@ -1258,11 +1276,6 @@ const createMarkdownComponents = (
               预览
             </span>
           </button>
-          {captionText && (
-            <figcaption className="mt-2.5 text-center text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-              {captionText}
-            </figcaption>
-          )}
         </figure>
       );
     },

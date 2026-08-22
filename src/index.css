@@ -481,7 +481,7 @@
 }
 
 .code-block {
-  @apply overflow-hidden rounded-[6px] border border-[#d0d7de] bg-[#f6f8fa] dark:border-[#30363d] dark:bg-[#161b22];
+  @apply overflow-hidden rounded-[6px] border border-[#d0d7de] bg-[#f6f8fa] dark:border-[#30363d] dark:bg-[#0d1117];
 }
 
 /* highlight.js 主题自带底色（白/#0d1117），改透明以透出 .code-block
@@ -491,7 +491,9 @@
 }
 
 .code-toolbar {
-  @apply flex min-h-12 items-center justify-between gap-3 border-b border-[#d0d7de] bg-[#eef1f4] px-3 py-1.5 text-xs text-[#57606a] dark:border-[#30363d] dark:bg-[#1c2128] dark:text-[#8b949e];
+  /* GitHub 式代码块头部：浅色与代码区同底（#f6f8fa），仅靠下边框区分；
+     深色使用 GitHub 头部专色 #161b22，与代码区 #0d1117 形成层次。 */
+  @apply flex min-h-12 items-center justify-between gap-3 border-b border-[#d0d7de] bg-[#f6f8fa] px-3 py-1.5 text-xs text-[#57606a] dark:border-[#30363d] dark:bg-[#161b22] dark:text-[#8b949e];
 }
 
 .code-language {
@@ -603,7 +605,7 @@
 
 .code-block-collapsed::after {
   content: '';
-  @apply pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white via-white/95 to-transparent dark:from-[#111827] dark:via-[#111827]/95;
+  @apply pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#f6f8fa] via-[#f6f8fa]/95 to-transparent dark:from-[#0d1117] dark:via-[#0d1117]/95;
 }
 
 .code-block-expanded {
@@ -949,7 +951,11 @@
 
 .mermaid-scene {
   display: flex;
-  width: 100%;
+  /* 基础视图即按图表自然尺寸排布（GitHub 式）：min-width 保证窄图仍居中于
+     容器内，max-content 让宽图撑开自身宽度，由 .mermaid-viewport 横向滚动，
+     避免宽图被压缩导致文字缩小到看不清。 */
+  width: max-content;
+  min-width: 100%;
   min-height: 100%;
   align-items: flex-start;
   justify-content: center;
@@ -959,25 +965,22 @@
 
 .mermaid-diagram {
   display: flex;
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   justify-content: center;
 }
 
 /* 尺寸交给 mermaid 输出的 width="100%" + 内联 max-width（自然尺寸上限）控制，
      这里只兜底：max-width 限制不超出容器、height:auto 保持 viewBox 宽高比。
      注意不要加 width:auto —— 它会把 <svg> 当无固有尺寸的替换元素缩成默认
-     300px 宽，文字被压成几像素的糊点（曾导致图表"渲染后糊看不清"）。 */
+     300px 宽，文字被压成几像素的糊点（曾导致图表"渲染后糊看不清"）。
+     基础视图的自然宽度由 Post.tsx 内联 width/max-width 显式控制（覆盖此处
+     max-width: 100%），此处仅作为 naturalWidth 未测量时的兜底。 */
 .mermaid-diagram > svg {
   display: block;
   max-width: 100%;
   height: auto;
   overflow: visible;
-}
-
-.mermaid-viewport.is-zoomed .mermaid-scene,
-.mermaid-viewport.is-zoomed .mermaid-diagram {
-  width: max-content;
-  min-width: 100%;
 }
 
 .mermaid-viewport.is-zoomed .mermaid-diagram > svg {
@@ -1340,9 +1343,18 @@ html.dark .mermaid-diagram > svg {
     overflow: visible !important;
   }
 
-  .post-prose .mermaid-scene {
+  .post-prose .mermaid-scene,
+  .post-prose .mermaid-diagram {
     min-width: 0 !important;
+    width: 100% !important;
     transform: none !important;
+  }
+
+  /* 打印时图表按页面宽度缩放（覆盖基础视图的自然宽度内联样式），
+     避免宽图溢出页面被裁切。 */
+  .post-prose .mermaid-diagram > svg {
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .post-prose img {
