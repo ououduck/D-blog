@@ -9,9 +9,6 @@ import { Layout } from './Layout';
 vi.mock('@/components/BackToTop', () => ({
   BackToTop: () => <div data-testid="mock-back-to-top" />,
 }));
-vi.mock('@/components/FeedbackDock', () => ({
-  FeedbackDock: () => <div data-testid="mock-feedback-dock" />,
-}));
 vi.mock('@/components/CookieNotice', () => ({
   CookieNotice: () => <div data-testid="mock-cookie-notice" />,
 }));
@@ -84,13 +81,23 @@ describe('Layout', () => {
     expect(screen.getByRole('link', { name: /搜索/ })).toBeInTheDocument();
   });
 
-  it('渲染移动端底部标签栏（首页/归档/搜索/说说/更多）', () => {
+  it('渲染移动端底部标签栏（首页/说说/搜索/友链/更多）', () => {
     renderLayout();
-    expect(screen.getByRole('link', { name: /首页/ })).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: /归档/ }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole('link', { name: /搜索/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /首页/ }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByRole('link', { name: /说说/ }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('link', { name: /搜索/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /友链/ }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('button', { name: '打开更多菜单' })).toBeInTheDocument();
+  });
+
+  it('归档等栏目收纳进「更多」面板', async () => {
+    const user = userEvent.setup();
+    renderLayout();
+    await user.click(screen.getByRole('button', { name: '打开更多菜单' }));
+    await screen.findByRole('dialog', { name: '移动端导航菜单' });
+    await waitForNavOpen();
+    expect(screen.getByRole('button', { name: /归档/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /标签/ })).toBeInTheDocument();
   });
 
   it('渲染 children 内容', () => {

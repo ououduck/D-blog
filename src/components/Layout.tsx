@@ -127,19 +127,19 @@ const moreNavItems: NavItem[] = [
   { key: 'feedback', label: '反馈', hint: '提交反馈与建议', icon: MessageSquareText, href: siteConfig.feedback.url },
 ];
 
-// 移动端底部标签栏：高频入口一级直达，其余栏目收纳进「更多」面板。
+// 移动端底部标签栏：高频入口一级直达（首页/说说/搜索/友链），其余栏目收纳进「更多」面板。
 const mobileTabItems: Array<{ key: string; path: string; label: string; icon: NavIcon }> = [
   { key: 'home', path: '/', label: '首页', icon: BookOpen },
-  { key: 'archive', path: '/archive', label: TEXT.navArchive, icon: Archive },
-  { key: 'search', path: '/search', label: '搜索', icon: Search },
   { key: 'shuoshuo', path: '/shuoshuo', label: TEXT.navShuoShuo, icon: MessageCircle },
+  { key: 'search', path: '/search', label: '搜索', icon: Search },
+  { key: 'friends', path: '/friends', label: TEXT.navFriends, icon: Users },
 ];
 
 // 「更多」面板分组：栏目 / 收藏与工具 / 订阅与联系（路径项走 SPA 导航，外链项新窗口打开）。
 const mobileMorePanelGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: '栏目',
-    items: navItems.filter((item) => !['/', '/archive', '/shuoshuo'].includes(item.path)),
+    items: navItems.filter((item) => !['/', '/shuoshuo', '/friends'].includes(item.path)),
   },
   {
     label: '收藏与工具',
@@ -957,7 +957,7 @@ const Navbar = ({ onSearchNavigate }: { onSearchNavigate: () => void }) => {
         </motion.div>
       </nav>
 
-      {/* 移动端底部标签栏：lg 以下固定底部，首页/归档/搜索/说说 一级直达，「更多」打开分组面板 */}
+      {/* 移动端底部标签栏：lg 以下固定底部，首页/说说/搜索/友链 一级直达，「更多」打开分组面板 */}
       <nav
         aria-label="移动端底部导航"
         className="site-tab-bar fixed inset-x-0 bottom-0 z-nav border-t border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:hidden"
