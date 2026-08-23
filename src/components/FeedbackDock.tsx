@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { SlideModal } from '@/components/SlideModal';
 import { siteConfig } from '@config/site.config';
 
@@ -48,11 +48,11 @@ export const FeedbackDock: React.FC = () => {
         onClick={() => setIsOpen(true)}
         aria-haspopup="dialog"
         aria-label="打开反馈弹窗"
-        className="feedback-dock fixed z-floating inline-flex h-9 w-16 items-center justify-center gap-1 rounded-l-md border border-r-0 border-black bg-black px-2 text-[11px] font-semibold text-white shadow-sm transition-transform duration-200 hover:bg-zinc-800 active:bg-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+        className="feedback-dock fixed z-floating inline-flex h-14 w-16 items-center justify-center gap-1 rounded-l-md border border-r-0 border-black bg-black px-2 text-[11px] font-semibold text-white shadow-sm transition-transform duration-200 hover:bg-zinc-800 active:bg-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
         style={{ top: FEEDBACK_DOCK_TOP, right: FEEDBACK_DOCK_RIGHT }}
       >
         反馈
-        <ArrowRight size={14} aria-hidden="true" />
+        <ArrowLeft size={16} aria-hidden="true" />
       </button>
 
       <SlideModal
@@ -65,7 +65,7 @@ export const FeedbackDock: React.FC = () => {
           <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
             <div>
               <h2 id="feedback-modal-title" className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                D-blog 需要您的反馈
+                我们需要您的反馈
               </h2>
               <p
                 id="feedback-modal-description"
@@ -93,10 +93,9 @@ export const FeedbackDock: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setIsOpen(false)}
-                className="editorial-button-primary inline-flex items-center gap-2 px-5"
+                className="editorial-button-primary inline-flex items-center gap-2 border-black bg-black px-5 text-white hover:bg-zinc-800"
               >
-                立即反馈
-                <ArrowRight size={15} />
+                前往反馈页
               </a>
             </div>
           </div>

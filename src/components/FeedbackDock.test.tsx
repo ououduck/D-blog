@@ -33,8 +33,8 @@ describe('FeedbackDock', () => {
     const user = userEvent.setup();
     render(<FeedbackDock />);
     await user.click(screen.getByRole('button', { name: '打开反馈弹窗' }));
-    expect(screen.getByRole('dialog', { name: 'D-blog 需要您的反馈' })).toBeInTheDocument();
-    const feedbackLink = screen.getByRole('link', { name: /立即反馈/ });
+    expect(screen.getByRole('dialog', { name: '我们需要您的反馈' })).toBeInTheDocument();
+    const feedbackLink = screen.getByRole('link', { name: /前往反馈页/ });
     expect(feedbackLink).toHaveAttribute('href', siteConfig.feedback.url);
     expect(feedbackLink).toHaveAttribute('target', '_blank');
     expect(feedbackLink).toHaveAttribute('rel', expect.stringContaining('noopener'));
@@ -46,7 +46,7 @@ describe('FeedbackDock', () => {
     await user.click(screen.getByRole('button', { name: '打开反馈弹窗' }));
     await user.click(screen.getByRole('button', { name: '关闭反馈弹窗' }));
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'D-blog 需要您的反馈' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: '我们需要您的反馈' })).not.toBeInTheDocument();
     });
   });
 });

@@ -14,9 +14,10 @@
   transform: translateX(78%);
 }
 
+/* 侧签只在点击后打开面板，不通过悬停改变位置。 */
 .feedback-dock:hover,
 .feedback-dock:focus-visible {
-  transform: translateX(0);
+  transform: translateX(78%);
 }
 
 /* 移动端底部标签栏（lg 以下）：高度 = 内容区 3.5rem + 底部安全区，
