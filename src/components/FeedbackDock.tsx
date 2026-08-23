@@ -1,5 +1,5 @@
 /**
- * 反馈浮钮：右下角吸附的小长方块按钮（带箭头），点击弹出「D-blog 需要您的反馈」
+ * 反馈浮钮：右下角贴边收起的小侧边按钮，点击弹出「D-blog 需要您的反馈」
  * 弹窗，提供跳转外部反馈表单（Tally）的入口。
  * 浮钮高度通过 ResizeObserver 同步到 --feedback-dock-height（:root），
  * 供返回顶部等底部浮层避让；卸载（专注阅读模式隐藏）时移除变量恢复原布局。
@@ -10,11 +10,9 @@ import { ArrowRight, X } from 'lucide-react';
 import { SlideModal } from '@/components/SlideModal';
 import { siteConfig } from '@config/site.config';
 
-// 底部偏移与返回顶部/目录等浮层共用同一套避让变量：移动端抬到标签栏之上，
-// Cookie 提示条 / SW 更新提示出现时继续上移；桌面端（lg 起）标签栏变量为 0。
-const FEEDBACK_DOCK_BOTTOM =
-  'calc(var(--tab-bar-height, 0px) + var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 0.5rem)';
-const FEEDBACK_DOCK_RIGHT = 'max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem))';
+// 反馈侧签固定在视口中下部，不随页面底部提示条移动。
+const FEEDBACK_DOCK_TOP = '62%';
+const FEEDBACK_DOCK_RIGHT = 'env(safe-area-inset-right, 0px)';
 
 export const FeedbackDock: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -50,8 +48,8 @@ export const FeedbackDock: React.FC = () => {
         onClick={() => setIsOpen(true)}
         aria-haspopup="dialog"
         aria-label="打开反馈弹窗"
-        className="fixed z-floating inline-flex min-h-11 items-center gap-1.5 rounded-control border border-zinc-900 bg-zinc-900 px-3.5 text-xs font-semibold text-white transition-colors hover:bg-zinc-700 active:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300 dark:focus-visible:outline-zinc-100"
-        style={{ bottom: FEEDBACK_DOCK_BOTTOM, right: FEEDBACK_DOCK_RIGHT }}
+        className="feedback-dock fixed z-floating inline-flex h-9 w-16 items-center justify-center gap-1 rounded-l-md border border-r-0 border-black bg-black px-2 text-[11px] font-semibold text-white shadow-sm transition-transform duration-200 hover:bg-zinc-800 active:bg-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+        style={{ top: FEEDBACK_DOCK_TOP, right: FEEDBACK_DOCK_RIGHT }}
       >
         反馈
         <ArrowRight size={14} aria-hidden="true" />

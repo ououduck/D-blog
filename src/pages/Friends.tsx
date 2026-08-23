@@ -103,7 +103,6 @@ const initialFriends = getInitialFriends();
 export const Friends = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDeadExpanded, setIsDeadExpanded] = useState(false);
-  const [currentApplicationStep, setCurrentApplicationStep] = useState(1);
   const [friends, setFriends] = useState<Friend[]>(initialFriends);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -156,10 +155,6 @@ export const Friends = () => {
     description: siteConfig.description,
     url: siteConfig.url,
     avatar: siteConfig.logo,
-  };
-
-  const advanceApplicationStep = (step: number) => {
-    setCurrentApplicationStep((current) => Math.max(current, step));
   };
 
   // 域名解析结果预计算（new URL 解析与 hosts 剥离）：搜索过滤每次击键不再对
@@ -266,9 +261,9 @@ export const Friends = () => {
           aria-controls="friend-link-panel"
         >
           <div className="min-w-0 flex-1">
-            <span className="text-base font-semibold text-zinc-950 dark:text-white">申请友链</span>
+            <span className="text-base font-semibold text-zinc-950 dark:text-white">申请/修改友链</span>
             <p className="mt-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-              添加本站友链 → 前往在线表单提交申请
+              查看本站友链信息，并前往在线表单申请或修改友链
             </p>
           </div>
           <motion.div
@@ -293,92 +288,54 @@ export const Friends = () => {
             >
               <div className="border-t border-zinc-200 pb-5 pt-5 dark:border-zinc-800 sm:pb-6 sm:pt-6">
                 <div className="space-y-6">
-                  <AnimatePresence mode="wait" initial={false}>
-                    {currentApplicationStep === 1 && (
-                      <motion.div
-                        key="friend-link-step-1"
-                        initial={shouldReduceMotion ? false : { opacity: 0 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={shouldReduceMotion ? undefined : { opacity: 0 }}
+                  <motion.div
+                    initial={shouldReduceMotion ? false : { opacity: 0 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={shouldReduceMotion ? undefined : { opacity: 0 }}
+                  >
+                    <Surface variant="card" className="p-4 sm:p-5" aria-labelledby="friend-link-site-info">
+                      <div className="mb-4">
+                        <h2
+                          id="friend-link-site-info"
+                          className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
+                        >
+                          本站友链信息
+                        </h2>
+                        <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                          请将以下信息添加到你的友链页，随后可直接申请或修改友链。
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+                        <ProgressiveImage
+                          src={siteInfo.avatar}
+                          alt={siteInfo.name}
+                          wrapperClassName="h-14 w-14 flex-shrink-0 overflow-hidden rounded-full border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-void"
+                          className="h-14 w-14 object-cover object-center"
+                        />
+                        <div className="w-full flex-1 space-y-1">
+                          <div className="font-semibold text-zinc-900 dark:text-zinc-100">{siteInfo.name}</div>
+                          <div className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                            {siteInfo.description}
+                          </div>
+                          <div className="break-all pt-0.5 font-mono text-xs leading-relaxed text-zinc-700 dark:text-zinc-400 select-all">
+                            链接：{siteInfo.url}
+                          </div>
+                          <div className="break-all font-mono text-xs leading-relaxed text-zinc-700 dark:text-zinc-400 select-all">
+                            LOGO：{siteInfo.avatar}
+                          </div>
+                        </div>
+                      </div>
+                      <a
+                        href={siteConfig.friendsPage.applyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="editorial-button-primary mt-5 inline-flex items-center gap-2"
                       >
-                        <Surface variant="card" className="p-4 sm:p-5" aria-labelledby="friend-link-site-info">
-                          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">第一步</p>
-                              <h2
-                                id="friend-link-site-info"
-                                className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100"
-                              >
-                                添加本站友链
-                              </h2>
-                              <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                                请先将本站添加到你自己的友链页，并确认该页面无需登录即可访问，然后进入下一步。
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => advanceApplicationStep(2)}
-                              className="editorial-button-primary"
-                            >
-                              我已添加
-                              <ArrowRight size={16} />
-                            </button>
-                          </div>
-                          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                            <ProgressiveImage
-                              src={siteInfo.avatar}
-                              alt={siteInfo.name}
-                              wrapperClassName="h-14 w-14 flex-shrink-0 overflow-hidden rounded-full border border-zinc-300 bg-paper dark:border-zinc-700 dark:bg-void"
-                              className="h-14 w-14 object-cover object-center"
-                            />
-                            <div className="w-full flex-1 space-y-1">
-                              <div className="font-semibold text-zinc-900 dark:text-zinc-100">{siteInfo.name}</div>
-                              <div className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                                {siteInfo.description}
-                              </div>
-                              <div className="break-all pt-0.5 font-mono text-xs leading-relaxed text-zinc-700 dark:text-zinc-400 select-all">
-                                链接：{siteInfo.url}
-                              </div>
-                              <div className="break-all font-mono text-xs leading-relaxed text-zinc-700 dark:text-zinc-400 select-all">
-                                LOGO：{siteInfo.avatar}
-                              </div>
-                            </div>
-                          </div>
-                        </Surface>
-                      </motion.div>
-                    )}
-                    {currentApplicationStep === 2 && (
-                      <motion.div
-                        key="friend-link-step-2"
-                        initial={shouldReduceMotion ? false : { opacity: 0 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={shouldReduceMotion ? undefined : { opacity: 0 }}
-                      >
-                        <Surface variant="card" className="p-4 sm:p-5">
-                          <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">第二步</p>
-                              <h2 className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                                填写申请表单
-                              </h2>
-                              <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                                点击下方按钮前往在线表单，填写站点信息并提交申请。审核通过后我们会尽快将你加入友链。
-                              </p>
-                            </div>
-                            <a
-                              href={siteConfig.friendsPage.applyUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="editorial-button-primary inline-flex items-center gap-2"
-                            >
-                              申请 / 修改友链
-                              <ArrowRight size={16} />
-                            </a>
-                          </div>
-                        </Surface>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        申请或修改友链
+                        <ArrowRight size={16} />
+                      </a>
+                    </Surface>
+                  </motion.div>
                 </div>
               </div>
             </motion.div>

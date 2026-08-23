@@ -9,6 +9,16 @@
   --feedback-dock-height: 0px;
 }
 
+/* 反馈入口默认收进右侧边缘，只露出窄标签；悬停或键盘聚焦时滑出。 */
+.feedback-dock {
+  transform: translateX(78%);
+}
+
+.feedback-dock:hover,
+.feedback-dock:focus-visible {
+  transform: translateX(0);
+}
+
 /* 移动端底部标签栏（lg 以下）：高度 = 内容区 3.5rem + 底部安全区，
    壳内浮层（返回顶部/目录/进度徽标等）与主内容底部内边距据此避让；
    专注阅读模式无标签栏，壳内归零。壳外浮层（Cookie 提示等）使用 :root 值。 */

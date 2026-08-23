@@ -107,12 +107,11 @@ describe('Friends', () => {
     const user = userEvent.setup();
     renderFriends();
     await screen.findByText('示例博客');
-    // 展开「申请友链」面板，第一步展示本站信息。
-    await user.click(screen.getByRole('button', { name: /申请友链/ }));
-    expect(screen.getByText('添加本站友链')).toBeInTheDocument();
-    // 点击「我已添加」进入第二步。
-    await user.click(screen.getByRole('button', { name: /我已添加/ }));
-    const applyLink = await screen.findByRole('link', { name: /申请 \/ 修改友链/ });
+    // 展开「申请/修改友链」面板后直接展示本站信息与入口。
+    await user.click(screen.getByRole('button', { name: /申请\/修改友链/ }));
+    expect(screen.getByText('本站友链信息')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /我已添加/ })).not.toBeInTheDocument();
+    const applyLink = await screen.findByRole('link', { name: /申请或修改友链/ });
     expect(applyLink).toHaveAttribute('href', siteConfig.friendsPage.applyUrl);
     expect(applyLink).toHaveAttribute('target', '_blank');
     expect(applyLink).toHaveAttribute('rel', expect.stringContaining('noopener'));
