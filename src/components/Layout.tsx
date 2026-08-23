@@ -42,7 +42,6 @@ import { hasOpenOverlay, lockBodyScroll, unlockBodyScroll } from '@/hooks/useMod
 import { useReadingMode, ReadingModeProvider } from './ReadingModeContext';
 import { routeTransition } from '@/utils/motion';
 
-const SearchModal = lazy(() => import('./SearchModal').then((m) => ({ default: m.SearchModal })));
 const BackToTop = lazy(() => import('./BackToTop').then((m) => ({ default: m.BackToTop })));
 
 const TEXT = {
@@ -282,7 +281,7 @@ type MobileNavPhase = 'closed' | 'opening' | 'open' | 'closing';
 
 const MOBILE_NAV_ANIMATION_DURATION_MS = 340;
 
-const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
+const Navbar = ({ onSearchNavigate }: { onSearchNavigate: () => void }) => {
   const [mobileNavPhase, setMobileNavPhase] = useState<MobileNavPhase>('closed');
   const [isMobileNavMounted, setIsMobileNavMounted] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
@@ -371,7 +370,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
       label: '搜索',
       hint: '快速找内容',
       icon: Search,
-      onClick: () => requestCloseMobileNav(() => onSearchClick()),
+      onClick: () => requestCloseMobileNav(onSearchNavigate),
     },
   ];
 
@@ -920,9 +919,9 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
 
             <div className="flex shrink-0 items-center gap-2 border-l border-zinc-300 pl-4 dark:border-zinc-700">
               <button
-                onClick={onSearchClick}
+                onClick={onSearchNavigate}
                 className="group flex h-11 items-center gap-2 rounded-control border border-zinc-300 bg-zinc-100 px-3 text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-200 active:bg-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:active:bg-zinc-700"
-                aria-label="打开站内搜索"
+                aria-label="打开搜索页"
               >
                 <Search size={16} />
                 <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">
@@ -934,7 +933,7 @@ const Navbar = ({ onSearchClick }: { onSearchClick: () => void }) => {
           </div>
 
           <div className="flex items-center gap-1.5 lg:hidden">
-            <button onClick={onSearchClick} className="editorial-icon-button h-11 w-11" aria-label="打开站内搜索">
+            <button onClick={onSearchNavigate} className="editorial-icon-button h-11 w-11" aria-label="打开搜索页">
               <Search size={18} />
             </button>
             <button
@@ -1192,15 +1191,14 @@ interface LayoutProps {
 const routeShellVariants = routeTransition;
 
 const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [hasOpenedSearch, setHasOpenedSearch] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { isReadingMode } = useReadingMode();
-  const openSearch = useCallback(() => {
-    setHasOpenedSearch(true);
-    setIsSearchOpen(true);
-  }, []);
-  const closeSearch = useCallback(() => setIsSearchOpen(false), []);
+  // 搜索为独立页面（/search）：所有搜索入口（顶栏按钮、Ctrl+K、移动端抽屉快捷动作）
+  // 统一跳转到搜索页。
+  const goToSearch = useCallback(() => {
+    navigate('/search');
+  }, [navigate]);
   const prefersReducedMotion = useSiteReducedMotion();
   const routeVariants = prefersReducedMotion
     ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
@@ -1224,19 +1222,14 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
         }
 
         event.preventDefault();
-        openSearch();
+        goToSearch();
         return;
-      }
-
-      if (event.key === 'Escape' && isSearchOpen) {
-        event.preventDefault();
-        setIsSearchOpen(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSearchOpen, openSearch]);
+  }, [goToSearch]);
 
   // 不蒜子统计：路由变化即上报当前页访问并回填计数 span（适配 SPA 客户端导航，
   // 替代官方 <script> 仅首屏执行一次、无法为新路由上报/回填的局限）。
@@ -1252,12 +1245,7 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
       data-reading-mode={isReadingMode ? 'true' : undefined}
     >
       <Background />
-      {!isReadingMode && <Navbar onSearchClick={openSearch} />}
-      {hasOpenedSearch && (
-        <Suspense fallback={null}>
-          <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
-        </Suspense>
-      )}
+      {!isReadingMode && <Navbar onSearchNavigate={goToSearch} />}
       {/* 非阅读模式：main 顶部内边距 = 导航栏高度 + 呼吸间距，并补偿导航栏
           因 safe-area-inset-top 增高的部分，避免内容被顶高的导航遮挡。 */}
       <main

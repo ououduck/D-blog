@@ -36,7 +36,7 @@ const SEARCH_SCOPE_HINTS: Record<PostSearchScope, string> = {
 
 /**
  * 独立搜索页 /search?q=...：复用 searchPosts 评分排序与 usePostSearch 防抖逻辑，
- * 与弹窗搜索（SearchModal）完全一致，仅展示形态不同（整页网格 + 文章卡片）。
+ * 是全站唯一的搜索入口（顶栏按钮 / Ctrl+K / 移动端导航均跳转到本页）。
  * SSG 预渲染无 q 参数的默认搜索界面；带 q 的搜索结果在客户端执行（与首页 ?q= 一致）。
  */
 export const Search = () => {
@@ -159,6 +159,7 @@ export const Search = () => {
               placeholder="搜索标题、摘要、分类与正文内容..."
               aria-label="搜索文章"
               containerClassName="max-w-2xl"
+              autoFocus
             />
           </div>
 
