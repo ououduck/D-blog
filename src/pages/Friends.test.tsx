@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { Friends } from './Friends';
+import { siteConfig } from '@config/site.config';
 
 // 模块加载时 Friends.tsx 会调用 getInitialFriends() 捕获 initialFriends，
 // 且水合后 effect 会调用 getFriends() 替换列表——两个 mock 必须返回同一份数据。
@@ -100,5 +101,20 @@ describe('Friends', () => {
     expect(screen.queryByText('示例博客')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '清除友链搜索' }));
     expect(screen.getByText('示例博客')).toBeInTheDocument();
+  });
+
+  it('申请/修改友链入口跳转外部表单', async () => {
+    const user = userEvent.setup();
+    renderFriends();
+    await screen.findByText('示例博客');
+    // 展开「申请友链」面板，第一步展示本站信息。
+    await user.click(screen.getByRole('button', { name: /申请友链/ }));
+    expect(screen.getByText('添加本站友链')).toBeInTheDocument();
+    // 点击「我已添加」进入第二步。
+    await user.click(screen.getByRole('button', { name: /我已添加/ }));
+    const applyLink = await screen.findByRole('link', { name: /申请 \/ 修改友链/ });
+    expect(applyLink).toHaveAttribute('href', siteConfig.friendsPage.applyUrl);
+    expect(applyLink).toHaveAttribute('target', '_blank');
+    expect(applyLink).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
 });

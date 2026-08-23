@@ -35,7 +35,7 @@
 - [布局与导航](layout-nav.md) · [主题系统](theme.md) · [评论系统（Giscus）](giscus-comments.md) · [离线收藏](offline-posts.md) · [Service Worker 离线缓存](service-worker.md) · [SEO 与结构化数据](seo.md) · [访问分析（Clarity）](clarity-analytics.md)
 
 ### 构建与自动化
-- [构建与 SSG](build-ssg.md) · [站点数据生成](data-generation.md) · [内容校验](content-validation.md) · [文章外链死链检查](broken-links.md) · [友链机器人](friend-link-bot.md) · [Telegram 通知](telegram-notify.md) · [评论过滤与反垃圾](comment-moderation.md) · [CI/CD workflows](ci-cd.md) · [OG 分享卡片](og-card.md) · [RSS/Feed](feed.md)
+- [构建与 SSG](build-ssg.md) · [站点数据生成](data-generation.md) · [内容校验](content-validation.md) · [文章外链死链检查](broken-links.md) · [Telegram 通知](telegram-notify.md) · [评论过滤与反垃圾](comment-moderation.md) · [CI/CD workflows](ci-cd.md) · [OG 分享卡片](og-card.md) · [RSS/Feed](feed.md)
 
 ### 工程
 - [测试约定](testing.md) · [配置体系](config.md)

@@ -2,11 +2,11 @@
 
 ## 功能概述
 
-GitHub Actions 自动化：ci（push/PR 全量门禁）、deploy（手动双平台部署）、telegram-notify、friend-link-bot/check、comment 三件套、akismet、notify-post-update、check-broken-links；PagesCMS 动作按钮（.pages.yml）。
+GitHub Actions 自动化：ci（push/PR 全量门禁）、deploy（手动双平台部署）、telegram-notify、comment 三件套、akismet、notify-post-update、check-broken-links；PagesCMS 动作按钮（.pages.yml）。
 
 ## 关键文件
 
-- `.github/workflows/*.yml`（10 个）
+- `.github/workflows/*.yml`（8 个）
 - `.pages.yml`（CMS 集合/字段/动作按钮）
 
 ## 修改规则（必须遵守）

@@ -86,9 +86,9 @@ D-blog/
 ├── generated/               # 构建产物：posts.json / posts-search.json / site-stats.json 等
 ├── public/                  # favicon、PWA 图标、sw.js、offline.html，以及构建生成的 feed/sitemap
 ├── scripts/                 # 构建/自动化脚本（lib/ 为共享 HTTP 与日志库）
-├── .github/workflows/       # 部署、友链审核、评论检查、更新通知
+├── .github/workflows/       # 部署、评论检查、更新通知
 └── src/
-    ├── components/          # Layout、PostCard、Seo、TableOfContents、SearchModal、ImageViewer 等
+    ├── components/          # Layout、PostCard、Seo、TableOfContents、ImageViewer 等
     ├── pages/               # 页面组件（懒加载）；cover/、watermark/、archive/、friends/ 为模块集
     ├── services/            # posts / friends / shuoshuo / offlinePosts / readingHistory 等
     ├── hooks/ utils/        # 自定义 Hook 与工具函数（日期、排序、站点 URL、标题解析等）
@@ -220,7 +220,7 @@ Service Worker 作用域跟随部署路径，在线按页面/静态资源/图片
 
 仓库事件通过 [`telegram-notify.yml`](.github/workflows/telegram-notify.yml) 实时推送到 Telegram：新评论/新讨论/新 Issue、push 到 main 的提交、任一 Action 运行结果（成功/失败/取消，通知自身的结果被跳过）。**一次性配置**：在 [@BotFather](https://t.me/BotFather) 创建机器人获取 `TELEGRAM_BOT_TOKEN`，通过 [@userinfobot](https://t.me/userinfobot) 获取 `TELEGRAM_CHAT_ID`，在仓库 **Settings → Secrets and variables → Actions** 添加（可选 `TELEGRAM_TOPIC_ID` 指定论坛话题）。未配置时 workflow 优雅跳过（`::warning::` 正常退出，不红叉）。
 
-其他自动化：`ci.yml` 每次 push/PR 自动跑类型检查 + 单元测试 + 完整构建 + 双审计；友链申请审核（`friend-link-bot.yml`）、评论 Akismet 反垃圾（`akismet-discussion-comment-check.yml`）与关键词过滤（`comment-keyword-filter.yml` / `comment-keyword-recheck.yml`）、文章更新订阅通知（`notify-post-update.yml`）均为独立 workflow。
+其他自动化：`ci.yml` 每次 push/PR 自动跑类型检查 + 单元测试 + 完整构建 + 双审计；评论 Akismet 反垃圾（`akismet-discussion-comment-check.yml`）与关键词过滤（`comment-keyword-filter.yml` / `comment-keyword-recheck.yml`）、文章更新订阅通知（`notify-post-update.yml`）均为独立 workflow。
 
 ### 🔗 文章外链失效扫描（check-broken-links）
 

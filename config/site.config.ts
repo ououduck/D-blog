@@ -57,6 +57,13 @@ export interface SiteFriendsPage {
   repoUrl: string;
   repoFriendsUrl: string;
   repoFriendsDir: string;
+  /** 友链申请/修改外部表单地址（Tally）。 */
+  applyUrl: string;
+}
+
+export interface SiteFeedback {
+  /** 站点反馈表单地址（Tally），右下角反馈浮钮弹窗跳转。 */
+  url: string;
 }
 
 export interface SiteContent {
@@ -94,6 +101,8 @@ export interface SiteConfig {
   comments: SiteComments;
   guestbook: SiteGuestbook;
   friendsPage: SiteFriendsPage;
+  /** 站点反馈表单入口（右下角反馈浮钮弹窗）。 */
+  feedback: SiteFeedback;
   /** 文章内容仓库（"在 GitHub 上编辑此文"/查看源文件入口使用）。 */
   content?: SiteContent;
   beian: SiteBeian;

@@ -11,7 +11,7 @@
  *    路径不可达（直接 return response），且 Akismet 曾把 500 页正文误当结论 —— 已修复。
  * 2. 【限流分类缺口】429（Secondary Rate Limit）与 403 统一识别：isRateLimitResponse
  *    检查 x-ratelimit-remaining=0 / 403 / 429 三条件；重试耗尽后仍命中限流抛 RateLimitError，
- *    friend-link-bot 的 `instanceof RateLimitError` 整批暂停机制不再失效。
+ *    调用方脚本的 `instanceof RateLimitError` 整批暂停机制不再失效。
  * 3. 【DNS 查询纳入超时】lookupWithTimeout 用 Promise.race 包裹 dns.lookup ——
  *    DNS 服务器无响应时不再无限阻塞（上一版该路径完全不受超时控制）。
  * 4. 【响应体限量读取】readResponseText 限量消费 body（防超大响应体拖垮 Runner 内存）。
@@ -138,7 +138,7 @@ export const sanitizeUrlForLogs = (url) =>
     .replace(/\/\/[a-z0-9_-]+\.rest\.akismet\.com/, '//***.rest.akismet.com'); // Akismet key 子域
 
 /* ------------------------------------------------------------------ */
-/* SSRF 防护（由 friend-link-bot 下沉共享，checker 类脚本复用）          */
+/* SSRF 防护（lib/http.mjs 共享，checker 类脚本复用）                    */
 /* ------------------------------------------------------------------ */
 
 /** 私网地址判定（SSRF 防护）。使用 net.BlockList 按子网前缀匹配，覆盖：
@@ -320,9 +320,8 @@ const safeLookup = async (hostname, options, callback) => {
 /**
  * 懒加载 undici 的连接期 SSRF 防护 Agent（单例，首次调用时创建）。
  *
- * undici 只在「对用户可控 URL 发起请求」的脚本（friend-link-bot /
- * check-broken-links）中才被真正需要；telegram-notify /
- * akismet-comment-check / comment-keyword-* 等脚本只访问可信固定域名
+ * undici 只在「对用户可控 URL 发起请求」的脚本（check-broken-links）中才被真正需要；
+ * telegram-notify / akismet-comment-check / comment-keyword-* 等脚本只访问可信固定域名
  * （api.telegram.org / api.github.com / rest.akismet.com），用 Node 内置 fetch
  * 即可，完全零 npm 依赖。因此这里必须用动态 import 懒加载：任何不调用本函数的
  * 脚本都不再被 http.mjs 的顶层 `import { Agent } from 'undici'` 强绑 undici ——
@@ -934,9 +933,9 @@ export const fetchGithubJson = async (endpoint, options = {}) => {
     // 429（二次限流）在 fetchWithRetry 内已做退避重试，耗尽后以
     // RetryableHttpError(status=429) 抛出，不会作为响应返回 —— 因此下方
     // isRateLimitResponse 分支永远看不到 429（Phase 4 红队遗留缺口）。
-    // 这里把 429 归一为 RateLimitError，让调用方（friend-link-bot）的
-    // “整批暂停”机制真正覆盖二次限流，而不是把每个请求的失败当成普通
-    // 错误记录后继续下一个请求（只会继续放大限流）。
+    // 这里把 429 归一为 RateLimitError，让调用方的“整批暂停”机制真正覆盖
+    // 二次限流，而不是把每个请求的失败当成普通错误记录后继续下一个请求
+    // （只会继续放大限流）。
     const fetchPageRequest = async (retryBudget) => {
       let response;
       try {

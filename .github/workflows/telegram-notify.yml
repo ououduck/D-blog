@@ -1,15 +1,15 @@
 # telegram-notify.yml — GitHub 事件 → Telegram 推送（D-blog 项目消息提醒）。
 #
 # 覆盖三类提醒：
-#   1. 💬 新评论 / 新讨论 / 新 Issue（giscus 文章评论、留言板留言、友链申请等）；
+#   1. 💬 新评论 / 新讨论 / 新 Issue（giscus 文章评论、留言板留言等）；
 #   2. 🚀 push 到 main 的提交（提交列表 + 对比链接）；
 #   3. ⚙️ 白名单内任一 Action 运行完成的结果（成功/失败/取消）。
 #
 # 触发：
-#   - push: main 分支提交（.pages.yml 保存内容、友链 bot 推送等都会走到这里）；
+#   - push: main 分支提交（.pages.yml 保存内容等都会走到这里）；
 #   - discussion_comment: created（giscus 评论）；
 #   - discussion: created（新建讨论）；
-#   - issues: opened（新 Issue / 友链申请）；
+#   - issues: opened（新 Issue）；
 #   - workflow_run: completed（白名单内 workflow 的运行结果；白名单不含本工作流自身，
 #     避免每次通知运行完成后又触发一次自身运行 —— 双倍 Actions 消耗）；
 #   - workflow_dispatch（手动测试；可配合 .pages.yml「🔔 测试 Telegram 通知」按钮）。
@@ -44,8 +44,6 @@ on:
       - "Comment Keyword Filter"
       - "Comment Keyword Recheck"
       - "Deploy to Cloudflare & EdgeOne"
-      - "Friend Link Bot"
-      - "Friend Link Health Check"
       - "Notify Blog Post Update"
     types: [completed]
   workflow_dispatch:

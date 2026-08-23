@@ -43,6 +43,7 @@ import { useReadingMode, ReadingModeProvider } from './ReadingModeContext';
 import { routeTransition } from '@/utils/motion';
 
 const BackToTop = lazy(() => import('./BackToTop').then((m) => ({ default: m.BackToTop })));
+const FeedbackDock = lazy(() => import('./FeedbackDock').then((m) => ({ default: m.FeedbackDock })));
 
 const TEXT = {
   theme: '外观',
@@ -1263,6 +1264,7 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
       {!isReadingMode && (
         <Suspense fallback={null}>
           <BackToTop />
+          <FeedbackDock />
         </Suspense>
       )}
       {!isReadingMode && <Footer />}

@@ -14,7 +14,7 @@
 ## 修改规则（必须遵守）
 
 1. **代码块/行内代码屏蔽**：外链提取前必须经 `maskFencedCodeBlocks`（headings-core 共享）+ 行内代码屏蔽 —— 代码示例中的 URL 不得被当作真实外链检查（已修事故）。
-2. **SSRF 防护（含重定向逐跳）**：请求任意 URL 前必须调用 `isSafePublicHttpUrl`（lib/http.mjs），内网/回环/带凭据地址不发起请求直接判为不可访问；**重定向链必须手动逐跳跟随**（`redirect: 'manual'`），每一跳重新 `isSafePublicHttpUrl` —— 初始 URL 安全不代表跳转目标安全，公开站点可 302 到 127.0.0.1/169.254.169.254 形成绕过（与 friend-link-bot 的 fetchPublicPage 口径一致）。重定向超过上限（MAX_REDIRECTS）判失效（防环）。
+2. **SSRF 防护（含重定向逐跳）**：请求任意 URL 前必须调用 `isSafePublicHttpUrl`（lib/http.mjs），内网/回环/带凭据地址不发起请求直接判为不可访问；**重定向链必须手动逐跳跟随**（`redirect: 'manual'`），每一跳重新 `isSafePublicHttpUrl` —— 初始 URL 安全不代表跳转目标安全，公开站点可 302 到 127.0.0.1/169.254.169.254 形成绕过（重定向逐跳口径见 lib/http.mjs）。重定向超过上限（MAX_REDIRECTS）判失效（防环）。
    - **本地 TUN 代理例外（自动识别）**：Clash/Surge 等 TUN 代理会把全部域名解析到 198.18.0.0/15（fake-IP 标准段），`isResolvedAddressesSafe` 对该指纹**自动放行 IP 级校验**（请求经代理转发到真实公网目标，不构成 SSRF 面），否则本地跑脚本会整批误报「非公开地址」；fc00::/7（IPv6 ULA，真实内网同样使用）仍需显式 `ALLOW_PROXY_ARTIFACT_DNS=1`，`ALLOW_PROXY_ARTIFACT_DNS=0` 可强制关闭自动识别（偏执部署）。
 3. **重试语义**：单 URL 检查必须复用 `fetchWithRetry`（瞬时抖动不误判死链）。
 4. **忽略名单**：`--ignore-hosts` 语义保持（已知反爬站点如 Cloudflare Dashboard 的 403 误报）。

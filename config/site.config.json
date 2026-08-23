@@ -38,11 +38,15 @@
   "friendsPage": {
     "repoUrl": "https://github.com/ououduck/D-blog",
     "repoFriendsUrl": "https://github.com/ououduck/D-blog/tree/main/friends",
-    "repoFriendsDir": "friends"
+    "repoFriendsDir": "friends",
+    "applyUrl": "https://tally.so/r/xX8Oyv"
   },
   "content": {
     "repoUrl": "https://github.com/ououduck/D-blog",
     "defaultBranch": "main"
+  },
+  "feedback": {
+    "url": "https://tally.so/r/rj8zKX"
   },
   "beian": {
     "text": "湘ICP备2025101669号",

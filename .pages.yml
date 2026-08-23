@@ -191,6 +191,7 @@ content:
           - { name: repoUrl, label: 仓库地址, type: string }
           - { name: repoFriendsUrl, label: 友链目录地址, type: string }
           - { name: repoFriendsDir, label: 友链目录名, type: string }
+          - { name: applyUrl, label: 友链申请表单地址, type: string }
       - name: content
         label: 文章内容仓库（"在 GitHub 上编辑此文"入口使用）
         type: object
@@ -203,6 +204,11 @@ content:
         fields:
           - { name: text, label: 备案号, type: string }
           - { name: url, label: 备案链接, type: string }
+      - name: feedback
+        label: 反馈表单
+        type: object
+        fields:
+          - { name: url, label: 反馈表单地址, type: string }
 
 # ── 部署动作：CMS 侧边栏按钮，触发 .github/workflows/deploy.yml ──
 # 文档: https://pagescms.org/docs/configuration/actions/

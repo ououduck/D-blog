@@ -9,6 +9,9 @@ import { Layout } from './Layout';
 vi.mock('@/components/BackToTop', () => ({
   BackToTop: () => <div data-testid="mock-back-to-top" />,
 }));
+vi.mock('@/components/FeedbackDock', () => ({
+  FeedbackDock: () => <div data-testid="mock-feedback-dock" />,
+}));
 vi.mock('@/components/CookieNotice', () => ({
   CookieNotice: () => <div data-testid="mock-cookie-notice" />,
 }));
