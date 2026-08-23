@@ -8,7 +8,6 @@ import {
   Sun,
   Moon,
   Github,
-  Menu,
   X,
   Search,
   Heart,
@@ -28,6 +27,7 @@ import {
   Image as ImageIcon,
   MessageSquareText,
   MessageCircle,
+  LayoutGrid,
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { preloadPage } from '@/utils/preload';
@@ -123,6 +123,30 @@ const moreNavItems: NavItem[] = [
     hint: '接收文章提醒',
     icon: Bell,
     href: ISSUE_SUBSCRIPTION_URL,
+  },
+];
+
+// 移动端底部标签栏：高频入口一级直达，其余栏目收纳进「更多」面板。
+const mobileTabItems: Array<{ key: string; path: string; label: string; icon: NavIcon }> = [
+  { key: 'home', path: '/', label: '首页', icon: BookOpen },
+  { key: 'archive', path: '/archive', label: TEXT.navArchive, icon: Archive },
+  { key: 'search', path: '/search', label: '搜索', icon: Search },
+  { key: 'shuoshuo', path: '/shuoshuo', label: TEXT.navShuoShuo, icon: MessageCircle },
+];
+
+// 「更多」面板分组：栏目 / 收藏与工具 / 订阅与联系（路径项走 SPA 导航，外链项新窗口打开）。
+const mobileMorePanelGroups: Array<{ label: string; items: NavItem[] }> = [
+  {
+    label: '栏目',
+    items: navItems.filter((item) => !['/', '/archive', '/shuoshuo'].includes(item.path)),
+  },
+  {
+    label: '收藏与工具',
+    items: moreNavItems.filter((item) => ['favorites', 'cover', 'watermark'].includes(item.key ?? '')),
+  },
+  {
+    label: '订阅与联系',
+    items: moreNavItems.filter((item) => ['email', 'github', 'rss', 'issue-subscription'].includes(item.key ?? '')),
   },
 ];
 
@@ -364,15 +388,6 @@ const Navbar = ({ onSearchNavigate }: { onSearchNavigate: () => void }) => {
   const isMobileNavAnimating = mobileNavPhase === 'opening' || mobileNavPhase === 'closing';
   const isNavItemActive = (path: string) =>
     location.pathname === path || (path === '/' && location.pathname.startsWith('/post/'));
-  const mobileQuickActions = [
-    {
-      key: 'search',
-      label: '搜索',
-      hint: '快速找内容',
-      icon: Search,
-      onClick: () => requestCloseMobileNav(onSearchNavigate),
-    },
-  ];
 
   const clearAnimationFrame = useCallback(() => {
     if (animationFrameRef.current === null) {
@@ -933,35 +948,73 @@ const Navbar = ({ onSearchNavigate }: { onSearchNavigate: () => void }) => {
           </div>
 
           <div className="flex items-center gap-1.5 lg:hidden">
-            <button onClick={onSearchNavigate} className="editorial-icon-button h-11 w-11" aria-label="打开搜索页">
-              <Search size={18} />
-            </button>
-            <button
-              ref={mobileNavMenuButtonRef}
-              onClick={handleToggleMobileNav}
-              disabled={isMobileNavAnimating}
-              className={`z-50 inline-flex h-11 w-11 items-center justify-center rounded-icon border shadow-none transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100 ${
-                isMobileNavOpen
-                  ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950'
-                  : 'border-zinc-300 bg-paper text-zinc-700 hover:border-zinc-500 hover:bg-zinc-100 hover:text-ink dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white'
-              }`}
-              aria-label={isMobileNavOpen ? '关闭导航菜单' : '打开导航菜单'}
-              aria-expanded={isMobileNavOpen}
-              aria-controls="mobile-navigation-panel"
-            >
-              <div className="relative flex h-[18px] w-[18px] items-center justify-center">
-                <Menu
-                  size={18}
-                  className={`absolute transition-[opacity,transform] duration-300 ${isMobileNavOpen ? 'rotate-90 scale-50 opacity-0' : 'rotate-0 scale-100 opacity-100'}`}
-                />
-                <X
-                  size={18}
-                  className={`absolute transition-[opacity,transform] duration-300 ${isMobileNavOpen ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-50 opacity-0'}`}
-                />
-              </div>
-            </button>
+            {/* 移动端顶栏只保留主题切换：搜索/导航入口下沉到底部标签栏 */}
+            <ThemeToggle />
           </div>
         </motion.div>
+      </nav>
+
+      {/* 移动端底部标签栏：lg 以下固定底部，首页/归档/搜索/说说 一级直达，「更多」打开分组面板 */}
+      <nav
+        aria-label="移动端底部导航"
+        className="site-tab-bar fixed inset-x-0 bottom-0 z-nav border-t border-zinc-200/80 bg-paper/95 dark:border-zinc-800 dark:bg-void/95 lg:hidden"
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingLeft: 'env(safe-area-inset-left, 0px)',
+          paddingRight: 'env(safe-area-inset-right, 0px)',
+        }}
+      >
+        <div className="mx-auto grid h-14 max-w-7xl grid-cols-5">
+          {mobileTabItems.map((item) => {
+            const isActive = isNavItemActive(item.path);
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.key}
+                to={item.path}
+                aria-current={isActive ? 'page' : undefined}
+                className={`relative flex min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold tracking-wide transition-colors ${
+                  isActive
+                    ? 'text-ink dark:text-white'
+                    : 'text-zinc-500 hover:text-ink dark:text-zinc-400 dark:hover:text-white'
+                }`}
+              >
+                <Icon size={19} strokeWidth={isActive ? 2.2 : 1.8} aria-hidden="true" />
+                <span>{item.label}</span>
+                <span
+                  aria-hidden="true"
+                  className={`absolute top-0 h-0.5 w-8 rounded-none bg-zinc-900 transition-opacity dark:bg-zinc-100 ${
+                    isActive ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              </Link>
+            );
+          })}
+          <button
+            ref={mobileNavMenuButtonRef}
+            type="button"
+            onClick={handleToggleMobileNav}
+            disabled={isMobileNavAnimating}
+            aria-label={isMobileNavOpen ? '关闭更多菜单' : '打开更多菜单'}
+            aria-expanded={isMobileNavOpen}
+            aria-controls="mobile-navigation-panel"
+            className={`relative flex min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+              isMobileNavOpen
+                ? 'text-ink dark:text-white'
+                : 'text-zinc-500 hover:text-ink dark:text-zinc-400 dark:hover:text-white'
+            }`}
+          >
+            <LayoutGrid size={19} strokeWidth={isMobileNavOpen ? 2.2 : 1.8} aria-hidden="true" />
+            <span>更多</span>
+            <span
+              aria-hidden="true"
+              className={`absolute top-0 h-0.5 w-8 rounded-none bg-zinc-900 transition-opacity dark:bg-zinc-100 ${
+                isMobileNavOpen ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          </button>
+        </div>
       </nav>
 
       {isMobileNavMounted && (
@@ -1003,142 +1056,69 @@ const Navbar = ({ onSearchNavigate }: { onSearchNavigate: () => void }) => {
               <div className="flex items-center justify-between border-b border-zinc-200 px-1 pb-4 dark:border-zinc-800">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-500">
-                    Navigation
+                    More
                   </p>
-                  <h3 className="mt-1 font-serif text-xl font-bold text-ink dark:text-white">{siteConfig.title}</h3>
+                  <h3 className="mt-1 font-serif text-xl font-bold text-ink dark:text-white">更多</h3>
                 </div>
-                <ThemeToggle />
-              </div>
-
-              <nav className="divide-y divide-zinc-200 dark:divide-zinc-800" aria-label="移动端主导航">
-                {navItems.map((item) => {
-                  const isActive = isNavItemActive(item.path);
-                  const Icon = item.icon;
-
-                  return (
-                    <button
-                      key={item.path}
-                      type="button"
-                      onClick={() => handleMobileNavItemSelect(item.path)}
-                      onMouseEnter={() => preloadPage(item.path)}
-                      disabled={isMobileNavAnimating}
-                      className={`flex w-full min-w-0 items-center gap-3 rounded-control px-1 py-3.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                        isActive
-                          ? 'text-ink dark:text-white'
-                          : 'text-zinc-600 hover:text-ink dark:text-zinc-400 dark:hover:text-white'
-                      }`}
-                      aria-current={isActive ? 'page' : undefined}
-                    >
-                      <Icon
-                        size={17}
-                        strokeWidth={1.8}
-                        className={
-                          isActive
-                            ? 'shrink-0 text-zinc-900 dark:text-zinc-100'
-                            : 'shrink-0 text-zinc-400 dark:text-zinc-500'
-                        }
-                      />
-                      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{item.label}</span>
-                      <span className="min-w-0 max-w-[50%] truncate text-right text-xs text-zinc-400 dark:text-zinc-500">
-                        {item.hint}
-                      </span>
-                    </button>
-                  );
-                })}
-              </nav>
-
-              <div className="mt-3 border-t border-zinc-200 pt-3 dark:border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => setIsMoreMenuOpen((open) => !open)}
-                  className="flex w-full min-w-0 items-center gap-3 rounded-control px-1 py-3.5 text-left text-zinc-600 transition-colors hover:text-ink dark:text-zinc-400 dark:hover:text-white"
-                  aria-label="展开更多菜单"
-                  aria-expanded={isMoreMenuOpen}
-                  aria-controls="mobile-more-menu"
+                  onClick={() => requestCloseMobileNav()}
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-ink active:scale-[0.98] dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+                  aria-label="关闭更多菜单"
                 >
-                  <ChevronDown
-                    size={17}
-                    className={`shrink-0 transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`}
-                    aria-hidden="true"
-                  />
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">更多</span>
-                  <span className="min-w-0 max-w-[50%] truncate text-right text-xs text-zinc-400 dark:text-zinc-500">
-                    收藏、工具与订阅
-                  </span>
+                  <X size={20} />
                 </button>
-                <div id="mobile-more-menu" data-open={isMoreMenuOpen} className="mobile-more-menu-panel">
-                  <div className="min-h-0 overflow-hidden">
-                    <nav className="divide-y divide-zinc-200 dark:divide-zinc-800" aria-label="移动端工具与订阅">
-                      {isMoreMenuOpen &&
-                        moreNavItems.map((item) => {
-                          const Icon = item.icon;
-                          const className =
-                            'flex w-full min-w-0 items-center gap-3 rounded-control px-1 py-3 text-left text-sm font-semibold text-zinc-600 transition-colors hover:text-ink dark:text-zinc-300 dark:hover:text-white';
-                          const content = (
-                            <>
-                              <Icon size={16} aria-hidden="true" className="shrink-0" />
-                              <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                              <span className="min-w-0 max-w-[50%] truncate text-right text-xs font-normal text-zinc-400 dark:text-zinc-500">
-                                {item.hint}
-                              </span>
-                            </>
-                          );
-                          if ('path' in item) {
-                            return (
-                              <button
-                                key={item.key}
-                                type="button"
-                                onClick={() => handleMobileNavItemSelect(item.path)}
-                                disabled={isMobileNavAnimating}
-                                className={className}
-                              >
-                                {content}
-                              </button>
-                            );
-                          }
-                          return (
-                            <a
-                              key={item.key}
-                              href={item.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={() => requestCloseMobileNav()}
-                              className={className}
-                            >
-                              {content}
-                              <ExternalLink size={12} aria-hidden="true" className="shrink-0" />
-                            </a>
-                          );
-                        })}
-                    </nav>
-                  </div>
-                </div>
               </div>
 
-              <div className="mt-3 grid grid-cols-1 gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-                {mobileQuickActions.map((action) => {
-                  const Icon = action.icon;
-                  const className =
-                    'flex min-h-11 items-center justify-center gap-2 rounded-control border border-zinc-300 bg-paper px-3 py-2.5 text-xs font-semibold text-zinc-600 shadow-none transition-colors hover:border-zinc-500 hover:text-zinc-950 active:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-white dark:active:bg-zinc-800';
-                  const content = (
-                    <>
-                      <Icon size={15} />
-                      <span>{action.label}</span>
-                    </>
-                  );
-                  return (
-                    <button
-                      key={action.key}
-                      type="button"
-                      onClick={action.onClick}
-                      className={className}
-                      disabled={isMobileNavAnimating}
-                    >
-                      {content}
-                    </button>
-                  );
-                })}
-              </div>
+              {mobileMorePanelGroups.map((group) => (
+                <div key={group.label} className="mt-4">
+                  <div className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
+                    {group.label}
+                  </div>
+                  <nav className="divide-y divide-zinc-200 dark:divide-zinc-800" aria-label={`移动端${group.label}`}>
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const className =
+                        'flex w-full min-w-0 items-center gap-3 rounded-control px-1 py-3 text-left text-sm font-semibold text-zinc-600 transition-colors hover:text-ink dark:text-zinc-300 dark:hover:text-white';
+                      const content = (
+                        <>
+                          <Icon size={16} aria-hidden="true" className="shrink-0" />
+                          <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                          <span className="min-w-0 max-w-[50%] truncate text-right text-xs font-normal text-zinc-400 dark:text-zinc-500">
+                            {item.hint}
+                          </span>
+                        </>
+                      );
+                      if ('path' in item) {
+                        return (
+                          <button
+                            key={item.key ?? item.path}
+                            type="button"
+                            onClick={() => handleMobileNavItemSelect(item.path)}
+                            disabled={isMobileNavAnimating}
+                            className={className}
+                          >
+                            {content}
+                          </button>
+                        );
+                      }
+                      return (
+                        <a
+                          key={item.key}
+                          href={item.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => requestCloseMobileNav()}
+                          className={className}
+                        >
+                          {content}
+                          <ExternalLink size={12} aria-hidden="true" className="shrink-0" />
+                        </a>
+                      );
+                    })}
+                  </nav>
+                </div>
+              ))}
             </div>
           </motion.aside>
         </div>
@@ -1241,7 +1221,7 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
 
   return (
     <div
-      className={`relative flex min-h-screen flex-col ${isReadingMode ? 'reading-mode-shell' : ''}`}
+      className={`site-shell relative flex min-h-screen flex-col ${isReadingMode ? 'reading-mode-shell' : ''}`}
       data-reading-mode={isReadingMode ? 'true' : undefined}
     >
       <Background />
@@ -1249,7 +1229,11 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
       {/* 非阅读模式：main 顶部内边距 = 导航栏高度 + 呼吸间距，并补偿导航栏
           因 safe-area-inset-top 增高的部分，避免内容被顶高的导航遮挡。 */}
       <main
-        className={`relative min-w-0 w-full flex-grow px-3 sm:px-6 ${isReadingMode ? 'pt-6 sm:pt-8 md:pt-10' : 'pt-[calc(5rem+env(safe-area-inset-top,0px))] sm:pt-[calc(6rem+env(safe-area-inset-top,0px))] md:pt-[calc(6rem+env(safe-area-inset-top,0px))]'}`}
+        className={`relative min-w-0 w-full flex-grow px-3 sm:px-6 ${
+          isReadingMode
+            ? 'pt-6 sm:pt-8 md:pt-10'
+            : 'pt-[calc(5rem+env(safe-area-inset-top,0px))] sm:pt-[calc(6rem+env(safe-area-inset-top,0px))] md:pt-[calc(6rem+env(safe-area-inset-top,0px))] pb-[calc(var(--tab-bar-height,0px)+0.75rem)] lg:pb-0'
+        }`}
       >
         {/* 路由内容容器：统一使用 AnimatePresence + motion.div（无论是否启用
             View Transitions）。曾按 hasViewTransition 分支渲染 div / motion.div 两种

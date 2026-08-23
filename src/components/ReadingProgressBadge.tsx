@@ -17,7 +17,7 @@ interface ReadingProgressBadgeProps {
 
 const MOBILE_BADGE_STYLE = {
   bottom:
-    'max(calc(env(safe-area-inset-bottom, 0px) + var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 5rem), calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 5rem))',
+    'calc(var(--tab-bar-height, 0px) + max(calc(env(safe-area-inset-bottom, 0px) + var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 5rem), calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 5rem)))',
   width: 'min(10rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)))',
 } as const;
 const DESKTOP_BADGE_STYLE = {

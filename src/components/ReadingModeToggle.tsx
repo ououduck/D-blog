@@ -8,7 +8,7 @@ import { useReadingMode } from '@/components/ReadingModeContext';
 
 const READING_MODE_TOGGLE_STYLE = {
   bottom:
-    'max(calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + env(safe-area-inset-bottom, 0px) + 13rem), calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 13rem))',
+    'calc(var(--tab-bar-height, 0px) + max(calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + env(safe-area-inset-bottom, 0px) + 13rem), calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 13rem)))',
 } as const;
 
 export const ReadingModeToggle: React.FC = () => {

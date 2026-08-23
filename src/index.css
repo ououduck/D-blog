@@ -5,6 +5,20 @@
 :root {
   --cookie-notice-height: 0px;
   --service-worker-prompt-height: 0px;
+  --tab-bar-height: 0px;
+}
+
+/* 移动端底部标签栏（lg 以下）：高度 = 内容区 3.5rem + 底部安全区，
+   壳内浮层（返回顶部/目录/进度徽标等）与主内容底部内边距据此避让；
+   专注阅读模式无标签栏，壳内归零。壳外浮层（Cookie 提示等）使用 :root 值。 */
+@media (max-width: 1023.98px) {
+  :root {
+    --tab-bar-height: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .site-shell[data-reading-mode='true'] {
+    --tab-bar-height: 0px;
+  }
 }
 
 @layer base {
@@ -122,8 +136,8 @@
 
   .service-worker-prompt-bottom {
     bottom: max(
-      calc(var(--cookie-notice-height, 0px) + 1rem),
-      calc(env(safe-area-inset-bottom, 0px) + var(--cookie-notice-height, 0px) + 1rem)
+      calc(var(--tab-bar-height, 0px) + var(--cookie-notice-height, 0px) + 1rem),
+      calc(var(--tab-bar-height, 0px) + env(safe-area-inset-bottom, 0px) + var(--cookie-notice-height, 0px) + 1rem)
     );
   }
 }
@@ -722,10 +736,12 @@
 
 .back-to-top-btn {
   bottom: max(
-    calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 1rem),
     calc(
-      env(safe-area-inset-bottom, 0px) + var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) +
-        1rem
+      var(--tab-bar-height, 0px) + var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 1rem
+    ),
+    calc(
+      var(--tab-bar-height, 0px) + env(safe-area-inset-bottom, 0px) + var(--cookie-notice-height, 0px) +
+        var(--service-worker-prompt-height, 0px) + 1rem
     )
   );
   right: max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem));
@@ -737,7 +753,9 @@
 
 @media (min-width: 768px) {
   .back-to-top-btn {
-    bottom: calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 2rem);
+    bottom: calc(
+      var(--tab-bar-height, 0px) + var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 2rem
+    );
     right: 2rem;
   }
 }

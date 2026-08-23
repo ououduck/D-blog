@@ -62,21 +62,32 @@ describe('Layout', () => {
 
   it('渲染导航栏主导航项（桌面端可见）', () => {
     renderLayout();
-    expect(screen.getByRole('navigation')).toBeInTheDocument();
+    // 顶栏导航 + 移动端底部标签栏各是一个 nav
+    expect(screen.getAllByRole('navigation').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByRole('link', { name: /文章/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /归档/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /归档/ }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('link', { name: /标签/ })).toBeInTheDocument();
   });
 
-  it('渲染主题切换按钮（aria-label 含当前主题）', () => {
+  it('渲染主题切换按钮（桌面端与移动端顶栏各一个）', () => {
     renderLayout();
-    expect(screen.getByRole('button', { name: /切换外观主题/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /切换外观主题/ }).length).toBeGreaterThanOrEqual(1);
   });
 
   it('渲染搜索入口按钮', () => {
     renderLayout();
-    // 桌面端与移动端各有一个搜索按钮
+    // 桌面端搜索按钮；移动端入口在底部标签栏的「搜索」标签
     expect(screen.getAllByRole('button', { name: '打开搜索页' }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('link', { name: /搜索/ })).toBeInTheDocument();
+  });
+
+  it('渲染移动端底部标签栏（首页/归档/搜索/说说/更多）', () => {
+    renderLayout();
+    expect(screen.getByRole('link', { name: /首页/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /归档/ }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('link', { name: /搜索/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /说说/ }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('button', { name: '打开更多菜单' })).toBeInTheDocument();
   });
 
   it('渲染 children 内容', () => {
@@ -117,35 +128,35 @@ describe('Layout', () => {
     });
   };
 
-  it('移动端菜单按钮打开导航面板并可关闭', async () => {
+  it('移动端「更多」标签打开导航面板并可关闭', async () => {
     const user = userEvent.setup();
     renderLayout();
-    const menuButton = screen.getByRole('button', { name: '打开导航菜单' });
-    await user.click(menuButton);
+    const moreButton = screen.getByRole('button', { name: '打开更多菜单' });
+    await user.click(moreButton);
     expect(await screen.findByRole('dialog', { name: '移动端导航菜单' })).toBeInTheDocument();
     // 等待打开动画完成（否则切换关闭会被 isMobileNavAnimating 守卫忽略）。
     await waitForNavOpen();
     // aria-expanded 在面板真正进入 opening/open 态后才为 true：openMobileNav 先以
     // closed 态挂载面板（离屏）再经双 rAF 切入 opening，刚挂载那一刻仍是 false。
-    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+    expect(moreButton).toHaveAttribute('aria-expanded', 'true');
 
-    // 再次点击切换关闭。
-    await user.click(menuButton);
+    // 再次点击「更多」切换关闭。
+    await user.click(moreButton);
     // 关闭动画后面板卸载。
     await waitForNavClosed();
     expect(screen.queryByRole('dialog', { name: '移动端导航菜单' })).not.toBeInTheDocument();
   });
 
-  it('点击移动端导航项后菜单关闭（close-then-navigate 守卫回归）', async () => {
+  it('点击「更多」面板导航项后菜单关闭（close-then-navigate 守卫回归）', async () => {
     const user = userEvent.setup();
     renderLayout();
-    await user.click(screen.getByRole('button', { name: '打开导航菜单' }));
+    await user.click(screen.getByRole('button', { name: '打开更多菜单' }));
     await screen.findByRole('dialog', { name: '移动端导航菜单' });
     // 等待打开动画完成。
     await waitForNavOpen();
 
-    // 点击「归档」导航项：菜单应关闭且不吞掉导航动作。
-    await user.click(screen.getByRole('button', { name: /归档/ }));
+    // 点击「更多」面板中的「标签」导航项：菜单应关闭且不吞掉导航动作。
+    await user.click(screen.getByRole('button', { name: /标签/ }));
     await waitForNavClosed();
     expect(screen.queryByRole('dialog', { name: '移动端导航菜单' })).not.toBeInTheDocument();
   });

@@ -27,7 +27,7 @@ import {
 const formatIndex = (value: number) => String(value).padStart(2, '0');
 const MOBILE_TOC_TRIGGER_STYLE = {
   bottom:
-    'max(calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + env(safe-area-inset-bottom, 0px) + 8.5rem), calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 8.5rem))',
+    'calc(var(--tab-bar-height, 0px) + max(calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + env(safe-area-inset-bottom, 0px) + 8.5rem), calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 8.5rem)))',
 } as const;
 const DESKTOP_TOC_TRIGGER_STYLE = {
   bottom: 'calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 9rem)',
