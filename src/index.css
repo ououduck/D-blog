@@ -6,18 +6,6 @@
   --cookie-notice-height: 0px;
   --service-worker-prompt-height: 0px;
   --tab-bar-height: 0px;
-  --feedback-dock-height: 0px;
-}
-
-/* 反馈入口默认收进右侧边缘，只露出窄标签；悬停或键盘聚焦时滑出。 */
-.feedback-dock {
-  transform: translateX(78%);
-}
-
-/* 侧签只在点击后打开面板，不通过悬停改变位置。 */
-.feedback-dock:hover,
-.feedback-dock:focus-visible {
-  transform: translateX(78%);
 }
 
 /* 移动端底部标签栏（lg 以下）：高度 = 内容区 3.5rem + 底部安全区，
@@ -749,12 +737,11 @@
 .back-to-top-btn {
   bottom: max(
     calc(
-      var(--tab-bar-height, 0px) + var(--feedback-dock-height, 0px) + var(--cookie-notice-height, 0px) +
-        var(--service-worker-prompt-height, 0px) + 1.25rem
+      var(--tab-bar-height, 0px) + var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 1.25rem
     ),
     calc(
-      var(--tab-bar-height, 0px) + var(--feedback-dock-height, 0px) + env(safe-area-inset-bottom, 0px) +
-        var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 1.25rem
+      var(--tab-bar-height, 0px) + env(safe-area-inset-bottom, 0px) + var(--cookie-notice-height, 0px) +
+        var(--service-worker-prompt-height, 0px) + 1.25rem
     )
   );
   right: max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem));
@@ -767,8 +754,7 @@
 @media (min-width: 768px) {
   .back-to-top-btn {
     bottom: calc(
-      var(--tab-bar-height, 0px) + var(--feedback-dock-height, 0px) + var(--cookie-notice-height, 0px) +
-        var(--service-worker-prompt-height, 0px) + 2rem
+      var(--tab-bar-height, 0px) + var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 2rem
     );
     right: 2rem;
   }
