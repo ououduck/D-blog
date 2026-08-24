@@ -2577,7 +2577,6 @@ export const Post = () => {
             )}
             category={post.category}
             date={post.date}
-            coverImage={post.coverImage}
             siteName={siteConfig.title}
             siteSubtitle={siteConfig.subtitle}
             siteUrl={siteConfig.url}

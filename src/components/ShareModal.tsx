@@ -1,5 +1,5 @@
 /**
- * 分享弹层：复制链接 + 生成并下载分享海报（canvas 合成封面/二维码/头像）。
+ * 分享弹层：复制链接 + 生成并下载分享海报（canvas 合成标题/摘要/二维码）。
  */
 
 import React, { useId, useRef, useState } from 'react';
@@ -17,7 +17,6 @@ interface ShareModalProps {
   url: string;
   category?: string;
   date?: string;
-  coverImage?: string;
   siteName?: string;
   siteSubtitle?: string;
   siteUrl?: string;
@@ -32,7 +31,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   url,
   category,
   date,
-  coverImage,
   siteName,
   siteSubtitle,
   siteUrl,
@@ -111,7 +109,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         url,
         category,
         date,
-        coverImage,
         siteName,
         siteSubtitle,
         siteUrl,
@@ -291,7 +288,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               </p>
             )}
             <p className="mt-3 text-center text-xs text-zinc-500 dark:text-zinc-400">
-              自动排版标题、摘要、封面与二维码，适合分享到社交平台。
+              自动排版标题、摘要与二维码，适合分享到社交平台。
             </p>
           </>
         )}

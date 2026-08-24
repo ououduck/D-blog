@@ -695,7 +695,6 @@ export const Home = () => {
             url={absoluteSiteUrl(`/post/${sharePost.id}`, window.location.origin)}
             category={sharePost.category}
             date={sharePost.date}
-            coverImage={sharePost.coverImage}
             siteName={siteConfig.title}
             siteSubtitle={siteConfig.subtitle}
             siteUrl={siteConfig.url}
