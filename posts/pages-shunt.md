@@ -36,7 +36,7 @@ draft: false
 Cloudflare 不支持DNS解析分流  
 建议使用 DNSPOD  
 如果想继续把主域名留在 Cloudflare 或其他服务器  
-可以选择把子域名 www.pldduck.com托管到 DNSPOD  
+可以选择把子域名 如 blog.pldduck.com 托管到 DNSPOD  
 只需要在 DNSPOD 里添加并在 CLoudflare 里为子域名添加NS记录即可  
 如下图  
 
