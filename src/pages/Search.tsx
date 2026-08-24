@@ -44,6 +44,19 @@ const SEARCH_SCOPE_HINTS: Record<PostSearchScope, string> = {
 export const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryFromUrl = searchParams.get('q') || '';
+  // 搜索范围与 URL ?scope= 参数联动（ai-rules/search.md 约定）：刷新/分享/后退
+  // 前进均保持范围选择；切换范围不丢查询（setSearchParams 基于现有参数增删）。
+  const scopeFromUrl = searchParams.get('scope') as PostSearchScope | null;
+  const isKnownScope = (scope: string | null): scope is PostSearchScope =>
+    scope !== null && SEARCH_SCOPE_OPTIONS.some((option) => option.value === scope);
+  // 非法/缺失的 scope 统一视为 'all'，供 URL→状态同步使用。注意状态初始化固定为
+  // 'all'（与 SSG 预渲染的无参 /search 界面一致，避免带 ?scope= 直访时水合冲突），
+  // 由下方 effect 在水合后把 URL 值同步进状态（与 ?q= 同一策略）。
+  const normalizedScopeFromUrl: PostSearchScope = isKnownScope(scopeFromUrl) ? scopeFromUrl : 'all';
+  // 用户最近一次点击的范围值：与 lastEditedQueryRef 同一竞态防护 ——
+  // v7_startTransition 下 setSearchParams 提交延迟，快速连点两个范围时
+  // 旧 URL 值回写会把状态回退（闪回旧范围）。
+  const lastEditedScopeRef = useRef<PostSearchScope | null>(null);
   // 用户最近一次通过输入框编辑的查询值：区分「URL 更新还在 startTransition
   // 延迟中」与「URL 确实来自导航」（与 Home/Archive/Tags 页同一竞态防护）。
   const lastEditedQueryRef = useRef<string | null>(null);
@@ -88,6 +101,20 @@ export const Search = () => {
     }
   }, [queryFromUrl, searchQuery, setSearchQuery]);
 
+  // 范围参数（URL → 状态）：后退/前进/粘贴带 ?scope= 的链接时恢复范围选择。
+  // 与 q 同步同构：最近编辑值未与 URL 追平前跳过回写，追平后清空守卫。
+  useEffect(() => {
+    if (lastEditedScopeRef.current !== null && lastEditedScopeRef.current !== normalizedScopeFromUrl) {
+      return;
+    }
+    if (normalizedScopeFromUrl !== searchScope) {
+      setSearchScope(normalizedScopeFromUrl);
+    }
+    if (lastEditedScopeRef.current !== null && lastEditedScopeRef.current === normalizedScopeFromUrl) {
+      lastEditedScopeRef.current = null;
+    }
+  }, [normalizedScopeFromUrl, searchScope]);
+
   const handleSearchChange = (query: string) => {
     lastEditedQueryRef.current = query;
     handleSearch(query);
@@ -98,6 +125,24 @@ export const Search = () => {
     lastEditedQueryRef.current = '';
     clearSearch();
     setSearchParams((previous) => clearSearchQueryParams(previous), { replace: true });
+  };
+
+  const handleScopeChange = (scope: PostSearchScope) => {
+    lastEditedScopeRef.current = scope;
+    setSearchScope(scope);
+    // 保留现有查询与其他参数，仅增删 scope：切换范围不丢查询。
+    setSearchParams(
+      (previous) => {
+        const nextParams = new URLSearchParams(previous);
+        if (scope === 'all') {
+          nextParams.delete('scope');
+        } else {
+          nextParams.set('scope', scope);
+        }
+        return nextParams;
+      },
+      { replace: true },
+    );
   };
 
   const handleToggleSave = async (post: PostMetadata) => {
@@ -154,7 +199,11 @@ export const Search = () => {
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-4xl">搜索</h1>
         </div>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {hasSearchQuery ? `找到 ${results.length} 条结果` : '全站文章检索'}
+          {hasSearchQuery
+            ? isSearching && results.length === 0
+              ? '正在搜索…'
+              : `找到 ${results.length} 条结果`
+            : '全站文章检索'}
         </p>
       </header>
 
@@ -191,8 +240,8 @@ export const Search = () => {
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => setSearchScope(option.value)}
                   aria-pressed={searchScope === option.value}
+                  onClick={() => handleScopeChange(option.value)}
                   className={`min-h-11 rounded-control border px-3 py-2 text-xs font-semibold transition-colors active:scale-[.98] ${
                     searchScope === option.value
                       ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'

@@ -111,12 +111,36 @@ describe('Search', () => {
     });
   });
 
-  it('点击分类按钮切换搜索范围', async () => {
+  it('点击分类按钮切换搜索范围并写入 URL（scope 参数）', async () => {
     const user = userEvent.setup();
     renderSearch();
     const titleScope = screen.getByRole('button', { name: '仅标题' });
     await user.click(titleScope);
     expect(titleScope).toHaveAttribute('aria-pressed', 'true');
+    await waitFor(() => {
+      expect(probeSearch).toContain('scope=title');
+    });
+  });
+
+  it('URL 带 ?scope= 时预选对应搜索范围', async () => {
+    renderSearch('/search?scope=content');
+    const contentScope = screen.getByRole('button', { name: '正文内容' });
+    expect(contentScope).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '全部' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('切换范围不丢查询：输入关键词后切范围，q 参数保留且 scope 写入', async () => {
+    const user = userEvent.setup();
+    renderSearch();
+    const input = screen.getByRole('searchbox', { name: '搜索文章' });
+    await user.type(input, 'react');
+    await waitFor(() => expect(input).toHaveValue('react'));
+
+    await user.click(screen.getByRole('button', { name: '仅标题' }));
+    await waitFor(() => {
+      expect(probeSearch).toContain('q=react');
+      expect(probeSearch).toContain('scope=title');
+    });
   });
 
   it('搜索结果同时渲染移动端横置卡片与桌面端卡片网格', async () => {
