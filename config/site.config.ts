@@ -62,7 +62,7 @@ export interface SiteFriendsPage {
 }
 
 export interface SiteFeedback {
-  /** 站点反馈表单地址（Tally），右下角反馈浮钮弹窗跳转。 */
+  /** 站点反馈表单地址（Tally），右侧中下部贴边的反馈侧签弹窗跳转。 */
   url: string;
 }
 
@@ -101,7 +101,7 @@ export interface SiteConfig {
   comments: SiteComments;
   guestbook: SiteGuestbook;
   friendsPage: SiteFriendsPage;
-  /** 站点反馈表单入口（右下角反馈浮钮弹窗）。 */
+  /** 站点反馈表单入口（右侧中下部贴边的反馈侧签弹窗）。 */
   feedback: SiteFeedback;
   /** 文章内容仓库（"在 GitHub 上编辑此文"/查看源文件入口使用）。 */
   content?: SiteContent;

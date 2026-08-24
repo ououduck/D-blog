@@ -43,6 +43,7 @@ import { useReadingMode, ReadingModeProvider } from './ReadingModeContext';
 import { routeTransition } from '@/utils/motion';
 
 const BackToTop = lazy(() => import('./BackToTop').then((m) => ({ default: m.BackToTop })));
+const FeedbackDock = lazy(() => import('./FeedbackDock').then((m) => ({ default: m.FeedbackDock })));
 
 const TEXT = {
   theme: '外观',
@@ -124,7 +125,6 @@ const moreNavItems: NavItem[] = [
     icon: Bell,
     href: ISSUE_SUBSCRIPTION_URL,
   },
-  { key: 'feedback', label: '反馈', hint: '提交反馈与建议', icon: MessageSquareText, href: siteConfig.feedback.url },
 ];
 
 // 移动端底部标签栏：高频入口一级直达（首页/说说/搜索/友链），其余栏目收纳进「更多」面板。
@@ -147,9 +147,7 @@ const mobileMorePanelGroups: Array<{ label: string; items: NavItem[] }> = [
   },
   {
     label: '订阅与联系',
-    items: moreNavItems.filter((item) =>
-      ['email', 'github', 'rss', 'issue-subscription', 'feedback'].includes(item.key ?? ''),
-    ),
+    items: moreNavItems.filter((item) => ['email', 'github', 'rss', 'issue-subscription'].includes(item.key ?? '')),
   },
 ];
 
@@ -1266,6 +1264,7 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
       {!isReadingMode && (
         <Suspense fallback={null}>
           <BackToTop />
+          <FeedbackDock />
         </Suspense>
       )}
       {!isReadingMode && <Footer />}
