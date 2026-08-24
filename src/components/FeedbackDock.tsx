@@ -8,7 +8,10 @@ import React from 'react';
 import { siteConfig } from '@config/site.config';
 
 // 侧签固定在视口中下部，紧贴右侧边缘（含刘海屏安全区）。
-const FEEDBACK_DOCK_TOP = '62%';
+// top 用 50%：文章阅读页右下角的固定控件栈（「专注阅读」/「目录」/进度徽标）
+// 最高探至视口底部上方约 13rem + 44px；62% 在常见矮视口（如 1366×768）下会与其
+// 重叠，上移至 50% 后可在常见视口高度（≥632px）下完全错开。
+const FEEDBACK_DOCK_TOP = '50%';
 const FEEDBACK_DOCK_RIGHT = 'env(safe-area-inset-right, 0px)';
 
 export const FeedbackDock: React.FC = () => (
