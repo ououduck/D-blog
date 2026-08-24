@@ -19,6 +19,7 @@ draft: false
 # 先看看 D-blog 实现后的效果
 
 ## Ping 延迟
+
 ![Ping 延迟](https://img.pldduck.com/20260824125807490.png)  
 
 ## 国内外分流
@@ -29,3 +30,7 @@ draft: false
 ![国内外分流](https://img.pldduck.com/20260824130119432.png)
 
 # 教程
+
+## 第一步:确认DNS商支持DNS分流解析
+
+
