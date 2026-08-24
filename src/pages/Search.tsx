@@ -4,6 +4,7 @@
 
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { LoaderCircle } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import type { PostSearchScope } from '@/services/posts';
@@ -45,6 +46,10 @@ export const Search = () => {
   // 用户最近一次通过输入框编辑的查询值：区分「URL 更新还在 startTransition
   // 延迟中」与「URL 确实来自导航」（与 Home/Archive/Tags 页同一竞态防护）。
   const lastEditedQueryRef = useRef<string | null>(null);
+  // 输入框聚焦标记：聚焦期间（用户正在输入/刚编辑完）URL 变化一律不回写
+  // 输入框，杜绝任何事件交错下「输入内容被 URL 同步回退」的可能；失焦时
+  // 同步清空 lastEditedQueryRef，恢复 URL 驱动的同步（后退/前进/粘贴链接）。
+  const searchInputFocusedRef = useRef(false);
   const [searchScope, setSearchScope] = useState<PostSearchScope>('all');
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
   const { posts: savedPosts } = useOfflinePosts();
@@ -64,6 +69,10 @@ export const Search = () => {
     // v7_startTransition 下 setSearchParams 提交异步延迟，击键期间 queryFromUrl
     // 仍是旧值，若此时回写 setSearchQuery 会把刚输入的内容回退掉（闪变/丢字），
     // 并让 usePostSearch 空查询分支把结果重置回全量列表。
+    // 焦点守卫：输入框聚焦期间一律跳过回写（用户正在编辑，URL 永不覆盖输入）。
+    if (searchInputFocusedRef.current && lastEditedQueryRef.current !== null) {
+      return;
+    }
     if (lastEditedQueryRef.current !== null && lastEditedQueryRef.current !== queryFromUrl) {
       return;
     }
@@ -160,6 +169,15 @@ export const Search = () => {
               aria-label="搜索文章"
               containerClassName="max-w-2xl"
               autoFocus
+              onFocus={() => {
+                searchInputFocusedRef.current = true;
+              }}
+              onBlur={() => {
+                // 失焦 = 编辑结束：清除最近编辑守卫，恢复 URL 驱动的同步
+                // （否则后退/前进/粘贴带 ?q= 的链接会被永久短路）。
+                searchInputFocusedRef.current = false;
+                lastEditedQueryRef.current = null;
+              }}
             />
           </div>
 
@@ -188,7 +206,7 @@ export const Search = () => {
           </div>
         </div>
 
-        {isSearching ? (
+        {isSearching && results.length === 0 ? (
           <div aria-busy="true">
             <LoadingStatus label="正在搜索文章" />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
@@ -200,43 +218,55 @@ export const Search = () => {
               ))}
             </div>
           </div>
-        ) : searchError ? (
-          <ContentStatus
-            variant="error"
-            title="搜索失败"
-            description={searchError}
-            actionLabel="清除搜索"
-            onAction={handleClearSearch}
-          />
-        ) : hasSearchQuery ? (
-          results.length > 0 ? (
-            <div aria-live="polite">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {results.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    onShare={setSharePost}
-                    isSaved={savedIds.has(post.id)}
-                    isSaving={savingId === post.id}
-                    onToggleSave={handleToggleSave}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : (
-            <ContentStatus
-              title="未找到匹配文章"
-              description={`没有找到与「${searchQuery}」相关的内容，尝试缩短关键词，或更换搜索范围。`}
-              actionLabel="清除搜索"
-              onAction={handleClearSearch}
-            />
-          )
         ) : (
-          <ContentStatus
-            title="输入关键词开始搜索"
-            description="支持按标题、标签、分类、摘要与正文内容搜索，回车或点击结果即可打开文章。"
-          />
+          <div aria-busy={isSearching || undefined}>
+            {/* 重新搜索（已有旧结果）时保留旧结果展示，仅提示正在刷新，
+                避免每次击键都整块闪回骨架屏（首次搜索无结果才显示骨架）。 */}
+            {isSearching && results.length > 0 && (
+              <div className="mb-4 flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+                <LoaderCircle size={14} className="animate-spin" aria-hidden="true" />
+                <span>正在搜索「{searchQuery}」的最新结果…</span>
+              </div>
+            )}
+            {searchError ? (
+              <ContentStatus
+                variant="error"
+                title="搜索失败"
+                description={searchError}
+                actionLabel="清除搜索"
+                onAction={handleClearSearch}
+              />
+            ) : hasSearchQuery ? (
+              results.length > 0 ? (
+                <div aria-live="polite">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {results.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        onShare={setSharePost}
+                        isSaved={savedIds.has(post.id)}
+                        isSaving={savingId === post.id}
+                        onToggleSave={handleToggleSave}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <ContentStatus
+                  title="未找到匹配文章"
+                  description={`没有找到与「${searchQuery}」相关的内容，尝试缩短关键词，或更换搜索范围。`}
+                  actionLabel="清除搜索"
+                  onAction={handleClearSearch}
+                />
+              )
+            ) : (
+              <ContentStatus
+                title="输入关键词开始搜索"
+                description="支持按标题、标签、分类、摘要与正文内容搜索，回车或点击结果即可打开文章。"
+              />
+            )}
+          </div>
         )}
       </section>
 

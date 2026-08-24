@@ -1339,7 +1339,6 @@ export const Post = () => {
   const [rehypePlugins, setRehypePlugins] = useState<MarkdownPlugin[]>([]);
   const [mermaidRenderer, setMermaidRenderer] = useState<MermaidRenderer | null>(null);
   const [mermaidTheme, setMermaidTheme] = useState<'light' | 'dark'>('light');
-  const [mobileFloatingVisible, setMobileFloatingVisible] = useState(false);
   const shouldReduceMotion = useReducedMotion();
   const { isReadingMode, exitReadingMode } = useReadingMode();
   const { isSaved, isSaving, error: offlineError, toggleSaved } = useOfflinePosts(post ?? undefined);
@@ -2186,20 +2185,9 @@ export const Post = () => {
         {previewImage && (
           <ImageViewer src={previewImage.src} alt={previewImage.alt} onClose={() => setPreviewImage(null)} />
         )}
-        {!isReadingMode && (
-          <ReadingProgressBadge
-            targetRef={articleBodyRef}
-            endRef={readingEndRef}
-            onVisibilityChange={setMobileFloatingVisible}
-          />
-        )}
-        {!isReadingMode && headings.length > 0 && (
-          <TableOfContents
-            headings={headings}
-            mobileShowTrigger={mobileFloatingVisible}
-            desktopShowTrigger={headings.length > 0}
-          />
-        )}
+        {/* 阅读进度徽标与目录按钮常驻：不随滚动位置显隐（用户反馈需求）。 */}
+        {!isReadingMode && <ReadingProgressBadge targetRef={articleBodyRef} endRef={readingEndRef} />}
+        {!isReadingMode && headings.length > 0 && <TableOfContents headings={headings} />}
       </Suspense>
 
       <article className={isReadingMode ? 'post-article reading-mode-article' : 'post-article'}>

@@ -67,4 +67,39 @@ describe('SearchField', () => {
     input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '你好' }));
     expect(onValueChange).toHaveBeenLastCalledWith('你好');
   });
+
+  it('组合被 Escape 取消（无 compositionend）后输入不再被永久忽略（无法输入回归）', async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<SearchField onValueChange={onValueChange} />);
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    // 模拟输入法开始组合后按 Escape 取消：部分浏览器/IME 取消组合时不派发
+    // compositionend，此前组合标记会永久卡 true，后续输入全部被忽略。
+    input.focus();
+    input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }));
+    await user.keyboard('{Escape}');
+    await user.type(input, 'hello');
+    expect(onValueChange).toHaveBeenLastCalledWith('hello');
+    expect(input).toHaveValue('hello');
+  });
+
+  it('组合开始后长时间无活动自动复位，输入不被永久忽略（看门狗回归）', async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    // 注入 20ms 短看门狗加速测试（真实定时器）。
+    render(<SearchField onValueChange={onValueChange} compositionWatchdogMs={20} />);
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    input.focus();
+    input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }));
+    // 组合期间一次输入活动：看门狗重新武装，正常输入不会被误判复位。
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    // 等待看门狗超时（组合被静默取消、无 compositionend）后正常输入：
+    // 若组合标记未被复位，userEvent 的击键仍会被 onChange 拦截。
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    await user.type(input, 'hello');
+    expect(onValueChange).toHaveBeenLastCalledWith('hello');
+    expect(input).toHaveValue('hello');
+  });
 });

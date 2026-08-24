@@ -17,6 +17,20 @@ describe('ReadingModeToggle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockIsReadingMode = false;
+    // 桌面端视口（≥768px）：专注阅读按钮使用桌面端位置样式。
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn((query: string) => ({
+        matches: query === '(min-width: 768px)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
   });
 
   it('非阅读模式时渲染专注阅读按钮', () => {

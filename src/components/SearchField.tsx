@@ -1,8 +1,13 @@
 /**
  * 搜索输入框：放大镜图标 + 清除按钮 + 可选尾部操作（endAction），带 iOS 聚焦字号防放大处理。
+ *
+ * IME 组合状态的自愈设计：组合标记（isComposingRef）若因异常路径卡在 true，
+ * 后续输入会被永久忽略（表现为"输入框无法输入"）。除失焦复位外，还提供
+ * Escape 取消复位与超时看门狗两条兜底路径，保证任何输入法/浏览器组合下
+ * 输入框都不会被卡死。
  */
 
-import React, { forwardRef, useRef } from 'react';
+import React, { forwardRef, useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 
 type SearchFieldSize = 'default' | 'large';
@@ -14,10 +19,24 @@ interface SearchFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputEleme
   clearLabel?: string;
   endAction?: React.ReactNode;
   containerClassName?: string;
+  /**
+   * IME 组合看门狗超时（毫秒），默认 5000。组合开始后若长时间没有组合相关
+   * 输入活动（部分浏览器/输入法取消组合时不派发 compositionend），自动复位
+   * 组合标记，保证输入框永远不会被永久卡死。测试可注入小值加速验证。
+   */
+  compositionWatchdogMs?: number;
 }
 
 const variantClasses =
   'border-zinc-300 bg-paper focus:border-zinc-900 dark:border-zinc-700 dark:bg-void dark:focus:border-zinc-100';
+
+/**
+ * 组合看门狗超时（毫秒）：组合开始后若长时间没有组合相关输入活动（部分
+ * 浏览器/输入法取消组合时不派发 compositionend，Escape、切换输入法、移动端
+ * 键盘异常等路径），自动复位组合标记，保证输入框永远不会被永久卡死。
+ * 组合期间每次 input 事件都会重新武装看门狗，正常输入不会被误判。
+ */
+const DEFAULT_COMPOSITION_WATCHDOG_MS = 5000;
 
 export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
   (
@@ -31,6 +50,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
       className = '',
       containerClassName = '',
       disabled,
+      compositionWatchdogMs = DEFAULT_COMPOSITION_WATCHDOG_MS,
       ...inputProps
     },
     ref,
@@ -43,6 +63,8 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
     // 会漏进上层快捷键处理（如搜索弹窗的 Enter 导航），跳到上一次搜索的旧结果。
     // 组合结束瞬间（<80ms）的 Enter 视为 IME 确认的尾随事件直接吞掉。
     const compositionEndedAtRef = useRef(0);
+    // 组合看门狗定时器：见 DEFAULT_COMPOSITION_WATCHDOG_MS 注释。
+    const compositionWatchdogRef = useRef<number | null>(null);
     const hasValue = typeof value === 'string' || typeof value === 'number' ? String(value).length > 0 : false;
     const showClear = Boolean(onClear && hasValue && !disabled);
     const inputSpacing = endAction ? (showClear ? 'pr-24' : 'pr-14') : showClear ? 'pr-11' : 'pr-4';
@@ -51,6 +73,32 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
     // 桌面浏览器不受此限制。真正决定缩放的是 font-size 而非控件高度。
     const sizeClass = size === 'large' ? 'h-14 text-base sm:text-lg' : 'h-11 text-[16px] sm:text-sm';
     const clearButtonSizeClass = size === 'large' ? 'h-14' : 'h-11';
+
+    const clearCompositionWatchdog = () => {
+      if (compositionWatchdogRef.current !== null) {
+        window.clearTimeout(compositionWatchdogRef.current);
+        compositionWatchdogRef.current = null;
+      }
+    };
+
+    // 复位组合标记：失焦 / Escape 取消组合 / 看门狗超时共用，清除挂起定时器。
+    const resetComposing = () => {
+      isComposingRef.current = false;
+      clearCompositionWatchdog();
+    };
+
+    // 武装/重置看门狗：组合开始或组合期间有输入活动时调用。
+    const armCompositionWatchdog = () => {
+      clearCompositionWatchdog();
+      compositionWatchdogRef.current = window.setTimeout(() => {
+        compositionWatchdogRef.current = null;
+        // 超时仍未收到 compositionend：组合已被静默取消，复位标记避免
+        // 后续输入被永久忽略（"输入框无法输入"的根因）。
+        isComposingRef.current = false;
+      }, compositionWatchdogMs);
+    };
+
+    useEffect(() => () => clearCompositionWatchdog(), []);
 
     return (
       <div className={`group relative min-w-0 ${disabled ? 'opacity-75' : ''} ${containerClassName}`}>
@@ -65,20 +113,35 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
           type="search"
           value={value}
           onChange={(event) => {
-            if (isComposingRef.current) return;
+            if (isComposingRef.current) {
+              // 组合进行中：忽略中间态（拼音），但重新武装看门狗 —— 持续
+              // 输入说明组合仍在进行，不应触发超时复位。
+              armCompositionWatchdog();
+              return;
+            }
             onValueChange?.(event.target.value);
           }}
           onCompositionStart={() => {
             isComposingRef.current = true;
+            armCompositionWatchdog();
           }}
           onCompositionEnd={(event) => {
-            isComposingRef.current = false;
+            resetComposing();
             // 记录组合结束时刻，供 onKeyDown 拦截 IME 确认 Enter 的尾随 keydown。
             compositionEndedAtRef.current = performance.now();
-            // 组合结束补发一次完整值，让防抖搜索基于最终中文。
-            onValueChange?.(event.currentTarget.value);
+            // 组合结束补发一次完整值，让防抖搜索基于最终中文。取值优先用
+            // event.data（组合确认的最终文本）：部分浏览器在 compositionend
+            // 派发时 DOM value 尚未更新到确认文本，读 currentTarget.value
+            // 会拿到旧值/拼音，导致搜索词与 URL 失同步。
+            const committedValue = event.data || event.currentTarget.value;
+            onValueChange?.(committedValue);
           }}
           onKeyDown={(event) => {
+            // Escape 取消组合：部分 IME（尤其移动端）取消时不派发
+            // compositionend，组合标记会永久卡在 true 导致后续输入被忽略。
+            if (event.key === 'Escape' && isComposingRef.current) {
+              resetComposing();
+            }
             // 组合结束瞬间的 Enter 是 IME 确认的尾随事件（compositionend 先于
             // keydown 派发的浏览器里 isComposing 已复位，上层会误当"确认搜索"），
             // 拦截后由防抖搜索在组合结束补发的完整值上继续；之后的 Enter 正常放行。
@@ -92,7 +155,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
             // 防御：组合进行中失焦（点击清除按钮/移开焦点）时，若浏览器未派发
             // compositionend（取消组合的派发行为因浏览器/输入法而异），组合标记
             // 会永久卡在 true 导致后续输入全部被忽略。失焦即复位，保证状态不粘滞。
-            isComposingRef.current = false;
+            resetComposing();
             inputProps.onBlur?.(event);
           }}
           disabled={disabled}

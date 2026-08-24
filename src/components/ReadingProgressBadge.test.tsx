@@ -85,21 +85,13 @@ describe('ReadingProgressBadge', () => {
     await flushFrames();
     expect(readPercentage()).toBe('26%');
 
-    // 滚过正文末尾（end 越过视口中间 50%）→ 徽章按设计隐藏（进入评论区/推荐区）。
+    // 滚过正文末尾（end 越过视口中间 50%）→ 徽章常驻不隐藏（回归：此前
+    // 进入评论区/推荐区后自动消失，用户反馈希望进度始终可见）。
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 1000 });
     await act(async () => {
       window.dispatchEvent(new Event('scroll'));
     });
     await flushFrames();
-    expect(screen.queryByText(/%$/)).not.toBeInTheDocument();
-  });
-
-  it('可见性变化时触发 onVisibilityChange', async () => {
-    const ref = { current: document.createElement('article') };
-    const onVisibilityChange = vi.fn();
-    render(<ReadingProgressBadge targetRef={ref} onVisibilityChange={onVisibilityChange} />);
-    await flushFrames();
-    // 初始可见（正文末尾在视口下半区）→ 回调收到 true
-    expect(onVisibilityChange).toHaveBeenCalledWith(true);
+    expect(screen.getAllByText(/%$/).length).toBeGreaterThan(0);
   });
 });
