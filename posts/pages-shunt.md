@@ -88,13 +88,13 @@ Cloudflare 不支持DNS解析分流
 
 最后回到 EdgeOne Makers 的域名管理  
 
-![](https://img.pldduck.com/20260824143005125.png) 
+![EdgeOne Makers SSL配置 - 1](https://img.pldduck.com/20260824143005125.png) 
 点击HTTPS下的 配置 按钮  
 
-![](https://img.pldduck.com/20260824143046079.png)  
+![EdgeOne Makers SSL配置 - 2](https://img.pldduck.com/20260824143046079.png)  
 点击 配置
 
-![](https://img.pldduck.com/20260824143113253.png)
+![EdgeOne Makers SSL配置 - 3](https://img.pldduck.com/20260824143113253.png)
 选择SSL托管证书 并勾选刚刚上传的证书 然后点击保存
 
 最后等待部署完成就好了
