@@ -3,6 +3,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import { Search } from './Search';
+import { searchPosts } from '@/services/posts';
+import type { PostMetadata } from '@/types';
 
 // URL 探针：MemoryRouter 不更新 window.location，断言搜索参数必须经
 // useSearchParams 读取（否则「清除搜索后参数移除」的断言恒真、无回归保护）。
@@ -13,8 +15,22 @@ const SearchParamsProbe = () => {
   return null;
 };
 
+const mockPost: PostMetadata = {
+  id: 'mock-post',
+  title: 'React 性能优化实践',
+  excerpt: '一篇关于 React 性能优化的实践总结。',
+  date: '2026-01-15',
+  tags: ['react'],
+  category: '前端',
+  filePath: 'posts/mock-post.md',
+  readTime: '5 分钟',
+};
+
 vi.mock('@/components/PostCard', () => ({
   PostCard: () => <div data-testid="mock-post-card" />,
+}));
+vi.mock('@/components/CompactPostCard', () => ({
+  CompactPostCard: () => <div data-testid="mock-compact-post-card" />,
 }));
 vi.mock('@/services/busuanzi', () => ({
   pingBusuanzi: vi.fn(),
@@ -24,6 +40,9 @@ vi.mock('@/services/offlinePosts', () => ({
   getOfflinePosts: vi.fn(async () => []),
   getOfflinePost: vi.fn(async () => undefined),
   subscribeOfflinePosts: vi.fn(() => () => {}),
+}));
+vi.mock('@/services/posts', () => ({
+  searchPosts: vi.fn(),
 }));
 
 const renderSearch = (initialEntry = '/search') =>
@@ -46,6 +65,8 @@ const renderSearch = (initialEntry = '/search') =>
 describe('Search', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // 未输入搜索词时不触发 searchPosts；默认返回空结果避免未定义穿透。
+    vi.mocked(searchPosts).mockResolvedValue([]);
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: vi.fn((query: string) => ({
@@ -96,5 +117,21 @@ describe('Search', () => {
     const titleScope = screen.getByRole('button', { name: '仅标题' });
     await user.click(titleScope);
     expect(titleScope).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('搜索结果同时渲染移动端横置卡片与桌面端卡片网格', async () => {
+    vi.mocked(searchPosts).mockResolvedValue([{ ...mockPost, searchMatch: undefined }]);
+    const user = userEvent.setup();
+    renderSearch();
+    const input = screen.getByRole('searchbox', { name: '搜索文章' });
+
+    await user.type(input, 'react');
+    // 防抖（300ms）后 searchPosts 返回结果：移动端 CompactPostCard 与
+    // 桌面端 PostCard 网格各渲染一份（CSS 断点控制显隐）。
+    await waitFor(() => {
+      expect(screen.getAllByTestId('mock-compact-post-card')).toHaveLength(1);
+    });
+    expect(screen.getAllByTestId('mock-post-card')).toHaveLength(1);
+    expect(searchPosts).toHaveBeenCalledWith('react', { scope: 'all' });
   });
 });

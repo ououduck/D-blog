@@ -84,6 +84,67 @@ describe('SearchField', () => {
     expect(input).toHaveValue('hello');
   });
 
+  it('中英混输：组合确认后保留组合前的既有内容（event.data 只含本次组合文本，不得整体替换）', async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<SearchField onValueChange={onValueChange} />);
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    // 先输入英文，再组合中文：compositionend 必须提交「英文 + 中文」的完整值，
+    // 而不是用 event.data（"你好"）把已输入的 "react " 整体抹掉。
+    await user.type(input, 'react ');
+    expect(onValueChange).toHaveBeenLastCalledWith('react ');
+
+    input.focus();
+    input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }));
+    input.value = 'react nihao';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    // 组合中间态（拼音）不触发 onValueChange
+    expect(onValueChange).not.toHaveBeenLastCalledWith('react nihao');
+    input.value = 'react 你好';
+    input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '你好' }));
+    expect(onValueChange).toHaveBeenLastCalledWith('react 你好');
+  });
+
+  it('连续多次中文组合时后一次不覆盖前一次（丢字回归）', () => {
+    const onValueChange = vi.fn();
+    render(<SearchField onValueChange={onValueChange} />);
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    const confirmComposition = (pinyin: string, committed: string) => {
+      input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }));
+      input.value = `${input.value}${pinyin}`;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.value = `${input.value.slice(0, -pinyin.length)}${committed}`;
+      input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: committed }));
+    };
+
+    // 第一次组合：你好
+    confirmComposition('nihao', '你好');
+    expect(onValueChange).toHaveBeenLastCalledWith('你好');
+    // 第二次组合：世界 —— 必须保留「你好」前缀，而不是整体替换成「世界」
+    confirmComposition('shijie', '世界');
+    expect(onValueChange).toHaveBeenLastCalledWith('你好世界');
+  });
+
+  it('compositionend 时 DOM value 滞后（未含组合文本）用组合前快照重建完整值', async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<SearchField onValueChange={onValueChange} />);
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    await user.type(input, 'react ');
+    expect(onValueChange).toHaveBeenLastCalledWith('react ');
+
+    // 模拟部分浏览器 compositionend 派发时 DOM value 尚未提交组合文本：
+    // compositionstart 后 value 仍是组合前的 "react "（滞后），data 为确认文本。
+    input.focus();
+    input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }));
+    // 不修改 input.value，模拟 DOM 滞后
+    input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '你好' }));
+    expect(onValueChange).toHaveBeenLastCalledWith('react 你好');
+  });
+
   it('组合开始后长时间无活动自动复位，输入不被永久忽略（看门狗回归）', async () => {
     const user = userEvent.setup();
     const onValueChange = vi.fn();

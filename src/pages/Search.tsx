@@ -9,6 +9,7 @@ import { SearchField } from '@/components/SearchField';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import type { PostSearchScope } from '@/services/posts';
 import { PostCard } from '@/components/PostCard';
+import { CompactPostCard } from '@/components/CompactPostCard';
 import { saveOfflinePost, removeOfflinePost } from '@/services/offlinePosts';
 import { useOfflinePosts } from '@/hooks/useOfflinePosts';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -209,7 +210,16 @@ export const Search = () => {
         {isSearching && results.length === 0 ? (
           <div aria-busy="true">
             <LoadingStatus label="正在搜索文章" />
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
+            {/* 骨架屏与结果卡片同形：移动端横置扁形，sm 起为三列网格卡片 */}
+            <div className="grid gap-3 sm:hidden" aria-hidden="true">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={index}
+                  className={`${shouldReduceMotion ? '' : 'animate-pulse '}h-24 rounded-surface border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-900`}
+                />
+              ))}
+            </div>
+            <div className="hidden grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 sm:grid" aria-hidden="true">
               {Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={index}
@@ -239,7 +249,14 @@ export const Search = () => {
             ) : hasSearchQuery ? (
               results.length > 0 ? (
                 <div aria-live="polite">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {/* 移动端：横置扁形卡片（与阅读页「你可能还喜欢」一致的排版） */}
+                  <div className="grid gap-3 sm:hidden">
+                    {results.map((post) => (
+                      <CompactPostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                  {/* sm 及以上：三列文章卡片网格（含收藏/分享操作） */}
+                  <div className="hidden grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 sm:grid">
                     {results.map((post) => (
                       <PostCard
                         key={post.id}

@@ -47,6 +47,7 @@ import { assetUrl, absoluteSiteUrl, routeUrl } from '@/utils/siteUrl';
 import { siteConfig } from '@config/site.config';
 import { Seo, buildSiteSchemas } from '../components/Seo';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
+import { CompactPostCard } from '@/components/CompactPostCard';
 import { NotFoundState } from '@/components/NotFoundState';
 import { IssueSubscriptionCard } from '@/components/IssueSubscriptionCard';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
@@ -2550,42 +2551,7 @@ export const Post = () => {
                     </div>
                     <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
                       {relatedPosts.map((relatedPost) => (
-                        <Link
-                          key={relatedPost.id}
-                          to={`/post/${relatedPost.id}`}
-                          className="group flex h-24 overflow-hidden rounded-surface border border-zinc-200 bg-white transition-colors hover:border-zinc-500 focus-visible:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:focus-visible:border-zinc-500 sm:block sm:h-auto"
-                        >
-                          {relatedPost.coverImage ? (
-                            <ProgressiveImage
-                              src={resolveBrowserAsset(relatedPost.coverImage)}
-                              alt=""
-                              loading="lazy"
-                              width={relatedPost.coverWidth}
-                              height={relatedPost.coverHeight}
-                              wrapperClassName="aspect-video h-24 w-auto flex-none bg-zinc-100 dark:bg-zinc-800 sm:h-auto sm:w-full sm:aspect-[16/10]"
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex aspect-video h-24 w-auto flex-none items-center justify-center bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500 sm:h-auto sm:w-full sm:aspect-[16/10]">
-                              无封面
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1 overflow-hidden p-2 sm:p-3.5">
-                            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500">
-                              <span className="truncate">{relatedPost.category}</span>
-                              <span aria-hidden="true">·</span>
-                              <span className="shrink-0 normal-case tracking-normal">
-                                {formatMetaDate(relatedPost.date)}
-                              </span>
-                            </div>
-                            <h3 className="line-clamp-2 text-sm font-semibold leading-relaxed text-zinc-800 group-hover:text-black dark:text-zinc-200 dark:group-hover:text-white">
-                              {relatedPost.title}
-                            </h3>
-                            <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 sm:mt-2 sm:line-clamp-2">
-                              {relatedPost.excerpt}
-                            </p>
-                          </div>
-                        </Link>
+                        <CompactPostCard key={relatedPost.id} post={relatedPost} />
                       ))}
                     </div>
                   </section>
