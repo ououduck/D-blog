@@ -779,7 +779,6 @@ const generateSitemap = () => {
     { path: 'about', changefreq: 'monthly', priority: '0.7', lastmod: latestPostDate },
     { path: 'cover', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },
     { path: 'watermark', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },
-    { path: 'sponsor', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },
     { path: 'search', changefreq: 'monthly', priority: '0.5', lastmod: latestPostDate },
   ];
   const postUrl = (post) => siteAbsoluteUrl(`/post/${post.id}`);
@@ -1020,7 +1019,6 @@ const generateLlmsTxt = () => {
     `- [友链](${siteAbsoluteUrl('/friends')})`,
     `- [说说](${siteAbsoluteUrl('/shuoshuo')})`,
     `- [关于](${siteAbsoluteUrl('/about')})`,
-    `- [赞助](${siteAbsoluteUrl('/sponsor')})`,
     `- [RSS 订阅](${siteAbsoluteUrl('/feed.xml')})`,
     '',
     '## 文章',

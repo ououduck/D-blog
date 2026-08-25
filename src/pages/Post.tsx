@@ -1,5 +1,5 @@
 /**
- * 文章详情页：Markdown 渲染（代码高亮/数学公式/Mermaid）、阅读进度、目录、分享与离线收藏。
+ * 文章详情页：Markdown 渲染（代码高亮/数学公式/Mermaid）、阅读进度、目录、分享。
  */
 
 import React, { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -29,7 +29,6 @@ import {
   Eye,
   EyeOff,
   BookOpen,
-  Bookmark,
   Minus,
   Plus,
   RotateCcw,
@@ -42,7 +41,6 @@ import { getReadingHistoryEntry, saveReadingHistory } from '@/services/readingHi
 import { getRelatedPosts, getSeriesNavigation, type SeriesNavigation } from '@/utils/postRelations';
 import { getReadingProgress, getScrollTopForReadingProgress, isReadingComplete } from '@/utils/readingProgress';
 import type { Post as PostType, PostAuthor, PostMetadata } from '../types';
-import { useOfflinePosts } from '@/hooks/useOfflinePosts';
 import { assetUrl, absoluteSiteUrl, routeUrl } from '@/utils/siteUrl';
 import { siteConfig } from '@config/site.config';
 import { Seo, buildSiteSchemas } from '../components/Seo';
@@ -1342,8 +1340,6 @@ export const Post = () => {
   const [mermaidTheme, setMermaidTheme] = useState<'light' | 'dark'>('light');
   const shouldReduceMotion = useReducedMotion();
   const { isReadingMode, exitReadingMode } = useReadingMode();
-  const { isSaved, isSaving, error: offlineError, toggleSaved } = useOfflinePosts(post ?? undefined);
-  const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
   const [adjacentPosts, setAdjacentPosts] = useState<{ prev: PostMetadata | null; next: PostMetadata | null }>(
     ssgRouteData?.adjacentPosts ?? { prev: null, next: null },
   );
@@ -1357,17 +1353,6 @@ export const Post = () => {
   // hash 深链跳转 / 阅读位置恢复触发的程序化滚动标记：此类滚动不应被视为
   // 真实阅读进度（否则 hash 打开会覆盖历史中更高的继续阅读记录）。
   const programmaticScrollRef = useRef(false);
-  // 异步回调（收藏反馈等）的挂载守卫：组件卸载后不再 setState。
-  // 挂载态必须由 effect 置 true（不能只依赖初始值）：StrictMode 开发态
-  // cleanup 先执行，会把初始 true 清掉导致守卫失效。
-  const mountedRef = useRef(false);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
   // 阅读进度保存的会话状态。必须放在组件级 ref 中：relatedPosts 等异步数据加载会
   // 触发保存 effect 重跑，若用 effect 内局部变量保存“已读完”等标记，重跑后会被重置，
   // 导致读完后再滚回上方时重新写入部分进度、让主页“继续阅读”卡片复活。
@@ -1590,7 +1575,7 @@ export const Post = () => {
 
   const headings = useMemo(() => extractMarkdownHeadings(post?.content ?? ''), [post?.content]);
   // 正文剥离结果只依赖 post.content，记忆化避免每次重渲染（阅读模式切换、
-  // 弹窗开关、收藏反馈等）对全文（30-80KB）重跑 12+ 正则链两次
+  // 弹窗开关等）对全文（30-80KB）重跑 12+ 正则链两次
   // （meta description 与 articleBody 共用）。
   const strippedContent = useMemo(() => stripMarkdown(post?.content ?? ''), [post?.content]);
 
@@ -2010,7 +1995,7 @@ export const Post = () => {
 
   // 每次渲染重建渲染组件对象（不做 useMemo 缓存）：resolveHeadingId 的
   // heading id 游标/兜底计数活在 createMarkdownComponents 的闭包里，缓存复用
-  // 时 ReactMarkdown 在任意状态变化（相邻/相关文章加载、收藏反馈、弹窗开关等）
+  // 时 ReactMarkdown 在任意状态变化（相邻/相关文章加载、弹窗开关等）
   // 后重渲染正文都会沿用已走到末尾的游标，全部标题 id 退化为 slug-N 兜底并逐
   // 次递增（-1、-2…），与构建期 headings 数组的 id 发散——目录点击找不到
   // 锚点、hash 深链失效。每次渲染重建即游标归零，DOM id 恒与 headings 一致。
@@ -2281,13 +2266,19 @@ export const Post = () => {
                     <span id="busuanzi_page_pv">加载中</span> 次阅读
                   </span>
                 </span>
+              </div>
+            )}
+
+            {/* 编辑 / 分享操作独立一行：与上方文章信息行分开排版 */}
+            {!isReadingMode && (
+              <div className="print-hidden mt-3 flex flex-wrap items-center justify-center gap-2">
                 {post.filePath && (
                   <a
                     href={getPostEditUrl(post.filePath)}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`在 GitHub 上编辑此文：${post.title}`}
-                    className="print-hidden inline-flex min-h-10 items-center gap-1.5 rounded-[6px] border border-[#d0d7de] bg-white px-3 py-1.5 text-xs font-semibold text-[#57606a] transition-colors hover:border-[#0969da] hover:text-[#0969da] dark:border-[#30363d] dark:bg-transparent dark:text-[#8b949e] dark:hover:border-[#58a6ff] dark:hover:text-[#58a6ff]"
+                    className="inline-flex min-h-10 items-center gap-1.5 rounded-[6px] border border-[#d0d7de] bg-white px-3 py-1.5 text-xs font-semibold text-[#57606a] transition-colors hover:border-[#0969da] hover:text-[#0969da] dark:border-[#30363d] dark:bg-transparent dark:text-[#8b949e] dark:hover:border-[#58a6ff] dark:hover:text-[#58a6ff]"
                   >
                     <Github size={14} />
                     编辑
@@ -2296,37 +2287,12 @@ export const Post = () => {
                 <button
                   type="button"
                   onClick={() => setShareModalOpen(true)}
-                  className="print-hidden inline-flex min-h-10 items-center gap-1.5 rounded-[6px] border border-[#d0d7de] bg-white px-3 py-1.5 text-xs font-semibold text-[#57606a] transition-colors hover:border-[#0969da] hover:text-[#0969da] dark:border-[#30363d] dark:bg-transparent dark:text-[#8b949e] dark:hover:border-[#58a6ff] dark:hover:text-[#58a6ff]"
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-[6px] border border-[#d0d7de] bg-white px-3 py-1.5 text-xs font-semibold text-[#57606a] transition-colors hover:border-[#0969da] hover:text-[#0969da] dark:border-[#30363d] dark:bg-transparent dark:text-[#8b949e] dark:hover:border-[#58a6ff] dark:hover:text-[#58a6ff]"
                   aria-label={`分享文章：${post.title}`}
                 >
                   <Share2 size={14} />
                   分享
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const wasSaved = isSaved;
-                    void toggleSaved().then((saved) => {
-                      // toggleSaved 失败时不抛出（错误经 offlineError 状态反馈），
-                      // 这里按返回值决定是否展示成功文案，避免失败时显示假成功。
-                      // mountedRef 防护：IndexedDB 读写耗时可能跨过组件卸载
-                      // （点收藏后立刻导航离开），卸载后不再 setState。
-                      if (saved && mountedRef.current) {
-                        setSavedFeedback(wasSaved ? '已取消收藏' : '已保存，可离线阅读');
-                      }
-                    });
-                  }}
-                  disabled={isSaving}
-                  aria-pressed={isSaved}
-                  aria-label={isSaved ? `取消收藏：${post.title}` : `收藏文章：${post.title}`}
-                  className="print-hidden inline-flex min-h-10 items-center gap-1.5 rounded-[6px] border border-[#d0d7de] bg-white px-3 py-1.5 text-xs font-semibold text-[#57606a] transition-colors hover:border-[#0969da] hover:text-[#0969da] disabled:cursor-wait disabled:opacity-60 dark:border-[#30363d] dark:bg-transparent dark:text-[#8b949e] dark:hover:border-[#58a6ff] dark:hover:text-[#58a6ff]"
-                >
-                  <Bookmark size={14} fill={isSaved ? 'currentColor' : 'none'} />
-                  {isSaving ? '保存中' : isSaved ? '已收藏' : '收藏'}
-                </button>
-                <span className="sr-only" role="status" aria-live="polite">
-                  {savedFeedback || offlineError || ''}
-                </span>
               </div>
             )}
           </div>
@@ -2575,12 +2541,6 @@ export const Post = () => {
               `/post/${post.id}`,
               typeof window !== 'undefined' ? window.location.origin : siteConfig.url,
             )}
-            category={post.category}
-            date={post.date}
-            siteName={siteConfig.title}
-            siteSubtitle={siteConfig.subtitle}
-            siteUrl={siteConfig.url}
-            logo={assetUrl('/logo.png')}
           />
         )}
       </Suspense>

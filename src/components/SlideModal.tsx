@@ -101,8 +101,8 @@ export const SlideModal: React.FC<SlideModalProps> = ({
           {/*
             面板结构恒定：children 始终位于同一树位。此前按 isMobile 三元渲染两棵
             结构不同的子树（移动端多一层拖动把手），跨 767px 断点时 React 按位置
-            对账会把含 {children} 的内容节点卸载重建 —— ShareModal 的 copiedType/
-            posterDataUrl、ShuoShuoShareModal 的 copied 等弹窗内状态全部丢失。
+            对账会把含 {children} 的内容节点卸载重建 —— ShareModal 的 copiedType、
+            ShuoShuoShareModal 的 copied 等弹窗内状态全部丢失。
             现在把手常驻（桌面端 hidden），断点只切换 className 与 variants。
           */}
           <motion.div

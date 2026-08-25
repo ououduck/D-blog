@@ -19,9 +19,7 @@ const DEFAULT_STATIC_ROUTES = new Set([
   '/about',
   '/cover',
   '/watermark',
-  '/sponsor',
   '/search',
-  '/favorites',
 ]);
 
 const isEscaped = (value, index) => {

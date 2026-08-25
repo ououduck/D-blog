@@ -9,7 +9,6 @@ PWA Service Worker：页面/静态资源/图片分级缓存、断网离线渲染
 - `public/sw.js`（或生成位置）
 - `src/registerServiceWorker.ts`
 - `src/components/ServiceWorkerUpdatePrompt.tsx`
-- `vite.config.ts`（离线资源清单注入）
 
 ## 修改规则（必须遵守）
 
@@ -22,7 +21,7 @@ PWA Service Worker：页面/静态资源/图片分级缓存、断网离线渲染
 ## 常见陷阱
 
 - SW 更新死循环（每次刷新都提示更新）是常见回归，改动更新逻辑必须验证；
-- 断网离线路径（页面缓存 → 应用壳 → IndexedDB）依赖 offlinePosts 的正文存储。
+- 断网离线路径（页面缓存 → 应用壳）覆盖 SPA 路由，改动路由表必须同步 `SPA_ROUTE_PATTERNS`。
 
 ## 破例条款
 

@@ -22,11 +22,7 @@ const makePost = (overrides: Partial<PostMetadata> = {}): PostMetadata => ({
 });
 
 const baseProps = {
-  index: 0,
   onShare: vi.fn(),
-  isSaved: false,
-  isSaving: false,
-  onToggleSave: vi.fn(),
 };
 
 describe('PostCard', () => {
@@ -58,16 +54,6 @@ describe('PostCard', () => {
   it('无标签时不渲染标签行', () => {
     renderWithRouter(<PostCard post={makePost({ tags: [] })} {...baseProps} />);
     expect(screen.queryByRole('link', { name: 'React' })).not.toBeInTheDocument();
-  });
-
-  it('收藏按钮按 isSaved 切换 aria-pressed 并回调', async () => {
-    const user = userEvent.setup();
-    const onToggleSave = vi.fn();
-    renderWithRouter(<PostCard post={makePost()} {...baseProps} isSaved={true} onToggleSave={onToggleSave} />);
-    const button = screen.getByRole('button', { name: '取消收藏：测试文章标题' });
-    expect(button).toHaveAttribute('aria-pressed', 'true');
-    await user.click(button);
-    expect(onToggleSave).toHaveBeenCalledTimes(1);
   });
 
   it('分享按钮触发 onShare 回调', async () => {

@@ -36,11 +36,6 @@ vi.mock('@/services/busuanzi', () => ({
   pingBusuanzi: vi.fn(),
   fillBusuanziSpans: vi.fn(),
 }));
-vi.mock('@/services/offlinePosts', () => ({
-  getOfflinePosts: vi.fn(async () => []),
-  getOfflinePost: vi.fn(async () => undefined),
-  subscribeOfflinePosts: vi.fn(() => () => {}),
-}));
 vi.mock('@/services/posts', () => ({
   searchPosts: vi.fn(),
 }));

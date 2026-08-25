@@ -2,7 +2,7 @@
 
 ## 功能概述
 
-文章正文页：SSG 预渲染完整正文、Markdown 渲染（react-markdown + remark/rehype 插件）、代码块工具栏（复制/下载/行号/折叠）、Mermaid 图表（缩放/平移/主题同步）、阅读进度保存与恢复、目录 TOC 与锚点、相邻文章快捷键、分享/收藏、离线阅读。
+文章正文页：SSG 预渲染完整正文、Markdown 渲染（react-markdown + remark/rehype 插件）、代码块工具栏（复制/下载/行号/折叠）、Mermaid 图表（缩放/平移/主题同步）、阅读进度保存与恢复、目录 TOC 与锚点、相邻文章快捷键、分享。
 
 ## 关键文件
 

@@ -10,7 +10,6 @@ import {
   Github,
   X,
   Search,
-  Heart,
   Monitor,
   Rss,
   BookOpen,
@@ -19,7 +18,6 @@ import {
   BarChart3,
   Users,
   Info,
-  Bookmark,
   Bell,
   ChevronDown,
   Mail,
@@ -57,9 +55,7 @@ const TEXT = {
   navFriends: '友链',
   navGuestbook: '留言',
   navShuoShuo: '说说',
-  navSponsor: '赞助',
   navAbout: '关于',
-  navFavorites: '我的收藏',
   rssFeed: 'RSS 订阅',
 };
 
@@ -83,18 +79,10 @@ const navItems: NavPathItem[] = [
   { path: '/stats', label: TEXT.navStats, hint: '站点数据', icon: BarChart3 },
   { path: '/friends', label: TEXT.navFriends, hint: '友情链接', icon: Users },
   { path: '/guestbook', label: TEXT.navGuestbook, hint: '留言互动', icon: MessageSquareText },
-  { path: '/sponsor', label: TEXT.navSponsor, hint: '赞助支持', icon: Heart },
   { path: '/about', label: TEXT.navAbout, hint: '站点介绍', icon: Info },
 ];
 
 const moreNavItems: NavItem[] = [
-  {
-    key: 'favorites',
-    path: '/favorites',
-    label: TEXT.navFavorites,
-    hint: '本地离线阅读',
-    icon: Bookmark,
-  },
   {
     key: 'cover',
     path: '/cover',
@@ -135,15 +123,15 @@ const mobileTabItems: Array<{ key: string; path: string; label: string; icon: Na
   { key: 'friends', path: '/friends', label: TEXT.navFriends, icon: Users },
 ];
 
-// 「更多」面板分组：栏目 / 收藏与工具 / 订阅与联系（路径项走 SPA 导航，外链项新窗口打开）。
+// 「更多」面板分组：栏目 / 工具 / 订阅与联系（路径项走 SPA 导航，外链项新窗口打开）。
 const mobileMorePanelGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: '栏目',
     items: navItems.filter((item) => !['/', '/shuoshuo', '/friends'].includes(item.path)),
   },
   {
-    label: '收藏与工具',
-    items: moreNavItems.filter((item) => ['favorites', 'cover', 'watermark'].includes(item.key ?? '')),
+    label: '工具',
+    items: moreNavItems.filter((item) => ['cover', 'watermark'].includes(item.key ?? '')),
   },
   {
     label: '订阅与联系',
@@ -869,7 +857,7 @@ const Navbar = ({ onSearchNavigate }: { onSearchNavigate: () => void }) => {
                   ref={desktopMoreMenuButtonRef}
                   type="button"
                   className="group inline-flex h-10 items-center gap-1 px-2 py-1 text-sm font-semibold tracking-wide text-zinc-700 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 dark:text-zinc-300 dark:hover:text-white"
-                  aria-label="展开收藏与订阅菜单"
+                  aria-label="展开更多菜单"
                   aria-haspopup="menu"
                   aria-expanded={isMoreMenuOpen}
                   aria-controls="desktop-more-menu"

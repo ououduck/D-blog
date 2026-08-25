@@ -16,8 +16,6 @@ const RELATIVE_BASE_ROUTE_MARKERS = [
   '/about',
   '/cover',
   '/watermark',
-  '/sponsor',
-  '/favorites',
 ] as const;
 
 const inferRelativeBasePath = (currentPath: string): string => {
@@ -63,7 +61,7 @@ export const getRouterBasename = (currentPath?: string): string => {
   return basePath === '/' ? '/' : basePath.replace(/\/$/, '');
 };
 
-/** 外部 URL 判定（协议前缀或 // 相对协议）。导出供 offlinePosts 等复用，避免正则双份漂移。 */
+/** 外部 URL 判定（协议前缀或 // 相对协议）。导出供各服务复用，避免正则双份漂移。 */
 export const isExternalUrl = (value: string) => /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(value);
 
 const splitSuffix = (value: string) => {

@@ -1,5 +1,5 @@
 /**
- * 说说分享弹层：为单条说说生成分享链接与海报。
+ * 说说分享弹层：为单条说说生成分享链接（含自动复制）。
  */
 
 import React, { useEffect, useId, useRef, useState } from 'react';

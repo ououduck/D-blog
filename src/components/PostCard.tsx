@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, MessageCircle, Bookmark, Share2, Pin, Sparkles } from 'lucide-react';
+import { Calendar, Clock, MessageCircle, Share2, Pin, Sparkles } from 'lucide-react';
 import type { PostMetadata } from '@/types';
 import { assetUrl } from '@/utils/siteUrl';
 import { preloadPage } from '@/utils/preload';
@@ -17,9 +17,6 @@ interface PostCardProps {
   post: PostMetadata;
   featured?: boolean;
   onShare: (post: PostMetadata) => void;
-  isSaved: boolean;
-  isSaving: boolean;
-  onToggleSave: (post: PostMetadata) => void;
 }
 
 /**
@@ -43,17 +40,11 @@ const PostCardTags: React.FC<{ tags: string[] }> = ({ tags }) =>
     </div>
   ) : null;
 
-const PostCardImpl: React.FC<PostCardProps> = ({ post, featured, onShare, isSaved, isSaving, onToggleSave }) => {
+const PostCardImpl: React.FC<PostCardProps> = ({ post, featured, onShare }) => {
   const handleShareClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
     onShare(post);
-  };
-
-  const handleToggleSaveClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    onToggleSave(post);
   };
 
   if (featured) {
@@ -122,16 +113,6 @@ const PostCardImpl: React.FC<PostCardProps> = ({ post, featured, onShare, isSave
                 </span>
               )}
               <div className="ml-auto flex items-center gap-0.5">
-                <button
-                  type="button"
-                  onClick={handleToggleSaveClick}
-                  disabled={isSaving}
-                  aria-pressed={isSaved}
-                  aria-label={isSaved ? `取消收藏：${post.title}` : `收藏文章：${post.title}`}
-                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-colors hover:text-ink active:scale-[.98] disabled:opacity-50 dark:hover:text-white"
-                >
-                  <Bookmark size={13} fill={isSaved ? 'currentColor' : 'none'} />
-                </button>
                 <button
                   type="button"
                   onClick={handleShareClick}
@@ -211,16 +192,6 @@ const PostCardImpl: React.FC<PostCardProps> = ({ post, featured, onShare, isSave
             <div className="ml-auto flex items-center gap-0.5">
               <button
                 type="button"
-                onClick={handleToggleSaveClick}
-                disabled={isSaving}
-                aria-pressed={isSaved}
-                aria-label={isSaved ? `取消收藏：${post.title}` : `收藏文章：${post.title}`}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-colors hover:text-ink active:scale-[.98] disabled:opacity-50 dark:hover:text-white"
-              >
-                <Bookmark size={12} fill={isSaved ? 'currentColor' : 'none'} />
-              </button>
-              <button
-                type="button"
                 onClick={handleShareClick}
                 className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control transition-transform hover:text-ink active:scale-[.98] dark:hover:text-white"
                 aria-label={`分享文章：${post.title}`}
@@ -235,7 +206,6 @@ const PostCardImpl: React.FC<PostCardProps> = ({ post, featured, onShare, isSave
   );
 };
 
-// memo：Home 列表任一张卡片收藏切换会触发全部卡片重渲染，props 均为原始值或
-// 稳定引用（post 引用不变、onShare=setState、onToggleSave=useCallback），
-// 浅比较可跳过未受影响卡片。
+// memo：Home 列表的卡片渲染依赖 props 均为原始值或稳定引用（post 引用不变、
+// onShare=setState），浅比较可跳过未受影响卡片。
 export const PostCard = React.memo(PostCardImpl);

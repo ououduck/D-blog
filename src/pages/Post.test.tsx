@@ -10,11 +10,6 @@ vi.mock('@/services/posts', () => ({
   getPostById: vi.fn(),
   getPosts: vi.fn(),
 }));
-vi.mock('@/services/offlinePosts', () => ({
-  getOfflinePosts: vi.fn(async () => []),
-  getOfflinePost: vi.fn(async () => undefined),
-  subscribeOfflinePosts: vi.fn(() => () => {}),
-}));
 vi.mock('@/services/readingHistory', () => ({
   getReadingHistory: vi.fn(() => []),
   getReadingHistoryEntry: vi.fn(() => undefined),

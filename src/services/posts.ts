@@ -5,7 +5,6 @@
  * 提供全文搜索的多维权重评分（searchPosts）与结果 LRU 缓存。
  */
 import type { Post, PostMetadata } from '../types';
-import { getOfflinePost } from './offlinePosts';
 import { getDateTimestamp } from '@/utils/date';
 import { stripFrontmatter } from '@/utils/markdown-core.mjs';
 
@@ -131,8 +130,8 @@ export const getInitialPosts = (): PostMetadata[] => initialPosts;
 export const getPosts = async (): Promise<PostMetadata[]> => initialPosts;
 
 /**
- * 按 id 读取单篇文章（含正文）：优先动态加载打包的 Markdown 原文，失败时
- * 回退离线收藏副本；两者皆不可得且元数据存在时抛错（Markdown 文件缺失）。
+ * 按 id 读取单篇文章（含正文）：优先动态加载打包的 Markdown 原文，
+ * 加载失败且元数据存在时抛错（Markdown 文件缺失）。
  */
 export const getPostById = async (id: string): Promise<Post | undefined> => {
   const meta = initialPosts.find((post) => post.id === id);
@@ -147,14 +146,8 @@ export const getPostById = async (id: string): Promise<Post | undefined> => {
         content: stripFrontmatter(rawContent),
       };
     } catch (error) {
-      console.warn('打包的 Markdown 加载失败，尝试离线收藏副本。', error);
+      console.error(`Markdown 文件加载失败: ${relativePath}`, error);
     }
-  }
-
-  const offlinePost = await getOfflinePost(id);
-  if (offlinePost?.content !== undefined) {
-    const { savedAt: _savedAt, schema: _schema, version: _version, ...post } = offlinePost;
-    return post as Post;
   }
 
   if (!meta) {

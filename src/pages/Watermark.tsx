@@ -99,7 +99,7 @@ export const Watermark: React.FC = () => {
   const [feedback, setFeedback] = useState<Feedback>(null);
 
   // 挂载态由 effect 置 true（不能只依赖初始值）：StrictMode 开发态 cleanup
-  // 先执行，会把初始 true 清掉导致守卫失效（与全站 useOfflinePosts 等一致）。
+  // 先执行，会把初始 true 清掉导致守卫失效（与全站各异步回调的挂载守卫一致）。
   useEffect(() => {
     mountedRef.current = true;
     return () => {

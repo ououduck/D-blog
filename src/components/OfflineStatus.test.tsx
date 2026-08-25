@@ -28,7 +28,7 @@ describe('OfflineStatus', () => {
   it('初始离线时立即显示离线提示', () => {
     setOnline(false);
     render(<OfflineStatus />);
-    expect(screen.getByText('当前处于离线模式，已收藏文章仍可继续阅读。')).toBeInTheDocument();
+    expect(screen.getByText('当前处于离线模式，部分页面可能无法访问。')).toBeInTheDocument();
   });
 
   it('offline 事件触发显示离线提示', () => {
@@ -36,7 +36,7 @@ describe('OfflineStatus', () => {
     act(() => {
       fireEvent('offline');
     });
-    expect(screen.getByText('当前处于离线模式，已收藏文章仍可继续阅读。')).toBeInTheDocument();
+    expect(screen.getByText('当前处于离线模式，部分页面可能无法访问。')).toBeInTheDocument();
   });
 
   it('恢复在线后显示恢复提示并在 2.4s 后消失', () => {

@@ -1,6 +1,6 @@
-// v9：SPA 路由模式补全 /shuoshuo /guestbook /search（v8 缺失时离线导航
-// 这些路由会退回 offline.html 而非应用壳），并简化 networkFirst 冗余查询。
-const SW_VERSION = 'dblog-v9';
+// v10：移除离线收藏功能（收藏页缓存 / 离线文章资源清单 / CACHE_OFFLINE_POST 消息），
+// 并同步收敛 SPA 路由模式（删除已下线的 /sponsor、/favorites 路由）。
+const SW_VERSION = 'dblog-v10';
 const CORE_CACHE = `${SW_VERSION}-core`;
 const PAGE_CACHE = `${SW_VERSION}-pages`;
 const ASSET_CACHE = `${SW_VERSION}-assets`;
@@ -13,13 +13,12 @@ const CORE_ASSET_PATHS = [
   'offline.html',
   'feed.xml',
 ];
-const FAVORITES_PATH = 'favorites';
 // SPA 路由模式：离线导航时用应用壳（首页）兜底而非离线页。
 // 需与 src/App.tsx 的路由表保持同步（post 详情、归档/标签/统计/友链/
-// 关于/封面/水印/赞助/收藏、说说（含详情）、留言板、搜索）。
+// 关于/封面/水印、说说（含详情）、留言板、搜索）。
 const SPA_ROUTE_PATTERNS = [
   /^\/post(?:\/|$)/,
-  /^\/(?:archive|tags|stats|friends|about|cover|watermark|sponsor|favorites)(?:\/|$)/,
+  /^\/(?:archive|tags|stats|friends|about|cover|watermark)(?:\/|$)/,
   /^\/(?:shuoshuo|guestbook|search)(?:\/|$)/,
   /^\/$/
 ];
@@ -37,11 +36,6 @@ const getRootUrl = () => {
 const getCoreAssetUrls = () => {
   const rootUrl = getRootUrl();
   return CORE_ASSET_PATHS.map((path) => new URL(path, rootUrl).href);
-};
-
-const getFavoriteUrls = () => {
-  const rootUrl = getRootUrl();
-  return [new URL(FAVORITES_PATH, rootUrl).href, ...getCoreAssetUrls()];
 };
 
 const isSameOrigin = (url) => new URL(url, self.location.href).origin === self.location.origin;
@@ -100,30 +94,6 @@ const cacheCoreAssets = async () => {
       }
     }),
   );
-
-  try {
-    const manifestUrl = new URL('offline-post-assets.json', getRootUrl()).href;
-    const manifestResponse = await fetch(manifestUrl);
-    const manifest = await manifestResponse.json();
-    if (manifestResponse.ok && Array.isArray(manifest?.assets)) {
-      const assets = await caches.open(ASSET_CACHE);
-      await Promise.all([
-        assets.put(manifestUrl, manifestResponse.clone()),
-        ...manifest.assets.map((url) => cacheUrl(assets, url, getRootUrl()))
-      ]);
-    }
-  } catch {
-    // 路由级 chunk 在用户显式保存文章离线时再补充缓存。
-  }
-
-  try {
-    const pages = await caches.open(PAGE_CACHE);
-    const favoriteUrl = getFavoriteUrls()[0];
-    const response = await fetch(favoriteUrl);
-    await cacheSuccessfulResponse(pages, favoriteUrl, response);
-  } catch {
-    // 收藏页在安装阶段属于可选资源，失败不影响安装。
-  }
 };
 
 self.addEventListener('install', (event) => {
@@ -184,17 +154,6 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'CACHE_URLS' && Array.isArray(event.data.urls)) {
     event.waitUntil(cacheUrls(event.data.urls));
     return;
-  }
-
-  if (event.data?.type === 'CACHE_OFFLINE_POST') {
-    const replyPort = event.ports?.[0];
-    const task = cacheOfflinePost(event.data)
-      .then(() => replyPort?.postMessage({ ok: true }))
-      .catch((error) => replyPort?.postMessage({
-        ok: false,
-        error: error instanceof Error ? error.message : '离线缓存准备失败。'
-      }));
-    event.waitUntil(task);
   }
 });
 
@@ -305,58 +264,6 @@ const cacheUrl = async (cache, value, rootUrl) => {
   } catch {
     return false;
   }
-};
-
-const cacheOfflinePost = async ({ pageUrl, assetUrls }) => {
-  const rootUrl = getRootUrl();
-  const page = new URL(pageUrl, rootUrl);
-  if (!isSpaRoute(page.href) || !getScopedPath(page.href).startsWith('/post/')) {
-    throw new Error('离线文章地址无效。');
-  }
-
-  const pages = await caches.open(PAGE_CACHE);
-  const assets = await caches.open(ASSET_CACHE);
-  const shellResponse = await fetch(rootUrl.href);
-  if (!isSuccessfulSameOriginResponse({ url: rootUrl.href }, shellResponse)) {
-    throw new Error('无法缓存应用页面。');
-  }
-
-  const shellHtml = await shellResponse.clone().text();
-  const shellAssetUrls = [...shellHtml.matchAll(/<(?:script|link)\b[^>]*(?:src|href)=["']([^"']+)["']/gi)]
-    .flatMap((match) => {
-      try {
-        const url = new URL(match[1], rootUrl);
-        return isWithinScope(url.href) ? [url.href] : [];
-      } catch {
-        return [];
-      }
-    });
-  let postRuntimeUrls = [];
-  try {
-    const manifestUrl = new URL('offline-post-assets.json', rootUrl);
-    const manifestResponse = await fetch(manifestUrl.href);
-    const manifest = await manifestResponse.json();
-    if (!manifestResponse.ok || !Array.isArray(manifest?.assets)) {
-      throw new Error('离线文章资源清单无效。');
-    }
-    postRuntimeUrls = [manifestUrl.href, ...manifest.assets.map((url) => new URL(url, rootUrl).href)];
-  } catch {
-    throw new Error('无法读取离线文章资源清单，请刷新页面后重试。');
-  }
-  const urls = [...new Set([
-    ...shellAssetUrls,
-    ...postRuntimeUrls,
-    ...(Array.isArray(assetUrls) ? assetUrls : [])
-  ])];
-  const cacheResults = await Promise.all(urls.map((url) => cacheUrl(assets, url, rootUrl)));
-  if (cacheResults.some((cached) => !cached)) {
-    throw new Error('部分离线资源缓存失败，请检查网络后重试。');
-  }
-
-  await Promise.all([
-    pages.put(page.href, shellResponse.clone()),
-    caches.open(CORE_CACHE).then((cache) => cache.put(rootUrl.href, shellResponse.clone()))
-  ]);
 };
 
 const cacheUrls = async (urls) => {

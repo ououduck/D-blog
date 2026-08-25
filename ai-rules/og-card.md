@@ -7,7 +7,6 @@
 ## 关键文件
 
 - `scripts/generate-og-card.mjs`（sharp 处理）
-- `src/utils/sharePoster.ts`（页面内「生成分享海报」的 canvas 实现，与构建期卡片用途不同）
 
 ## 修改规则（必须遵守）
 

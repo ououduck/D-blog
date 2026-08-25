@@ -3,65 +3,6 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { normalizeBasePath } from './config/basePath';
 
-const offlinePostAssetsPlugin = (): Plugin => ({
-  name: 'offline-post-assets',
-  generateBundle(_options, bundle) {
-    const routeChunks = ['Post.tsx', 'Favorites.tsx'].map((fileName) =>
-      Object.values(bundle).find(
-        (output) =>
-          output.type === 'chunk' &&
-          Object.keys(output.modules).some((moduleId) =>
-            moduleId.replace(/\\/g, '/').endsWith(`/src/pages/${fileName}`),
-          ),
-      ),
-    );
-    if (routeChunks.some((chunk) => !chunk || chunk.type !== 'chunk')) {
-      // this.error 会抛出 RollupError 中止构建，后续代码不可达。
-      this.error('Unable to find the offline route chunks.');
-    }
-
-    const assets = new Set<string>();
-    const visit = (fileName: string) => {
-      if (assets.has(fileName)) return;
-      const output = bundle[fileName];
-      if (!output) return;
-      assets.add(fileName);
-      if (output.type === 'chunk') {
-        output.imports.forEach(visit);
-        const metadata = output.viteMetadata as
-          | {
-              importedAssets?: Set<string>;
-              importedCss?: Set<string>;
-            }
-          | undefined;
-        metadata?.importedAssets?.forEach((asset) => assets.add(asset));
-        metadata?.importedCss?.forEach((asset) => assets.add(asset));
-      }
-    };
-
-    Object.values(bundle).forEach((output) => {
-      if (output.type !== 'chunk') return;
-      if (
-        output.isEntry ||
-        Object.keys(output.modules).some((moduleId) => {
-          const normalizedId = moduleId.replace(/\\/g, '/');
-          return normalizedId.includes('/posts/') && normalizedId.includes('.md?raw');
-        })
-      ) {
-        visit(output.fileName);
-      }
-    });
-    routeChunks.forEach((chunk) => {
-      if (chunk?.type === 'chunk') visit(chunk.fileName);
-    });
-    this.emitFile({
-      type: 'asset',
-      fileName: 'offline-post-assets.json',
-      source: JSON.stringify({ version: 1, assets: [...assets].sort() }),
-    });
-  },
-});
-
 /**
  * KaTeX 字体冗余裁剪（性能优化）。
  *
@@ -186,7 +127,7 @@ export default defineConfig(({ command, mode }) => {
   const appBase = normalizeBasePath(env.VITE_BASE_PATH);
 
   return {
-    plugins: [react(), injectEntryCssPreload(), offlinePostAssetsPlugin(), trimKatexFonts()],
+    plugins: [react(), injectEntryCssPreload(), trimKatexFonts()],
     base: appBase,
     esbuild:
       command === 'build'

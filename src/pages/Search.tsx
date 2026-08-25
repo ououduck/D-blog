@@ -2,7 +2,7 @@
  * 搜索页：全文搜索独立页（q 参数驱动，带 q 时 noindex）。
  */
 
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { LoaderCircle } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
@@ -10,13 +10,11 @@ import { usePostSearch } from '@/hooks/usePostSearch';
 import type { PostSearchScope } from '@/services/posts';
 import { PostCard } from '@/components/PostCard';
 import { CompactPostCard } from '@/components/CompactPostCard';
-import { saveOfflinePost, removeOfflinePost } from '@/services/offlinePosts';
-import { useOfflinePosts } from '@/hooks/useOfflinePosts';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import type { PostMetadata } from '../types';
 import { Seo, buildSiteSchemas } from '../components/Seo';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
-import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';
+import { absoluteSiteUrl } from '@/utils/siteUrl';
 import { clearSearchQueryParams, setSearchQueryParams } from '@/utils/searchParams';
 import { siteConfig } from '@config/site.config';
 
@@ -66,9 +64,6 @@ export const Search = () => {
   const searchInputFocusedRef = useRef(false);
   const [searchScope, setSearchScope] = useState<PostSearchScope>('all');
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
-  const { posts: savedPosts } = useOfflinePosts();
-  const savedIds = useMemo(() => new Set(savedPosts.map((savedPost) => savedPost.id)), [savedPosts]);
-  const [savingId, setSavingId] = useState<string | null>(null);
   const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } =
     // 不把 URL 的 ?q= 作为 useState 初始值：SSG 预渲染的是无 q 的默认界面，
     // 首帧用空查询渲染可保证带 q 直访时客户端首帧与服务端 HTML 一致（水合无冲突）；
@@ -143,21 +138,6 @@ export const Search = () => {
       },
       { replace: true },
     );
-  };
-
-  const handleToggleSave = async (post: PostMetadata) => {
-    setSavingId(post.id);
-    try {
-      if (savedIds.has(post.id)) {
-        await removeOfflinePost(post.id);
-      } else {
-        await saveOfflinePost(post);
-      }
-    } catch {
-      // 收藏/取消收藏失败时静默：savedIds 不会更新，按钮自动恢复原样。
-    } finally {
-      setSavingId((current) => (current === post.id ? null : current));
-    }
   };
 
   const activeScopeHint = SEARCH_SCOPE_HINTS[searchScope];
@@ -304,17 +284,10 @@ export const Search = () => {
                       <CompactPostCard key={post.id} post={post} />
                     ))}
                   </div>
-                  {/* sm 及以上：三列文章卡片网格（含收藏/分享操作） */}
+                  {/* sm 及以上：三列文章卡片网格（含分享操作） */}
                   <div className="hidden grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 sm:grid">
                     {results.map((post) => (
-                      <PostCard
-                        key={post.id}
-                        post={post}
-                        onShare={setSharePost}
-                        isSaved={savedIds.has(post.id)}
-                        isSaving={savingId === post.id}
-                        onToggleSave={handleToggleSave}
-                      />
+                      <PostCard key={post.id} post={post} onShare={setSharePost} />
                     ))}
                   </div>
                 </div>
@@ -344,12 +317,6 @@ export const Search = () => {
             title={sharePost.title}
             excerpt={sharePost.excerpt}
             url={absoluteSiteUrl(`/post/${sharePost.id}`, window.location.origin)}
-            category={sharePost.category}
-            date={sharePost.date}
-            siteName={siteConfig.title}
-            siteSubtitle={siteConfig.subtitle}
-            siteUrl={siteConfig.url}
-            logo={assetUrl('/logo.png')}
           />
         </Suspense>
       )}

@@ -34,11 +34,11 @@
 - **增强渲染**：代码高亮（diff 行高亮、文件名、折叠、行号复制、换行开关）、KaTeX 公式、Mermaid 图表、GFM 表格、图片预览，按需懒加载
 - **全文搜索**：构建期生成索引，多维权重评分，支持范围筛选与搜索历史；首页/弹窗/独立页 `/search` 共用同一套评分
 - **阅读体验**：目录导航、阅读进度恢复、专注阅读模式、深色模式图片柔和降亮、标题锚点复制、上一篇/下一篇（`Alt + ←/→`）与系列文章
-- **分享与互动**：分享弹窗与竖版分享海报（Canvas 本地绘制）；Giscus 评论区；独立留言板 `/guestbook`；说说 `/shuoshuo` 独立静态页
+- **分享与互动**：分享弹窗（复制分享文案/链接）；Giscus 评论区；独立留言板 `/guestbook`；说说 `/shuoshuo` 独立静态页
 - **内置工具箱**：封面生成器 `/cover`（含批量 ZIP 导出）、水印工具 `/watermark`（图片不离开浏览器）
 - **主题与外观**：浅色/深色/跟随系统，CSS View Transitions 过渡
 - **构建期 SSG**：每页独立 HTML + 精准 SEO meta 与 JSON-LD，爬虫可直接读取正文
-- **PWA**：Service Worker 缓存 + 收藏文章 IndexedDB 离线阅读
+- **PWA**：Service Worker 缓存 + SPA 路由离线应用壳
 - **SEO 与订阅**：OG/Twitter Card、JSON-LD、RSS、`llms.txt`、Sitemap、`robots.txt`
 
 ## 技术栈
@@ -90,7 +90,7 @@ D-blog/
 └── src/
     ├── components/          # Layout、PostCard、Seo、TableOfContents、ImageViewer 等
     ├── pages/               # 页面组件（懒加载）；cover/、watermark/、archive/、friends/ 为模块集
-    ├── services/            # posts / friends / shuoshuo / offlinePosts / readingHistory 等
+    ├── services/            # posts / friends / shuoshuo / readingHistory 等
     ├── hooks/ utils/        # 自定义 Hook 与工具函数（日期、排序、站点 URL、标题解析等）
     │                        # utils 下 *.mjs 为客户端与构建脚本共享的纯逻辑（frontmatter 剥离、标题提取）
     ├── ssr/routeData.tsx    # SSG 路由数据构造与客户端读取
@@ -192,7 +192,6 @@ images:
 ## 配置
 
 - **站点配置**：`config/site.config.json` — 标题、描述、URL、社交链接、作者信息、备案号等，可在 PagesCMS「站点配置」中编辑
-- **赞助与广告**：赞助方式与广告横幅均写死在 `src/pages/Sponsor.tsx`（增删广告直接编辑该文件的 `adsConfig` 数组）
 - **文章分类白名单**：`config/content.config.json` 的 `postCategories` 数组
 - **环境变量**：`VITE_SITE_URL`（站点公开访问地址）、`VITE_BASE_PATH`（子路径部署时使用，留空为根路径），见 `.env.example`
 

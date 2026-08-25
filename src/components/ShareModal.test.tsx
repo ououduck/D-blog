@@ -3,20 +3,15 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ShareModal } from './ShareModal';
 
-// 复制与海报生成打桩：聚焦弹层自身交互。
+// 复制打桩：聚焦弹层自身交互。
 vi.mock('@/utils/clipboard', () => ({
   copyTextToClipboard: vi.fn(async () => true),
-}));
-vi.mock('@/utils/sharePoster', () => ({
-  generateSharePoster: vi.fn(async () => 'data:image/png;base64,mock'),
 }));
 
 const baseProps = {
   title: '测试文章',
   excerpt: '这是摘要',
   url: 'https://blog.pldduck.com/post/test',
-  category: '技术',
-  date: '2026-01-01',
 };
 
 describe('ShareModal', () => {
@@ -54,15 +49,6 @@ describe('ShareModal', () => {
     render(<ShareModal isOpen {...baseProps} onClose={vi.fn()} />);
     await user.click(screen.getByRole('button', { name: '仅复制文章链接' }));
     expect(copyTextToClipboard).toHaveBeenCalledWith('https://blog.pldduck.com/post/test');
-  });
-
-  it('生成海报按钮触发海报生成并展示', async () => {
-    const user = userEvent.setup();
-    const { generateSharePoster } = await import('@/utils/sharePoster');
-    render(<ShareModal isOpen {...baseProps} onClose={vi.fn()} />);
-    await user.click(screen.getByRole('button', { name: '生成文章分享海报' }));
-    expect(generateSharePoster).toHaveBeenCalledTimes(1);
-    expect(await screen.findByRole('button', { name: '下载分享海报' })).toBeInTheDocument();
   });
 
   it('关闭按钮触发 onClose', async () => {

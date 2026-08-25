@@ -2,13 +2,12 @@
  * 首页：精选/最新文章网格、站内搜索、分类/排序/分页筛选与继续阅读。
  */
 
-import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronRight, X } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
 import { getInitialPosts, getPosts } from '@/services/posts';
-import { saveOfflinePost, removeOfflinePost } from '@/services/offlinePosts';
 import type { PostMetadata } from '../types';
 import { siteConfig } from '@config/site.config';
 import { Seo } from '../components/Seo';
@@ -19,10 +18,9 @@ import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { sortPosts } from '@/utils/postSorting';
 import { getHeroPost } from '@/utils/postSelection';
 import { useReadingHistory } from '@/hooks/useReadingHistory';
-import { useOfflinePosts } from '@/hooks/useOfflinePosts';
 import { removeReadingHistory } from '@/services/readingHistory';
 import { isReadingComplete } from '@/utils/readingProgress';
-import { absoluteSiteUrl, assetUrl } from '@/utils/siteUrl';
+import { absoluteSiteUrl } from '@/utils/siteUrl';
 import { Pagination } from '@/components/Pagination';
 import { canonicalizeHomeQuery, getHomeQueryState, setHomeQueryParam } from '@/utils/homeQuery';
 import { clearSearchQueryParams, setSearchQueryParams } from '@/utils/searchParams';
@@ -228,26 +226,6 @@ export const Home = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sharePost, setSharePost] = useState<PostMetadata | null>(null);
   const { latest: latestReading, refresh: refreshReadingHistory } = useReadingHistory();
-  const { posts: savedPosts } = useOfflinePosts();
-  const savedIds = useMemo(() => new Set(savedPosts.map((savedPost) => savedPost.id)), [savedPosts]);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const handleToggleSave = useCallback(
-    async (post: PostMetadata) => {
-      setSavingId(post.id);
-      try {
-        if (savedIds.has(post.id)) {
-          await removeOfflinePost(post.id);
-        } else {
-          await saveOfflinePost(post);
-        }
-      } catch {
-        // 收藏/取消收藏失败时静默：savedIds 不会更新，按钮自动恢复原样。
-      } finally {
-        setSavingId((current) => (current === post.id ? null : current));
-      }
-    },
-    [savedIds],
-  );
   const { searchQuery, isSearching, searchError, results, handleSearch, setSearchQuery, clearSearch, hasSearchQuery } =
     // 不把 URL 的 ?q= 作为 useState 初始值（与 Search 页一致）：SSG 预渲染的是
     // 无 q 的默认界面，首帧用空查询渲染可保证带 q 直访时客户端首帧与服务端
@@ -640,28 +618,9 @@ export const Home = () => {
             )}
 
             <div id="posts-grid" className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {featuredPost && (
-                <PostCard
-                  key={featuredPost.id}
-                  post={featuredPost}
-                  featured
-                  onShare={setSharePost}
-                  isSaved={savedIds.has(featuredPost.id)}
-                  isSaving={savingId === featuredPost.id}
-                  onToggleSave={handleToggleSave}
-                />
-              )}
+              {featuredPost && <PostCard key={featuredPost.id} post={featuredPost} featured onShare={setSharePost} />}
               {remainingPosts.length > 0 ? (
-                remainingPosts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    onShare={setSharePost}
-                    isSaved={savedIds.has(post.id)}
-                    isSaving={savingId === post.id}
-                    onToggleSave={handleToggleSave}
-                  />
-                ))
+                remainingPosts.map((post) => <PostCard key={post.id} post={post} onShare={setSharePost} />)
               ) : !featuredPost ? (
                 <div className="col-span-full border-y border-zinc-200 py-14 text-center dark:border-zinc-800">
                   <p className="text-base text-zinc-500 dark:text-zinc-400">
@@ -693,12 +652,6 @@ export const Home = () => {
             title={sharePost.title}
             excerpt={sharePost.excerpt}
             url={absoluteSiteUrl(`/post/${sharePost.id}`, window.location.origin)}
-            category={sharePost.category}
-            date={sharePost.date}
-            siteName={siteConfig.title}
-            siteSubtitle={siteConfig.subtitle}
-            siteUrl={siteConfig.url}
-            logo={assetUrl('/logo.png')}
           />
         </Suspense>
       )}

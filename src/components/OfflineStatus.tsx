@@ -1,5 +1,5 @@
 /**
- * 离线状态提示条：监听 online/offline 事件，离线时提示已收藏文章仍可阅读，
+ * 离线状态提示条：监听 online/offline 事件，离线时提示当前处于离线模式，
  * 恢复网络后短暂显示「网络已恢复」。
  */
 import React, { useEffect, useRef, useState } from 'react';
@@ -50,7 +50,7 @@ export const OfflineStatus: React.FC = () => {
       aria-live="polite"
       className="fixed inset-x-3 top-[max(calc(env(safe-area-inset-top,0px)+4.25rem),4.25rem)] z-[120] mx-auto max-w-md rounded-control border border-zinc-300 bg-paper px-4 py-3 text-center text-sm font-semibold text-ink shadow-lg dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 sm:top-[max(calc(env(safe-area-inset-top,0px)+4.75rem),4.75rem)]"
     >
-      {isOffline ? '当前处于离线模式，已收藏文章仍可继续阅读。' : '网络已恢复。'}
+      {isOffline ? '当前处于离线模式，部分页面可能无法访问。' : '网络已恢复。'}
     </div>
   );
 };

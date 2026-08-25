@@ -2,7 +2,7 @@
 
 ## 功能概述
 
-站点首页：英雄区、分类筛选栏、文章卡片网格（精选大卡 + 普通卡）、搜索框（?q= 客户端搜索）、继续阅读入口、排序/分页、分享与离线收藏。
+站点首页：英雄区、分类筛选栏、文章卡片网格（精选大卡 + 普通卡）、搜索框（?q= 客户端搜索）、继续阅读入口、排序/分页、分享。
 
 ## 关键文件
 
@@ -20,7 +20,7 @@
 5. **精选置顶**：`isPinnedFeaturedPost` 等选择逻辑在 utils 中，不得在组件内复制实现。
 6. **动画**：framer-motion 变体（fadeInUp/staggerContainer）仅做入场；尊重 `prefers-reduced-motion`（`shouldReduceMotion` 传透）；SSR 输出不得为 opacity:0 的内容。
 7. **性能**：PostCard 保持 memo；不要引入整页重渲染的依赖。
-8. **分享/收藏**：分享 URL 的 `/post/<id>` 路径用裸 `post.id`（构建期 `validateId` 已校验 URL 安全，与 SSG/sitemap/canonical 口径一致；encodeURIComponent 反而会与产物路径不一致）；收藏走 `useOfflinePosts`。
+8. **分享**：分享 URL 的 `/post/<id>` 路径用裸 `post.id`（构建期 `validateId` 已校验 URL 安全，与 SSG/sitemap/canonical 口径一致；encodeURIComponent 反而会与产物路径不一致）。
 
 ## 常见陷阱
 

@@ -486,13 +486,6 @@ export const runSsg = async ({
       schemaType: 'WebApplication',
     },
     {
-      path: 'sponsor',
-      title: `赞助 - ${siteConfig.title}`,
-      description:
-        '支持 D-blog 的多种方式：贡献代码、投稿原创文章或通过赞助链接，帮助博客持续输出高质量内容，感谢每一位支持者。',
-      schemaType: 'WebPage',
-    },
-    {
       path: 'search',
       schemaType: 'WebPage',
       schemaFromSeo: true,
@@ -620,18 +613,7 @@ export const runSsg = async ({
     }
   }
 
-  // 4. 我的收藏（本地数据页，页面自身 Seo 已带 noindex）。
-  if (budgetExceeded()) {
-    skippedPages.push('/favorites');
-  } else {
-    try {
-      await writePage('/favorites', 'favorites');
-    } catch (error) {
-      failedPages.push({ url: '/favorites', error: formatError(error) });
-    }
-  }
-
-  // 5. 404 页（根级独立 HTML，Cloudflare Pages 以 404.html 作为 404 响应）。
+  // 4. 404 页（根级独立 HTML，Cloudflare Pages 以 404.html 作为 404 响应）。
   // 渲染路径 /__missing__ 是占位路由，不能出现在任何 URL 类 meta 中：
   // - canonical：mergeHead 之后显式剥离；
   // - og:url：替换为站点根地址（否则分享抓取/爬虫会暴露伪 URL）。
@@ -666,7 +648,7 @@ export const runSsg = async ({
       firstFew: skippedPages.slice(0, 10),
     });
   }
-  const totalPages = posts.length + staticPages.length + shuoshuoItems.length + 3;
+  const totalPages = posts.length + staticPages.length + shuoshuoItems.length + 2;
   if (failedPages.length > 0 || skippedPages.length > 0) {
     for (const failed of failedPages) {
       logger.error('Page generation failed', `${failed.url}: ${failed.error}`);
