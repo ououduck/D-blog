@@ -45,6 +45,9 @@
   <!-- 不蒜子访问统计 API：提前完成 DNS/TLS，路由级统计请求由应用代码发起。 -->
   <link rel="preconnect" href="https://cdn.busuanzi.cc" crossorigin />
   <link rel="dns-prefetch" href="https://cdn.busuanzi.cc" />
+  <!-- D-Umami 访问分析：提前完成 DNS/TLS，defer 脚本可更快加载。 -->
+  <link rel="preconnect" href="https://umami.pldduck.com" crossorigin />
+  <link rel="dns-prefetch" href="https://umami.pldduck.com" />
 
   <!-- 字体加载优化：异步加载避免阻塞渲染，减少不常用权重。
          preload 与正式 stylesheet 的 crossorigin 必须一致：浏览器按
@@ -62,24 +65,10 @@
       crossorigin />
   </noscript>
 
-  <!-- Clarity Analytics：标准异步标签，解析即注入（不等待 window load）。
-       延迟注入会漏掉快速离开或首屏即交互的会话（漏记录），因此刻意提前；
-       脚本体积小且 async，不阻塞渲染。项目 ID 直接写死于此，不得拆到
-       config/ 或环境变量（见 ai-rules/clarity-analytics.md）。 -->
-  <script>
-    (function (c, l, a, r, i, t, y) {
-      c[a] =
-        c[a] ||
-        function () {
-          (c[a].q = c[a].q || []).push(arguments);
-        };
-      t = l.createElement(r);
-      t.async = 1;
-      t.src = 'https://www.clarity.ms/tag/' + i;
-      y = l.getElementsByTagName(r)[0];
-      y.parentNode.insertBefore(t, y);
-    })(window, document, 'clarity', 'script', 'wloc3f723i');
-  </script>
+  <!-- D-Umami 访问分析：标准 defer 异步标签，解析后注入（不阻塞渲染）。
+       统计代码与站点 ID 直接写死于此，不得拆到 config/ 或环境变量
+       （见 ai-rules/umami-analytics.md）。 -->
+  <script defer src="https://umami.pldduck.com/script.js" data-website-id="01a4a9ca-6dda-48c6-814a-f1cf912a0ee4"></script>
 </head>
 
 <body class="bg-paper text-ink dark:bg-void dark:text-gray-200 overflow-x-hidden">

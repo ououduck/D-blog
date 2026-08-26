@@ -3,11 +3,6 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Stats } from './Stats';
 
-vi.mock('@/services/busuanzi', () => ({
-  pingBusuanzi: vi.fn(),
-  fillBusuanziSpans: vi.fn(),
-}));
-
 const renderStats = () =>
   render(
     <MemoryRouter initialEntries={['/stats']}>
@@ -45,15 +40,17 @@ describe('Stats', () => {
     });
   });
 
-  it('渲染统计页标题与访问统计卡片', () => {
+  it('渲染统计页标题与 D-Umami 访问分析卡片', () => {
     renderStats();
     expect(screen.getByRole('heading', { name: '站点统计' })).toBeInTheDocument();
-    expect(screen.getByText('访问统计')).toBeInTheDocument();
+    expect(screen.getByText('D-Umami 访问分析')).toBeInTheDocument();
   });
 
-  it('渲染统计指标（今日访问量等）', () => {
+  it('渲染跳转 D-Umami 查看按钮并指向共享看板', () => {
     renderStats();
-    expect(screen.getByText('今日总访问量')).toBeInTheDocument();
-    expect(screen.getByText('站点总访问量')).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: '跳转D-Umami查看' });
+    expect(link).toHaveAttribute('href', 'https://umami.pldduck.com/share/zWEt3cddtxLtAA0r');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: '查看网站运行状态' })).toBeInTheDocument();
   });
 });

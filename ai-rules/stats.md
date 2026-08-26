@@ -2,12 +2,12 @@
 
 ## 功能概述
 
-站点数据面板：概览卡片（文章数/字数/评论等）、分类/标签/字数/图片排行、外部统计链接（不蒜子/Busuanzi）。
+站点数据面板：概览卡片（文章数/字数/评论等）、分类/标签/字数/图片排行、外部统计链接（D-Umami 访问分析 / UptimeRobot 运行状态）。
 
 ## 关键文件
 
 - `src/pages/Stats.tsx`
-- `src/services/siteStats.ts` / `busuanzi.ts`
+- `src/services/siteStats.ts`（不蒜子 `busuanzi.ts` 仅服务文章页阅读量，不在统计页展示）
 
 ## 修改规则（必须遵守）
 
