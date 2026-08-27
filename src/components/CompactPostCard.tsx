@@ -63,5 +63,3 @@ export const CompactPostCard: React.FC<CompactPostCardProps> = ({ post }) => (
     </div>
   </Link>
 );
-
-export default CompactPostCard;

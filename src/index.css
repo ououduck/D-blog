@@ -113,10 +113,6 @@
     @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-zinc-950 bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_1px_2px_rgba(24,24,27,0.18)] transition-[background-color,border-color,color,opacity,transform,box-shadow] duration-150 hover:bg-zinc-800 hover:shadow-[0_2px_4px_rgba(24,24,27,0.22)] active:scale-[.98] active:bg-black active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)] dark:hover:bg-zinc-300;
   }
 
-  .editorial-icon-button {
-    @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-icon border border-zinc-300 bg-paper text-zinc-600 shadow-none transition-[background-color,border-color,color,opacity,transform] duration-150 hover:border-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white;
-  }
-
   .fixed-control-position {
     right: max(1rem, calc(env(safe-area-inset-right, 0px) + 1rem));
   }
@@ -129,8 +125,7 @@
 
   .editorial-input:focus-visible,
   .editorial-button:focus-visible,
-  .editorial-button-primary:focus-visible,
-  .editorial-icon-button:focus-visible {
+  .editorial-button-primary:focus-visible {
     @apply outline outline-2 outline-offset-2 outline-zinc-900 dark:outline-zinc-100;
   }
 
@@ -250,23 +245,8 @@
     visibility 0s;
 }
 
-.mobile-more-menu-panel {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition:
-    grid-template-rows 200ms ease,
-    opacity 200ms ease;
-}
-
-.mobile-more-menu-panel[data-open='true'] {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .nav-more-menu-panel,
-  .mobile-more-menu-panel {
+  .nav-more-menu-panel {
     transition-duration: 1ms;
   }
 }

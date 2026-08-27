@@ -68,12 +68,6 @@ export default {
         paper: '#f2f0e9',
         ink: '#1c1917',
         void: '#0a0a0a',
-        // 保留旧版 accent 工具类可用，同时将其完全中性化（不再绑定品牌主题色）。
-        accent: {
-          DEFAULT: '#3f3f46',
-          light: '#d4d4d8',
-          dark: '#18181b',
-        },
       },
       borderRadius: {
         micro: '4px',
