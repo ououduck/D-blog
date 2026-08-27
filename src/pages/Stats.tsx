@@ -353,7 +353,7 @@ export const Stats = () => {
               icon={Activity}
               title="运行状态"
               description="实时监控网站的运行状态和可用性，查看历史运行时间和响应速度。"
-              href="https://stats.uptimerobot.com/NcIOI9kfVP"
+              href="https://pulsx.net/status/pldduck"
               buttonLabel="查看网站运行状态"
             />
           </section>
