@@ -5,12 +5,27 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart3, Database, FileImage, FileText, FolderTree, Hash, Type, Activity } from 'lucide-react';
+import {
+  Activity,
+  BarChart3,
+  Clock,
+  Database,
+  FileImage,
+  FileText,
+  FolderTree,
+  Hash,
+  Image,
+  Layers,
+  PenLine,
+  Tags,
+  Type,
+} from 'lucide-react';
 
 import { Seo } from '../components/Seo';
 import { LoadingStatus } from '@/components/ContentStatus';
 import { Surface } from '@/components/ui/Surface';
 import { CountUp } from '@/components/effects/CountUp';
+import { mergeClassName } from '@/utils/classNames';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { easeOut } from '@/utils/motion';
 import { getSiteStats, getInitialSiteStats, EMPTY_SITE_STATS } from '../services/siteStats';
@@ -29,13 +44,15 @@ const SummaryCard = ({
   title,
   value,
   detail,
+  className,
 }: {
   icon: React.ElementType;
   title: string;
   value: number;
   detail: string;
+  className?: string;
 }) => (
-  <Surface className="flex min-w-0 min-h-52 flex-col p-5 sm:min-h-56 sm:p-6">
+  <Surface className={mergeClassName('flex min-w-0 min-h-52 flex-col p-5 sm:min-h-56 sm:p-6', className)}>
     <div className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-icon bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 sm:h-12 sm:w-12">
       <Icon size={20} className="sm:size-[22px]" />
     </div>
@@ -53,12 +70,24 @@ const SummaryCard = ({
   </Surface>
 );
 
+// 卡片标题栏：图标 chip + 标题，与页面眉标/外部统计卡同一套视觉语言。
+const CardTitle = ({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) => (
+  <div className="mb-5 flex items-center gap-2.5">
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-icon bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+      <Icon size={18} />
+    </div>
+    <h3 className="min-w-0 truncate text-lg font-bold text-zinc-900 dark:text-zinc-100">{children}</h3>
+  </div>
+);
+
 const RankingCard = ({
   title,
+  icon,
   items,
   valueSuffix = '篇',
 }: {
   title: string;
+  icon?: React.ElementType;
   items: Array<{ name: string; count: number }>;
   valueSuffix?: string;
 }) => {
@@ -69,7 +98,11 @@ const RankingCard = ({
 
   return (
     <Surface className="min-w-0 p-5 sm:p-6">
-      <h3 className="mb-5 text-lg font-bold text-zinc-900 dark:text-zinc-100">{title}</h3>
+      {icon ? (
+        <CardTitle icon={icon}>{title}</CardTitle>
+      ) : (
+        <h3 className="mb-5 text-lg font-bold text-zinc-900 dark:text-zinc-100">{title}</h3>
+      )}
       {items.length === 0 ? (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无可展示的数据。</p>
       ) : (
@@ -139,7 +172,7 @@ const ExternalStatsCard = ({
   </Surface>
 );
 
-// D-Umami 访问分析：两列宽卡片，属于统计页底部「外部统计」板块，
+// D-Umami 访问分析：统计页底部「外部统计」板块卡片之一（与运行状态等宽平分），
 // 按钮跳转 D-Umami 共享看板（公开 URL，无需登录）。
 const UMAMI_SHARE_URL = 'https://umami.pldduck.com/share/zWEt3cddtxLtAA0r';
 
@@ -250,20 +283,22 @@ export const Stats = () => {
                 detail="当前启用的文章分类数量"
               />
               <SummaryCard icon={Hash} title="总标签数" value={siteStats.totalTags} detail="去重后的标签总数量" />
+              {/* 两列断点（400–1023px）下最后一卡跨整行，避免孤悬第三行左侧 */}
               <SummaryCard
                 icon={FileImage}
                 title="总图片数"
                 value={siteStats.totalImages}
                 detail="正文内 Markdown 图片累计数量"
+                className="min-[400px]:col-span-2 lg:col-span-1"
               />
             </div>
           </section>
 
           <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-3">
-            <RankingCard title="分类文章数" items={siteStats.categoryStats || []} />
-            <RankingCard title="热门标签 Top" items={(siteStats.tagStats || []).slice(0, 8)} />
+            <RankingCard icon={Layers} title="分类文章数" items={siteStats.categoryStats || []} />
+            <RankingCard icon={Tags} title="热门标签 Top" items={(siteStats.tagStats || []).slice(0, 8)} />
             <Surface className="min-w-0 p-5 sm:p-6">
-              <h3 className="mb-4 text-lg font-bold text-zinc-900 dark:text-zinc-100">最近更新</h3>
+              <CardTitle icon={Clock}>最近更新</CardTitle>
               {(siteStats.recentPosts || []).length === 0 ? (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无可展示的数据。</p>
               ) : (
@@ -287,6 +322,7 @@ export const Stats = () => {
 
           <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-2">
             <RankingCard
+              icon={PenLine}
               title="字数最多"
               valueSuffix="字"
               items={(siteStats.topWordCountPosts || []).map((post) => ({
@@ -295,6 +331,7 @@ export const Stats = () => {
               }))}
             />
             <RankingCard
+              icon={Image}
               title="图片最多"
               valueSuffix="张"
               items={(siteStats.topImageCountPosts || []).map((post) => ({
@@ -304,16 +341,14 @@ export const Stats = () => {
             />
           </section>
 
-          <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <ExternalStatsCard
-                icon={BarChart3}
-                title="D-Umami 访问分析"
-                description="由 D-Umami 自托管统计提供的站点访问数据，实时查看访客来源、热门页面与访问趋势。"
-                href={UMAMI_SHARE_URL}
-                buttonLabel="跳转D-Umami查看"
-              />
-            </div>
+          <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-2">
+            <ExternalStatsCard
+              icon={BarChart3}
+              title="D-Umami 访问分析"
+              description="由 D-Umami 自托管统计提供的站点访问数据，实时查看访客来源、热门页面与访问趋势。"
+              href={UMAMI_SHARE_URL}
+              buttonLabel="跳转D-Umami查看"
+            />
             <ExternalStatsCard
               icon={Activity}
               title="运行状态"
