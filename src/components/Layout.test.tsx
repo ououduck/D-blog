@@ -84,6 +84,32 @@ describe('Layout', () => {
     expect(screen.getByRole('link', { name: /搜索/ })).toBeInTheDocument();
   });
 
+  it('桌面端导航含「开往」外链，指向 travellings 并新窗口打开', () => {
+    renderLayout();
+    const links = screen.getAllByRole('link', { name: /开往/ });
+    expect(links.length).toBeGreaterThanOrEqual(1);
+    for (const link of links) {
+      expect(link).toHaveAttribute('href', 'https://www.travellings.cn/go.html');
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    }
+  });
+
+  it('移动端「更多」面板包含「开往」入口', async () => {
+    const user = userEvent.setup();
+    renderLayout();
+    await user.click(screen.getByRole('button', { name: '打开更多菜单' }));
+    await screen.findByRole('dialog', { name: '移动端导航菜单' });
+    await waitForNavOpen();
+    // 面板打开后共两处：桌面导航常驻一处 + 移动「发现」分组一处（jsdom 不应用 CSS 显隐）。
+    const links = screen.getAllByRole('link', { name: /开往/ });
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link).toHaveAttribute('href', 'https://www.travellings.cn/go.html');
+      expect(link).toHaveAttribute('target', '_blank');
+    }
+  });
+
   it('渲染移动端底部标签栏（首页/说说/搜索/友链/更多）', () => {
     renderLayout();
     expect(screen.getAllByRole('link', { name: /首页/ }).length).toBeGreaterThanOrEqual(1);

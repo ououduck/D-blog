@@ -26,6 +26,7 @@ import {
   MessageSquareText,
   MessageCircle,
   LayoutGrid,
+  TrainFront,
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { preloadPage } from '@/utils/preload';
@@ -56,6 +57,7 @@ const TEXT = {
   navGuestbook: '留言',
   navShuoShuo: '说说',
   navAbout: '关于',
+  navTravellings: '开往',
   rssFeed: 'RSS 订阅',
 };
 
@@ -81,6 +83,17 @@ const navItems: NavPathItem[] = [
   { path: '/guestbook', label: TEXT.navGuestbook, hint: '留言互动', icon: MessageSquareText },
   { path: '/about', label: TEXT.navAbout, hint: '站点介绍', icon: Info },
 ];
+
+// 开往（travellings）：点击随机跳转到一名成员站点，桌面端置于「关于」与「更多」之间，
+// 移动端收纳进抽屉「更多」面板的「发现」分组。
+const TRAVELLINGS_URL = 'https://www.travellings.cn/go.html';
+const travellingsNavItem: NavHrefItem = {
+  key: 'travellings',
+  label: TEXT.navTravellings,
+  hint: '随机前往成员站点',
+  icon: TrainFront,
+  href: TRAVELLINGS_URL,
+};
 
 const moreNavItems: NavItem[] = [
   {
@@ -136,6 +149,10 @@ const mobileMorePanelGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: '订阅与联系',
     items: moreNavItems.filter((item) => ['email', 'github', 'rss', 'issue-subscription'].includes(item.key ?? '')),
+  },
+  {
+    label: '发现',
+    items: [travellingsNavItem],
   },
 ];
 
@@ -848,6 +865,21 @@ const Navbar = ({ onSearchNavigate }: { onSearchNavigate: () => void }) => {
                   </Link>
                 );
               })}
+              <a
+                key={travellingsNavItem.key}
+                href={travellingsNavItem.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${TEXT.navTravellings}（${travellingsNavItem.hint}）`}
+                className="group relative inline-flex h-10 items-center gap-1 px-2 py-1 text-sm font-semibold tracking-wide text-zinc-700 transition-colors hover:text-ink dark:text-zinc-300 dark:hover:text-white"
+              >
+                <TrainFront size={14} aria-hidden="true" className="relative z-10 shrink-0" />
+                <span className="relative z-10">{travellingsNavItem.label}</span>
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-[2px] left-2 right-2 h-[2px] origin-center scale-x-0 rounded-none bg-zinc-900 opacity-0 transition-[transform,opacity] duration-[250ms] group-hover:scale-x-100 group-hover:opacity-70 dark:bg-zinc-100"
+                />
+              </a>
               <div
                 className="nav-more-menu relative"
                 onMouseEnter={() => setIsMoreMenuOpen(true)}
@@ -924,13 +956,10 @@ const Navbar = ({ onSearchNavigate }: { onSearchNavigate: () => void }) => {
             <div className="flex shrink-0 items-center gap-2 border-l border-zinc-300 pl-4 dark:border-zinc-700">
               <button
                 onClick={onSearchNavigate}
-                className="group flex h-11 items-center gap-2 rounded-control border border-zinc-300 bg-zinc-100 px-3 text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-200 active:bg-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:active:bg-zinc-700"
+                className="group relative inline-flex h-11 w-11 items-center justify-center rounded-icon border border-zinc-300 bg-zinc-100 text-ink transition-colors hover:border-zinc-500 hover:bg-zinc-200 active:bg-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:active:bg-zinc-700"
                 aria-label="打开搜索页"
               >
-                <Search size={16} />
-                <span className="text-xs font-medium text-zinc-600 transition-colors group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-300">
-                  Ctrl+K
-                </span>
+                <Search size={18} />
               </button>
               <ThemeToggle />
             </div>
