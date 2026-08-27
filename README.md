@@ -36,7 +36,7 @@
 - **阅读体验**：目录导航、阅读进度恢复、专注阅读模式、深色模式图片柔和降亮、标题锚点复制、上一篇/下一篇（`Alt + ←/→`）与系列文章
 - **分享与互动**：分享弹窗（复制分享文案/链接）；Giscus 评论区；独立留言板 `/guestbook`；说说 `/shuoshuo` 独立静态页
 - **内置工具箱**：封面生成器 `/cover`（含批量 ZIP 导出）、水印工具 `/watermark`（图片不离开浏览器）
-- **主题与外观**：浅色/深色/跟随系统，CSS View Transitions 过渡
+- **主题与外观**：浅色/深色二态切换（打开页面时自动按系统偏好检测初始主题），CSS View Transitions 过渡
 - **构建期 SSG**：每页独立 HTML + 精准 SEO meta 与 JSON-LD，爬虫可直接读取正文
 - **PWA**：Service Worker 缓存 + SPA 路由离线应用壳
 - **SEO 与订阅**：OG/Twitter Card、JSON-LD、RSS、`llms.txt`、Sitemap、`robots.txt`

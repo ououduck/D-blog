@@ -10,7 +10,6 @@ import {
   Github,
   X,
   Search,
-  Monitor,
   Rss,
   BookOpen,
   Archive,
@@ -48,7 +47,6 @@ const TEXT = {
   theme: '外观',
   themeLight: '浅色',
   themeDark: '深色',
-  themeSystem: '跟随系统',
   navPosts: '文章',
   navArchive: '归档',
   navTags: '标签',
@@ -166,31 +164,36 @@ const isEditableTarget = (target: EventTarget | null) => {
 };
 
 const ThemeToggle = () => {
-  type Theme = 'light' | 'dark' | 'system';
+  type Theme = 'light' | 'dark';
   const hasInitializedThemeRef = useRef(false);
   const prefersReducedMotion = useSiteReducedMotion();
-  const [theme, setTheme] = useState<Theme>('system');
+  const [theme, setTheme] = useState<Theme>('light');
 
   useEffect(() => {
     const root = document.documentElement;
     const systemQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-    // 水合后恢复用户保存的主题。SSR 首帧固定为 system，避免水合冲突。
-    // 该覆盖只在首次挂载（水合恢复）时生效：用户之后显式切到“跟随系统”必须
-    // 真正生效，不能被 localStorage 里旧的亮/暗选择反向覆盖（否则一旦选过
-    // 亮/暗，system 选项就永远无法通过按钮到达）。
+    // 水合后确定实际主题：优先恢复用户保存的显式亮/暗选择；无保存值（或旧版
+    // 'system'）时按系统偏好解析初始明暗，即“打开网页自动检测系统”。
+    // 该解析只在首次挂载（水合恢复）时生效，后续切换不会被旧值反向覆盖。
     let effectiveTheme: Theme = theme;
+    let saved: string | null = null;
     try {
-      const saved = localStorage.getItem('theme') as Theme | null;
-      if (!hasInitializedThemeRef.current && theme === 'system' && saved && saved !== 'system') {
-        effectiveTheme = saved;
-      }
+      saved = localStorage.getItem('theme');
     } catch {
       // 浏览器存储不可用时，主题持久化为可选能力。
     }
 
+    if (!hasInitializedThemeRef.current) {
+      if (saved === 'light' || saved === 'dark') {
+        effectiveTheme = saved;
+      } else {
+        effectiveTheme = systemQuery.matches ? 'dark' : 'light';
+      }
+    }
+
     const applyTheme = (nextTheme: Theme) => {
-      const shouldBeDark = nextTheme === 'dark' || (nextTheme === 'system' && systemQuery.matches);
+      const shouldBeDark = nextTheme === 'dark';
       const isDarkApplied = root.classList.contains('dark');
 
       const applyChanges = () => {
@@ -227,24 +230,8 @@ const ThemeToggle = () => {
       }
     };
 
-    const handleSystemChange = () => {
-      if (theme === 'system') {
-        applyTheme('system');
-      }
-    };
-
-    const attachSystemListener = () => {
-      if (typeof systemQuery.addEventListener === 'function') {
-        systemQuery.addEventListener('change', handleSystemChange);
-        return () => systemQuery.removeEventListener('change', handleSystemChange);
-      }
-
-      systemQuery.addListener(handleSystemChange);
-      return () => systemQuery.removeListener(handleSystemChange);
-    };
-
     if (effectiveTheme !== theme) {
-      // 首次应用用户保存的主题：跳过过渡动画，直接生效。
+      // 首次应用检测/恢复得到的主题：跳过过渡动画，直接生效。
       // hasInitializedThemeRef 保持 false 直到 applyTheme 完成，确保首次
       // 恢复不会误走 startViewTransition / theme-switching 动画分支。
       setTheme(effectiveTheme);
@@ -252,34 +239,22 @@ const ThemeToggle = () => {
 
     applyTheme(effectiveTheme);
     hasInitializedThemeRef.current = true;
-    try {
-      localStorage.setItem('theme', effectiveTheme);
-    } catch {
-      // 浏览器存储不可用时，主题持久化为可选能力。
-    }
-
-    const detachSystemListener = attachSystemListener();
-    return () => {
-      detachSystemListener();
-    };
   }, [prefersReducedMotion, theme]);
 
   const toggleTheme = () => {
-    if (theme === 'light') {
-      setTheme('dark');
-      return;
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    // 仅显式点击才持久化：系统检测出的默认值不落盘，保证每次打开页面都
+    // 重新按系统偏好检测；用户点击一次后，该选择稳定沿用。
+    try {
+      localStorage.setItem('theme', next);
+    } catch {
+      // 浏览器存储不可用时，主题持久化为可选能力。
     }
-
-    if (theme === 'dark') {
-      setTheme('system');
-      return;
-    }
-
-    setTheme('light');
   };
 
-  const currentThemeLabel = theme === 'light' ? TEXT.themeLight : theme === 'dark' ? TEXT.themeDark : TEXT.themeSystem;
-  const nextThemeLabel = theme === 'light' ? TEXT.themeDark : theme === 'dark' ? TEXT.themeSystem : TEXT.themeLight;
+  const currentThemeLabel = theme === 'light' ? TEXT.themeLight : TEXT.themeDark;
+  const nextThemeLabel = theme === 'light' ? TEXT.themeDark : TEXT.themeLight;
 
   return (
     <button
@@ -295,9 +270,7 @@ const ThemeToggle = () => {
           exit={prefersReducedMotion ? undefined : { opacity: 0 }}
           transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
         >
-          {theme === 'light' && <Sun size={18} />}
-          {theme === 'dark' && <Moon size={18} />}
-          {theme === 'system' && <Monitor size={18} className="text-zinc-500 dark:text-zinc-400" />}
+          {theme === 'light' ? <Sun size={18} /> : <Moon size={18} />}
         </motion.div>
       </AnimatePresence>
       <span className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-control border border-zinc-700 bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
