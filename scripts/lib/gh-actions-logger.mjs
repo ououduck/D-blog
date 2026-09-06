@@ -47,12 +47,18 @@ export const sanitizeLogValue = (value) =>
  * 把附加字段（对象/数组）格式化为 key=value 追加串。
  * 数组（如失败页列表）以逗号拼接；值为对象时 JSON 序列化。
  * 所有值经 sanitizeLogValue 净化（防 :: 注入）。
- * @param {Record<string, unknown>} fields
+ * 字符串兜底：历史上多处调用把模板字符串直接当 fields 传入（第二参数应为对象），
+ * Object.entries 对字符串会逐字符展开成 0=x 1=y… 的乱码字段 —— 在此统一
+ * 归一为 detail=<内容>，既修复展示又保持这些调用点无需逐个改动。
+ * @param {Record<string, unknown> | string | number} fields
  * @returns {string}
  */
 const formatFields = (fields = {}) => {
+  if (typeof fields === 'string' || typeof fields === 'number') {
+    return fields === '' ? '' : ` detail=${sanitizeLogValue(fields)}`;
+  }
   const parts = [];
-  for (const [key, value] of Object.entries(fields)) {
+  for (const [key, value] of Object.entries(fields ?? {})) {
     if (value === undefined || value === null) continue;
     if (Array.isArray(value)) {
       parts.push(`${key}=${value.map((item) => sanitizeLogValue(item)).join(',')}`);
