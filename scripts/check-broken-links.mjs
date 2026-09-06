@@ -29,6 +29,7 @@ import {
   RetryableHttpError,
   isSafePublicHttpUrl,
   isProxyArtifactAddress,
+  isProxyArtifactDnsExplicitlyAllowed,
   lookupWithTimeout,
   getSafeFetchAgent,
   sanitizeUrlForLogs,
@@ -224,8 +225,9 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /**
  * 检测本地是否处于 TUN 代理环境（Clash/Surge 等 fake-IP DNS）：
  * 解析一个已知公网域名，若全部解析结果都落在代理伪 DNS 特征段，说明本机 DNS 被
- * 代理接管 —— lib/http.mjs 的 isResolvedAddressesSafe 会自动跳过 IP 级 SSRF 校验，
- * 请求经代理转发到真实公网目标。这里仅输出一条诊断日志，帮助理解为何不拦截。
+ * 代理接管。此时代码级 IP 校验会拦截全部域名（保留段 fail-closed），需显式设置
+ * ALLOW_PROXY_ARTIFACT_DNS=1 才能放行（请求经代理转发到真实公网目标）。
+ * 这里输出诊断日志，帮助理解为何本环境下的拦截/放行行为。
  * @returns {Promise<boolean>}
  */
 export const isProxyArtifactDnsEnvironment = async () => {
@@ -242,9 +244,15 @@ const escapeHtml = (value) =>
 
 const main = async () => {
   if (await isProxyArtifactDnsEnvironment()) {
-    logger.info(
-      'Detected local TUN proxy (DNS fake-IP 198.18.0.0/15) — IP-level SSRF checks auto-skipped, requests go through the proxy',
-    );
+    if (isProxyArtifactDnsExplicitlyAllowed()) {
+      logger.info(
+        'Detected local TUN proxy (DNS fake-IP 198.18.0.0/15) — ALLOW_PROXY_ARTIFACT_DNS=1 set, requests go through the proxy',
+      );
+    } else {
+      logger.warn(
+        'Detected local TUN proxy (DNS fake-IP 198.18.0.0/15) — IP-level SSRF checks will block ALL domains; set ALLOW_PROXY_ARTIFACT_DNS=1 to run link checks through the proxy',
+      );
+    }
   }
 
   if (!fs.existsSync(POSTS_DIR)) {
@@ -358,7 +366,9 @@ const main = async () => {
     for (const record of records) {
       const detail = broken.find((b) => b.url === record.url);
       const reason = detail?.status ? `HTTP ${detail.status}` : escapeHtml(detail?.error ?? '未知错误');
-      lines.push(`  L${record.line} ${escapeHtml(record.url)} — ${reason}`);
+      // 报告与日志同口径脱敏：含 userinfo（https://user:pass@host）的 URL 不把
+      // 凭据原文发进 Telegram 聊天（链接可能经转发/截图二次扩散）。
+      lines.push(`  L${record.line} ${escapeHtml(sanitizeUrlForLogs(record.url))} — ${reason}`);
     }
     lines.push('');
   }

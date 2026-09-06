@@ -9,7 +9,6 @@ import {
   getSafeFetchAgent,
   getSafeUndiciFetch,
 } from './http.mjs';
-
 /** 沿 cause 链查找错误码（undici 会把连接错误层层包装）。 */
 const findErrorCode = (error, code) => {
   let current = error;
@@ -138,16 +137,10 @@ describe('isResolvedAddressesSafe', () => {
     expect(isResolvedAddressesSafe([{ address: '::1' }])).toBe(false);
   });
 
-  it('IPv4 代理伪 DNS 段（198.18.0.0/15）自动识别放行（Clash/Surge TUN 指纹）', () => {
-    expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }])).toBe(true);
-    expect(isResolvedAddressesSafe([{ address: '198.18.2.60' }])).toBe(true);
-  });
-
-  it('IPv6 ULA 代理伪 DNS 段（fc00::/7）默认不放行（内网 IPv6 同样使用该段）', () => {
+  it('代理伪 DNS 段（198.18.0.0/15 与 fc00::/7）默认 fail-closed 拦截（可被攻击者 DNS 主动指向）', () => {
+    expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }])).toBe(false);
+    expect(isResolvedAddressesSafe([{ address: '198.18.2.60' }])).toBe(false);
     expect(isResolvedAddressesSafe([{ address: 'fc00::1' }])).toBe(false);
-  });
-
-  it('混合代理伪 DNS 地址（198.18 + fc00）默认不放行，须显式开启', () => {
     expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }, { address: 'fc00::1' }])).toBe(false);
   });
 
@@ -155,21 +148,12 @@ describe('isResolvedAddressesSafe', () => {
     expect(isResolvedAddressesSafe([{ address: '8.8.8.8' }, { address: '198.18.0.1' }])).toBe(false);
   });
 
-  it('ALLOW_PROXY_ARTIFACT_DNS=1 时显式放行全部代理伪 DNS 段（本地双栈 TUN 专用）', () => {
+  it('ALLOW_PROXY_ARTIFACT_DNS=1 时显式放行全部代理伪 DNS 段（本地 TUN 专用）', () => {
     process.env.ALLOW_PROXY_ARTIFACT_DNS = '1';
     try {
       expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }])).toBe(true);
       expect(isResolvedAddressesSafe([{ address: 'fc00::1' }])).toBe(true);
       expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }, { address: 'fc00::1' }])).toBe(true);
-    } finally {
-      delete process.env.ALLOW_PROXY_ARTIFACT_DNS;
-    }
-  });
-
-  it('ALLOW_PROXY_ARTIFACT_DNS=0 时强制关闭自动识别（偏执部署/自建 Runner）', () => {
-    process.env.ALLOW_PROXY_ARTIFACT_DNS = '0';
-    try {
-      expect(isResolvedAddressesSafe([{ address: '198.18.0.1' }])).toBe(false);
     } finally {
       delete process.env.ALLOW_PROXY_ARTIFACT_DNS;
     }
@@ -202,6 +186,21 @@ describe('isResolvedAddressesSafe', () => {
       expect.unreachable('私网目标应被连接期 SSRF 防护拒绝');
     } catch (error) {
       expect(findErrorCode(error, 'ERR_SSRF_BLOCKED')).toBe(true);
+    }
+  });
+
+  it('dispatch 期 SSRF 防护：IP 字面量目标被拦截（net.connect 对字面量跳过 lookup 的兜底）', async () => {
+    // 点分 / 十进制 / 八进制三种私网 IP 字面量形态，无论 pre-flight 是否存在，
+    // 都应在 dispatch 层被拒绝（纵深防御，不依赖调用方先做 isSafePublicHttpUrl）。
+    const agent = await getSafeFetchAgent();
+    const undiciFetch = await getSafeUndiciFetch();
+    for (const url of ['http://127.0.0.1:65432/', 'http://2130706433:65432/', 'http://0177.0.0.1:65432/']) {
+      try {
+        await undiciFetch(url, { dispatcher: agent, signal: AbortSignal.timeout(5000) });
+        expect.unreachable(`IP 字面量目标应被 dispatch 期 SSRF 防护拒绝: ${url}`);
+      } catch (error) {
+        expect(findErrorCode(error, 'ERR_SSRF_BLOCKED')).toBe(true);
+      }
     }
   });
 });

@@ -1,26 +1,20 @@
 /**
  * http.mjs — 网络请求基础设施（供所有与外部网络交互的构建/自动化脚本复用）。
  *
- * 本文件为深度 Code Audit + 防御性重构的最终版（Phase 3 全量重写，Phase 4 红队修正），
- * 在上一版基础上的关键修复：
+ * 关键设计：
  *
  * 1. 【重试语义统一】fetchWithRetry 重试耗尽后对可重试状态码一律抛 RetryableHttpError，
- *    网络错误（TypeError / 内部超时 AbortError）也包装为同类型抛出 ——
- *    彻底消灭"重试耗尽后静默返回非 ok Response，由调用方自行判断"的歧义与死代码。
- *    上一版 `for (attempt <= retries)` 的末尾 `throw new RetryableHttpError` 对 5xx
- *    路径不可达（直接 return response），且 Akismet 曾把 500 页正文误当结论 —— 已修复。
- * 2. 【限流分类缺口】429（Secondary Rate Limit）与 403 统一识别：isRateLimitResponse
- *    检查 x-ratelimit-remaining=0 / 403 / 429 三条件；重试耗尽后仍命中限流抛 RateLimitError，
- *    调用方脚本的 `instanceof RateLimitError` 整批暂停机制不再失效。
- * 3. 【DNS 查询纳入超时】lookupWithTimeout 用 Promise.race 包裹 dns.lookup ——
- *    DNS 服务器无响应时不再无限阻塞（上一版该路径完全不受超时控制）。
- * 4. 【响应体限量读取】readResponseText 限量消费 body（防超大响应体拖垮 Runner 内存）。
- * 5. 【分页严格化】strictPagination=true 时达到 maxPages 仍存在 next 链接 → 抛
- *    PaginationLimitError，杜绝 1000 条以上数据被静默截断（fail-closed）。
- * 6. 【TUN 代理自动识别】DNS 全部解析到 198.18.0.0/15（Clash/Surge fake-IP 标准段）
- *    时自动放行 IP 级校验（请求经代理转发到真实公网目标），消除本地 TUN 环境下
- *    死链扫描/友链检查的整批误报；fc00::/7（ULA）仍须显式
- *    ALLOW_PROXY_ARTIFACT_DNS=1，ALLOW_PROXY_ARTIFACT_DNS=0 可硬性关闭自动识别。
+ *    网络错误（TypeError / 内部超时 AbortError）也包装为同类型抛出，消灭
+ *    "重试耗尽后静默返回非 ok Response"的歧义。
+ * 2. 【DNS 查询纳入超时】lookupWithTimeout 用 Promise.race 包裹 dns.lookup ——
+ *    DNS 服务器无响应时不再无限阻塞。
+ * 3. 【响应体限量读取】readResponseText 限量消费 body（防超大响应体拖垮 Runner 内存）。
+ * 4. 【SSRF 纵深防御】三层：pre-flight isSafePublicHttpUrl（URL 归一化 + DNS 逐 IP
+ *    私网校验）→ 连接期 safeLookup（防 DNS rebinding TOCTOU）→ dispatch 期 IP 字面量
+ *    守卫（net.connect 对 IP 字面量主机跳过 lookup，用 compose 拦截器补位）。
+ * 5. 【代理伪 DNS 段显式放行】198.18.0.0/15（Clash/Surge fake-IP）与 fc00::/7（ULA）
+ *    属保留段，默认 fail-closed 拦截；仅环境变量 ALLOW_PROXY_ARTIFACT_DNS=1 显式放行
+ *    （本地 TUN 环境专用，见 .env.example），杜绝攻击者域名解析到保留段即绕过的面。
  *
  * 全部函数均为纯函数/可注入依赖，便于单测与本地无网络环境复现。
  */
@@ -52,16 +46,6 @@ export const DEFAULT_MAX_DELAY_MS = 8000;
  * 连续命中 429 烧掉全部重试次数。上限防止畸形/极端 Retry-After 拖垮 job。 */
 export const DEFAULT_MAX_RETRY_AFTER_MS = 60000;
 
-/** 因 GitHub 限流而等待 reset 的最大时长（毫秒）。超过则放弃并抛 RateLimitError，
- *  由调用方决定策略 —— 保证 job 永远有明确的退出路径，绝不无限挂起。 */
-export const DEFAULT_MAX_RATE_LIMIT_WAIT_MS = 90000;
-
-/** fetchGithubJson 单次调用最多拉取的页数（防御畸形 Link 头无限循环）。 */
-export const DEFAULT_MAX_PAGES = 10;
-
-/** GitHub 统一请求头（2022-11-28 为当前长期稳定 API 版本）。 */
-export const GITHUB_API_VERSION = '2022-11-28';
-
 /** readResponseText 默认读取上限（字节）。GitHub 错误响应体通常 < 1KB。 */
 export const DEFAULT_MAX_RESPONSE_BYTES = 512 * 1024;
 
@@ -84,42 +68,6 @@ export class RetryableHttpError extends Error {
     this.name = 'RetryableHttpError';
     this.status = status;
     this.attempts = attempts;
-    this.body = body;
-  }
-}
-
-/**
- * 限流错误：GitHub 限流（403 或 429）且已等待至上限仍不可恢复。
- * 调用方应"暂停整批"而非逐条继续请求（继续只会放大限流）。
- */
-export class RateLimitError extends Error {
-  /**
-   * @param {string} message
-   * @param {number} retryAfterSeconds 服务器要求等待的秒数（reset 或 Retry-After）。
-   * @param {number} waitedMs 实际等待后放弃时已经花费的毫秒。
-   */
-  constructor(message, retryAfterSeconds, waitedMs) {
-    super(message);
-    this.name = 'RateLimitError';
-    this.retryAfterSeconds = retryAfterSeconds;
-    this.waitedMs = waitedMs;
-  }
-}
-
-/**
- * 非可重试的 HTTP 业务错误（4xx 除 408/425/429 外）：携带状态码与响应体，
- * 调用方可用 status 区分（如 404 表示资源不存在，直接降级跳过）。
- */
-export class HttpStatusError extends Error {
-  /**
-   * @param {string} message
-   * @param {number} status HTTP 状态码。
-   * @param {string} [body] 响应体截断文本。
-   */
-  constructor(message, status, body = '') {
-    super(message);
-    this.name = 'HttpStatusError';
-    this.status = status;
     this.body = body;
   }
 }
@@ -168,11 +116,11 @@ const privateIpv6BlockList = new net.BlockList();
 ].forEach(([subnet, prefix]) => privateIpv6BlockList.addSubnet(subnet, prefix, 'ipv6'));
 
 /** 代理 TUN（Clash/Surge 等）伪 DNS 特征段：
- *  - 198.18.0.0/15（IPv4）：Clash/Surge/sing-box TUN fake-IP 的标准段。该段是 RFC 2544
- *    基准测试段，真实网络不会使用，因此「全部解析结果落在此段」可作为本地 TUN 代理的
- *    可靠指纹，自动识别放行（请求经代理转发到真实公网目标，不构成 SSRF 面）。
- *  - fc00::/7（IPv6 ULA）：fake-ip6 也会使用该段，但真实内网 IPv6 同样广泛使用 ULA，
- *    与私网目标无法区分，**必须显式 ALLOW_PROXY_ARTIFACT_DNS=1 才放行**（防内网 SSRF）。 */
+ *  - 198.18.0.0/15（IPv4）：Clash/Surge/sing-box TUN fake-IP 的标准段（RFC 2544 基准段）；
+ *  - fc00::/7（IPv6 ULA）：fake-ip6 使用的段，真实内网 IPv6 同样广泛使用。
+ *  两段均为保留段，默认 fail-closed 拦截：攻击者可把自己域名的 DNS 全部指向 198.18.x.x
+ *  令校验放行，因此「见到该段即自动放行」构成可由外部触发的 SSRF 绕过面。本地确需
+ *  在 TUN 代理环境运行时，显式设置 ALLOW_PROXY_ARTIFACT_DNS=1 放行（见 .env.example）。 */
 const proxyArtifactIpv4BlockList = new net.BlockList();
 proxyArtifactIpv4BlockList.addSubnet('198.18.0.0', 15, 'ipv4');
 const proxyArtifactIpv6BlockList = new net.BlockList();
@@ -187,19 +135,6 @@ export const isProxyArtifactAddress = (value) => {
     if (mappedIpv4) return proxyArtifactIpv4BlockList.check(mappedIpv4, 'ipv4');
     if (net.isIP(address) !== 6) return false;
     return proxyArtifactIpv6BlockList.check(address, 'ipv6');
-  }
-  if (net.isIP(address) !== 4) return false;
-  return proxyArtifactIpv4BlockList.check(address, 'ipv4');
-};
-
-/** 判定单个地址是否为「可自动识别」的 IPv4 TUN 伪 DNS 特征地址（198.18.0.0/15）。
- *  仅该段可自动放行：真实网络不使用 RFC 2544 基准段，见到它必然是本地 TUN 代理。 */
-const isAutoAllowableProxyArtifactAddress = (value) => {
-  const address = String(value).toLowerCase();
-  if (address.includes(':')) {
-    const mappedIpv4 = unmapIpv4InIpv6(address);
-    if (!mappedIpv4 || net.isIP(mappedIpv4) !== 4) return false;
-    return proxyArtifactIpv4BlockList.check(mappedIpv4, 'ipv4');
   }
   if (net.isIP(address) !== 4) return false;
   return proxyArtifactIpv4BlockList.check(address, 'ipv4');
@@ -251,34 +186,24 @@ export const isPrivateAddress = (address) => {
  * 判断一组已解析地址是否全部为公开地址（SSRF 判定的核心，pre-flight 与连接期共用）。
  *
  * 代理伪 DNS（Clash/Surge TUN 把全部域名解析到 198.18.0.0/15 / fc00::/7）的处理：
- * - 全部地址为 198.18.0.0/15（IPv4 fake-IP 标准段）时**自动识别放行** —— 该段是
- *   RFC 2544 基准测试段，真实网络不会使用，见到它即本地 TUN 代理在转发请求，
- *   连接目标是代理后的真实公网地址，不构成 SSRF 面；CI/服务器环境 DNS 解析到
- *   公网真实 IP，本分支不会触发，防护保持有效。
- * - 含 fc00::/7（IPv6 ULA）时**不自动放行**：真实内网 IPv6 同样使用 ULA，无法与
- *   私网目标区分，必须显式设置 ALLOW_PROXY_ARTIFACT_DNS=1 才放行（本地双栈 TUN 专用）。
- * - ALLOW_PROXY_ARTIFACT_DNS=0 强制关闭自动识别（偏执部署/自建 Runner 可硬性封禁）。
+ * 这两段均为保留段且可被攻击者的 DNS 记录主动指向，默认 fail-closed 拦截；
+ * 仅 ALLOW_PROXY_ARTIFACT_DNS=1（本地 TUN 代理环境显式 opt-in）时放行。
+ * CI/服务器环境 DNS 解析到公网真实 IP，本分支不会触发，防护保持有效。
  *
  * @param {Array<{ address: string, family?: number }>} addresses
  * @returns {boolean}
  */
+export const isProxyArtifactDnsExplicitlyAllowed = () =>
+  ['1', 'true', 'yes'].includes(
+    String(process.env.ALLOW_PROXY_ARTIFACT_DNS || '')
+      .trim()
+      .toLowerCase(),
+  );
+
 export const isResolvedAddressesSafe = (addresses) => {
   if (addresses.length === 0) return false;
-  const flag = String(process.env.ALLOW_PROXY_ARTIFACT_DNS || '')
-    .trim()
-    .toLowerCase();
-  const explicitAllow = ['1', 'true', 'yes'].includes(flag);
-  const explicitDeny = ['0', 'false', 'no'].includes(flag);
-
-  const allArtifact = addresses.every(({ address }) => isProxyArtifactAddress(address));
-  if (allArtifact) {
-    if (explicitAllow) return true;
-    // 未显式配置时：仅自动识别「全部为 IPv4 198.18/15」这一 Clash/Surge TUN 指纹；
-    // 含 ULA（fc00::/7）或其他段一律保持 fail-closed。
-    if (!explicitDeny && addresses.every(({ address }) => isAutoAllowableProxyArtifactAddress(address))) {
-      return true;
-    }
-    return false;
+  if (addresses.every(({ address }) => isProxyArtifactAddress(address))) {
+    return isProxyArtifactDnsExplicitlyAllowed();
   }
   return addresses.every(({ address }) => !isPrivateAddress(address));
 };
@@ -328,7 +253,8 @@ const safeLookup = async (hostname, options, callback) => {
  * 否则未执行 npm install 的 workflow（telegram-notify.yml 等）会在模块加载期
  * 直接 ERR_MODULE_NOT_FOUND 崩溃。
  *
- * @returns {Promise<import('undici').Agent>} 连接期逐 IP 私网校验（防 DNS 重绑定）的 Agent。
+ * @returns {Promise<import('undici').Agent>} 连接期逐 IP 私网校验（防 DNS 重绑定）
+ * + dispatch 期 IP 字面量守卫的 Agent（compose 包装，调用方无感知）。
  */
 let undiciModulePromise = null;
 const loadUndiciModule = () => {
@@ -344,10 +270,47 @@ const loadUndiciModule = () => {
   return undiciModulePromise;
 };
 
+/**
+ * dispatch 期 IP 字面量守卫：拦截器形态（undici ≥ 8 的 dispatcher.compose 约定）。
+ *
+ * 为什么连接期 safeLookup 不够：net.connect / tls.connect 对「IP 字面量主机」
+ * 直接跳过 lookup（Node 行为，已实测），safeLookup 的私网校验根本不会被调用；
+ * 当前 pre-flight 的 new URL() 恰好把十进制（http://2130706433）、八进制
+ * （http://0177.0.0.1）、短格式（http://127.1）IP 归一化成点分形式再拦掉，但
+ * 这是单层防御 —— 点分私网 IP 字面量（http://192.168.1.1）若绕过/缺失 pre-flight
+ * 即直达 TCP 连接。此处按「公网 IP 字面量放行、私网/保留 IP 字面量拒绝、
+ * 域名走 safeLookup」的口径在 dispatch 层补位，纵深防御不依赖调用方做 pre-flight。
+ */
+const createIpLiteralGuard = () => (dispatch) => (options, handler) => {
+  const origin = String(options.origin ?? '');
+  let hostname = '';
+  if (origin) {
+    try {
+      hostname = new URL(origin).hostname;
+    } catch {
+      hostname = '';
+    }
+  }
+  // 仅处理 IP 字面量主机（net.isIP 判定）；域名交由 safeLookup 做 DNS 后校验。
+  // 畸形/缺失 origin（解析失败）fail-closed 拒绝。拦截器以同步 throw 失败
+  // （undici compose 约定：错误沿 fetch 调用栈直接拒绝 promise）。
+  if (!origin || (hostname !== '' && net.isIP(hostname) !== 0)) {
+    if (!origin || isPrivateAddress(hostname)) {
+      throw Object.assign(
+        new Error(`SSRF 防护：IP 字面量目标 ${hostname || '(empty origin)'} 为私网/保留地址，已拒绝连接`),
+        { code: 'ERR_SSRF_BLOCKED' },
+      );
+    }
+  }
+  return dispatch(options, handler);
+};
+
 let safeFetchAgentPromise = null;
 export const getSafeFetchAgent = () => {
   if (!safeFetchAgentPromise) {
-    safeFetchAgentPromise = loadUndiciModule().then((undici) => new undici.Agent({ connect: { lookup: safeLookup } }));
+    safeFetchAgentPromise = loadUndiciModule().then((undici) =>
+      new undici.Agent({ connect: { lookup: safeLookup } }).compose(createIpLiteralGuard()),
+    );
   }
   return safeFetchAgentPromise;
 };
@@ -403,24 +366,6 @@ export const isSafePublicHttpUrl = async (value) => {
   if (addresses.length === 0) return false;
   return isResolvedAddressesSafe(addresses);
 };
-
-/**
- * 分页超限错误：strictPagination 模式下达到 maxPages 仍有下一页（数据被截断）。
- * 调用方应 fail-closed（中止批处理并报警），绝不静默丢失数据。
- */
-export class PaginationLimitError extends Error {
-  /**
-   * @param {string} message
-   * @param {number} pages 已拉取页数。
-   * @param {string} nextUrl 下一跳 URL（留作排查）。
-   */
-  constructor(message, pages, nextUrl) {
-    super(message);
-    this.name = 'PaginationLimitError';
-    this.pages = pages;
-    this.nextUrl = nextUrl;
-  }
-}
 
 /* ------------------------------------------------------------------ */
 /* 工具函数                                                             */
@@ -495,96 +440,6 @@ export const parseRetryAfter = (headers) => {
   const date = Date.parse(raw);
   if (!Number.isNaN(date)) return Math.max(0, Math.ceil((date - Date.now()) / 1000));
   return undefined;
-};
-
-/**
- * 解析 GitHub 的 Link 头，返回 next / last / first / prev 的完整 URL。
- * @param {Headers | HeadersInit | undefined} headers
- * @returns {Record<string, string>}
- */
-export const parseLinkHeader = (headers) => {
-  const result = {};
-  if (!headers) return result;
-  const raw = typeof headers.get === 'function' ? headers.get('link') : headers['link'];
-  if (!raw) return result;
-  for (const part of raw.split(',')) {
-    const match = part.match(/<([^>]+)>\s*;\s*rel="([^"]+)"/);
-    if (match) result[match[2]] = match[1];
-  }
-  return result;
-};
-
-/**
- * 解析 GitHub Rate Limit 信息。
- * Phase 4 红队修复：缺失头（headers.get 返回 null）必须视为 undefined ——
- * 原实现 `Number(null) === 0` 会把"无限流头"误判为 remaining: 0（限流耗尽），
- * 在代理剥头/测试注入 baseUrl 等场景下误触发限流等待逻辑。
- * @param {Headers | HeadersInit | undefined} headers
- * @returns {{ limit: number | undefined, remaining: number | undefined, reset: number | undefined }}
- */
-export const parseRateLimitHeaders = (headers) => {
-  const get = (key) => {
-    if (!headers) return undefined;
-    if (typeof headers.get === 'function') {
-      const value = headers.get(key);
-      return value === null ? undefined : value;
-    }
-    return headers[key];
-  };
-  const limit = Number(get('x-ratelimit-limit'));
-  const remaining = Number(get('x-ratelimit-remaining'));
-  const reset = Number(get('x-ratelimit-reset'));
-  return {
-    limit: Number.isFinite(limit) ? limit : undefined,
-    remaining: Number.isFinite(remaining) ? remaining : undefined,
-    reset: Number.isFinite(reset) ? reset : undefined,
-  };
-};
-
-/** GitHub 权限类 403 的特征消息（区别于限流 403）。 */
-const PERMISSION_ERROR_PATTERNS = [
-  /resource not accessible by integration/i,
-  /resource not accessible/i,
-  /insufficient permissions/i,
-  /must have push/i,
-  /repository was archived/i,
-  /access blocked/i,
-];
-
-/**
- * 判断 403 是否为"权限不足"而非限流。
- * GITHUB_TOKEN 缺某项权限（如 issues:write / discussions:read）时 GitHub 返回
- * 403 + "Resource not accessible by integration"；若把这类 403 一律当限流，
- * 会先 sleep 到 reset、再补偿重试、最后抛 RateLimitError 让调用方"整批暂停"，
- * 报错信息误导为限流而实际是权限配置问题。
- * @param {Response} response
- * @param {string} [bodyText] 已读取的响应体文本（未读取时传空串，仅凭状态码判断）。
- * @returns {boolean}
- */
-export const isPermissionDeniedResponse = (response, bodyText = '') => {
-  if (!response || response.status !== 403) return false;
-  return PERMISSION_ERROR_PATTERNS.some((pattern) => pattern.test(bodyText));
-};
-
-/**
- * 判断响应是否为"GitHub 限流响应"：
- * - 显式 x-ratelimit-remaining=0（主限流耗尽）；
- * - 403（GitHub 主限流/二次限流的经典返回码）；但带权限类错误消息的 403 除外；
- * - 429（二次限流 Too Many Requests，可能不携带限流头）。
- * 命中即视为限流，由调用方决定等待 reset 或整批暂停。
- * @param {Response} response
- * @param {string} [bodyText] 已读取的响应体文本（403 时用于排除权限错误）。
- * @returns {boolean}
- */
-export const isRateLimitResponse = (response, bodyText = '') => {
-  if (!response) return false;
-  if (parseRateLimitHeaders(response.headers).remaining === 0) return true;
-  if (response.status === 429) return true;
-  if (response.status === 403) {
-    // 带权限类错误消息的 403 不是限流：避免误判后整批暂停、误导排障。
-    return !isPermissionDeniedResponse(response, bodyText);
-  }
-  return false;
 };
 
 /**
@@ -695,12 +550,11 @@ export const isNetworkError = (error) => {
 /**
  * 带超时、指数退避（Full Jitter）与 Retry-After 尊重的 fetch 封装。
  *
- * 失败语义（Phase 3 统一）：
- * - 可重试状态码（408/425/429/5xx）在网络次耗尽后：抛 RetryableHttpError(status, attempts, body)。
- * - 网络层错误（TypeError / 内部超时）在网络次耗尽后：抛 RetryableHttpError(status=0, attempts)。
+ * 失败语义：
+ * - 可重试状态码（408/425/429/5xx）在重试耗尽后：抛 RetryableHttpError(status, attempts, body)。
+ * - 网络层错误（TypeError / 内部超时）在重试耗尽后：抛 RetryableHttpError(status=0, attempts)。
  * - 外部 signal 触发 abort：抛原始 abort 错误（绝不重试）。
- * - 非可重试状态码（401/404 等）：返回 Response（调用方检查 response.ok 即可，
- *   或直接使用 fetchGithubJson 等高层封装，它们会转 HttpStatusError）。
+ * - 非可重试状态码（401/404 等）：返回 Response（调用方检查 response.ok 即可）。
  *
  * @param {string} url 请求地址。
  * @param {RequestInit} options fetch 选项（method/headers/body 等）。
@@ -766,14 +620,15 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
           delayMs,
           url,
         });
-        // 读取（并丢弃）body 以释放连接，避免滞留 socket；失败不影响重试。
-        await response.text().catch(() => {});
+        // 读取（并丢弃）body 以释放连接，避免滞留 socket；限量读取防超大响应体
+        // 占用内存（恶意外链可返回 503 + 数百 MB body）。失败不影响重试。
+        await readResponseText(response, { maxBytes: 4096 }).catch(() => {});
         await sleep(delayMs, externalSignal);
         cleanup();
         continue;
       }
 
-      // 可重试状态码但重试已耗尽：统一包装为 RetryableHttpError（Phase 3 核心修复）。
+      // 可重试状态码但重试已耗尽：统一包装为 RetryableHttpError（不静默返回非 ok Response）。
       // 上一版此处直接 return response，导致 Akismet 把 500 页正文误当结论。
       if (RETRYABLE_STATUS_CODES.has(response.status)) {
         lastBody = await readResponseText(response, { maxBytes: 4096 });
@@ -795,7 +650,7 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
       // 注意：不能依赖错误 message 判断 —— Node fetch（undici）在 signal
       // abort 时抛出的 DOMException message 恒为 "This operation was aborted"，
       // 不含 createTimeoutSignal 注入的 reason。因此以外部 signal 的实际
-      // aborted 状态为准（Phase 4 红队实测发现）。
+      // aborted 状态为准（实测发现：message 不含注入的 reason）。
       if (externalSignal?.aborted) {
         throw error;
       }
@@ -828,231 +683,4 @@ export const fetchWithRetry = async (url, options = {}, config = {}) => {
     retries + 1,
     lastBody,
   );
-};
-
-/* ------------------------------------------------------------------ */
-/* GitHub REST API 封装（鉴权头 / 限流 / 分页 / 透传 method/body）      */
-/* ------------------------------------------------------------------ */
-
-/**
- * 带鉴权、限流等待、退避重试与自动分页的 GitHub REST API 请求。
- * 支持非 GET 方法：method/body/自定义 headers 通过 fetchOptions 透传。
- *
- * @param {string} endpoint 相对端点，如 '/repos/{owner}/{repo}/issues?state=open' 或
- *        '/repos/{owner}/{repo}/issues/{number}/comments'。注意：仓库内资源必须带
- *        /repos/{owner}/{repo} 前缀；裸 '/issues'（List issues assigned to the
- *        authenticated user）等用户级端点在 GITHUB_TOKEN（仓库级令牌）下会返回 404。
- * @param {object} options
- * @param {string} options.token GitHub Token（必填；缺失时抛出明确错误）。
- * @param {string} [options.baseUrl='https://api.github.com'] API 基地址（可测注入）。
- * @param {Record<string, string | number | boolean | undefined>} [options.params] 查询参数。
- * @param {boolean} [options.paginate=true] 是否自动分页（Link 头 rel="next"）。
- * @param {number} [options.maxPages=DEFAULT_MAX_PAGES] 最大页数。
- * @param {boolean} [options.strictPagination=false] 达到 maxPages 仍有 next 时抛
- *        PaginationLimitError（fail-closed，防止静默截断）。默认 false 保持宽松。
- * @param {number} [options.timeoutMs] 单请求超时。
- * @param {number} [options.retries] 重试次数。
- * @param {number} [options.maxRateLimitWaitMs=DEFAULT_MAX_RATE_LIMIT_WAIT_MS] 限流等待上限。
- * @param {AbortSignal} [options.signal] 外部取消信号。
- * @param {(info: object) => void} [options.onRetry] 重试回调（透传 fetchWithRetry）。
- * @param {(info: { page: number, rateLimit: object }) => void} [options.onPage] 每页回调。
- * @param {RequestInit} [options.fetchOptions] 透传给 fetch 的额外选项（method/body/自定义 headers）。
- *       注意：鉴权头与 X-GitHub-Api-Version 由本函数强制注入，调用方无需重复设置。
- * @returns {Promise<{ data: any, headers: Headers, rateLimit: object, pages: number, lastLink: object }>}
- *          分页模式下 data 为合并后的数组；单页非数组时 data 为原始 JSON 值。
- */
-export const fetchGithubJson = async (endpoint, options = {}) => {
-  const {
-    token,
-    baseUrl = 'https://api.github.com',
-    params = {},
-    paginate = true,
-    maxPages = DEFAULT_MAX_PAGES,
-    strictPagination = false,
-    timeoutMs,
-    retries,
-    maxRateLimitWaitMs = DEFAULT_MAX_RATE_LIMIT_WAIT_MS,
-    signal,
-    onRetry,
-    onPage,
-    fetchOptions = {},
-  } = options;
-
-  if (!token) {
-    throw new Error('fetchGithubJson requires a token (GITHUB_TOKEN / GH_TOKEN).');
-  }
-
-  // 基础请求配置：鉴权头强制注入；调用方透传字段叠加。
-  // 兼容两种调用风格：顶层 method/body/headers（GitHub 客户端惯例），
-  // 或 fetchOptions 包裹（更明确的命名）。headers 合并顺序为：
-  // 默认鉴权头 < fetchOptions.headers < 顶层 headers（调用方优先级最高，
-  // 用于 Content-Type 等业务头）。
-  const baseRequest = {
-    method: options.method,
-    body: options.body,
-    ...fetchOptions,
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${token}`,
-      'X-GitHub-Api-Version': GITHUB_API_VERSION,
-      ...(fetchOptions.headers || {}),
-      ...(options.headers || {}),
-    },
-  };
-
-  const buildUrl = (page) => {
-    const query = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== null && value !== '') {
-        query.set(key, String(value));
-      }
-    }
-    // 端点里已有的查询参数（如 per_page）保留，params 覆盖。
-    const endpointQuery = endpoint.includes('?') ? new URLSearchParams(endpoint.split('?')[1]) : new URLSearchParams();
-    for (const [key, value] of query.entries()) endpointQuery.set(key, value);
-    if (page > 1) endpointQuery.set('page', String(page));
-    const queryString = endpointQuery.toString();
-    const base = endpoint.split('?')[0];
-    return `${base}${queryString ? `?${queryString}` : ''}`;
-  };
-
-  const merged = [];
-  let pages = 0;
-  let lastResponse = null;
-  let rateLimit = {};
-  let link = {};
-
-  /**
-   * 执行单页请求（含限流等待后的补偿重试）。
-   * @param {number} page
-   * @returns {Promise<any>} 该页 JSON 数据。
-   */
-  const fetchPage = async (page) => {
-    const url = `${baseUrl}${buildUrl(page)}`;
-
-    // 429（二次限流）在 fetchWithRetry 内已做退避重试，耗尽后以
-    // RetryableHttpError(status=429) 抛出，不会作为响应返回 —— 因此下方
-    // isRateLimitResponse 分支永远看不到 429（Phase 4 红队遗留缺口）。
-    // 这里把 429 归一为 RateLimitError，让调用方的“整批暂停”机制真正覆盖
-    // 二次限流，而不是把每个请求的失败当成普通错误记录后继续下一个请求
-    // （只会继续放大限流）。
-    const fetchPageRequest = async (retryBudget) => {
-      let response;
-      try {
-        response = await fetchWithRetry(url, baseRequest, { timeoutMs, retries: retryBudget, signal, onRetry });
-      } catch (error) {
-        if (error instanceof RetryableHttpError && error.status === 429) {
-          throw new RateLimitError(
-            `GitHub secondary rate limit exceeded after ${error.attempts} attempts: ${sanitizeUrlForLogs(url)}`,
-            60,
-            0,
-          );
-        }
-        throw error;
-      }
-      return response;
-    };
-
-    // 发起请求；429/5xx 由 fetchWithRetry 自动退避重试。
-    let response = await fetchPageRequest(retries);
-
-    // 403 且无显式限流头时，先读响应体以区分「权限不足」与「限流」：
-    // 权限类 403 不应按限流等待/整批暂停，应以普通错误抛出便于排障。
-    let responseBodyText = '';
-    if (response.status === 403 && parseRateLimitHeaders(response.headers).remaining !== 0) {
-      responseBodyText = await readResponseText(response, { maxBytes: 4096 }).catch(() => '');
-    }
-
-    // 限流保护：429/403/remaining=0 时休眠到 reset（或 Retry-After），
-    // 有上限（maxRateLimitWaitMs），超限直接抛 RateLimitError，绝不无限等待。
-    // Phase 3 修复：isRateLimitResponse 覆盖 403 与 429 两种限流形态
-    // （上一版只识别 403 && remaining===0，二次限流的 429 完全漏检）。
-    if (isRateLimitResponse(response, responseBodyText)) {
-      const parsedRateLimit = parseRateLimitHeaders(response.headers);
-      const waitMs = parsedRateLimit.reset ? Math.max(0, parsedRateLimit.reset * 1000 - Date.now()) : 0;
-      const retryAfterSeconds = parseRetryAfter(response.headers);
-      const retryAfterMs = retryAfterSeconds !== undefined ? retryAfterSeconds * 1000 : Number.POSITIVE_INFINITY;
-      // waitMs 用 ?? 而非 ||：reset 缺失/已过期时 waitMs 为 0（合法值：无需等待），
-      // 若被 || Infinity 吞掉会退化为 maxRateLimitWaitMs（90s），每次无 reset 头的
-      // 限流响应都白等 90 秒。
-      const boundedWaitMs = Math.min(waitMs ?? Number.POSITIVE_INFINITY, retryAfterMs, maxRateLimitWaitMs);
-
-      if (Number.isFinite(boundedWaitMs) && boundedWaitMs > 0) {
-        await sleep(boundedWaitMs, signal);
-        // 等待补偿后重试一次；若仍被限流，走下方 isRateLimitResponse 抛错分支。
-        response = await fetchPageRequest(1);
-        // 补偿重试返回的是新响应：重新读取其 body 用于后续错误分类。
-        // 若沿用旧响应的 body，权限类 403（body 含 permission 提示）会被误判
-        // 为限流（整批暂停），HttpStatusError 的详情文本也会是过期内容。
-        responseBodyText = '';
-        if (response.status === 403 && parseRateLimitHeaders(response.headers).remaining !== 0) {
-          responseBodyText = await readResponseText(response, { maxBytes: 4096 }).catch(() => '');
-        }
-      }
-    }
-
-    rateLimit = parseRateLimitHeaders(response.headers);
-    link = parseLinkHeader(response.headers);
-    lastResponse = response;
-
-    if (!response.ok) {
-      // 限流且等待补偿后仍失败：抛 RateLimitError（调用方整批暂停）。
-      if (isRateLimitResponse(response, responseBodyText)) {
-        const parsedRateLimit = parseRateLimitHeaders(response.headers);
-        throw new RateLimitError(
-          `GitHub rate limit exceeded: ${sanitizeUrlForLogs(url)}`,
-          parsedRateLimit.reset ? Math.max(0, Math.ceil(parsedRateLimit.reset - Date.now() / 1000)) : 60,
-          maxRateLimitWaitMs,
-        );
-      }
-      // 其余 4xx/5xx：复用已读取的响应体（避免对已消费的流再次读取），
-      // 限量读取后抛出带状态码的普通错误（重试已在 fetchWithRetry 耗尽）。
-      const bodyText = responseBodyText || (await readResponseText(response, { maxBytes: 4096 }).catch(() => ''));
-      throw new HttpStatusError(
-        `GitHub API HTTP ${response.status}: ${bodyText.slice(0, 500)}`,
-        response.status,
-        bodyText,
-      );
-    }
-
-    onPage?.({ page, rateLimit });
-    return response.json();
-  };
-
-  let page = 1;
-  for (;;) {
-    const data = await fetchPage(page);
-    pages += 1;
-    if (Array.isArray(data)) {
-      merged.push(...data);
-    } else if (page === 1) {
-      // 非数组响应（如 POST 创建评论返回单个对象）：不翻页，直接返回。
-      return { data, headers: lastResponse.headers, rateLimit, pages, lastLink: link };
-    } else {
-      // 第 2+ 页返回非数组：静默跳过会丢失该页数据且继续翻页（结果残缺）。
-      // GitHub 列表端点恒返回数组，此分支为防御；fail-closed 而非吞数据。
-      throw new Error(`GitHub API pagination expected an array on page ${page}, got ${typeof data}: ${buildUrl(page)}`);
-    }
-
-    if (!paginate || !link.next || pages >= maxPages) {
-      // strictPagination：达到上限且仍存在下一页 → fail-closed，禁止静默截断。
-      if (strictPagination && link.next && pages >= maxPages) {
-        throw new PaginationLimitError(
-          `Pagination limit reached (${maxPages} pages) but more pages exist; refusing to silently truncate: ${baseUrl}${buildUrl(page)}`,
-          pages,
-          link.next,
-        );
-      }
-      break;
-    }
-    page += 1;
-  }
-
-  return {
-    data: merged,
-    headers: lastResponse.headers,
-    rateLimit,
-    pages,
-    lastLink: link,
-  };
 };
