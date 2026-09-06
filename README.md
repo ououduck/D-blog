@@ -125,7 +125,7 @@ draft: false                  # 草稿不会发布
 ---
 ```
 
-封面与正文图片均通过图床（PicGo）托管。批量迁移本地图片可运行 `npm run migrate:images`（支持 `--dry-run`）。
+封面与正文图片均通过图床（PicGo）托管，直接以图床外链形式写入 Markdown。
 
 ### Markdown 增强
 
@@ -181,7 +181,6 @@ images:
 | `npm run build` / `build:verbose` | 生产构建 / 详细模式（保留 Vite 完整输出） |
 | `npm run build:ssr` / `ssg` | 仅构建 SSR bundle（`dist-ssr/`）/ 仅 SSG 预渲染（需先完成两端构建） |
 | `npm run preview` | 预览生产构建结果 |
-| `npm run migrate:images` | 批量迁移本地图片至图床（支持 `--dry-run`） |
 | `npm run gen:data` | 数据生成 + 全量校验（frontmatter、文章 ID、图片与链接） |
 | `npm run audit:build` / `audit:seo` | 构建产物完整性 / 全站 SEO 清单审计（均已接入 build） |
 | `npm run typecheck` / `check` | 类型检查 / 数据生成校验 + 类型检查 |
