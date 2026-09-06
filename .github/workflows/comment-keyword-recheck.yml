@@ -48,9 +48,15 @@ jobs:
           node-version: 22
 
       - name: Show dispatch context
+        env:
+          # payload 为 Pages CMS JSON：经 env 间接引用而非 ${{
+          # }} 内插进 run: —— GitHub 表达式在 shell 拼接前展开，
+          # payload 内嵌的 $(...)/反引号会以代码执行（注入面）。
+          PAYLOAD_REF: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || '' }}
+          PAYLOAD_USER: ${{ inputs.payload != '' && fromJSON(inputs.payload).triggeredBy.githubUsername || '' }}
         run: |
-          echo "Ref: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || github.ref }}"
-          echo "Triggered by: ${{ inputs.payload != '' && fromJSON(inputs.payload).triggeredBy.githubUsername || 'manual' }}"
+          echo "Ref: ${PAYLOAD_REF:-$GITHUB_REF}"
+          echo "Triggered by: ${PAYLOAD_USER:-manual}"
 
       - name: Run full comment keyword recheck
         # 使用自动注入的 GITHUB_TOKEN（与 akismet / keyword filter workflow 相同方案）；

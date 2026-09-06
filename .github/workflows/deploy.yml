@@ -43,9 +43,15 @@ jobs:
           ref: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || '' }}
 
       - name: Show dispatch context
+        env:
+          # payload 为 Pages CMS JSON：经 env 间接引用而非 ${{
+          # }} 内插进 run: —— GitHub 表达式在 shell 拼接前展开，
+          # payload 内嵌的 $(...)/反引号会以代码执行（注入面）。
+          PAYLOAD_REF: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || '' }}
+          PAYLOAD_USER: ${{ inputs.payload != '' && fromJSON(inputs.payload).triggeredBy.githubUsername || '' }}
         run: |
-          echo "Ref: ${{ inputs.payload != '' && fromJSON(inputs.payload).repository.ref || github.ref }}"
-          echo "Triggered by: ${{ inputs.payload != '' && fromJSON(inputs.payload).triggeredBy.githubUsername || 'manual' }}"
+          echo "Ref: ${PAYLOAD_REF:-$GITHUB_REF}"
+          echo "Triggered by: ${PAYLOAD_USER:-manual}"
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -74,8 +80,10 @@ jobs:
 
       - name: Deploy to EdgeOne Pages
         env:
-          EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
+          # CLI 直接读取环境变量鉴权（源码 process.env.EDGEONE_PAGES_API_TOKEN
+          # 优先于 -t 参数），token 不再出现在进程 argv（ps 可见/报错回显）。
+          EDGEONE_PAGES_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
         # 直传部署（EdgeOne CLI 仅支持直传类型项目），-e production 为生产环境。
         # 命令为 makers deploy（pages deploy 为改名前的旧命令，官方文档页尚未更新）。
         # edgeone 固定精确版本，理由同上。
-        run: npx --yes edgeone@1.6.28 makers deploy ./dist -n d-blog -e production -t "$EDGEONE_API_TOKEN"
+        run: npx --yes edgeone@1.6.28 makers deploy ./dist -n d-blog -e production
