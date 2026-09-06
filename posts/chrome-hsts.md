@@ -1,13 +1,13 @@
 ---
 id: chrome-hsts
 title: Chrome HSTS 的小彩蛋
-excerpt: 用了这么多年Chrome 被一些网站的HTTPS卡了这么久 为什么不早告诉我可以这样！！！
+excerpt: 用了这么多年Chrome 被一些网站的HTTPS卡了这么久 为什么不早告诉我可以这样忽略HSTS
 date: 2026-09-06
 updatedAt: 2026-09-06
 category: 技术
 tags:
   - Chrome
-  - Https
+  - HTTPS
   - HSTS
 coverImage: https://img.pldduck.com/20260906141923517.png
 author: 跑路的duck
@@ -26,10 +26,12 @@ draft: false
 但有时候有些网站当时又特别急着要用(Edge还好可以高级选项直接进入)  
 
 # 正文
+
 但是今天，我偶然看到一条帖子下面的评论。  
 说遇到这种情况有一种办法可以直接解决。  
 
 ## 方法
+
 方法就是在这个时候 用键盘盲输一个 **thisisunsafe**  
 这样 Chrome 就可以临时加载这个网页，忽略 Https 问题。
 
