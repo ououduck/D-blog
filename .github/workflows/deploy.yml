@@ -74,6 +74,12 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # npx 缓存指向 runner 临时目录：默认 ~/.npm/_npx 会随 setup-node 的
+          # npm 缓存跨运行持久化，恢复出的旧安装树与 runner 当前 npm 版本不兼容
+          # 时 arborist 建树崩溃（npm error Cannot read properties of null
+          # (reading 'edgesOut')，npm/cli#8275）。临时目录每次全新安装（数秒），
+          # 且不再把部署 CLI 回写进共享 npm 缓存。
+          npm_config_cache: ${{ runner.temp }}/npm-cache-deploy
         # 直传（direct upload）部署：平台不构建，不消耗构建额度。
         # wrangler 固定精确版本：浮动 major tag 每次从 npm 拉取，部署行为不可复现且不可审计。
         run: npx --yes wrangler@4.123.0 pages deploy dist --project-name=d-blog --branch=main --commit-dirty=true
@@ -83,6 +89,8 @@ jobs:
           # CLI 直接读取环境变量鉴权（源码 process.env.EDGEONE_PAGES_API_TOKEN
           # 优先于 -t 参数），token 不再出现在进程 argv（ps 可见/报错回显）。
           EDGEONE_PAGES_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
+          # 同上：npx 缓存与会跨运行持久化的 ~/.npm 隔离，规避 arborist 崩溃。
+          npm_config_cache: ${{ runner.temp }}/npm-cache-deploy
         # 直传部署（EdgeOne CLI 仅支持直传类型项目），-e production 为生产环境。
         # 命令为 makers deploy（pages deploy 为改名前的旧命令，官方文档页尚未更新）。
         # edgeone 固定精确版本，理由同上。
