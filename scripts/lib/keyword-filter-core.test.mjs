@@ -64,23 +64,28 @@ describe('isExemptAuthor', () => {
 });
 
 describe('loadConfig', () => {
-  const originalCwd = process.cwd();
-
-  /** 在临时目录中模拟 config/comment-keywords.json 后恢复 cwd。 */
-  const withTempConfig = async (fileContent, callback) => {
+  /** 写入临时配置文件，返回其路径（由 loadConfig 的 configPath 参数注入）。
+   *  传 undefined 表示「文件不存在」场景（返回指向不存在文件的路径）。 */
+  const writeTempConfig = (fileContent) => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kw-filter-test-'));
-    fs.mkdirSync(path.join(tempDir, 'config'), { recursive: true });
+    const configPath = path.join(tempDir, 'comment-keywords.json');
     if (fileContent !== undefined) {
-      fs.writeFileSync(path.join(tempDir, 'config', 'comment-keywords.json'), fileContent, 'utf8');
+      fs.writeFileSync(configPath, fileContent, 'utf8');
     }
-    process.chdir(tempDir);
+    return configPath;
+  };
+
+  /** 路径锚定：默认配置路径独立于 process.cwd()（scripts/lib/ 上两级）。 */
+  it('默认配置路径锚定仓库根，不随 cwd 漂移', () => {
+    const originalCwd = process.cwd();
     try {
-      return await callback();
+      process.chdir(os.tmpdir());
+      const config = loadConfig();
+      expect(config).not.toBeNull();
     } finally {
       process.chdir(originalCwd);
-      fs.rmSync(tempDir, { recursive: true, force: true });
     }
-  };
+  });
 
   it('仓库内真实配置可加载且结构完整', () => {
     const config = loadConfig();
@@ -91,59 +96,58 @@ describe('loadConfig', () => {
     expect(config.exemptUsers).toBeInstanceOf(Set);
   });
 
-  it('配置文件缺失时返回 null 并告警', async () => {
+  it('配置文件缺失时返回 null 并告警', () => {
     const warnings = [];
-    const config = await withTempConfig(undefined, () => loadConfig({ warn: (message) => warnings.push(message) }));
+    const config = loadConfig({ warn: (message) => warnings.push(message) }, writeTempConfig(undefined));
     expect(config).toBeNull();
     expect(warnings.length).toBe(1);
   });
 
-  it('配置 JSON 非法时返回 null 并告警', async () => {
+  it('配置 JSON 非法时返回 null 并告警', () => {
     const warnings = [];
-    const config = await withTempConfig('{not valid json', () =>
-      loadConfig({ warn: (message) => warnings.push(message) }),
-    );
+    const config = loadConfig({ warn: (message) => warnings.push(message) }, writeTempConfig('{not valid json'));
     expect(config).toBeNull();
     expect(warnings.length).toBe(1);
   });
 
-  it('无关键词与正则时返回 null', async () => {
-    const config = await withTempConfig(JSON.stringify({ keywords: [], patterns: [] }), () => loadConfig());
+  it('无关键词与正则时返回 null', () => {
+    const config = loadConfig(undefined, writeTempConfig(JSON.stringify({ keywords: [], patterns: [] })));
     expect(config).toBeNull();
   });
 
-  it('非法 action 回退为 minimize（安全默认）', async () => {
-    const config = await withTempConfig(JSON.stringify({ action: 'bogus', keywords: ['x'] }), () => loadConfig());
+  it('非法 action 回退为 minimize（安全默认）', () => {
+    const config = loadConfig(undefined, writeTempConfig(JSON.stringify({ action: 'bogus', keywords: ['x'] })));
     expect(config.action).toBe('minimize');
   });
 
-  it('action=delete / none 原样保留；discussionAction 仅接受 none', async () => {
-    const deleteConfig = await withTempConfig(
-      JSON.stringify({ action: 'delete', discussionAction: 'none', keywords: ['x'] }),
-      () => loadConfig(),
+  it('action=delete / none 原样保留；discussionAction 仅接受 none', () => {
+    const deleteConfig = loadConfig(
+      undefined,
+      writeTempConfig(JSON.stringify({ action: 'delete', discussionAction: 'none', keywords: ['x'] })),
     );
     expect(deleteConfig.action).toBe('delete');
     expect(deleteConfig.discussionAction).toBe('none');
 
-    const noneConfig = await withTempConfig(JSON.stringify({ action: 'none', keywords: ['x'] }), () => loadConfig());
+    const noneConfig = loadConfig(undefined, writeTempConfig(JSON.stringify({ action: 'none', keywords: ['x'] })));
     expect(noneConfig.action).toBe('none');
     expect(noneConfig.discussionAction).toBe('delete');
 
-    const bogusDiscussion = await withTempConfig(
-      JSON.stringify({ action: 'delete', discussionAction: 'hide', keywords: ['x'] }),
-      () => loadConfig(),
+    const bogusDiscussion = loadConfig(
+      undefined,
+      writeTempConfig(JSON.stringify({ action: 'delete', discussionAction: 'hide', keywords: ['x'] })),
     );
     expect(bogusDiscussion.discussionAction).toBe('delete');
   });
 
-  it('非字符串关键词被过滤、空白条目被剔除', async () => {
-    const config = await withTempConfig(JSON.stringify({ keywords: [' 有值 ', 42, '', '  '] }), () => loadConfig());
+  it('非字符串关键词被过滤、空白条目被剔除', () => {
+    const config = loadConfig(undefined, writeTempConfig(JSON.stringify({ keywords: [' 有值 ', 42, '', '  '] })));
     expect(config.keywords).toEqual(['有值']);
   });
 
-  it('非法正则被跳过但不影响其余配置', async () => {
-    const config = await withTempConfig(JSON.stringify({ keywords: ['ok'], patterns: ['[invalid', '\\d+'] }), () =>
-      loadConfig(),
+  it('非法正则被跳过但不影响其余配置', () => {
+    const config = loadConfig(
+      undefined,
+      writeTempConfig(JSON.stringify({ keywords: ['ok'], patterns: ['[invalid', '\\d+'] })),
     );
     expect(config.keywords).toEqual(['ok']);
     expect(config.patterns).toHaveLength(1);

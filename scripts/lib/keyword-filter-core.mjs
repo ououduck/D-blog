@@ -10,9 +10,15 @@
  */
 
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-/** 关键词配置路径（相对仓库根目录）。 */
-const CONFIG_PATH = 'config/comment-keywords.json';
+/**
+ * 关键词配置路径：以本文件位置锚定仓库根（scripts/lib/ → 上两级）。
+ * 不依赖 process.cwd()：从其他目录本地运行脚本时相对路径会解析失败，
+ * 过滤器静默 fail-open（配置缺失即跳过审核），锚定后任何 cwd 下行为一致。
+ */
+const CONFIG_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../config/comment-keywords.json');
 
 /** 自动豁免的机器人账号（giscus 公告类讨论/评论不应被关键词审核）。 */
 const ALWAYS_EXEMPT_USERS = new Set(['giscus[bot]', 'github-actions[bot]']);
@@ -32,21 +38,22 @@ const normalizeText = (text) =>
 /**
  * 加载并校验关键词配置。
  * @param {{ warn: (message: string, fields?: object) => void }} logger 结构化日志器。
+ * @param {string} [configPath=CONFIG_PATH] 配置路径（测试注入临时文件用）。
  * @returns {null | { action: string, discussionAction: string, exemptUsers: Set<string>, keywords: string[], patterns: RegExp[] }}
  *          配置缺失/为空/解析失败时返回 null（调用方优雅跳过）。
  */
-export const loadConfig = (logger) => {
-  if (!fs.existsSync(CONFIG_PATH)) {
-    logger?.warn('Keyword config file not found; filter skipped', { path: CONFIG_PATH });
+export const loadConfig = (logger, configPath = CONFIG_PATH) => {
+  if (!fs.existsSync(configPath)) {
+    logger?.warn('Keyword config file not found; filter skipped', { path: configPath });
     return null;
   }
 
   let raw;
   try {
-    raw = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    raw = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   } catch (error) {
     logger?.warn('Failed to parse keyword config; filter skipped', {
-      path: CONFIG_PATH,
+      path: configPath,
       error: error instanceof Error ? error.message : String(error),
     });
     return null;
@@ -71,7 +78,7 @@ export const loadConfig = (logger) => {
   }
 
   if (keywords.length === 0 && patterns.length === 0) {
-    logger?.warn('No keywords or patterns configured; filter skipped', { path: CONFIG_PATH });
+    logger?.warn('No keywords or patterns configured; filter skipped', { path: configPath });
     return null;
   }
 
