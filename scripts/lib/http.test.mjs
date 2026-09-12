@@ -71,10 +71,8 @@ describe('createTimeoutSignal', () => {
 });
 
 describe('sanitizeUrlForLogs', () => {
-  it('脱敏 Telegram bot token（路径段）', () => {
-    expect(sanitizeUrlForLogs('https://api.telegram.org/bot123456:ABC-DEF_xyz/sendMessage')).toBe(
-      'https://api.telegram.org/bot***/sendMessage',
-    );
+  it('脱敏 Feishu Webhook 查询串密钥', () => {
+    expect(sanitizeUrlForLogs('https://example.com/hook?key=secret')).toBe('https://example.com/hook?***');
   });
 
   it('脱敏 Akismet key（子域）', () => {

@@ -2,12 +2,12 @@
 
 ## 功能概述
 
-构建期/CI 扫描 `posts/*.md` 全部 http/https 外链（Markdown 链接 + HTML `<a href>`），逐个请求检查可达性，失效链接按文章分组（带行号与 HTTP 状态）推送 Telegram。每周定时 + PagesCMS 按钮手动触发。
+构建期/CI 扫描 `posts/*.md` 全部 http/https 外链（Markdown 链接 + HTML `<a href>`），逐个请求检查可达性，失效链接按文章分组（带行号与 HTTP 状态）推送 飞书机器人 Webhook。每周定时 + PagesCMS 按钮手动触发。
 
 ## 关键文件
 
 - `scripts/check-broken-links.mjs`
-- `scripts/lib/telegram.mjs`（发送共享库）
+- `scripts/lib/feishu-webhook.mjs`（发送共享库）
 - `.github/workflows/check-broken-links.yml`
 - `.pages.yml`（「🔗 检查失效外链」动作按钮）
 
@@ -19,7 +19,7 @@
 3. **重试语义**：单 URL 检查必须复用 `fetchWithRetry`（瞬时抖动不误判死链）。
 4. **忽略名单**：`--ignore-hosts` 语义保持（已知反爬站点如 Cloudflare Dashboard 的 403 误报）。
 5. **并发与礼貌**：固定并发池（4）+ 每请求 150ms 间隔的平衡保持。
-6. **上报**：失效报告走 `sendTelegramMessage`（配置缺失优雅跳过返回 null）；`--dry-run` 不上报；`--fail` 非零退出。
+6. **上报**：失效报告走 `sendFeishuWebhookMessage`（配置缺失优雅跳过返回 null）；`--dry-run` 不上报；`--fail` 非零退出。
 7. **导入副作用**：模块被 import 时不得执行 main()（入口判定 pathToFileURL 比较）。
 8. **日志脱敏**：输出用户可控 URL 前必须 `sanitizeUrlForLogs`（URL 可能含 userinfo 凭据，如 https://user:secret@host）。
 
@@ -29,7 +29,7 @@
 - **dispatcher 必须配 npm undici 自己的 fetch**：Node 内置 fetch 的 handler 接口与 npm undici Agent 版本不匹配时（Node 捆绑 undici 6/7 vs 安装的 ^8），`fetch(url, { dispatcher })` 会抛 UND_ERR_INVALID_ARG「invalid onRequestStart method」，所有请求静默失败、死链检查整批误报 network —— fetchWithRetry 已内置处理（传 dispatcher 时自动切 `getSafeUndiciFetch()`），改动时勿再回退到全局 fetch；
 - **safeLookup 必须 await Promise 版 dns.lookup**：http.mjs 的 `dns` 来自 `node:dns/promises`，`dns.lookup(host, opts, cb)` 的回调参数会被忽略、回调永不被调用，连接期校验会静默超时（UND_ERR_CONNECT_TIMEOUT）整批误报 —— 先 await 再按 net.connect 约定回调（options.all 回数组）；
 - 重定向 Location 为相对路径时必须 `new URL(location, current)` 解析后再校验，直接拼接会漏掉跳转目标；
-- Telegram 消息为 HTML parse mode，URL/错误文本必须 escapeHtml；
+- 飞书机器人 Webhook 消息使用纯文本 JSON，用户可控 URL 仅在日志中脱敏；
 - workflow 的 npm ci 只为 gray-matter（headings-core 无依赖）。
 
 ## 破例条款

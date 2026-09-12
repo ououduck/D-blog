@@ -1,7 +1,7 @@
 /**
- * telegram-notify.mjs — GitHub 事件 → Telegram 推送（D-blog 项目消息提醒）。
+ * feishu-webhook.mjs — GitHub 事件 → 飞书机器人 Webhook 推送（D-blog 项目消息提醒）。
  *
- * 由 .github/workflows/telegram-notify.yml 调用，把仓库事件实时推送到 Telegram：
+ * 由 .github/workflows/feishu-webhook.yml 调用，把仓库事件实时推送到 飞书机器人 Webhook：
  *   1. push (main)          → 推送更新（提交列表 + 对比链接）；
  *   2. discussion_comment   → 新评论（giscus 文章评论 / 留言板留言）；
  *   3. discussion           → 新讨论（防直接在 Discussions 灌水的可见性）；
@@ -11,16 +11,15 @@
  *   6. workflow_dispatch    → 手动触发：发送测试消息验证配置。
  *
  * 设计要点：
- * 1. 【配置缺失优雅降级】TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID 未配置时
+ * 1. 【配置缺失优雅降级】FEISHU_WEBHOOK_URL 未配置时
  *    ::warning:: + 正常退出（与 akismet 的 AKISMET_API_KEY 缺失行为一致），
  *    不会让每次 push / 评论都红叉；配置后自动恢复推送。
  * 2. 【workflow_run 自触发防护】通知 workflow 自身运行完成同样会产生
  *    workflow_run 事件；脚本比对 event.workflow_run.name 与 GITHUB_WORKFLOW
  *    一致时跳过，避免"通知自己"的无限循环。
- * 3. 【HTML 注入防护】所有用户可控字段（评论正文、提交消息、Issue 标题等）
- *    经 escapeHtml 净化后再拼入消息体；字段级截断 + 总长兜底截断，
- *    满足 Telegram 4096 字符上限且不会在标签中间截断。
- * 4. 【发送失败可见】Telegram API 瞬时故障（5xx / 网络抖动）经 fetchWithRetry
+ * 3. 【纯文本安全】所有用户可控字段（评论正文、提交消息、Issue 标题等）
+ *    清理控制字符后再拼入消息体；字段级截断 + 总长兜底截断，满足飞书文本消息长度限制。
+ * 4. 【发送失败可见】飞书机器人 Webhook API 瞬时故障（5xx / 网络抖动）经 fetchWithRetry
  *    重试；重试耗尽或业务错误（HTTP 4xx / ok:false）→ ::error:: + 非零退出，
  *    让推送故障在 Actions 页面可见可查（配置缺失才静默）。
  * 5. 【结构化日志】沿用 lib/gh-actions-logger.mjs（::group:: / ::warning:: /
@@ -29,21 +28,20 @@
  * 运行环境（GitHub Actions 自动注入）：
  *   GITHUB_EVENT_NAME / GITHUB_EVENT_PATH / GITHUB_WORKFLOW / GITHUB_REPOSITORY
  * 可选配置（仓库 Secrets，Settings → Secrets and variables → Actions）：
- *   TELEGRAM_BOT_TOKEN（BotFather 获取）、TELEGRAM_CHAT_ID（接收 chat id）、
- *   TELEGRAM_TOPIC_ID（可选：论坛话题 id，设置后消息发往该话题）。
+ *   FEISHU_WEBHOOK_URL（接收通知的 飞书机器人 Webhook 地址）。
  *
  * 本地调试（只打印消息体，不发送；GITHUB_EVENT_PATH 指向任意手动构造的
  * GitHub 事件 JSON 文件，如 path/to/push-event.json）：
  *   GITHUB_EVENT_NAME=push GITHUB_EVENT_PATH=path/to/push-event.json \
- *     node scripts/telegram-notify.mjs --print
+ *     node scripts/feishu-webhook.mjs --print
  */
 
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { sendTelegramMessage } from './lib/telegram.mjs';
+import { sendFeishuWebhookMessage } from './lib/feishu-webhook.mjs';
 import { createActionLogger, formatError, installGlobalErrorHandlers } from './lib/gh-actions-logger.mjs';
 
-const logger = createActionLogger('telegram');
+const logger = createActionLogger('feishu-webhook');
 
 /* ------------------------------------------------------------------ */
 /* 常量                                                                 */
@@ -74,18 +72,12 @@ const CONCLUSION_LABELS = Object.freeze({
 /* 工具函数                                                             */
 /* ------------------------------------------------------------------ */
 
-/**
- * HTML 转义：所有用户可控字段进入消息体前必经此函数。
- * 同时净化双引号，保证插入 <a href="..."> 属性值安全。
- * @param {unknown} value
- * @returns {string}
- */
-const escapeHtml = (value) =>
-  String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+/** 将用户可控字段转换为纯文本，避免控制字符污染通知内容。 */
+const CONTROL_CHARACTERS = new RegExp(
+  `[${String.fromCharCode(0)}-${String.fromCharCode(31)}${String.fromCharCode(127)}]`,
+  'g',
+);
+const escapeHtml = (value) => String(value ?? '').replace(CONTROL_CHARACTERS, ' ');
 
 /** 折叠为单行（换行/连续空白 → 单个空格），用于预览行，防消息体被撑破。 */
 const oneLine = (value) =>
@@ -144,8 +136,8 @@ const buildPushMessage = (event) => {
   const pusher = event.pusher?.name || event.sender?.login || 'unknown';
   const compareUrl = event.compare || event.head_commit?.url;
 
-  const lines = [`<b>🚀 D-blog 推送更新</b>`, ''];
-  lines.push(`分支: <code>${escapeHtml(branch)}</code>`);
+  const lines = [`🚀 D-blog 推送更新`, ''];
+  lines.push(`分支: ${escapeHtml(branch)}`);
   lines.push(`提交: ${commits.length} 个 · 推送人: ${escapeHtml(pusher)}`);
 
   if (commits.length > 0) {
@@ -158,8 +150,7 @@ const buildPushMessage = (event) => {
       const rawFirstLine = String(commit.message ?? '').split(/\r?\n/)[0] || '';
       const firstLine = oneLine(rawFirstLine) || '(无提交信息)';
       lines.push(
-        `• <b>${escapeHtml(truncate(firstLine, MAX_COMMIT_MSG_CHARS))}</b> — ${escapeHtml(author)} (` +
-          `<code>${escapeHtml(sha)}</code>)`,
+        `• ${escapeHtml(truncate(firstLine, MAX_COMMIT_MSG_CHARS))} — ${escapeHtml(author)} (` + `${escapeHtml(sha)})`,
       );
     }
     if (commits.length > MAX_COMMITS_LISTED) {
@@ -168,7 +159,7 @@ const buildPushMessage = (event) => {
   }
 
   if (compareUrl) {
-    lines.push('', `<a href="${escapeHtml(compareUrl)}">查看提交对比</a>`);
+    lines.push('', `查看提交对比: ${compareUrl}`);
   }
   return lines.join('\n');
 };
@@ -186,11 +177,11 @@ const buildCommentMessage = (event) => {
   const body = oneLine(truncate(comment.body, MAX_BODY_PREVIEW_CHARS));
   const url = comment.html_url || discussion.html_url;
 
-  const lines = ['<b>💬 D-blog 新评论</b>', ''];
+  const lines = ['💬 D-blog 新评论', ''];
   lines.push(`位置: ${escapeHtml(truncate(title, MAX_TITLE_CHARS))}`);
   lines.push(`作者: ${escapeHtml(author)}`);
   if (body) lines.push(`评论: ${escapeHtml(body)}`);
-  if (url) lines.push('', `<a href="${escapeHtml(url)}">查看评论</a>`);
+  if (url) lines.push('', `查看评论: ${url}`);
   return lines.join('\n');
 };
 
@@ -206,11 +197,11 @@ const buildDiscussionMessage = (event) => {
   const body = oneLine(truncate(discussion.body, MAX_BODY_PREVIEW_CHARS));
   const url = discussion.html_url;
 
-  const lines = ['<b>💬 D-blog 新讨论</b>', ''];
+  const lines = ['💬 D-blog 新讨论', ''];
   lines.push(`标题: ${escapeHtml(truncate(title, MAX_TITLE_CHARS))}`);
   lines.push(`作者: ${escapeHtml(author)}`);
   if (body) lines.push(`内容: ${escapeHtml(body)}`);
-  if (url) lines.push('', `<a href="${escapeHtml(url)}">查看讨论</a>`);
+  if (url) lines.push('', `查看讨论: ${url}`);
   return lines.join('\n');
 };
 
@@ -226,11 +217,11 @@ const buildIssueMessage = (event) => {
   const body = oneLine(truncate(issue.body, MAX_BODY_PREVIEW_CHARS));
   const url = issue.html_url;
 
-  const lines = ['<b>📮 D-blog 新 Issue</b>', ''];
+  const lines = ['📮 D-blog 新 Issue', ''];
   lines.push(`标题: ${escapeHtml(truncate(title, MAX_TITLE_CHARS))}`);
   lines.push(`作者: ${escapeHtml(author)}`);
   if (body) lines.push(`内容: ${escapeHtml(body)}`);
-  if (url) lines.push('', `<a href="${escapeHtml(url)}">查看 Issue</a>`);
+  if (url) lines.push('', `查看 Issue: ${url}`);
   return lines.join('\n');
 };
 
@@ -267,19 +258,19 @@ const buildWorkflowRunMessage = (event) => {
     }
   }
 
-  const lines = [`<b>⚙️ D-blog Action 完成</b>`, ''];
+  const lines = [`⚙️ D-blog Action 完成`, ''];
   lines.push(`工作流: ${escapeHtml(name)}${runNumber ? ` #${escapeHtml(String(runNumber))}` : ''}`);
   lines.push(`结果: ${escapeHtml(label)}`);
-  lines.push(`分支: <code>${escapeHtml(branch)}</code>`);
+  lines.push(`分支: ${escapeHtml(branch)}`);
   lines.push(`触发人: ${escapeHtml(actor)}`);
   if (displayTitle && displayTitle !== name) lines.push(`内容: ${escapeHtml(displayTitle)}`);
   if (durationText) lines.push(`耗时: ${escapeHtml(durationText)}`);
-  if (run.html_url) lines.push('', `<a href="${escapeHtml(run.html_url)}">查看运行</a>`);
+  if (run.html_url) lines.push('', `查看运行: ${run.html_url}`);
   return lines.join('\n');
 };
 
 /**
- * workflow_dispatch（手动触发）：发送测试消息，验证 Telegram 配置。
+ * workflow_dispatch（手动触发）：发送测试消息，验证 飞书机器人 Webhook 配置。
  * @param {Record<string, any>} event
  * @returns {string}
  */
@@ -287,7 +278,7 @@ const buildTestMessage = (event) => {
   const repo = repoName(event);
   const actor = event.sender?.login || 'manual';
   return [
-    '<b>🔔 D-blog Telegram 通知测试</b>',
+    '🔔 D-blog 飞书机器人 Webhook 通知测试',
     '',
     `仓库: ${escapeHtml(repo)}`,
     `触发人: ${escapeHtml(actor)}`,
@@ -309,8 +300,8 @@ const BUILDERS = Object.freeze({
 /* ------------------------------------------------------------------ */
 /* 发送                                                                 */
 /* ------------------------------------------------------------------ */
-// 消息发送复用 lib/telegram.mjs 的 sendTelegramMessage（含配置缺失优雅跳过、
-// 字段级/总长截断、HTML 注入防护与错误提示）。本文件不再维护私有实现。
+// 消息发送复用 lib/feishu-webhook.mjs 的 sendFeishuWebhookMessage（含配置缺失优雅跳过、
+// 字段级/总长截断、纯文本安全处理与错误提示）。本文件不再维护私有实现。
 
 /* ------------------------------------------------------------------ */
 /* 入口                                                                 */
@@ -344,15 +335,12 @@ const main = async () => {
     return 0;
   }
 
-  const result = await sendTelegramMessage(message);
+  const result = await sendFeishuWebhookMessage(message);
   if (result === null) {
     // 配置缺失：lib 内已 warning，优雅跳过（正常退出），与 akismet 的降级策略一致。
     return 0;
   }
-  logger.info('Telegram notification sent', {
-    event: eventName,
-    messageId: result.message_id ?? 'unknown',
-  });
+  logger.info('飞书机器人 Webhook notification sent', { event: eventName, status: result.status });
   return 0;
 };
 
@@ -367,7 +355,7 @@ if (isMainModule) {
     process.exitCode = await main();
   } catch (error) {
     // main 抛出的业务错误（事件解析失败 / 发送失败）已带上下文，统一记录。
-    logger.error('telegram-notify failed', { error: formatError(error) });
+    logger.error('feishu-webhook failed', { error: formatError(error) });
     process.exitCode = 1;
   }
 }

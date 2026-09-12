@@ -7,11 +7,11 @@
  *      排除图片与站内锚点）；
  *   2. 逐个请求检查可达性（超时/重定向跟随/网络错误分类）；
  *   3. 汇总失效链接（按文章分组、带行号与状态/原因）；
- *   4. 推送到 Telegram（复用 lib/telegram.mjs，配置缺失优雅跳过）。
+ *   4. 推送到 飞书机器人 Webhook（复用 lib/feishu-webhook.mjs，FEISHU_WEBHOOK_URL 缺失优雅跳过）。
  *
  * 运行：node scripts/check-broken-links.mjs
  * 可选：
- *   --dry-run                只打印不上报（不发送 Telegram）；
+ *   --dry-run                只打印不上报（不发送 飞书机器人 Webhook）；
  *   --fail                   发现失效链接时非零退出（默认仅报告，exit 0）；
  *   --ignore-hosts=a.com,b   跳过指定域名（逗号分隔，忽略大小写），
  *                            用于已知反爬/机器人拦截的站点（如 Cloudflare
@@ -23,7 +23,7 @@ import path from 'node:path';
 import matter from 'gray-matter';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { maskFencedCodeBlocks } from '../src/utils/headings-core.mjs';
-import { sendTelegramMessage } from './lib/telegram.mjs';
+import { sendFeishuWebhookMessage } from './lib/feishu-webhook.mjs';
 import {
   fetchWithRetry,
   RetryableHttpError,
@@ -367,7 +367,7 @@ const main = async () => {
       const detail = broken.find((b) => b.url === record.url);
       const reason = detail?.status ? `HTTP ${detail.status}` : escapeHtml(detail?.error ?? '未知错误');
       // 报告与日志同口径脱敏：含 userinfo（https://user:pass@host）的 URL 不把
-      // 凭据原文发进 Telegram 聊天（链接可能经转发/截图二次扩散）。
+      // 凭据原文发进 飞书机器人 Webhook 聊天（链接可能经转发/截图二次扩散）。
       lines.push(`  L${record.line} ${escapeHtml(sanitizeUrlForLogs(record.url))} — ${reason}`);
     }
     lines.push('');
@@ -379,12 +379,12 @@ const main = async () => {
 
   if (!isDryRun) {
     try {
-      const result = await sendTelegramMessage(report);
+      const result = await sendFeishuWebhookMessage(report);
       if (result !== null) {
-        logger.info('Broken link report sent to Telegram', { messageId: result.message_id ?? 'unknown' });
+        logger.info('Broken link report sent to 飞书机器人 Webhook', { messageId: result.message_id ?? 'unknown' });
       }
     } catch (error) {
-      logger.error('Failed to send Telegram report', formatError(error));
+      logger.error('Failed to send 飞书机器人 Webhook report', formatError(error));
     }
   } else {
     console.log(`\n[dry-run] 失效链接报告（未发送）：\n${report}\n`);

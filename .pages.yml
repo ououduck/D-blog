@@ -232,22 +232,22 @@ actions:
       message: 将遍历仓库内全部评论，使用当前「评论关键词」配置重新匹配并执行处理动作（minimize 折叠 / delete 删除 / none 仅记录）。已放行的评论不会被反向恢复。
       button: 开始审查
 
-  # ── 文章外链失效扫描：扫描 posts/*.md 全部 http/https 外链，失效链接汇总推送 Telegram ──
+  # ── 文章外链失效扫描：扫描 posts/*.md 全部 http/https 外链，失效链接汇总推送 飞书机器人 Webhook ──
   - name: check-broken-links
     label: 🔗 检查失效外链
     workflow: check-broken-links.yml
     ref: current
     confirm:
       title: 确认扫描文章外链？
-      message: 将逐个请求 posts/ 中全部外链（Markdown 链接 + HTML 链接，排除图片与站内锚点）：发现的失效链接会按文章分组汇总（带行号与 HTTP 状态）推送到 Telegram，不修改仓库、不触发部署。
+      message: 将逐个请求 posts/ 中全部外链（Markdown 链接 + HTML 链接，排除图片与站内锚点）：发现的失效链接会按文章分组汇总（带行号与 HTTP 状态）推送到 飞书机器人 Webhook，不修改仓库、不触发部署。
       button: 开始扫描
 
-  # ── Telegram 通知测试：验证 Bot Token / Chat ID 配置，并向 Telegram 发送测试消息 ──
-  - name: test-telegram
-    label: 🔔 测试 Telegram 通知
-    workflow: telegram-notify.yml
+  # ── 飞书机器人 Webhook 通知测试：验证 FEISHU_WEBHOOK_URL 配置，并向飞书机器人 Webhook 发送测试消息 ──
+  - name: test-feishu-webhook
+    label: 🔔 测试 飞书机器人 Webhook 通知
+    workflow: feishu-webhook.yml
     ref: current
     confirm:
       title: 确认发送测试消息？
-      message: 将触发 Telegram 通知 workflow，向已配置的 Chat 发送一条测试消息（需先在仓库 Secrets 配置 TELEGRAM_BOT_TOKEN 与 TELEGRAM_CHAT_ID）。
+      message: 将触发 飞书机器人 Webhook 通知 workflow，向已配置的 飞书机器人 Webhook 发送一条测试消息（需先在仓库 Secrets 配置 FEISHU_WEBHOOK_URL）。
       button: 发送测试

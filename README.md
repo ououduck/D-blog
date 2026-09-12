@@ -216,18 +216,18 @@ Service Worker 作用域跟随部署路径，在线按页面/静态资源/图片
 
 ## 自动化与通知
 
-仓库事件通过 [`telegram-notify.yml`](.github/workflows/telegram-notify.yml) 实时推送到 Telegram：新评论/新讨论/新 Issue、push 到 main 的提交、任一 Action 运行结果（成功/失败/取消，通知自身的结果被跳过）。**一次性配置**：在 [@BotFather](https://t.me/BotFather) 创建机器人获取 `TELEGRAM_BOT_TOKEN`，通过 [@userinfobot](https://t.me/userinfobot) 获取 `TELEGRAM_CHAT_ID`，在仓库 **Settings → Secrets and variables → Actions** 添加（可选 `TELEGRAM_TOPIC_ID` 指定论坛话题）。未配置时 workflow 优雅跳过（`::warning::` 正常退出，不红叉）。
+仓库事件通过 [`feishu-webhook.yml`](.github/workflows/feishu-webhook.yml) 实时推送到 飞书机器人 Webhook：新评论/新讨论/新 Issue、push 到 main 的提交、任一 Action 运行结果（成功/失败/取消，通知自身的结果被跳过）。**一次性配置**：在仓库 **Settings → Secrets and variables → Actions** 添加 `FEISHU_WEBHOOK_URL`（接收端地址，支持路径或查询串密钥）。未配置时 workflow 优雅跳过（`::warning::` 正常退出，不红叉）。
 
 其他自动化：`ci.yml` 每次 push/PR 自动跑类型检查 + 单元测试 + 完整构建 + 双审计；评论 Akismet 反垃圾（`akismet-discussion-comment-check.yml`）与关键词过滤（`comment-keyword-filter.yml` / `comment-keyword-recheck.yml`）、文章更新订阅通知（`notify-post-update.yml`）均为独立 workflow。
 
 ### 🔗 文章外链失效扫描（check-broken-links）
 
-博客内容会随外部站点改版/下线产生死链，且完全可以在构建期检测。`scripts/check-broken-links.mjs` 扫描 `posts/*.md` 中全部 http/https 外链（Markdown 链接 + HTML `<a href>`，排除图片与站内锚点），逐个请求检查可达性，失效链接按文章分组汇总（带行号与 HTTP 状态）推送到 Telegram。只读操作，不修改仓库、不触发部署。
+博客内容会随外部站点改版/下线产生死链，且完全可以在构建期检测。`scripts/check-broken-links.mjs` 扫描 `posts/*.md` 中全部 http/https 外链（Markdown 链接 + HTML `<a href>`，排除图片与站内锚点），逐个请求检查可达性，失效链接按文章分组汇总（带行号与 HTTP 状态）推送到 飞书机器人 Webhook。只读操作，不修改仓库、不触发部署。
 
 - **触发**：Pages CMS 侧边栏「🔗 检查失效外链」按钮（`check-broken-links.yml`，workflow_dispatch），或每周一 02:00 UTC 定时自动巡检（schedule）；
 - **本地运行**：`npm run check:links`（默认仅报告退出码 0）；`--dry-run` 只打印不上报；`--fail` 发现失效链接时非零退出（可用于 CI 红叉门禁）；`--ignore-hosts=a.com,b.com` 跳过指定域名（用于已知反爬/机器人拦截的站点，如 Cloudflare Dashboard 对非浏览器 GET 返回 403 属误报，CI 中已内置该域名）；
 - **本地 TUN 代理**：开着 Clash/Surge 等 TUN 代理时，DNS 会把全部域名解析到 198.18.0.0/15 fake-IP 段，脚本会自动识别（日志提示 `Detected local TUN proxy`）并跳过 IP 级 SSRF 校验、经代理转发请求，不会误报死链；如需强制禁用自动识别可设 `ALLOW_PROXY_ARTIFACT_DNS=0`；
-- **通知配置**：复用 Telegram Secrets（`TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`，可选 `TELEGRAM_TOPIC_ID`），未配置时优雅跳过；报告发送复用 `scripts/lib/telegram.mjs`（与 `telegram-notify` 共享）。
+- **通知配置**：复用飞书机器人 Webhook Secret（`FEISHU_WEBHOOK_URL`），未配置时优雅跳过；报告发送复用 `scripts/lib/feishu-webhook.mjs`（与 `feishu-webhook` 共享）。
 
 ## 许可证
 

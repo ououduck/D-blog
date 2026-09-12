@@ -8,8 +8,8 @@
 #   - push：任意分支的每次提交推送（含 Pages CMS 保存内容、友链 bot 推送等）；
 #   - pull_request：任意 PR 的每次提交推送。
 #
-# 注意：CI 结果会自动被 telegram-notify.yml 的 workflow_run: completed
-# 捕获并推送到 Telegram（成功/失败/取消），无需为此 workflow 额外配置。
+# 注意：CI 结果会自动被 feishu-webhook.yml 的 workflow_run: completed
+# 捕获并推送到 飞书机器人 Webhook（成功/失败/取消），无需为此 workflow 额外配置。
 name: CI
 
 on:

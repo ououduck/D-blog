@@ -73,17 +73,29 @@ export class RetryableHttpError extends Error {
 }
 
 /**
- * 日志脱敏：URL 中可能内嵌密钥 —— Telegram bot token 在路径（/bot<token>）、
+ * 日志脱敏：URL 中可能内嵌密钥 —— 飞书机器人 Webhook URL 可能包含路径/查询串密钥、
  * Akismet key 在子域（<key>.rest.akismet.com）、basic auth 在 userinfo。
  * 错误消息/onRetry 回调直接拼接 URL 会明文落盘；GitHub Actions 的 secret 脱敏
  * （***）只覆盖 CI runner，本地运行（npm run check:links 等）无此保护。
  * 导出供单测覆盖。
  */
-export const sanitizeUrlForLogs = (url) =>
-  String(url)
-    .replace(/\/\/[^/@\s]+@/, '//***@') // userinfo：https://user:pass@host → https://***@host
-    .replace(/\/bot[^/\s]+/, '/bot***') // Telegram：/bot123456:ABC…/ → /bot***/
-    .replace(/\/\/[a-z0-9_-]+\.rest\.akismet\.com/, '//***.rest.akismet.com'); // Akismet key 子域
+export const sanitizeUrlForLogs = (url) => {
+  const raw = String(url);
+  try {
+    const parsed = new URL(raw);
+    if (parsed.search) parsed.search = '***';
+    if (parsed.username || parsed.password) {
+      parsed.username = '***';
+      parsed.password = '';
+    }
+    return parsed.toString().replace(/\/\/[a-z0-9_-]+\.rest\.akismet\.com/, '//***.rest.akismet.com');
+  } catch {
+    return raw
+      .replace(/\/\/[^/@\s]+@/, '//***@')
+      .replace(/\/\/[a-z0-9_-]+\.rest\.akismet\.com/, '//***.rest.akismet.com')
+      .replace(/([?&])[^=&\s]+=[^&\s]*/g, '$1***=***');
+  }
+};
 
 /* ------------------------------------------------------------------ */
 /* SSRF 防护（lib/http.mjs 共享，checker 类脚本复用）                    */
@@ -246,11 +258,11 @@ const safeLookup = async (hostname, options, callback) => {
  * 懒加载 undici 的连接期 SSRF 防护 Agent（单例，首次调用时创建）。
  *
  * undici 只在「对用户可控 URL 发起请求」的脚本（check-broken-links）中才被真正需要；
- * telegram-notify / akismet-comment-check / comment-keyword-* 等脚本只访问可信固定域名
- * （api.telegram.org / api.github.com / rest.akismet.com），用 Node 内置 fetch
+ * feishu-webhook / akismet-comment-check / comment-keyword-* 等脚本只访问可信固定域名
+ * （用户配置的 飞书机器人 Webhook 地址 / api.github.com / rest.akismet.com），用 Node 内置 fetch
  * 即可，完全零 npm 依赖。因此这里必须用动态 import 懒加载：任何不调用本函数的
  * 脚本都不再被 http.mjs 的顶层 `import { Agent } from 'undici'` 强绑 undici ——
- * 否则未执行 npm install 的 workflow（telegram-notify.yml 等）会在模块加载期
+ * 否则未执行 npm install 的 workflow（feishu-webhook.yml 等）会在模块加载期
  * 直接 ERR_MODULE_NOT_FOUND 崩溃。
  *
  * @returns {Promise<import('undici').Agent>} 连接期逐 IP 私网校验（防 DNS 重绑定）
