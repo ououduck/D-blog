@@ -30,9 +30,6 @@ vi.mock('@/components/IssueSubscriptionCard', () => ({
 vi.mock('@/components/TableOfContents', () => ({
   TableOfContents: () => <div data-testid="mock-toc" />,
 }));
-vi.mock('@/components/ReadingProgressBadge', () => ({
-  ReadingProgressBadge: () => <div data-testid="mock-progress" />,
-}));
 vi.mock('@/components/ShareModal', () => ({
   ShareModal: () => <div data-testid="mock-share" />,
 }));
@@ -105,6 +102,13 @@ describe('Post', () => {
     renderPost();
     expect(await screen.findByText('文章加载失败')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '重新加载' })).toBeInTheDocument();
+  });
+
+  it('渲染文章阅读工具栏（移动端阅读控制台）', async () => {
+    renderPost();
+    await screen.findByText('测试文章标题');
+    // 懒加载 chunk + 双层 isClient effect：高负载套件下放宽超时避免 flaky。
+    expect(await screen.findByRole('toolbar', { name: '文章阅读工具' }, { timeout: 4000 })).toBeInTheDocument();
   });
 
   it('Alt+→ 有下一篇时导航到下一篇', async () => {
@@ -192,10 +196,12 @@ describe('Post', () => {
     // 触发多次 Post 重渲染（阅读模式开/关等状态变化）：若渲染组件对象被 useMemo
     // 缓存复用，resolveHeadingId 游标已走到末尾，标题 id 会退化为 slug-N 兜底并
     // 逐次递增（-1、-2…），与 headings 数组发散，目录点击找不到锚点。
-    fireEvent.click(screen.getByRole('button', { name: '进入专注阅读' }));
+    // 阅读模式现经移动工具栏「更多」菜单进入（ReadingModeToggle 已并入控制台）。
+    fireEvent.click(screen.getByRole('button', { name: '更多阅读操作' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: '专注阅读' }));
     await waitFor(() => expect(screen.getByRole('button', { name: '退出专注阅读' })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: '退出专注阅读' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: '进入专注阅读' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('toolbar', { name: '文章阅读工具' })).toBeInTheDocument());
     await waitFor(() => expect(assertHeadingIdsInDom()).toBe(true));
   });
 });

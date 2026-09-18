@@ -1,18 +1,23 @@
 /**
  * 文章目录：桌面悬浮 popover + 移动端底部 sheet，支持滚动高亮、搜索过滤、折叠/展开与进度条。
+ * 进度统一来自 useReadingProgress（真实正文进度）；激活标题统一来自 useActiveHeading。
+ * 支持受控模式（isOpen/onOpenChange）：文章页由移动端工具栏接管目录开关。
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { ChevronDown, List, X, ArrowUp } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowUp, List, X } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
-import { siteConfig } from '@config/site.config';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
-import { HEADING_SCROLL_OFFSET } from '@/utils/scroll';
+import { siteConfig } from '@config/site.config';
 import type { MarkdownHeading } from '@/utils/headings';
+import { replaceUrlHash, scrollToHeadingElement } from '@/utils/headingScroll';
+import { useReadingProgress } from '@/components/ArticleConsole/useReadingProgress';
+import { useActiveHeading } from '@/components/ArticleConsole/useActiveHeading';
+import { TocTree } from '@/components/ArticleConsole/TocTree';
 import {
   buildHeadingTree,
   buildParentMap,
@@ -23,8 +28,8 @@ import {
   getRootBranchId,
   type TocNode,
 } from '@/utils/toc';
+import type { RefObject } from 'react';
 
-const formatIndex = (value: number) => String(value).padStart(2, '0');
 const MOBILE_TOC_TRIGGER_STYLE = {
   bottom:
     'calc(var(--tab-bar-height, 0px) + max(calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + env(safe-area-inset-bottom, 0px) + 8.5rem), calc(var(--cookie-notice-height, 0px) + var(--service-worker-prompt-height, 0px) + 8.5rem)))',
@@ -46,20 +51,40 @@ const MOBILE_SCROLL_STYLE = {
   WebkitOverflowScrolling: 'touch' as const,
 };
 
-const getHeadingTop = (element: HTMLElement) => element.getBoundingClientRect().top + window.scrollY;
-
-const getHeadingById = (id: string) => document.getElementById(id) as HTMLElement | null;
-
-const getHeadingScrollTop = (element: HTMLElement) => Math.max(0, getHeadingTop(element) - HEADING_SCROLL_OFFSET);
-
 export const TableOfContents: React.FC<{
   headings: MarkdownHeading[];
   mobileShowTrigger?: boolean;
   desktopShowTrigger?: boolean;
-}> = ({ headings, mobileShowTrigger = true, desktopShowTrigger = true }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  /** 受控模式：提供时组件开关完全由外部驱动（文章页移动端工具栏接管）。 */
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** 真实阅读进度来源（文章页注入；未传时回退章节序号百分比）。 */
+  progressTargetRef?: RefObject<HTMLElement | null>;
+  progressEndRef?: RefObject<HTMLElement | null>;
+}> = ({
+  headings,
+  mobileShowTrigger = true,
+  desktopShowTrigger = true,
+  isOpen: isOpenProp,
+  onOpenChange,
+  progressTargetRef,
+  progressEndRef,
+}) => {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isControlled = isOpenProp !== undefined;
+  const isOpen = isControlled ? isOpenProp : internalIsOpen;
+  const setIsOpen = useCallback(
+    (next: boolean | ((current: boolean) => boolean)) => {
+      const resolved = typeof next === 'function' ? next(isControlled ? Boolean(isOpenProp) : internalIsOpen) : next;
+      if (!isControlled) {
+        setInternalIsOpen(resolved);
+      }
+      onOpenChange?.(resolved);
+    },
+    [internalIsOpen, isControlled, isOpenProp, onOpenChange],
+  );
+
   const [isMobileViewport, setIsMobileViewport] = useState(false);
-  const [activeHeadingId, setActiveHeadingId] = useState<string | null>(headings[0]?.id ?? null);
   const [isClient, setIsClient] = useState(false);
   const [dragOffsetY, setDragOffsetY] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,9 +108,9 @@ export const TableOfContents: React.FC<{
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
   const collapseInactiveRootBranches = siteConfig.toc?.collapseInactiveRootBranches ?? false;
   const isMobileDialogOpen = isOpen && isMobileViewport;
-  const closeTableOfContents = useCallback(() => setIsOpen(false), []);
+  const closeTableOfContents = useCallback(() => setIsOpen(false), [setIsOpen]);
   // 搜索过滤时强制展开整棵过滤后的树（过滤结果本就精简，无需折叠状态）。
-  // 声明在 renderNodes 之前：renderNodes 内部引用该常量，避免 TDZ 窗口。
+  // 声明在 TocTree 之前：避免 TDZ 窗口。
   const shouldForceExpandFilteredTree = searchQuery.trim().length > 0;
 
   useModalOverlay({
@@ -95,6 +120,12 @@ export const TableOfContents: React.FC<{
     containerRef: mobileSheetRef,
   });
 
+  // setIsOpen 经 ref 引用：viewport 同步 effect 只需挂载时执行一次，
+  // 否则 setIsOpen 引用随 internalIsOpen 变化会导致 effect 重跑、
+  // 把刚打开的桌面面板立即关闭（回归防护见 TableOfContents.test）。
+  const setIsOpenRef = useRef(setIsOpen);
+  setIsOpenRef.current = setIsOpen;
+
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
@@ -102,12 +133,11 @@ export const TableOfContents: React.FC<{
 
     const mediaQuery = window.matchMedia('(max-width: 1023px)');
     const syncViewport = () => {
-      const nextIsMobile = mediaQuery.matches;
       setIsClient(true);
-      setIsMobileViewport(nextIsMobile);
+      setIsMobileViewport(mediaQuery.matches);
 
-      if (!nextIsMobile) {
-        setIsOpen(false);
+      if (!mediaQuery.matches) {
+        setIsOpenRef.current(false);
       }
     };
 
@@ -164,67 +194,14 @@ export const TableOfContents: React.FC<{
       document.removeEventListener('mousedown', handleDesktopPopoverInteraction);
       window.removeEventListener('keydown', handleDesktopPopoverKeyDown);
     };
-  }, [isMobileViewport, isOpen]);
+  }, [isMobileViewport, isOpen, setIsOpen]);
 
   useEffect(() => {
     setExpandedMap(collectInitialExpandedState(headingTree));
   }, [headingTree]);
 
-  useEffect(() => {
-    if (headings.length === 0 || typeof window === 'undefined') {
-      setActiveHeadingId(null);
-      return;
-    }
-
-    let animationFrameId: number | null = null;
-
-    const syncActiveHeading = () => {
-      animationFrameId = null;
-      const visibleBoundary = window.scrollY + HEADING_SCROLL_OFFSET + 1;
-      let nextActiveId = headings[0]?.id ?? null;
-
-      for (const heading of headings) {
-        const element = getHeadingById(heading.id);
-
-        if (!element) {
-          continue;
-        }
-
-        if (getHeadingTop(element) <= visibleBoundary) {
-          nextActiveId = heading.id;
-        } else {
-          break;
-        }
-      }
-
-      setActiveHeadingId((currentId) => (currentId === nextActiveId ? currentId : nextActiveId));
-    };
-
-    const requestSyncActiveHeading = () => {
-      if (animationFrameId !== null) {
-        return;
-      }
-
-      animationFrameId = window.requestAnimationFrame(syncActiveHeading);
-    };
-
-    setActiveHeadingId(headings[0]?.id ?? null);
-    requestSyncActiveHeading();
-
-    window.addEventListener('scroll', requestSyncActiveHeading, { passive: true });
-    window.addEventListener('resize', requestSyncActiveHeading);
-    window.addEventListener('hashchange', requestSyncActiveHeading);
-
-    return () => {
-      if (animationFrameId !== null) {
-        window.cancelAnimationFrame(animationFrameId);
-      }
-
-      window.removeEventListener('scroll', requestSyncActiveHeading);
-      window.removeEventListener('resize', requestSyncActiveHeading);
-      window.removeEventListener('hashchange', requestSyncActiveHeading);
-    };
-  }, [headings]);
+  // 当前章节：rAF 合并的滚动同步（与胶囊导航共享同一 hook，无第二套实现）。
+  const activeHeadingId = useActiveHeading(headings);
 
   const activeAncestorIds = useMemo(() => getAncestorIds(activeHeadingId, parentMap), [activeHeadingId, parentMap]);
   const activeBranchIds = useMemo(
@@ -297,158 +274,43 @@ export const TableOfContents: React.FC<{
     });
   }, [activeHeadingId, expandedMap, isOpen, shouldReduceMotion]);
 
-  const scrollToHeading = (id: string) => {
-    const element = getHeadingById(id);
+  const scrollToHeading = useCallback(
+    (id: string) => {
+      const branchAncestorIds = getAncestorIds(id, parentMap);
+      const branchRootId = getRootBranchId(id, parentMap);
 
-    if (!element) {
-      return;
-    }
+      setExpandedMap((current) => {
+        const nextState = { ...current };
 
-    const branchAncestorIds = getAncestorIds(id, parentMap);
-    const branchRootId = getRootBranchId(id, parentMap);
+        if (collapseInactiveRootBranches) {
+          headingTree.forEach((node) => {
+            if (node.children.length > 0) {
+              nextState[node.id] = node.id === branchRootId;
+            }
+          });
+        }
 
-    setExpandedMap((current) => {
-      const nextState = { ...current };
-
-      if (collapseInactiveRootBranches) {
-        headingTree.forEach((node) => {
-          if (node.children.length > 0) {
-            nextState[node.id] = node.id === branchRootId;
-          }
+        branchAncestorIds.forEach((ancestorId) => {
+          nextState[ancestorId] = true;
         });
-      }
 
-      branchAncestorIds.forEach((ancestorId) => {
-        nextState[ancestorId] = true;
+        return nextState;
       });
 
-      return nextState;
-    });
-    setActiveHeadingId(id);
+      scrollToHeadingElement(id, shouldReduceMotion ? 'auto' : 'smooth');
+      replaceUrlHash(id);
 
-    window.scrollTo({
-      top: getHeadingScrollTop(element),
-      behavior: shouldReduceMotion ? 'auto' : 'smooth',
-    });
+      setIsOpen(false);
+    },
+    [collapseInactiveRootBranches, headingTree, parentMap, setIsOpen, shouldReduceMotion],
+  );
 
-    const url = new URL(window.location.href);
-    url.hash = id;
-    window.history.replaceState({}, '', url.toString());
-
-    setIsOpen(false);
-  };
-
-  const toggleNode = (id: string) => {
+  const toggleNode = useCallback((id: string) => {
     setExpandedMap((current) => ({
       ...current,
       [id]: !(current[id] ?? false),
     }));
-  };
-
-  const renderNodes = (nodes: TocNode[], depth = 0) => {
-    return (
-      <ol
-        className={
-          depth === 0 ? 'space-y-1.5' : 'mt-1.5 space-y-1.5 border-l border-zinc-200/80 pl-3.5 dark:border-zinc-800'
-        }
-      >
-        {nodes.map((item) => {
-          const hasChildren = item.children.length > 0;
-          const isExpanded =
-            shouldForceExpandFilteredTree || (expandedMap[item.id] ?? false) || activeAncestorIds.includes(item.id);
-          const isSubLevel = item.level > 1;
-          const isActive = activeHeadingId === item.id;
-          const isInActiveBranch = activeBranchIds.has(item.id);
-
-          return (
-            <li key={item.id} ref={isActive ? activeItemRef : undefined}>
-              <div
-                className={`rounded-control transition-colors duration-200 ${
-                  isActive
-                    ? 'bg-zinc-100 dark:bg-zinc-800'
-                    : isInActiveBranch
-                      ? 'bg-zinc-50 dark:bg-zinc-900'
-                      : 'bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900'
-                }`}
-              >
-                <div className="flex items-start gap-1.5 px-2.5 py-2">
-                  <button
-                    type="button"
-                    onClick={() => scrollToHeading(item.id)}
-                    className={`flex min-w-0 flex-1 items-start gap-2.5 px-1 py-1 text-left transition-colors duration-200 ${
-                      isActive
-                        ? 'text-ink dark:text-white'
-                        : isInActiveBranch
-                          ? 'text-ink/85 dark:text-zinc-100'
-                          : 'text-zinc-500 hover:text-ink dark:text-zinc-400 dark:hover:text-white'
-                    }`}
-                    aria-current={isActive ? 'location' : undefined}
-                  >
-                    <span
-                      className={`mt-[0.15rem] inline-flex min-w-[1.9rem] justify-center border border-current/20 px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-[0.14em] transition-colors ${
-                        isActive
-                          ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                          : isInActiveBranch
-                            ? 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300'
-                            : 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500'
-                      }`}
-                    >
-                      {formatIndex(item.index + 1)}
-                    </span>
-
-                    <span
-                      // 移动端用 line-clamp-2 保留长标题可读性（触屏没有 title 悬浮提示，
-                      // truncate 会让长标题永久截断无法辨认）；桌面端先解除 line-clamp
-                      // 再恢复单行截断（line-clamp 的 -webkit-box 会与 truncate 冲突）。
-                      className={`block flex-1 leading-6 line-clamp-2 md:line-clamp-none md:truncate ${isSubLevel ? 'text-[12.5px]' : 'text-[13px]'} ${
-                        isActive ? 'font-semibold' : isInActiveBranch ? 'font-medium' : ''
-                      }`}
-                      title={item.text}
-                    >
-                      {item.text}
-                    </span>
-                  </button>
-
-                  {hasChildren && (
-                    <button
-                      type="button"
-                      onClick={() => toggleNode(item.id)}
-                      className={`inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-icon transition-colors duration-200 active:scale-[0.98] ${
-                        isInActiveBranch
-                          ? 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300'
-                          : 'text-zinc-400 hover:bg-zinc-200/80 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'
-                      }`}
-                      aria-label={isExpanded ? '折叠子目录' : '展开子目录'}
-                      aria-expanded={isExpanded}
-                    >
-                      <ChevronDown
-                        size={14}
-                        className={`transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
-                      />
-                    </button>
-                  )}
-                </div>
-
-                <AnimatePresence initial={false}>
-                  {hasChildren && isExpanded && (
-                    <motion.div
-                      initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
-                      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, ease: 'easeOut' }}
-                      className="overflow-hidden px-2.5 pb-2"
-                    >
-                      {renderNodes(item.children, depth + 1)}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-    );
-  };
+  }, []);
 
   // 触摸下滑关闭：仅绑定在顶部抓手区域（nav 列表之外），无需判断触摸起点。
   const handleSheetTouchStart = (event: React.TouchEvent<HTMLElement>) => {
@@ -523,9 +385,13 @@ export const TableOfContents: React.FC<{
       items.reduce((total, current) => total + 1 + countNodes(current.children), 0);
     return count + countNodes([node]);
   }, 0);
+
+  // 真实阅读进度：文章页注入正文 refs 时使用（与胶囊导航/工具栏同源）；
+  // 未注入时回退章节序号百分比（保持旧口径兜底）。
+  const realProgress = useReadingProgress(progressTargetRef ?? { current: null }, progressEndRef);
   const currentHeadingIndex = headings.findIndex((h) => h.id === activeHeadingId);
-  const readingProgressDisplay =
-    headings.length > 0 ? Math.round(((currentHeadingIndex + 1) / headings.length) * 100) : 0;
+  const fallbackProgress = headings.length > 0 ? Math.round(((currentHeadingIndex + 1) / headings.length) * 100) : 0;
+  const readingProgressDisplay = progressTargetRef ? realProgress.percentage : fallbackProgress;
 
   const panelContent = (
     <div className="relative flex h-full flex-col overflow-hidden rounded-overlay border border-zinc-300 bg-paper p-4 shadow-none dark:border-zinc-700 dark:bg-void sm:p-[1.125rem]">
@@ -570,10 +436,9 @@ export const TableOfContents: React.FC<{
 
         <div className="flex items-center gap-2.5">
           <div className="h-1 flex-1 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
-            <motion.div
-              className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
-              animate={{ width: `${readingProgressDisplay}%` }}
-              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }}
+            <div
+              className="h-full rounded-full bg-zinc-900 transition-[width] duration-200 ease-out dark:bg-zinc-100"
+              style={{ width: `${readingProgressDisplay}%` }}
             />
           </div>
           <span className="min-w-[2.2rem] text-right text-[11px] font-semibold tabular-nums text-zinc-500 dark:text-zinc-400">
@@ -606,7 +471,17 @@ export const TableOfContents: React.FC<{
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-1 no-scrollbar"
       >
         {filteredHeadingTree.length > 0 ? (
-          renderNodes(filteredHeadingTree)
+          <TocTree
+            nodes={filteredHeadingTree}
+            expandedMap={expandedMap}
+            activeHeadingId={activeHeadingId}
+            activeBranchIds={activeBranchIds}
+            activeItemRef={activeItemRef}
+            shouldForceExpand={shouldForceExpandFilteredTree}
+            shouldReduceMotion={shouldReduceMotion}
+            onNavigate={scrollToHeading}
+            onToggle={toggleNode}
+          />
         ) : (
           <div className="flex h-full min-h-[9rem] items-center justify-center border border-dashed border-zinc-200 bg-zinc-50 px-4 text-center text-sm text-zinc-400 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-500">
             没有找到匹配的目录标题
@@ -682,7 +557,7 @@ export const TableOfContents: React.FC<{
       ? createPortal(
           <button
             type="button"
-            onClick={() => setIsOpen((value) => !value)}
+            onClick={() => setIsOpen(!isOpen)}
             style={MOBILE_TOC_TRIGGER_STYLE}
             className="toc-mobile-trigger fixed-control-position fixed z-floating inline-flex h-11 items-center justify-center gap-2 rounded-control border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 lg:hidden"
             aria-label={isOpen ? '关闭目录' : '打开目录'}
@@ -726,7 +601,7 @@ export const TableOfContents: React.FC<{
           <button
             ref={desktopTriggerRef}
             type="button"
-            onClick={() => setIsOpen((value) => !value)}
+            onClick={() => setIsOpen(!isOpen)}
             style={DESKTOP_TOC_TRIGGER_STYLE}
             className="toc-desktop-trigger fixed-control-position fixed z-floating hidden h-11 items-center justify-center gap-2 rounded-control border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 md:inline-flex"
             aria-label={isOpen ? '关闭目录' : '打开目录'}

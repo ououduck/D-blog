@@ -55,7 +55,6 @@ import { stripMarkdown } from '@/utils/markdownText';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 import { useReadingMode } from '@/components/ReadingModeContext';
-import { ReadingModeToggle } from '@/components/ReadingModeToggle';
 import { GiscusComments } from '@/components/GiscusComments';
 import { useSsgRouteData } from '@/ssr/routeData';
 import { fillBusuanziSpans } from '@/services/busuanzi';
@@ -207,12 +206,8 @@ const getDisplayAuthors = (post: PostType): PostAuthor[] => {
 
 const ImageViewer = lazy(() => import('../components/ImageViewer').then((m) => ({ default: m.ImageViewer })));
 const ShareModal = lazy(() => import('../components/ShareModal').then((m) => ({ default: m.ShareModal })));
-const TableOfContents = lazy(() =>
-  import('../components/TableOfContents').then((m) => ({ default: m.TableOfContents })),
-);
-const ReadingProgressBadge = lazy(() =>
-  import('../components/ReadingProgressBadge').then((m) => ({ default: m.ReadingProgressBadge })),
-);
+// 文章阅读控制台（胶囊导航/移动工具栏/目录）：整棵子树独立 chunk，不占 Post 首包。
+const ArticleConsole = lazy(() => import('../components/ArticleConsole').then((m) => ({ default: m.ArticleConsole })));
 /** hash 深链滚动校正上限：Mermaid/懒加载内容导致的布局变化最多校正次数。 */
 const HASH_SCROLL_MAX_CORRECTIONS = 12;
 /** hash 深链滚动校正时间窗（毫秒）：内容稳定后自动断开观察器。 */
@@ -1821,6 +1816,11 @@ export const Post = () => {
         galleryImages.findIndex((image) => image.src === previewImage.src),
       )
     : 0;
+  // canonical 分享/复制链接：SPA 端用当前 origin，SSG 期回退站点配置。
+  const articleUrl = absoluteSiteUrl(
+    `/post/${post.id}`,
+    typeof window !== 'undefined' ? window.location.origin : siteConfig.url,
+  );
   // 阅读时长（分钟）：由 readTime 文案（如「7分钟阅读」）解析，用于 Article 的 timeRequired。
   // 优先匹配「N分钟」，其次「N小时」×60；不能直接取第一个数字——文案含多个数字
   // （如"约 10 分钟（2 小时更新）"）或小时制时都会解析出错。
@@ -1893,8 +1893,6 @@ export const Post = () => {
 
   return (
     <>
-      <ReadingModeToggle />
-
       <Suspense fallback={null}>
         {previewImage && (
           <ImageViewer
@@ -1904,9 +1902,15 @@ export const Post = () => {
             onClose={() => setPreviewImage(null)}
           />
         )}
-        {/* 阅读进度徽标与目录按钮常驻：不随滚动位置显隐（用户反馈需求）。 */}
-        {!isReadingMode && <ReadingProgressBadge targetRef={articleBodyRef} endRef={readingEndRef} />}
-        {!isReadingMode && headings.length > 0 && <TableOfContents headings={headings} />}
+        {/* 阅读控制台：桌面胶囊导航 / 移动端工具栏+目录 Sheet（进度/目录/分享/
+            复制/阅读模式统一入口），常驻不随滚动显隐。 */}
+        <ArticleConsole
+          headings={headings}
+          targetRef={articleBodyRef}
+          endRef={readingEndRef}
+          articleUrl={articleUrl}
+          onShare={() => setShareModalOpen(true)}
+        />
       </Suspense>
 
       <article className={isReadingMode ? 'post-article reading-mode-article' : 'post-article'}>
@@ -2270,10 +2274,7 @@ export const Post = () => {
             onClose={() => setShareModalOpen(false)}
             title={post.title}
             excerpt={post.excerpt}
-            url={absoluteSiteUrl(
-              `/post/${post.id}`,
-              typeof window !== 'undefined' ? window.location.origin : siteConfig.url,
-            )}
+            url={articleUrl}
           />
         )}
       </Suspense>
