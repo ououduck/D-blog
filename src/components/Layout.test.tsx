@@ -153,18 +153,20 @@ describe('Layout', () => {
     renderLayout();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   });
-  it('Ctrl+K 跳转到搜索页', async () => {
+  it('Ctrl+K 打开命令面板', async () => {
     const user = userEvent.setup();
     renderLayout();
     await user.keyboard('{Control>}k{/Control}');
-    await waitFor(() => expect(probePathname).toBe('/search'));
+    await screen.findByRole('dialog', { name: '命令面板' });
+    expect(probePathname).toBe('/');
   });
 
-  it('点击搜索按钮跳转到搜索页', async () => {
+  it('点击搜索按钮打开命令面板', async () => {
     const user = userEvent.setup();
     renderLayout();
     await user.click(screen.getAllByRole('button', { name: '打开搜索页' })[0]);
-    await waitFor(() => expect(probePathname).toBe('/search'));
+    await screen.findByRole('dialog', { name: '命令面板' });
+    expect(probePathname).toBe('/');
   });
 
   // 等待移动端导航动画完成（data-state 从 opening 推进到 open）：

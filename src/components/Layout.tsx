@@ -42,6 +42,7 @@ import { routeTransition } from '@/utils/motion';
 
 const BackToTop = lazy(() => import('./BackToTop').then((m) => ({ default: m.BackToTop })));
 const FeedbackDock = lazy(() => import('./FeedbackDock').then((m) => ({ default: m.FeedbackDock })));
+const CommandPalette = lazy(() => import('./CommandPalette').then((m) => ({ default: m.CommandPalette })));
 
 const TEXT = {
   theme: '外观',
@@ -241,17 +242,24 @@ const ThemeToggle = () => {
     hasInitializedThemeRef.current = true;
   }, [prefersReducedMotion, theme]);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     const next = theme === 'light' ? 'dark' : 'light';
     setTheme(next);
-    // 仅显式点击才持久化：系统检测出的默认值不落盘，保证每次打开页面都
+    // 仅显式切换才持久化：系统检测出的默认值不落盘，保证每次打开页面都
     // 重新按系统偏好检测；用户点击一次后，该选择稳定沿用。
     try {
       localStorage.setItem('theme', next);
     } catch {
       // 浏览器存储不可用时，主题持久化为可选能力。
     }
-  };
+  }, [theme]);
+
+  // 命令面板等外部入口通过自定义事件请求切换主题（不直接依赖组件实例）。
+  useEffect(() => {
+    const handleExternalToggle = () => toggleTheme();
+    window.addEventListener('dblog:toggle-theme', handleExternalToggle);
+    return () => window.removeEventListener('dblog:toggle-theme', handleExternalToggle);
+  }, [toggleTheme]);
 
   const currentThemeLabel = theme === 'light' ? TEXT.themeLight : TEXT.themeDark;
   const nextThemeLabel = theme === 'light' ? TEXT.themeDark : TEXT.themeLight;
@@ -1163,13 +1171,13 @@ const routeShellVariants = routeTransition;
 
 const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => {
   const location = useLocation();
-  const navigate = useNavigate();
+  // 命令面板（Ctrl/Cmd+K / 顶栏与移动端搜索按钮）：懒加载，首次打开才拉 chunk。
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const isPaletteOpenRef = useRef(isPaletteOpen);
+  isPaletteOpenRef.current = isPaletteOpen;
+  const openPalette = useCallback(() => setIsPaletteOpen(true), []);
+  const closePalette = useCallback(() => setIsPaletteOpen(false), []);
   const { isReadingMode } = useReadingMode();
-  // 搜索为独立页面（/search）：所有搜索入口（顶栏按钮、Ctrl+K、移动端抽屉快捷动作）
-  // 统一跳转到搜索页。
-  const goToSearch = useCallback(() => {
-    navigate('/search');
-  }, [navigate]);
   const prefersReducedMotion = useSiteReducedMotion();
   const routeVariants = prefersReducedMotion
     ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
@@ -1182,25 +1190,28 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // 页面快捷键只在没有任何弹层时生效，避免覆盖弹层自身的焦点与 Escape 行为。
-      if (hasOpenOverlay()) {
-        return;
-      }
-
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        // 面板已打开时 Ctrl+K 直接关闭（toggle）；否则仅有其他弹层时让位，
+        // 避免面板覆盖在分享/图片查看器之上抢焦点。
+        if (isPaletteOpenRef.current) {
+          event.preventDefault();
+          setIsPaletteOpen(false);
+          return;
+        }
+        if (hasOpenOverlay()) {
+          return;
+        }
         if (isEditableTarget(event.target)) {
           return;
         }
-
         event.preventDefault();
-        goToSearch();
-        return;
+        setIsPaletteOpen(true);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToSearch]);
+  }, []);
 
   // 不蒜子统计：路由变化即上报当前页访问并回填计数 span（适配 SPA 客户端导航，
   // 替代官方 <script> 仅首屏执行一次、无法为新路由上报/回填的局限）。
@@ -1225,7 +1236,7 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
           跳到主要内容
         </a>
       )}
-      {!isReadingMode && <Navbar onSearchNavigate={goToSearch} />}
+      {!isReadingMode && <Navbar onSearchNavigate={openPalette} />}
       {/* 非阅读模式：main 顶部内边距 = 导航栏高度 + 呼吸间距，并补偿导航栏
           因 safe-area-inset-top 增高的部分，避免内容被顶高的导航遮挡。 */}
       <main
@@ -1269,6 +1280,12 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
         </Suspense>
       )}
       {!isReadingMode && <Footer />}
+      {/* 命令面板：条件挂载保证 chunk 懒加载（首次 Ctrl/Cmd+K 或点搜索按钮才拉取） */}
+      {isPaletteOpen && (
+        <Suspense fallback={null}>
+          <CommandPalette onClose={closePalette} />
+        </Suspense>
+      )}
     </div>
   );
 };
