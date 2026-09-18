@@ -776,14 +776,39 @@
   color: rgb(113 113 122);
 }
 
-/* 展开面板：宽度/透明度/位移过渡；收起时 visibility:hidden 移出可访问性树 */
+/* 展开面板 wrapper：绝对定位于迷你轨左侧（不占流式布局 → 展开不推动轨道，
+   消除 hover 位移抽搐）；右侧 0.5rem 透明内边距是指针从轨滑入面板的过渡桥，
+   指针全程不离开容器 DOM 子树，mouseleave 不会中途触发。 */
 .capsule-panel {
-  display: flex;
-  flex-direction: column;
-  width: 0;
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  padding-right: 0.5rem;
   opacity: 0;
   visibility: hidden;
-  transform: translateX(0.5rem);
+  pointer-events: none;
+  transform: translateY(-50%) translateX(0.5rem);
+  transition:
+    opacity 0.18s ease,
+    transform 0.2s ease,
+    visibility 0s linear 0.2s;
+}
+
+.capsule-container[data-expanded='true'] .capsule-panel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(-50%) translateX(0);
+  transition:
+    opacity 0.18s ease,
+    transform 0.2s ease;
+}
+
+/* 玻璃卡片：视觉主体（宽度固定，无宽度动画 → 无逐帧文字重排） */
+.capsule-panel-card {
+  display: flex;
+  flex-direction: column;
+  width: min(18rem, 40vw);
   max-height: min(80vh, 42rem);
   border-radius: 1.25rem;
   border: 1px solid rgb(212 212 216 / 0.9);
@@ -792,29 +817,13 @@
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 2px 10px rgb(24 24 27 / 0.07);
   overflow: hidden;
-  transition:
-    width 0.2s ease,
-    opacity 0.18s ease,
-    transform 0.2s ease,
-    visibility 0s linear 0.2s;
 }
 
-:root.dark .capsule-panel,
-.dark .capsule-panel {
+:root.dark .capsule-panel-card,
+.dark .capsule-panel-card {
   border-color: rgb(63 63 70 / 0.9);
   background: rgb(24 24 27 / 0.92);
   box-shadow: none;
-}
-
-.capsule-container[data-expanded='true'] .capsule-panel {
-  width: min(18rem, 40vw);
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(0);
-  transition:
-    width 0.2s ease,
-    opacity 0.18s ease,
-    transform 0.2s ease;
 }
 
 .capsule-panel-head {
@@ -987,6 +996,7 @@
   .capsule-rail,
   .capsule-panel,
   .capsule-container[data-expanded='true'] .capsule-panel,
+  .capsule-panel-card,
   .capsule-progress-fill,
   .capsule-panel-progress-fill,
   .capsule-rail-btn,

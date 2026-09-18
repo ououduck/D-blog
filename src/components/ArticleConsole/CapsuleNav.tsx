@@ -333,146 +333,143 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
   );
 
   const capsule = createPortal(
-    <div className="capsule-container" data-expanded={isExpanded ? 'true' : undefined}>
-      {/* 迷你轨：收缩态 & 展开态下仍保留（展开面板与其并排出现） */}
+    <div
+      className="capsule-container"
+      data-expanded={isExpanded ? 'true' : undefined}
+      // hover/focus 意图统一挂在容器上：面板为绝对定位（展开不推动迷你轨），
+      // 容器级 mouseenter/mouseleave 以 DOM 归属判定，指针在轨/面板间移动
+      // （含 wrapper 内置的 0.5rem 过渡桥）不会触发收起，杜绝抽搐循环。
+      onMouseEnter={scheduleHoverPreview}
+      onMouseLeave={cancelHoverPreview}
+      onFocusCapture={() => setFocusWithin(true)}
+      onBlurCapture={(event) => {
+        if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) {
+          setFocusWithin(false);
+        }
+      }}
+    >
+      {/* 迷你轨：收缩态 & 展开态下仍保留（展开面板绝对定位在轨左侧，不占流式布局） */}
       <nav
         ref={railRef}
         aria-label="文章导航（收缩）"
         className={`capsule-rail ${isExpanded ? 'capsule-rail-dimmed' : ''}`}
-        onMouseEnter={scheduleHoverPreview}
-        onMouseLeave={cancelHoverPreview}
-        onFocusCapture={() => setFocusWithin(true)}
-        onBlurCapture={(event) => {
-          if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) {
-            setFocusWithin(false);
-          }
-        }}
       >
         {railActions}
       </nav>
 
-      {/* 展开面板：可见性由容器 data-expanded + CSS visibility/width 过渡驱动
-          （visibility:hidden 时移出可访问性树，同时保留过渡动画能力）。 */}
-      <aside
-        ref={panelRef}
-        className="capsule-panel"
-        role="group"
-        aria-label="文章阅读导航面板"
-        onMouseEnter={scheduleHoverPreview}
-        onMouseLeave={cancelHoverPreview}
-        onFocusCapture={() => setFocusWithin(true)}
-        onBlurCapture={(event) => {
-          if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) {
-            setFocusWithin(false);
-          }
-        }}
-      >
-        <div className="capsule-panel-head">
-          <span className="capsule-panel-title">文章导航</span>
-          {!isReadingMode && (
-            <button
-              type="button"
-              onClick={togglePinned}
-              className="capsule-panel-btn"
-              aria-label={pinned ? '取消固定导航面板' : '固定导航面板'}
-              aria-pressed={pinned}
-              title={pinned ? '取消固定' : '固定（阅读期间保持展开）'}
-            >
-              {pinned ? <PinOff size={14} /> : <Pin size={14} />}
+      {/* 展开面板：绝对定位于迷你轨左侧（不挤动轨道，消除 hover 位移抽搐）；
+          wrapper 自带 0.5rem 右侧内边距作为指针过渡桥；可见性由容器
+          data-expanded + CSS opacity/visibility 过渡驱动（visibility:hidden
+          时移出可访问性树）。 */}
+      <aside ref={panelRef} className="capsule-panel" role="group" aria-label="文章阅读导航面板">
+        <div className="capsule-panel-card">
+          <div className="capsule-panel-head">
+            <span className="capsule-panel-title">文章导航</span>
+            {!isReadingMode && (
+              <button
+                type="button"
+                onClick={togglePinned}
+                className="capsule-panel-btn"
+                aria-label={pinned ? '取消固定导航面板' : '固定导航面板'}
+                aria-pressed={pinned}
+                title={pinned ? '取消固定' : '固定（阅读期间保持展开）'}
+              >
+                {pinned ? <PinOff size={14} /> : <Pin size={14} />}
+              </button>
+            )}
+            <button type="button" onClick={toggleUserExpanded} className="capsule-panel-btn" aria-label="收起导航面板">
+              <X size={14} />
             </button>
-          )}
-          <button type="button" onClick={toggleUserExpanded} className="capsule-panel-btn" aria-label="收起导航面板">
-            <X size={14} />
-          </button>
-        </div>
+          </div>
 
-        <div className="capsule-panel-toc">
-          {headingTree.length > 0 && (
-            <TocTree
-              nodes={headingTree}
-              expandedMap={expandedMap}
-              activeHeadingId={activeHeadingId}
-              activeBranchIds={activeBranchIds}
-              activeItemRef={activeItemRef}
-              shouldForceExpand={false}
-              shouldReduceMotion={shouldReduceMotion}
-              onNavigate={handleNavigate}
-              onToggle={handleToggleNode}
-            />
-          )}
-        </div>
+          <div className="capsule-panel-toc">
+            {headingTree.length > 0 && (
+              <TocTree
+                nodes={headingTree}
+                expandedMap={expandedMap}
+                activeHeadingId={activeHeadingId}
+                activeBranchIds={activeBranchIds}
+                activeItemRef={activeItemRef}
+                shouldForceExpand={false}
+                shouldReduceMotion={shouldReduceMotion}
+                onNavigate={handleNavigate}
+                onToggle={handleToggleNode}
+              />
+            )}
+          </div>
 
-        <div className="capsule-panel-progress">
-          <span>阅读进度</span>
-          <span className="capsule-panel-progress-track" aria-hidden="true">
-            <span className="capsule-panel-progress-fill" style={{ width: `${percentage}%` }} />
-          </span>
-          <span className="tabular-nums">{percentage}%</span>
-        </div>
+          <div className="capsule-panel-progress">
+            <span>阅读进度</span>
+            <span className="capsule-panel-progress-track" aria-hidden="true">
+              <span className="capsule-panel-progress-fill" style={{ width: `${percentage}%` }} />
+            </span>
+            <span className="tabular-nums">{percentage}%</span>
+          </div>
 
-        <div className="capsule-panel-actions">
-          <button type="button" onClick={handleBackToTop} className="capsule-action-row" aria-label="回到顶部">
-            <ArrowUp size={15} aria-hidden="true" />
-            <span>回到顶部</span>
-          </button>
-          <button type="button" onClick={onShare} className="capsule-action-row" aria-label="分享文章">
-            <Share2 size={15} aria-hidden="true" />
-            <span>分享</span>
-          </button>
-          {!isReadingMode && (
-            <>
-              <button
-                type="button"
-                onClick={() => void handleCopyArticleLink()}
-                className="capsule-action-row"
-                aria-label="复制文章链接"
-              >
-                <Link2 size={15} aria-hidden="true" />
-                <span>复制文章链接</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleCopyHeadingLink()}
-                className="capsule-action-row"
-                aria-label="复制当前标题链接"
-                disabled={!activeHeadingId}
-              >
-                <Copy size={15} aria-hidden="true" />
-                <span>复制标题链接</span>
-              </button>
+          <div className="capsule-panel-actions">
+            <button type="button" onClick={handleBackToTop} className="capsule-action-row" aria-label="回到顶部">
+              <ArrowUp size={15} aria-hidden="true" />
+              <span>回到顶部</span>
+            </button>
+            <button type="button" onClick={onShare} className="capsule-action-row" aria-label="分享文章">
+              <Share2 size={15} aria-hidden="true" />
+              <span>分享</span>
+            </button>
+            {!isReadingMode && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyArticleLink()}
+                  className="capsule-action-row"
+                  aria-label="复制文章链接"
+                >
+                  <Link2 size={15} aria-hidden="true" />
+                  <span>复制文章链接</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyHeadingLink()}
+                  className="capsule-action-row"
+                  aria-label="复制当前标题链接"
+                  disabled={!activeHeadingId}
+                >
+                  <Copy size={15} aria-hidden="true" />
+                  <span>复制标题链接</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onToggleReadingMode}
+                  className="capsule-action-row"
+                  aria-label="进入专注阅读"
+                >
+                  <Eye size={15} aria-hidden="true" />
+                  <span>阅读模式</span>
+                </button>
+              </>
+            )}
+            {isReadingMode && (
               <button
                 type="button"
                 onClick={onToggleReadingMode}
                 className="capsule-action-row"
-                aria-label="进入专注阅读"
+                aria-label="退出专注阅读"
               >
-                <Eye size={15} aria-hidden="true" />
-                <span>阅读模式</span>
+                <EyeOff size={15} aria-hidden="true" />
+                <span>退出阅读模式</span>
               </button>
-            </>
-          )}
-          {isReadingMode && (
-            <button
-              type="button"
-              onClick={onToggleReadingMode}
-              className="capsule-action-row"
-              aria-label="退出专注阅读"
-            >
-              <EyeOff size={15} aria-hidden="true" />
-              <span>退出阅读模式</span>
-            </button>
-          )}
-        </div>
+            )}
+          </div>
 
-        <p className="capsule-copy-status" role="status" aria-live="polite">
-          {copyFeedback
-            ? copyFeedback.ok
-              ? copyFeedback.kind === 'article'
-                ? '文章链接已复制'
-                : '标题链接已复制'
-              : '复制失败，请重试'
-            : ''}
-        </p>
+          <p className="capsule-copy-status" role="status" aria-live="polite">
+            {copyFeedback
+              ? copyFeedback.ok
+                ? copyFeedback.kind === 'article'
+                  ? '文章链接已复制'
+                  : '标题链接已复制'
+                : '复制失败，请重试'
+              : ''}
+          </p>
+        </div>
       </aside>
     </div>,
     document.body,

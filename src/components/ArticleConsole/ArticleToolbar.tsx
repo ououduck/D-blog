@@ -152,11 +152,11 @@ export const ArticleToolbar: React.FC<ArticleToolbarProps> = ({
               type="button"
               onClick={onOpenToc}
               disabled={headingsCount === 0}
-              className="inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-100 active:scale-[0.98] disabled:opacity-40 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-zinc-800 transition-colors hover:bg-zinc-100 active:scale-[0.98] disabled:opacity-40 dark:text-zinc-200 dark:hover:bg-zinc-800"
               aria-label={headingsCount > 0 ? `打开文章目录（共 ${headingsCount} 节）` : '本文无目录'}
+              title="目录"
             >
               <List size={16} aria-hidden="true" />
-              目录
             </button>
             <span
               className="min-w-[3rem] text-center text-sm font-semibold tabular-nums text-zinc-600 dark:text-zinc-300"
