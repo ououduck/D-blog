@@ -63,6 +63,11 @@ const stages = [
     args: [viteCli, 'build', ...(verbose ? [] : ['--logLevel', 'warn'])],
   },
   {
+    name: 'Patch service worker version',
+    command: process.execPath,
+    args: ['scripts/patch-sw-version.mjs'],
+  },
+  {
     name: 'Bundle server-side renderer',
     command: process.execPath,
     args: [viteCli, 'build', '--config', 'vite.ssr.config.ts', ...(verbose ? [] : ['--logLevel', 'warn'])],

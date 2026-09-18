@@ -52,7 +52,8 @@
         margin-top: 1.5rem;
       }
 
-      a {
+      a,
+      button.action-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -60,17 +61,33 @@
         border-radius: 999px;
         text-decoration: none;
         font-weight: 700;
+        font-size: 1rem;
+        font-family: inherit;
+        cursor: pointer;
+      }
+
+      a:focus-visible,
+      button.action-button:focus-visible {
+        outline: 2px solid #18181b;
+        outline-offset: 2px;
       }
 
       .primary {
         background: #18181b;
         color: #fff;
+        border: 0;
       }
 
       .secondary {
         border: 1px solid rgba(24, 24, 27, 0.12);
         color: #18181b;
         background: rgba(255, 255, 255, 0.7);
+      }
+
+      .status-hint {
+        margin-top: 0.75rem;
+        font-size: 0.8125rem;
+        color: #a1a1aa;
       }
 
       @media (prefers-color-scheme: dark) {
@@ -101,6 +118,15 @@
           color: #f4f4f5;
           background: rgba(39, 39, 42, 0.88);
         }
+
+        a:focus-visible,
+        button.action-button:focus-visible {
+          outline-color: #f4f4f5;
+        }
+
+        .status-hint {
+          color: #71717a;
+        }
       }
     </style>
   </head>
@@ -109,9 +135,35 @@
       <h1>当前处于离线状态</h1>
       <p>当前地址不属于可用的站内页面，或应用缓存尚未准备完成；恢复网络后请重试。</p>
       <div class="actions">
-        <a class="primary" href="./">返回首页</a>
+        <button type="button" class="action-button primary" id="retry-button">重试连接</button>
+        <a class="secondary" href="./">返回首页</a>
         <a class="secondary" href="./feed.xml">查看 RSS</a>
       </div>
+      <p class="status-hint" id="online-hint" role="status" aria-live="polite" hidden>网络已恢复，正在重新加载…</p>
     </main>
+    <script>
+      (function () {
+        var retryButton = document.getElementById('retry-button');
+        var onlineHint = document.getElementById('online-hint');
+        var reloaded = false;
+        var reloadOnce = function () {
+          if (reloaded) return;
+          reloaded = true;
+          if (onlineHint) onlineHint.hidden = false;
+          window.location.reload();
+        };
+        if (retryButton) {
+          retryButton.addEventListener('click', reloadOnce);
+        }
+        // 网络恢复后自动重载一次：离线兜底页无实质内容，重载是唯一有用动作。
+        window.addEventListener('online', function () {
+          setTimeout(reloadOnce, 800);
+        });
+        if (navigator.onLine) {
+          // 缓存未就绪等非网络原因进入本页时，不自动循环刷新。
+          if (retryButton) retryButton.focus();
+        }
+      })();
+    </script>
   </body>
 </html>

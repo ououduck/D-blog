@@ -155,4 +155,87 @@ describe('registerServiceWorker', () => {
     });
     expect(waitingWorker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
   });
+
+  it('postMessage 抛错时返回 false 且状态回到 update-available（updateFailed 标记，复位 updateRequested）', async () => {
+    const waitingWorker = makeServiceWorker('installed');
+    (waitingWorker as unknown as { postMessage: () => void }).postMessage = vi.fn(() => {
+      throw new Error('postMessage failed');
+    });
+    const registration = {
+      waiting: waitingWorker,
+      addEventListener: vi.fn(),
+    } as unknown as ServiceWorkerRegistration;
+    mockNavigatorServiceWorker({ register: vi.fn().mockResolvedValue(registration) });
+
+    const { registerServiceWorker, applyServiceWorkerUpdate, getServiceWorkerState } = await loadModule();
+    registerServiceWorker();
+    // registration.waiting 存在 → 初始即为 update-available
+    await vi.waitFor(() => {
+      expect(getServiceWorkerState().status).toBe('update-available');
+    });
+
+    expect(applyServiceWorkerUpdate()).toBe(false);
+    expect(getServiceWorkerState().status).toBe('update-available');
+    expect(getServiceWorkerState().updateFailed).toBe(true);
+  });
+
+  it('subscribeToUpdateApplied 收到广播后触发回调，可取消订阅', async () => {
+    class MockBroadcastChannel {
+      static instances: MockBroadcastChannel[] = [];
+      listeners = new Set<(event: { data?: unknown }) => void>();
+      constructor(public name: string) {
+        MockBroadcastChannel.instances.push(this);
+      }
+      postMessage(data: unknown) {
+        this.listeners.forEach((cb) => cb({ data }));
+      }
+      addEventListener(_type: string, cb: (event: { data?: unknown }) => void) {
+        this.listeners.add(cb);
+      }
+      removeEventListener(_type: string, cb: (event: { data?: unknown }) => void) {
+        this.listeners.delete(cb);
+      }
+    }
+    vi.stubGlobal('BroadcastChannel', MockBroadcastChannel);
+
+    const { subscribeToUpdateApplied } = await loadModule();
+    const handler = vi.fn();
+    const unsubscribe = subscribeToUpdateApplied(handler);
+
+    // 同一模块实例共享 channel：找到已创建的实例并投递消息
+    const channel = MockBroadcastChannel.instances.at(-1) as MockBroadcastChannel;
+    channel.postMessage({ type: 'dblog:update-applied' });
+    expect(handler).toHaveBeenCalledTimes(1);
+    // 无关消息不触发
+    channel.postMessage({ type: 'other' });
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    unsubscribe();
+    channel.postMessage({ type: 'dblog:update-applied' });
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('consumeReloadScrollRestore 恢复刷新前滚动位置（一次性）', async () => {
+    const scrollTo = vi.fn();
+    vi.stubGlobal('scrollTo', scrollTo);
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 480 });
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      cb(0);
+      return 0;
+    });
+    sessionStorage.setItem('dblog:sw-reload-scroll', '480');
+
+    const { consumeReloadScrollRestore } = await loadModule();
+    consumeReloadScrollRestore();
+
+    // 双 rAF 后恢复
+    await vi.waitFor(() => {
+      expect(scrollTo).toHaveBeenCalledWith({ top: 480, behavior: 'auto' });
+    });
+    expect(sessionStorage.getItem('dblog:sw-reload-scroll')).toBeNull();
+
+    // 第二次调用：记录已消费，不再滚动
+    consumeReloadScrollRestore();
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+  });
 });

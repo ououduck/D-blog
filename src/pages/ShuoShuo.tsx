@@ -1,8 +1,8 @@
 /**
- * 说说页：朋友圈式短动态流，支持图片九宫格与分享。
+ * 说说页：朋友圈式短动态流，月份分组、图片九宫格（统一画廊预览）与分享。
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { MessageCircle, Search as SearchIcon } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Seo, buildSiteSchemas } from '../components/Seo';
@@ -11,7 +11,7 @@ import { absoluteSiteUrl } from '@/utils/siteUrl';
 import { getInitialShuoShuo } from '@/services/shuoshuo';
 import type { ShuoShuo as ShuoShuoEntry } from '../types';
 import { ShuoShuoItem } from '@/components/ShuoShuoItem';
-import { ImageViewer } from '@/components/ImageViewer';
+import { ImageViewer, type ImageViewerImage } from '@/components/ImageViewer';
 import { Surface } from '@/components/ui/Surface';
 import { SearchField } from '@/components/SearchField';
 import { ShuoShuoShareModal } from '@/components/ShuoShuoShareModal';
@@ -25,12 +25,45 @@ const SHUOSHUO_DESCRIPTION =
 /** URL 定位参数名：/shuoshuo?id=<说说 id> 打开页面后自动滚动定位到该条说说（旧版分享链接兼容）。 */
 const LOCATE_PARAM = 'id';
 
+interface ShuoShuoMonthGroup {
+  /** 月份键（YYYY-MM）。 */
+  month: string;
+  /** 展示文案（YYYY 年 M 月）。 */
+  label: string;
+  items: ShuoShuoEntry[];
+}
+
+/** 按 YYYY-MM 分组（保持原时间顺序，仅插入分组头）。 */
+const groupByMonth = (items: ShuoShuoEntry[]): ShuoShuoMonthGroup[] => {
+  const groups: ShuoShuoMonthGroup[] = [];
+  const indexByMonth = new Map<string, number>();
+  for (const item of items) {
+    const month = typeof item.date === 'string' ? item.date.slice(0, 7) : '';
+    let groupIndex = indexByMonth.get(month);
+    if (groupIndex === undefined) {
+      const [year, monthNumber] = month.split('-');
+      groupIndex = groups.length;
+      indexByMonth.set(month, groupIndex);
+      groups.push({
+        month,
+        label:
+          /^\d{4}$/.test(year ?? '') && /^\d{1,2}$/.test(monthNumber ?? '')
+            ? `${year} 年 ${Number(monthNumber)} 月`
+            : month || '未知时间',
+        items: [],
+      });
+    }
+    groups[groupIndex].items.push(item);
+  }
+  return groups;
+};
+
 export const ShuoShuo = () => {
   const shouldReduceMotion = useReducedMotion();
   const allItems = getInitialShuoShuo();
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
-  const [previewImage, setPreviewImage] = useState<{ src: string; alt?: string } | null>(null);
+  const [previewGallery, setPreviewGallery] = useState<{ images: ImageViewerImage[]; index: number } | null>(null);
   const [shareTarget, setShareTarget] = useState<ShuoShuoEntry | null>(null);
   const [shareUrl, setShareUrl] = useState('');
   const [autoCopied, setAutoCopied] = useState<boolean | null>(null);
@@ -68,6 +101,9 @@ export const ShuoShuo = () => {
     return allItems.filter((item) => (strippedContents.get(item.id) ?? '').toLowerCase().includes(query));
   }, [allItems, searchQuery, strippedContents]);
   const hasSearchQuery = searchQuery.trim().length > 0;
+
+  // 月份分组：过滤后仍保持时间序，按月插入分组头（时间线体验）。
+  const monthGroups = useMemo(() => groupByMonth(filteredItems), [filteredItems]);
 
   // ── 定位功能：URL ?id=<说说 id>，打开页面后自动滚动到对应说说并高亮 ──
   const locateTargetId = searchParams.get(LOCATE_PARAM);
@@ -246,22 +282,44 @@ export const ShuoShuo = () => {
               直接放 span 属无效 HTML，部分读屏会误读列表边界/条目数）。 */}
           <span aria-hidden="true" className="absolute bottom-2 left-5 top-2 w-px bg-zinc-200 dark:bg-zinc-800" />
           <ol className="space-y-8">
-            {filteredItems.map((item) => (
-              <ShuoShuoItem
-                key={item.id}
-                item={item}
-                onPreview={(src, alt) => setPreviewImage({ src, alt })}
-                onShare={handleShare}
-                isHighlighted={highlightedId === item.id}
-                shareSnippet={(strippedContents.get(item.id) ?? '').slice(0, 24) || item.date}
-              />
+            {monthGroups.map((group) => (
+              <Fragment key={group.month}>
+                {/* 月份分组头：li 内放分组标题（ol 直接子元素只允许 li，heading
+                    放 li 内合法且读屏可按时间导航）。 */}
+                <li aria-label={group.label} className="relative z-10 flex items-center gap-3 pl-0">
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex items-center rounded-full border border-zinc-200 bg-paper px-3 py-1 text-xs font-semibold tabular-nums text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
+                  >
+                    {group.label}
+                  </span>
+                  <span aria-hidden="true" className="text-[11px] tabular-nums text-zinc-400 dark:text-zinc-500">
+                    {group.items.length} 条
+                  </span>
+                </li>
+                {group.items.map((item) => (
+                  <ShuoShuoItem
+                    key={item.id}
+                    item={item}
+                    onPreview={(images, index) => setPreviewGallery({ images, index })}
+                    onShare={handleShare}
+                    isHighlighted={highlightedId === item.id}
+                    shareSnippet={(strippedContents.get(item.id) ?? '').slice(0, 24) || item.date}
+                  />
+                ))}
+              </Fragment>
             ))}
           </ol>
         </div>
       )}
 
-      {previewImage && (
-        <ImageViewer src={previewImage.src} alt={previewImage.alt} onClose={() => setPreviewImage(null)} />
+      {previewGallery && (
+        <ImageViewer
+          src={null}
+          images={previewGallery.images}
+          initialIndex={previewGallery.index}
+          onClose={() => setPreviewGallery(null)}
+        />
       )}
 
       {shareTarget && (

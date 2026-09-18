@@ -11,7 +11,7 @@ import { absoluteSiteUrl } from '@/utils/siteUrl';
 import { getInitialShuoShuo } from '@/services/shuoshuo';
 import type { ShuoShuo as ShuoShuoEntry } from '../types';
 import { ShuoShuoItem } from '@/components/ShuoShuoItem';
-import { ImageViewer } from '@/components/ImageViewer';
+import { ImageViewer, type ImageViewerImage } from '@/components/ImageViewer';
 import { ShuoShuoShareModal } from '@/components/ShuoShuoShareModal';
 import { NotFoundState } from '@/components/NotFoundState';
 import { formatDate } from '@/utils/date';
@@ -51,7 +51,7 @@ export const ShuoShuoDetail = () => {
   // 重复 find（详情页单条场景也遵循列表页的缓存口径）。
   const item = useMemo(() => allItems.find((candidate) => candidate.id === id), [allItems, id]);
   const itemContent = useMemo(() => stripMarkdown(item?.content ?? ''), [item?.content]);
-  const [previewImage, setPreviewImage] = useState<{ src: string; alt?: string } | null>(null);
+  const [previewGallery, setPreviewGallery] = useState<{ images: ImageViewerImage[]; index: number } | null>(null);
   const [shareTarget, setShareTarget] = useState<ShuoShuoEntry | null>(null);
   const [shareUrl, setShareUrl] = useState('');
   const [autoCopied, setAutoCopied] = useState<boolean | null>(null);
@@ -210,7 +210,7 @@ export const ShuoShuoDetail = () => {
         <ol className="space-y-8">
           <ShuoShuoItem
             item={item}
-            onPreview={(src, alt) => setPreviewImage({ src, alt })}
+            onPreview={(images, index) => setPreviewGallery({ images, index })}
             onShare={handleShare}
             showDetailLink={false}
           />
@@ -227,8 +227,13 @@ export const ShuoShuoDetail = () => {
         </Link>
       </div>
 
-      {previewImage && (
-        <ImageViewer src={previewImage.src} alt={previewImage.alt} onClose={() => setPreviewImage(null)} />
+      {previewGallery && (
+        <ImageViewer
+          src={null}
+          images={previewGallery.images}
+          initialIndex={previewGallery.index}
+          onClose={() => setPreviewGallery(null)}
+        />
       )}
 
       {shareTarget && (

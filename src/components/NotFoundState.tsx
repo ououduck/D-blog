@@ -1,5 +1,6 @@
 /**
  * 404 状态块：标题/描述/返回入口，可选 debugLabel 展示调试信息（404 与文章缺失页共用）。
+ * children 渲染在返回按钮之后，供 404 页扩展搜索/推荐等模块。
  */
 
 import React from 'react';
@@ -12,10 +13,11 @@ interface NotFoundStateProps {
   backTo?: string;
   backLabel?: string;
   debugLabel?: string;
+  children?: React.ReactNode;
 }
 
 export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(
-  ({ title, description, backTo = '/', backLabel = '返回首页', debugLabel }) => {
+  ({ title, description, backTo = '/', backLabel = '返回首页', debugLabel, children }) => {
     return (
       <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center px-4 py-10">
         <div className="w-full border-y border-zinc-200 py-10 dark:border-zinc-800 md:py-14">
@@ -34,12 +36,12 @@ export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(
             <p className="max-w-xl text-sm leading-7 text-zinc-700 dark:text-zinc-300 md:text-base">{description}</p>
 
             {debugLabel && (
-              <div className="mt-6 inline-flex max-w-full items-center border-l-2 border-zinc-300 bg-zinc-50 px-4 py-3 font-mono text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+              <div className="mt-6 inline-flex max-w-full items-center border-l-2 border-zinc-300 bg-zinc-50 px-4 py-3 font-mono text-xs [overflow-wrap:anywhere] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                 {debugLabel}
               </div>
             )}
 
-            <div className="mt-8">
+            <div className={children ? 'mt-8' : 'mt-8 flex flex-wrap gap-3'}>
               <Link
                 to={backTo}
                 className="inline-flex items-center rounded-control border border-ink active:scale-[.98] bg-ink px-6 py-3 text-sm font-bold tracking-[0.12em] text-white transition-colors hover:bg-zinc-800 dark:border-white dark:bg-white dark:text-ink dark:hover:bg-zinc-200"
@@ -48,6 +50,8 @@ export const NotFoundState: React.FC<NotFoundStateProps> = React.memo(
                 {backLabel}
               </Link>
             </div>
+
+            {children}
           </div>
         </div>
       </div>

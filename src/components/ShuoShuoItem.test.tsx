@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ShuoShuoItem } from './ShuoShuoItem';
+import type { ImageViewerImage } from './ImageViewer';
 import type { ShuoShuo } from '@/types';
 
 const makeItem = (overrides: Partial<ShuoShuo> = {}): ShuoShuo => ({
@@ -15,7 +16,7 @@ const makeItem = (overrides: Partial<ShuoShuo> = {}): ShuoShuo => ({
 
 const renderItem = (props: {
   item: ShuoShuo;
-  onPreview?: (src: string, alt?: string) => void;
+  onPreview?: (images: ImageViewerImage[], index: number) => void;
   onShare?: (item: ShuoShuo) => void;
   showDetailLink?: boolean;
 }) =>
@@ -72,14 +73,49 @@ describe('ShuoShuoItem', () => {
     expect(onShare).toHaveBeenCalledWith(expect.objectContaining({ id: 'shuo-1' }));
   });
 
-  it('有图片时渲染图片网格并可预览', async () => {
+  it('有图片时渲染图片网格并可打开统一画廊（下标指向所点图片）', async () => {
     const user = userEvent.setup();
     const onPreview = vi.fn();
     renderItem({ item: makeItem({ images: ['/img/a.png', '/img/b.png'] }), onPreview });
     const buttons = screen.getAllByRole('button', { name: /查看图片/ });
     expect(buttons).toHaveLength(2);
     await user.click(buttons[0]);
-    expect(onPreview).toHaveBeenCalledWith(expect.stringContaining('/img/a.png'), '说说图片 1');
+    // 画廊含该条说说全部图片，index 定位到所点图片
+    expect(onPreview).toHaveBeenCalledWith(
+      [
+        { src: expect.stringContaining('/img/a.png'), alt: '说说图片 1' },
+        { src: expect.stringContaining('/img/b.png'), alt: '说说图片 2' },
+      ],
+      0,
+    );
+    // 多图时显示数量徽标
+    expect(screen.getByText('2 图')).toBeInTheDocument();
+  });
+
+  it('正文 Markdown 图片并入画廊（九宫格图片排后）', async () => {
+    const user = userEvent.setup();
+    const onPreview = vi.fn();
+    renderItem({
+      item: makeItem({
+        content: '看图 ![截图](/img/shot.png) 好看',
+        images: ['/img/grid.png'],
+      }),
+      onPreview,
+    });
+    await user.click(screen.getByRole('button', { name: '预览图片：截图' }));
+    expect(onPreview).toHaveBeenCalledTimes(1);
+    const [images, index] = onPreview.mock.calls[0];
+    expect(images).toHaveLength(2);
+    expect(images[0]).toMatchObject({ src: expect.stringContaining('shot.png'), alt: '截图' });
+    expect(images[1]).toMatchObject({ src: expect.stringContaining('grid.png') });
+    expect(index).toBe(0);
+  });
+
+  it('裸 URL 自动成链且外链安全', () => {
+    renderItem({ item: makeItem({ content: '项目地址 https://github.com/ououduck/D-blog 欢迎围观' }) });
+    const link = screen.getByRole('link', { name: 'github.com/ououduck/D-blog' });
+    expect(link).toHaveAttribute('href', 'https://github.com/ououduck/D-blog');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   it('无图片时不渲染图片网格', () => {
