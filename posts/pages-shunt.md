@@ -101,7 +101,7 @@ Cloudflare 不支持DNS解析分流
 
 ## 第五步:验证分流
 
-最后前往 [ITDOG](https://itdog.cn/ping) 测试分流是否成功  
+最后测试分流是否成功  
 如果成功 国外节点IP位置应该显示 Cloudflare anycast  
 国内节点IP位置应在国内(如果在部署时选择的是 全球可用区不含中国大陆 则为其他国家IP)  
 
