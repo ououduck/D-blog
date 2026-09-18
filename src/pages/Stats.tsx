@@ -7,7 +7,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Activity,
-  BarChart3,
   Clock,
   Database,
   FileImage,
@@ -171,10 +170,6 @@ const ExternalStatsCard = ({
     </a>
   </Surface>
 );
-
-// D-Umami 访问分析：统计页底部「外部统计」板块卡片之一（与运行状态等宽平分），
-// 按钮跳转 D-Umami 共享看板（公开 URL，无需登录）。
-const UMAMI_SHARE_URL = 'https://umami.pldduck.com/share/zWEt3cddtxLtAA0r';
 
 export const Stats = () => {
   const siteStatsLoadedRef = useRef(false);
@@ -342,13 +337,6 @@ export const Stats = () => {
           </section>
 
           <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-2">
-            <ExternalStatsCard
-              icon={BarChart3}
-              title="D-Umami 访问分析"
-              description="由 D-Umami 自托管统计提供的站点访问数据，实时查看访客来源、热门页面与访问趋势。"
-              href={UMAMI_SHARE_URL}
-              buttonLabel="跳转D-Umami查看"
-            />
             <ExternalStatsCard
               icon={Activity}
               title="运行状态"

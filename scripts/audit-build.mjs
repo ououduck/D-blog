@@ -18,7 +18,7 @@ const logger = createBuildLogger('audit:build');
 // 初始体积硬预算（构建门禁，超限即失败）：
 // - 与 vite.config.ts 的 chunkSizeWarningLimit（600，仅警告）语义不同但数值配套，
 //   调整任一预算时需同步评估另一处；
-// - 依赖第三方服务（Umami/Busuanzi）的引用存在性检查也在此门禁内，
+// - 依赖第三方服务（Clarity/Busuanzi）的引用存在性检查也在此门禁内，
 //   移除对应服务时需同步放宽。
 const maxInitialScriptBytes = 600 * 1024;
 const maxInitialStyleBytes = 180 * 1024;
@@ -137,31 +137,23 @@ if (localStylesheets.size === 0) {
   }
 }
 
-// 依赖第三方服务（Umami/Busuanzi）的引用存在性检查：期望值从源模板
-// （index.html / public/_headers）推导 —— 从源码移除对应服务时审计自动放宽，
-// 无需再手动同步本文件的硬编码检查串（原实现在移除服务后构建会误红）。
+// 依赖第三方服务（Clarity/Busuanzi）的引用存在性检查：期望值从源模板
+// （index.html / public/_headers）推导 —— 从源码移除对应服务时审计自动放宽。
 const sourceIndexHtml = fs.existsSync(path.join(ROOT_DIR, 'index.html'))
   ? fs.readFileSync(path.join(ROOT_DIR, 'index.html'), 'utf8')
   : '';
 const sourceHeadersFile = fs.existsSync(path.join(ROOT_DIR, 'public/_headers'))
   ? fs.readFileSync(path.join(ROOT_DIR, 'public/_headers'), 'utf8')
   : '';
-const sourceUsesUmami =
-  sourceIndexHtml.includes('umami.pldduck.com') || sourceHeadersFile.includes('umami.pldduck.com');
+const sourceUsesClarity = sourceIndexHtml.includes('www.clarity.ms') || sourceHeadersFile.includes('www.clarity.ms');
 const sourceUsesBusuanzi = sourceIndexHtml.includes('busuanzi.cc') || sourceHeadersFile.includes('busuanzi.cc');
 
-if (sourceUsesUmami) {
-  if (!entryHtml.includes('https://umami.pldduck.com/script.js')) {
-    errors.push('entry HTML is missing the Umami script URL');
+if (sourceUsesClarity) {
+  if (!entryHtml.includes('https://www.clarity.ms/tag/')) {
+    errors.push('entry HTML is missing the Clarity script URL');
   }
-  if (!entryHtml.includes('data-website-id=')) {
-    errors.push('entry HTML is missing the Umami website ID');
-  }
-  // 注入时机：Umami 脚本必须为 defer 异步加载，不等待 window load，
-  // 延迟注入会漏掉快速离开/首屏即交互的会话。
-  // （双引号兼容 esbuild 压缩产物对字符串引号的改写。）
-  if (/addEventListener\(["']load["']/.test(entryHtml)) {
-    errors.push('entry HTML delays Umami injection to window.load, which can miss sessions');
+  if (!entryHtml.includes('yk9n836sio')) {
+    errors.push('entry HTML is missing the Clarity project ID');
   }
 }
 if (sourceUsesBusuanzi && !entryHtml.includes('https://cdn.busuanzi.cc')) {
@@ -173,8 +165,8 @@ if (!fs.existsSync(headersPath)) {
   errors.push('build output is missing the security headers file');
 } else {
   const headers = fs.readFileSync(headersPath, 'utf8');
-  if (sourceUsesUmami && !headers.includes('https://umami.pldduck.com')) {
-    errors.push('CSP is missing the required Umami origin');
+  if (sourceUsesClarity && !headers.includes('https://www.clarity.ms')) {
+    errors.push('CSP is missing the required Clarity origin');
   }
   if (sourceUsesBusuanzi && !headers.includes("connect-src 'self' https://cdn.busuanzi.cc")) {
     errors.push('CSP connect-src is missing the Busuanzi API origin');
