@@ -3,6 +3,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
+import { RotateCcw } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { mergeClassName } from '@/utils/classNames';
 
@@ -33,6 +34,9 @@ const radiusClasses: Record<ProgressiveImageRadius, string> = {
 
 const PAPER_PLACEHOLDER = 'linear-gradient(135deg, #eee9df 0%, #e4ddd1 52%, #d8cfc1 100%)';
 
+/** 重试请求附加缓存穿透参数：同 URL 失败结果可能被浏览器/中间层缓存，换参强制回源。 */
+const appendRetryParam = (url: string, attempt: number) => `${url}${url.includes('?') ? '&' : '?'}dbr=${attempt}`;
+
 export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(
   ({
     wrapperClassName,
@@ -57,11 +61,15 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(
     const imgRef = useRef<HTMLImageElement | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
+    // 用户点击「重试」的次数：仅用户主动触发重载，绝不自动循环请求；
+    // >0 时给 src 附加 dbr 参数绕过失败缓存并去掉 sources（srcSet 候选无法改参）。
+    const [retryAttempt, setRetryAttempt] = useState(0);
 
     // 优化：当 src 变化时重置状态并同步图片状态
     useEffect(() => {
       setIsLoaded(false);
       setHasError(false);
+      setRetryAttempt(0);
 
       const image = imgRef.current;
       if (!image || !src) {
@@ -105,6 +113,18 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(
           : 'opacity-100';
     const transitionDurationClass = prefersReducedMotion ? 'duration-0' : 'duration-300';
     const placeholderStyle: React.CSSProperties = { backgroundImage: PAPER_PLACEHOLDER };
+    const activeSrc = retryAttempt > 0 && src ? appendRetryParam(src, retryAttempt) : src;
+    const activeSources = retryAttempt > 0 ? undefined : sources;
+
+    const handleRetry = (event: React.MouseEvent<HTMLButtonElement>) => {
+      // 阻断冒泡：错误占位可能嵌在可点击容器（如封面预览按钮）内，
+      // 重试不得同时触发外层的预览/跳转。
+      event.stopPropagation();
+      event.preventDefault();
+      setIsLoaded(false);
+      setHasError(false);
+      setRetryAttempt((value) => value + 1);
+    };
 
     return (
       <div
@@ -142,12 +162,22 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(
           />
         )}
         {hasError || !hasUsableSrc ? (
-          <div className="relative flex min-h-[6rem] h-full w-full items-center justify-center rounded-[inherit] border border-dashed border-zinc-200 bg-zinc-100/90 px-4 py-6 text-center text-xs font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400">
+          <div className="relative flex min-h-[6rem] h-full w-full flex-col items-center justify-center gap-2 rounded-[inherit] border border-dashed border-zinc-200 bg-zinc-100/90 px-4 py-6 text-center text-xs font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400">
             <span className="line-clamp-2">图片暂时无法加载{alt ? `：${alt}` : ''}</span>
+            {hasError && hasUsableSrc && (
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="inline-flex min-h-9 items-center justify-center rounded-control border border-zinc-300 bg-paper px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:border-zinc-500 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:focus-visible:outline-zinc-100"
+              >
+                <RotateCcw size={13} aria-hidden="true" />
+                点击重试
+              </button>
+            )}
           </div>
         ) : (
           <picture className="contents">
-            {sources?.map((source) => (
+            {activeSources?.map((source) => (
               <source
                 key={`${source.type || 'image'}-${source.media || 'all'}-${source.srcSet}`}
                 srcSet={source.srcSet}
@@ -159,7 +189,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = React.memo(
             <img
               {...props}
               ref={imgRef}
-              src={src}
+              src={activeSrc}
               alt={alt}
               decoding={decoding}
               loading={resolvedLoading}

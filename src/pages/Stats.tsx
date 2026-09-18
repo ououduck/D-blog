@@ -16,7 +16,9 @@ import {
   Image,
   Layers,
   PenLine,
+  Sparkles,
   Tags,
+  TrendingUp,
   Type,
 } from 'lucide-react';
 
@@ -136,6 +138,151 @@ const RankingCard = ({
     </Surface>
   );
 };
+
+// 发布趋势卡：近 12 个月每月文章数，纯 CSS 条形（无动画、无第三方图表库），
+// 高度按当期最大值归一；0 的月份输出 2px 基线桩保持节奏。
+const PublishTrendCard = ({
+  monthlyPosts,
+  firstPostDate,
+  runningDays,
+}: {
+  monthlyPosts: SiteStats['monthlyPosts'];
+  firstPostDate?: string;
+  runningDays?: number;
+}) => {
+  const months = monthlyPosts || [];
+  const max = months.reduce((current, point) => Math.max(current, Number.isFinite(point.count) ? point.count : 0), 0);
+  const summary = months.length ? months.map((point) => `${point.month} ${point.count} 篇`).join('，') : '暂无数据';
+
+  return (
+    <Surface className="flex min-w-0 flex-col p-5 sm:p-6">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-2">
+        <CardTitle icon={TrendingUp}>发布趋势</CardTitle>
+        {firstPostDate && typeof runningDays === 'number' && runningDays > 0 ? (
+          <p className="mb-1 text-xs text-zinc-500 dark:text-zinc-400" title="按最早发布日期起算，含当日">
+            自 {firstPostDate} 起运行 {formatValue(runningDays)} 天
+          </p>
+        ) : null}
+      </div>
+      {months.length === 0 ? (
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">暂无可展示的数据。</p>
+      ) : (
+        <figure className="mt-auto">
+          {/* 图表以 role="img" + 文本摘要暴露给读屏，柱体为装饰（aria-hidden）。 */}
+          <div
+            role="img"
+            aria-label={`近 ${months.length} 个月发布趋势：${summary}`}
+            className="flex h-32 items-end gap-1 sm:h-36 sm:gap-1.5"
+          >
+            {months.map((point) => {
+              const count = Number.isFinite(point.count) ? point.count : 0;
+              const heightPercent = max > 0 && count > 0 ? Math.max((count / max) * 100, 8) : 0;
+              return (
+                <div key={point.month} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
+                  <span
+                    aria-hidden="true"
+                    className={`text-[10px] font-semibold tabular-nums ${count > 0 ? 'text-zinc-700 dark:text-zinc-300' : 'text-transparent'}`}
+                  >
+                    {count}
+                  </span>
+                  <div
+                    aria-hidden="true"
+                    title={`${point.month}：${count} 篇`}
+                    className={`w-full rounded-t-sm transition-none ${
+                      count > 0 ? 'bg-zinc-800 dark:bg-zinc-200' : 'bg-zinc-200 dark:bg-zinc-800'
+                    }`}
+                    style={count > 0 ? { height: `${heightPercent}%` } : { height: 2 }}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="text-[9px] tabular-nums text-zinc-400 dark:text-zinc-500"
+                    title={point.month}
+                  >
+                    {point.month.slice(5)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <figcaption className="sr-only">近 {months.length} 个月每月发布的文章数量</figcaption>
+        </figure>
+      )}
+    </Surface>
+  );
+};
+
+// 年度回顾卡：「我的博客这一年」——构建当年的真实汇总（篇数/字数/分类/标签/首末篇）。
+const YearReviewCard = ({ review }: { review: SiteStats['yearReview'] }) => (
+  <Surface className="flex min-w-0 flex-col p-5 sm:p-6">
+    <CardTitle icon={Sparkles}>{review ? `我的 ${review.year} 年` : '我的博客这一年'}</CardTitle>
+    {!review || review.posts === 0 ? (
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">今年还没有发布文章。</p>
+    ) : (
+      <div className="mt-auto flex min-w-0 flex-col gap-4">
+        <div className="flex items-end gap-6">
+          <div>
+            <CountUp
+              to={review.posts}
+              className="text-2xl font-bold leading-none tabular-nums text-zinc-900 dark:text-zinc-100 sm:text-3xl"
+            />
+            <span className="ml-1 text-xs text-zinc-500 dark:text-zinc-400">篇</span>
+          </div>
+          <div>
+            <CountUp
+              to={review.words}
+              separator=","
+              className="text-2xl font-bold leading-none tabular-nums text-zinc-900 dark:text-zinc-100 sm:text-3xl"
+            />
+            <span className="ml-1 text-xs text-zinc-500 dark:text-zinc-400">字</span>
+          </div>
+        </div>
+
+        {(review.category || (review.tags || []).length > 0) && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {review.category && (
+              <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                {review.category}
+              </span>
+            )}
+            {(review.tags || []).map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-zinc-200 px-2.5 py-1 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-400"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="space-y-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+          {review.firstPost && (
+            <p className="min-w-0 truncate">
+              年初发布{' '}
+              <Link
+                to={`/post/${review.firstPost.id}`}
+                className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition-colors hover:text-zinc-900 dark:text-zinc-300 dark:decoration-zinc-700 dark:hover:text-zinc-100"
+              >
+                {review.firstPost.title}
+              </Link>
+            </p>
+          )}
+          {review.latestPost && (
+            <p className="min-w-0 truncate">
+              最近发布{' '}
+              <Link
+                to={`/post/${review.latestPost.id}`}
+                className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition-colors hover:text-zinc-900 dark:text-zinc-300 dark:decoration-zinc-700 dark:hover:text-zinc-100"
+              >
+                {review.latestPost.title}
+              </Link>
+            </p>
+          )}
+        </div>
+      </div>
+    )}
+  </Surface>
+);
 
 const ExternalStatsCard = ({
   icon: Icon,
@@ -287,6 +434,16 @@ export const Stats = () => {
                 className="min-[400px]:col-span-2 lg:col-span-1"
               />
             </div>
+          </section>
+
+          {/* 趋势与年度回顾：与既有栅格协调（排行区为 lg:grid-cols-3） */}
+          <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-3" aria-label="发布趋势与年度回顾">
+            <PublishTrendCard
+              monthlyPosts={siteStats.monthlyPosts}
+              firstPostDate={siteStats.firstPostDate}
+              runningDays={siteStats.runningDays}
+            />
+            <YearReviewCard review={siteStats.yearReview} />
           </section>
 
           <section className="mt-6 grid min-w-0 gap-4 md:mt-8 lg:grid-cols-3">

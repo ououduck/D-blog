@@ -37,10 +37,11 @@ vi.mock('@/components/ShareModal', () => ({
   ShareModal: () => <div data-testid="mock-share" />,
 }));
 vi.mock('@/components/ImageViewer', () => ({
-  ImageViewer: () => <div data-testid="mock-viewer" />,
+  ImageViewer: vi.fn((_props: unknown) => <div data-testid="mock-viewer" />),
 }));
 
 import * as postsService from '@/services/posts';
+import { ImageViewer } from '@/components/ImageViewer';
 
 const makePost = (overrides: Record<string, unknown> = {}) => ({
   id: 'test-post',
@@ -144,6 +145,34 @@ describe('Post', () => {
     await waitFor(() => {
       expect(postsService.getPostById).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('点击正文图片打开画廊查看器：封面在前、正文图按文档顺序、下标正确', async () => {
+    vi.mocked(postsService.getPostById).mockResolvedValue(
+      makePost({
+        coverImage: '/posts-img/cover.png',
+        content:
+          '# 第一节\n\n正文内容段落。\n\n![第一张图](/posts-img/a.png)\n\n![第二张图](/posts-img/b.png "图二说明")\n\n## 代码示例\n\n```ts\nconst a = 1;\n```',
+      }) as never,
+    );
+    renderPost();
+    await screen.findByText('测试文章标题');
+
+    fireEvent.click(screen.getByRole('button', { name: '预览图片：第一张图' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-viewer')).toBeInTheDocument();
+    });
+
+    const viewerProps = vi.mocked(ImageViewer).mock.lastCall?.[0] as {
+      images: Array<{ src: string; alt?: string; title?: string }>;
+      initialIndex: number;
+    };
+    expect(viewerProps.images).toHaveLength(3);
+    expect(viewerProps.images[0]).toMatchObject({ src: expect.stringContaining('cover.png'), alt: '测试文章标题' });
+    expect(viewerProps.images[1]).toMatchObject({ src: expect.stringContaining('a.png'), alt: '第一张图' });
+    // "no-dark" 是深色适配标记不是 caption，不透传；普通 title 正常透传
+    expect(viewerProps.images[2]).toMatchObject({ title: '图二说明' });
+    expect(viewerProps.initialIndex).toBe(1);
   });
 
   it('正文标题 id 在多次重渲染后保持与 headings 数组一致（目录点击跳转回归）', async () => {

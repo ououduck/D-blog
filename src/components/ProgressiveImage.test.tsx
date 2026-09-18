@@ -64,4 +64,52 @@ describe('ProgressiveImage', () => {
     expect(onError).toHaveBeenCalledTimes(1);
     expect(screen.getByText(/图片暂时无法加载/)).toBeInTheDocument();
   });
+
+  it('失败后提供「点击重试」：重试挂载带穿透参数的 img 且不冒泡到外层容器', () => {
+    const onWrapperClick = vi.fn();
+    render(
+      <div onClick={onWrapperClick}>
+        <ProgressiveImage src="/img/broken.png" alt="坏图" />
+      </div>,
+    );
+    fireEvent.error(screen.getByRole('img'));
+
+    const retryButton = screen.getByRole('button', { name: /点击重试/ });
+    fireEvent.click(retryButton);
+    // 不冒泡：外层容器的 onClick（如封面预览）不得被重试误触
+    expect(onWrapperClick).not.toHaveBeenCalled();
+
+    // 重试后重新挂载 img：src 附加 dbr 参数强制回源；再次失败仍可重试且参数递增
+    const retryImg = screen.getByRole('img');
+    expect(retryImg).toHaveAttribute('src', '/img/broken.png?dbr=1');
+    fireEvent.error(retryImg);
+    fireEvent.click(screen.getByRole('button', { name: /点击重试/ }));
+    expect(screen.getByRole('img')).toHaveAttribute('src', '/img/broken.png?dbr=2');
+  });
+
+  it('无 src 的错误占位不提供重试按钮（无可重载对象）', () => {
+    render(<ProgressiveImage src="" alt="缺失" />);
+    expect(screen.getByText(/图片暂时无法加载/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /点击重试/ })).not.toBeInTheDocument();
+  });
+
+  it('src 变化时重置重试计数', () => {
+    const { rerender } = render(<ProgressiveImage src="/img/a.png" alt="a" />);
+    fireEvent.error(screen.getByRole('img'));
+    fireEvent.click(screen.getByRole('button', { name: /点击重试/ }));
+    expect(screen.getByRole('img')).toHaveAttribute('src', '/img/a.png?dbr=1');
+
+    rerender(<ProgressiveImage src="/img/other.png" alt="other" />);
+    expect(screen.getByRole('img')).toHaveAttribute('src', '/img/other.png');
+  });
+
+  it('重试后加载成功恢复 img 显示且触发 onLoad', () => {
+    const onLoad = vi.fn();
+    render(<ProgressiveImage src="/img/flaky.png" alt="flaky" onLoad={onLoad} />);
+    fireEvent.error(screen.getByRole('img'));
+    fireEvent.click(screen.getByRole('button', { name: /点击重试/ }));
+    fireEvent.load(screen.getByRole('img'));
+    expect(onLoad).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('img')).toHaveAttribute('src', '/img/flaky.png?dbr=1');
+  });
 });

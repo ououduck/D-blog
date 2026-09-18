@@ -568,8 +568,14 @@
   @apply flex shrink-0 flex-col select-none border-r border-[#d0d7de] px-3 py-3.5 text-right font-mono text-[0.8125rem] leading-6 text-[#6e7781] dark:border-[#30363d] dark:text-[#8b949e] md:py-5;
 }
 
-.code-line-numbers span {
-  @apply block h-6;
+/* 行号是键盘可达的复制按钮：右对齐、整格点击区、hover/focus 反馈。
+   button 不继承 UA 字体/颜色，显式对齐容器的 mono 字体与配色。 */
+.code-line-numbers button {
+  @apply block h-6 w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-right font-mono text-[0.8125rem] leading-6 text-[#6e7781] transition-colors hover:text-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-600 active:scale-[0.98] dark:text-[#8b949e] dark:hover:text-blue-300 dark:focus-visible:outline-blue-300;
+}
+
+.code-line-count {
+  @apply hidden shrink-0 font-mono text-[11px] tabular-nums text-[#6e7781] dark:text-[#8b949e] sm:inline;
 }
 
 .code-block pre,
@@ -655,9 +661,11 @@
   overflow-wrap: break-word;
 }
 
-/* 行号悬停提示可点击（点击复制该行） */
-.code-line-numbers span {
-  @apply cursor-pointer transition-colors hover:text-blue-600 dark:hover:text-blue-300;
+/* 行号悬停提示可点击（点击复制该行）——样式并入 .code-line-numbers button */
+
+/* 复制失败反馈：与成功态同位，红色语义 */
+.code-copy-feedback-error {
+  @apply text-red-700 dark:text-red-300;
 }
 
 /* diff 代码块整行高亮：rehype-highlight 输出 hljs-addition/deletion/meta，

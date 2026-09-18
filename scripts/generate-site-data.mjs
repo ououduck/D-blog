@@ -19,6 +19,7 @@ import {
 import { extractMarkdownHeadings } from '../src/utils/headings-core.mjs';
 import { buildRssFeed } from './feed-generator.mjs';
 import { fetchCommentCounts } from './fetch-giscus-comments.mjs';
+import { buildSiteStats } from './lib/site-stats.mjs';
 
 const logger = createBuildLogger('gen:data');
 logger.start('Generate site data');
@@ -156,83 +157,15 @@ const countWords = (markdown) => countReadingUnits(markdown);
 // 兜底）；本地 posts-img/ 路径仍被 post-content-validator 校验（文件必须存在）。
 const countImages = (markdown) => parseMarkdownImages(markdown).length;
 
+// 统计计算抽离到 scripts/lib/site-stats.mjs（纯函数、可单测）；本脚本仅负责写盘。
 const generateSiteStats = (postsWithSearch) => {
-  const totalPosts = postsWithSearch.length;
-  const totalWords = postsWithSearch.reduce((sum, post) => sum + (post.wordCount || 0), 0);
-  const totalCategories = new Set(postsWithSearch.map((post) => post.category)).size;
-  const totalTags = new Set(postsWithSearch.flatMap((post) => post.tags || [])).size;
-  const totalImages = postsWithSearch.reduce((sum, post) => sum + (post.imageCount || 0), 0);
-  const toPostSummary = (post) => ({
-    id: post.id,
-    title: post.title,
-    excerpt: post.excerpt,
-    date: post.date,
-    updatedAt: post.updatedAt,
-    category: post.category,
-    tags: post.tags,
-    coverImage: post.coverImage,
-    readTime: post.readTime,
-    wordCount: post.wordCount || 0,
-    imageCount: post.imageCount || 0,
-  });
-  const countBy = (items, getKey) =>
-    Array.from(
-      items
-        .reduce((map, item) => {
-          const key = getKey(item);
-          if (key) {
-            map.set(key, (map.get(key) || 0) + 1);
-          }
-          return map;
-        }, new Map())
-        .entries(),
-    )
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'));
-  const categoryStats = countBy(postsWithSearch, (post) => post.category);
-  const tagStats = countBy(
-    postsWithSearch.flatMap((post) => post.tags || []),
-    (tag) => tag,
-  ).slice(0, 12);
-  const recentPosts = postsWithSearch
-    .slice()
-    .sort((a, b) => new Date(b.updatedAt || b.date) - new Date(a.updatedAt || a.date))
-    .slice(0, 5)
-    .map(toPostSummary);
-  const topWordCountPosts = postsWithSearch
-    .slice()
-    .sort((a, b) => (b.wordCount || 0) - (a.wordCount || 0))
-    .slice(0, 5)
-    .map(toPostSummary);
-  const topImageCountPosts = postsWithSearch
-    .slice()
-    .sort((a, b) => (b.imageCount || 0) - (a.imageCount || 0))
-    .slice(0, 5)
-    .map(toPostSummary);
+  const siteStats = buildSiteStats(postsWithSearch);
 
-  fs.writeFileSync(
-    path.join(OUTPUT_JSON_DIR, 'site-stats.json'),
-    JSON.stringify(
-      {
-        totalPosts,
-        totalWords,
-        totalCategories,
-        totalTags,
-        totalImages,
-        categoryStats,
-        tagStats,
-        recentPosts,
-        topWordCountPosts,
-        topImageCountPosts,
-      },
-      null,
-      2,
-    ),
-  );
+  fs.writeFileSync(path.join(OUTPUT_JSON_DIR, 'site-stats.json'), JSON.stringify(siteStats, null, 2));
 
   logger.step(
     'Generated site-stats.json',
-    `posts=${totalPosts} words=${totalWords} categories=${totalCategories} tags=${totalTags} images=${totalImages}`,
+    `posts=${siteStats.totalPosts} words=${siteStats.totalWords} categories=${siteStats.totalCategories} tags=${siteStats.totalTags} images=${siteStats.totalImages}`,
   );
 };
 

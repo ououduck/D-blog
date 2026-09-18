@@ -1,18 +1,31 @@
 /**
  * 文章图片预览弹层：滚轮/双指缩放、拖拽平移、双击切换与下载原图，经 createPortal 挂载到 body。
+ * 画廊模式（images 多于一张）：左右箭头/方向键/横滑切换、序号指示与 caption 展示。
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Maximize2, Minus, Plus, RotateCcw, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Maximize2, Minus, Plus, RotateCcw, X } from 'lucide-react';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { downloadBlob } from '@/utils/download';
 
+export interface ImageViewerImage {
+  src: string;
+  alt?: string;
+  /** Markdown 图片 title / 相册 caption：优先于 alt 展示。 */
+  title?: string;
+}
+
 interface ImageViewerProps {
+  /** 单图模式（向后兼容）：src/alt 直接构造单元素画廊。 */
   src: string | null;
   alt?: string;
+  /** 画廊模式：提供时优先于 src/alt。 */
+  images?: ImageViewerImage[];
+  /** 打开时定位到的图片下标（画廊模式）。 */
+  initialIndex?: number;
   onClose: () => void;
 }
 
@@ -20,6 +33,9 @@ const MIN_SCALE = 1;
 const MAX_SCALE = 5;
 const ZOOM_STEP = 0.35;
 const DOUBLE_TAP_DELAY = 280;
+/** 触屏横滑切换阈值：水平位移超过该值且明显大于垂直位移才判定为切换。 */
+const SWIPE_MIN_DISTANCE = 48;
+const SWIPE_AXIS_RATIO = 1.2;
 
 const clampScale = (scale: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
 const getTouchDistance = (touches: React.TouchList) => {
@@ -42,7 +58,7 @@ const computePanBounds = (img: HTMLImageElement, scale: number) => ({
   maxY: Math.max(0, (img.offsetHeight * scale - window.innerHeight) / 2),
 });
 
-export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) => {
+export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, images, initialIndex, onClose }) => {
   const viewerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -56,8 +72,31 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
   const touchStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
   const pinchStartRef = useRef({ distance: 0, scale: 1 });
   const lastTapRef = useRef(0);
-  const isOpen = Boolean(src);
-  const displaySrc = src;
+  // 触屏横滑切换：start 记录起点，last 记录最新触点；multiTouch 标记本次手势
+  // 出现过双指（捏合/双指平移不得再判定为横滑切换）。
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeLastRef = useRef<{ x: number; y: number } | null>(null);
+  const multiTouchRef = useRef(false);
+
+  // 画廊：images 优先，单图 src/alt 兼容为单元素画廊。
+  const gallery = useMemo<ImageViewerImage[]>(() => {
+    if (images && images.length > 0) {
+      return images;
+    }
+    return src ? [{ src, alt }] : [];
+  }, [images, src, alt]);
+  const [currentIndex, setCurrentIndex] = useState(() =>
+    initialIndex && Number.isFinite(initialIndex) ? Math.max(0, initialIndex) : 0,
+  );
+  const safeIndex = Math.min(currentIndex, Math.max(gallery.length - 1, 0));
+  const currentImage = gallery[safeIndex];
+  const isOpen = gallery.length > 0;
+  const displaySrc = currentImage?.src ?? null;
+  const displayAlt = currentImage?.alt ?? alt;
+  const caption = currentImage?.title || displayAlt;
+  const canNavigate = gallery.length > 1;
+  const hasPrev = canNavigate && safeIndex > 0;
+  const hasNext = canNavigate && safeIndex < gallery.length - 1;
 
   useModalOverlay({
     isOpen,
@@ -75,13 +114,20 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
     resetView();
     setIsLoaded(false);
     setHasError(false);
-  }, [src, resetView]);
+  }, [displaySrc, resetView]);
 
   useEffect(() => {
     if (scale <= 1) {
       setPosition({ x: 0, y: 0 });
     }
   }, [scale]);
+
+  const goPrev = useCallback(() => {
+    setCurrentIndex((current) => Math.max(0, current - 1));
+  }, []);
+  const goNext = useCallback(() => {
+    setCurrentIndex((current) => Math.min(gallery.length - 1, current + 1));
+  }, [gallery.length]);
 
   const zoomTo = useCallback((nextScale: number) => {
     setScale(clampScale(nextScale));
@@ -93,7 +139,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
 
   const handleDownload = useCallback(async () => {
     if (!displaySrc) return;
-    const baseName = alt?.trim() || 'image';
+    const baseName = displayAlt?.trim() || 'image';
     // 跨域图片的 a[download] 会被浏览器忽略而退化为导航打开：先尝试 fetch 成
     // blob 再用 objectURL 触发下载；fetch 失败（CORS 不允许/网络错误）时降级
     // 为新标签打开让用户手动保存，避免静默导航走当前标签。
@@ -120,7 +166,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
     } catch {
       window.open(displaySrc, '_blank', 'noopener,noreferrer');
     }
-  }, [displaySrc, alt]);
+  }, [displaySrc, displayAlt]);
 
   const handleWheel = useCallback(
     (event: WheelEvent) => {
@@ -157,11 +203,23 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
         event.preventDefault();
         resetView();
       }
+      // 画廊切换：仅在未缩放时响应方向键（缩放状态下 ←/→ 语义保留给平移直觉，
+      // 且放大时切换会造成位移状态混乱）。
+      if (canNavigate && scale <= 1) {
+        if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          goPrev();
+        }
+        if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          goNext();
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, resetView]);
+  }, [isOpen, resetView, canNavigate, scale, goPrev, goNext]);
 
   const handlePointerDown = (event: React.PointerEvent) => {
     if (scale <= 1) return;
@@ -208,6 +266,9 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
         event.preventDefault();
         handleToggleZoom();
       }
+      multiTouchRef.current = false;
+      swipeStartRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      swipeLastRef.current = swipeStartRef.current;
       touchStartRef.current = {
         x: event.touches[0].clientX,
         y: event.touches[0].clientY,
@@ -219,6 +280,9 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
 
     if (event.touches.length === 2) {
       event.preventDefault();
+      multiTouchRef.current = true;
+      swipeStartRef.current = null;
+      swipeLastRef.current = null;
       pinchStartRef.current = { distance: getTouchDistance(event.touches), scale };
     }
   };
@@ -229,6 +293,10 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
       const ratio = getTouchDistance(event.touches) / (pinchStartRef.current.distance || 1);
       zoomTo(pinchStartRef.current.scale * ratio);
       return;
+    }
+
+    if (event.touches.length === 1) {
+      swipeLastRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
     }
 
     if (event.touches.length === 1 && touchStartRef.current && scale > 1) {
@@ -250,6 +318,29 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
   };
 
   const handleTouchEnd = (event: React.TouchEvent) => {
+    // 最后一指抬起且全程单指、未缩放：按位移判定横滑切换（明显水平位移才触发，
+    // 竖滑/斜滑不误判）。缩放状态下该手势属于图片平移，不切换。
+    if (
+      event.touches.length === 0 &&
+      canNavigate &&
+      scale <= 1 &&
+      !multiTouchRef.current &&
+      swipeStartRef.current &&
+      swipeLastRef.current
+    ) {
+      const dx = swipeLastRef.current.x - swipeStartRef.current.x;
+      const dy = swipeLastRef.current.y - swipeStartRef.current.y;
+      if (Math.abs(dx) > SWIPE_MIN_DISTANCE && Math.abs(dx) > Math.abs(dy) * SWIPE_AXIS_RATIO) {
+        if (dx < 0) {
+          goNext();
+        } else {
+          goPrev();
+        }
+      }
+    }
+    swipeStartRef.current = null;
+    swipeLastRef.current = null;
+
     if (event.touches.length === 1) {
       // 双指捏合抬起一指（或 touchcancel 中断）：用剩余手指当前位置重新锚定，
       // 消除平移死区与旧锚点残留导致的位移跳变；touchcancel 与 touchend 同清理。
@@ -274,7 +365,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
 
   return createPortal(
     <AnimatePresence>
-      {src && (
+      {isOpen && (
         <motion.div
           ref={viewerRef}
           tabIndex={-1}
@@ -288,7 +379,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
           className="fixed inset-0 z-viewer flex cursor-default items-center justify-center overflow-hidden bg-zinc-950/95 p-3 text-white sm:p-6"
           role="dialog"
           aria-modal="true"
-          aria-label={alt ? `图片预览：${alt}` : '图片预览'}
+          aria-label={displayAlt ? `图片预览：${displayAlt}` : '图片预览'}
           onPointerMove={handleMouseMove}
           onPointerUp={stopDragging}
           onPointerCancel={stopDragging}
@@ -349,7 +440,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
             <img
               ref={imgRef}
               src={displaySrc ?? undefined}
-              alt={alt || ''}
+              alt={displayAlt || ''}
               draggable={false}
               onLoad={() => {
                 setIsLoaded(true);
@@ -363,7 +454,47 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
             />
           </motion.div>
 
+          {/* 画廊切换：两侧悬浮箭头（触控目标 ≥44px，边界禁用）。 */}
+          {canNavigate && (
+            <>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  goPrev();
+                }}
+                disabled={!hasPrev}
+                className="absolute left-2 top-1/2 z-50 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-icon border border-white/20 bg-zinc-900/90 text-white/80 transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98] disabled:pointer-events-none disabled:opacity-30 sm:left-4"
+                aria-label="上一张"
+                title="上一张（←）"
+              >
+                <ChevronLeft size={22} />
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  goNext();
+                }}
+                disabled={!hasNext}
+                className="absolute right-2 top-1/2 z-50 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-icon border border-white/20 bg-zinc-900/90 text-white/80 transition-colors hover:bg-zinc-800 hover:text-white active:scale-[0.98] disabled:pointer-events-none disabled:opacity-30 sm:right-4"
+                aria-label="下一张"
+                title="下一张（→）"
+              >
+                <ChevronRight size={22} />
+              </button>
+            </>
+          )}
+
           <div className="absolute bottom-4 left-1/2 z-50 flex w-[min(100%-1.5rem,23rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-1 rounded-surface border border-white/20 bg-zinc-900 p-1.5 shadow-none sm:bottom-6 sm:w-auto sm:flex-nowrap">
+            {canNavigate && (
+              <span
+                aria-live="polite"
+                className="mr-1 min-w-[3.25rem] text-center text-xs font-semibold text-white/85 tabular-nums"
+              >
+                {safeIndex + 1} / {gallery.length}
+              </span>
+            )}
             <div className="flex items-center gap-1">
               <button
                 onClick={handleZoomOut}
@@ -416,14 +547,14 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt, onClose }) =
             </div>
           </div>
 
-          {alt && (
+          {caption && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: prefersReducedMotion ? 0 : 0.12, duration: prefersReducedMotion ? 0 : 0.16 }}
               className="absolute bottom-[8.5rem] left-1/2 z-40 max-w-[min(42rem,88vw)] -translate-x-1/2 rounded-control border border-white/20 bg-zinc-900 px-4 py-2 text-center text-xs text-white/70 sm:bottom-20 sm:text-sm"
             >
-              {alt}
+              {caption}
             </motion.p>
           )}
         </motion.div>

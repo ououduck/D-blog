@@ -17,12 +17,42 @@ interface SiteStatsPostSummary extends Pick<
   imageCount?: number;
 }
 
+export interface SiteStatsMonthlyPoint {
+  /** 月份（YYYY-MM，UTC 口径）。 */
+  month: string;
+  count: number;
+}
+
+export interface SiteStatsYearPostRef {
+  id: string;
+  title: string;
+  date: string;
+}
+
+export interface SiteStatsYearReview {
+  year: number;
+  posts: number;
+  words: number;
+  category?: string | null;
+  tags?: string[];
+  firstPost?: SiteStatsYearPostRef | null;
+  latestPost?: SiteStatsYearPostRef | null;
+}
+
 export interface SiteStats {
   totalPosts: number;
   totalWords: number;
   totalCategories: number;
   totalTags: number;
   totalImages: number;
+  /** 最早发布日期（YYYY-MM-DD），博客运行起点。 */
+  firstPostDate?: string;
+  /** 构建当日起算的运行天数（含首日，≥1；无有效文章时为 0）。 */
+  runningDays?: number;
+  /** 近 12 个月发布趋势（固定窗口，0 也输出）。 */
+  monthlyPosts?: SiteStatsMonthlyPoint[];
+  /** 构建当年的年度回顾汇总。 */
+  yearReview?: SiteStatsYearReview | null;
   categoryStats?: StatCountItem[];
   tagStats?: StatCountItem[];
   recentPosts?: SiteStatsPostSummary[];

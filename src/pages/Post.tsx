@@ -17,13 +17,6 @@ import {
   Calendar,
   ChevronRight,
   Share2,
-  Copy,
-  Check,
-  Download,
-  FileCode,
-  WrapText,
-  ChevronDown,
-  ChevronUp,
   Users,
   ExternalLink,
   Eye,
@@ -45,6 +38,7 @@ import { assetUrl, absoluteSiteUrl, routeUrl } from '@/utils/siteUrl';
 import { siteConfig } from '@config/site.config';
 import { Seo, buildSiteSchemas } from '../components/Seo';
 import { ProgressiveImage } from '@/components/ProgressiveImage';
+import { CodeBlock } from '@/components/CodeBlock';
 import { CompactPostCard } from '@/components/CompactPostCard';
 import { NotFoundState } from '@/components/NotFoundState';
 import { IssueSubscriptionCard } from '@/components/IssueSubscriptionCard';
@@ -58,8 +52,6 @@ import {
 import type { MarkdownHeading } from '@/utils/headings';
 import { formatDate } from '@/utils/date';
 import { stripMarkdown } from '@/utils/markdownText';
-import { copyTextToClipboard } from '@/utils/clipboard';
-import { downloadBlob } from '@/utils/download';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 import { useReadingMode } from '@/components/ReadingModeContext';
@@ -221,7 +213,6 @@ const TableOfContents = lazy(() =>
 const ReadingProgressBadge = lazy(() =>
   import('../components/ReadingProgressBadge').then((m) => ({ default: m.ReadingProgressBadge })),
 );
-const MAX_CODE_LINES = 30;
 /** hash 深链滚动校正上限：Mermaid/懒加载内容导致的布局变化最多校正次数。 */
 const HASH_SCROLL_MAX_CORRECTIONS = 12;
 /** hash 深链滚动校正时间窗（毫秒）：内容稳定后自动断开观察器。 */
@@ -243,90 +234,6 @@ const isEditableKeyboardTarget = (target: EventTarget | null) => {
   return target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName);
 };
 
-const extractLangFromChildren = (children: React.ReactNode): string | undefined => {
-  const codeChild = React.Children.toArray(children).find(
-    (child) => React.isValidElement(child) && typeof (child.props as Record<string, unknown>).className === 'string',
-  ) as React.ReactElement | undefined;
-  if (!codeChild) return undefined;
-  const cls = (codeChild.props as Record<string, string>).className || '';
-  const match = cls.match(/language-(\w+)/);
-  return match ? match[1] : undefined;
-};
-
-const getLangDisplayName = (lang: string): string => {
-  const langMap: Record<string, string> = {
-    js: 'JavaScript',
-    jsx: 'JSX',
-    ts: 'TypeScript',
-    tsx: 'TSX',
-    py: 'Python',
-    rb: 'Ruby',
-    go: 'Go',
-    rs: 'Rust',
-    java: 'Java',
-    kt: 'Kotlin',
-    swift: 'Swift',
-    html: 'HTML',
-    css: 'CSS',
-    scss: 'SCSS',
-    json: 'JSON',
-    yaml: 'YAML',
-    yml: 'YAML',
-    xml: 'XML',
-    md: 'Markdown',
-    sql: 'SQL',
-    sh: 'Shell',
-    bash: 'Bash',
-    zsh: 'Zsh',
-    dockerfile: 'Dockerfile',
-    docker: 'Docker',
-    graphql: 'GraphQL',
-    gql: 'GraphQL',
-    c: 'C',
-    cpp: 'C++',
-    cs: 'C#',
-  };
-  return langMap[lang] || lang;
-};
-
-const CODE_FILE_EXTENSIONS: Record<string, string> = {
-  bash: 'sh',
-  c: 'c',
-  cpp: 'cpp',
-  cs: 'cs',
-  css: 'css',
-  docker: 'dockerfile',
-  dockerfile: 'dockerfile',
-  go: 'go',
-  gql: 'graphql',
-  graphql: 'graphql',
-  html: 'html',
-  java: 'java',
-  js: 'js',
-  json: 'json',
-  jsx: 'jsx',
-  kt: 'kt',
-  md: 'md',
-  py: 'py',
-  rb: 'rb',
-  rs: 'rs',
-  scss: 'scss',
-  sh: 'sh',
-  sql: 'sql',
-  swift: 'swift',
-  ts: 'ts',
-  tsx: 'tsx',
-  xml: 'xml',
-  yaml: 'yaml',
-  yml: 'yaml',
-  zsh: 'sh',
-};
-
-const getCodeFileExtension = (lang?: string) => {
-  if (!lang) return 'txt';
-  return CODE_FILE_EXTENSIONS[lang.toLowerCase()] || 'txt';
-};
-
 /** 从阅读时长文案解析分钟数：优先「N分钟」，其次「N小时」×60，最后回退首个数字。 */
 const parseReadMinutes = (readTime: string): number => {
   const minutesMatch = readTime.match(/(\d+(?:\.\d+)?)\s*分钟/);
@@ -335,239 +242,6 @@ const parseReadMinutes = (readTime: string): number => {
   if (hoursMatch) return Math.round(Number(hoursMatch[1]) * 60);
   const firstNumber = readTime.match(/\d+/);
   return firstNumber ? Number(firstNumber[0]) : Number.NaN;
-};
-
-const getCodeText = (children: React.ReactNode) =>
-  extractTextFromReactNode(children).replace(/\r\n?/g, '\n').replace(/\n$/, '');
-
-/**
- * 从 code 子元素读取围栏代码块的 info 字符串（由 remarkCodeMeta 插件透传到
- * data-meta），解析出文件名等展示信息。写法：```ts title="app.ts"。
- */
-const extractCodeMeta = (children: React.ReactNode): { filename?: string } => {
-  const codeChild = React.Children.toArray(children).find(
-    (child) => React.isValidElement(child) && typeof (child.props as Record<string, unknown>).className === 'string',
-  ) as React.ReactElement | undefined;
-  const meta = codeChild ? (codeChild.props as Record<string, unknown>)['data-meta'] : undefined;
-  if (typeof meta !== 'string' || !meta.trim()) return {};
-  const filenameMatch = meta.match(/title\s*=\s*["']([^"']+)["']/);
-  return filenameMatch && filenameMatch[1].trim() ? { filename: filenameMatch[1].trim() } : {};
-};
-
-const PreBlock = ({
-  children,
-  node: _node,
-  ...props
-}: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement> & { node?: unknown }) => {
-  const [copied, setCopied] = useState(false);
-  const [copiedLine, setCopiedLine] = useState<number | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isWrapped, setIsWrapped] = useState(false);
-  const resetTimerRef = useRef<number | null>(null);
-  const lang = extractLangFromChildren(children);
-  const { filename } = extractCodeMeta(children);
-  const isMermaidBlock = React.Children.toArray(children).some(
-    (child) => React.isValidElement(child) && child.type === MermaidBlock,
-  );
-  const code = getCodeText(children);
-  const lineCount = Math.max(1, code ? code.split('\n').length : 1);
-  // 惰性初始化折叠态：超大代码块首帧即折叠，只渲染 MAX_CODE_LINES 行号；
-  // 此前初始 false 会让首帧为上千行生成上千个行号 span，再在 effect 里折叠。
-  const [needsExpand, setNeedsExpand] = useState(() => lineCount > MAX_CODE_LINES);
-  const lineNumbers = Array.from({ length: lineCount }, (_, index) => index + 1);
-  // 折叠状态下只渲染可见范围内的行号（MAX_CODE_LINES 行）：超大代码块首屏
-  // 无需为上千行生成上千个行号 span，展开时才渲染全部，减少 DOM 节点数。
-  const visibleLineNumbers = needsExpand && !isExpanded ? lineNumbers.slice(0, MAX_CODE_LINES) : lineNumbers;
-
-  // 给 <pre> 内的 <code> 子元素注入块级标记：无语言围栏块 / 缩进代码块没有
-  // language-* 类，仅靠 className 判定会被 code 组件误判为行内样式渲染。
-  const childrenWithBlockMark = React.Children.map(children, (child) => {
-    if (React.isValidElement(child)) {
-      return React.cloneElement(child as React.ReactElement<Record<string, unknown>>, { 'data-block-code': 'true' });
-    }
-    return child;
-  });
-
-  useEffect(() => {
-    setNeedsExpand(lineCount > MAX_CODE_LINES);
-    return () => {
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current);
-        resetTimerRef.current = null;
-      }
-    };
-  }, [lineCount]);
-
-  const clearCopyFeedback = () => {
-    if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
-    resetTimerRef.current = window.setTimeout(() => {
-      setCopied(false);
-      setCopiedLine(null);
-    }, 2200);
-  };
-
-  const markCopied = () => {
-    setCopied(true);
-    setCopiedLine(null);
-    clearCopyFeedback();
-  };
-
-  const markLineCopied = (line: number) => {
-    setCopied(false);
-    setCopiedLine(line);
-    clearCopyFeedback();
-  };
-
-  const handleCopy = async () => {
-    try {
-      const copiedOk = await copyTextToClipboard(code);
-      if (copiedOk) markCopied();
-    } catch {
-      // 复制失败时静默，不打断阅读。
-    }
-  };
-
-  const handleCopyLine = async (line: number) => {
-    const lines = code.split('\n');
-    const lineText = lines[line - 1];
-    if (lineText === undefined) return;
-    try {
-      const copiedOk = await copyTextToClipboard(lineText);
-      if (copiedOk) markLineCopied(line);
-    } catch {
-      // 同上，静默失败。
-    }
-  };
-
-  const handleDownload = () => {
-    // title="app.ts" 已带扩展名时不再追加，避免生成 app.ts.ts。
-    const baseName = filename || 'code-snippet';
-    const extension = getCodeFileExtension(lang);
-    const downloadName = baseName.toLowerCase().endsWith(`.${extension}`) ? baseName : `${baseName}.${extension}`;
-    downloadBlob(new Blob([code], { type: 'text/plain;charset=utf-8' }), downloadName);
-  };
-
-  if (isMermaidBlock || lang?.toLowerCase() === 'mermaid') {
-    return <>{children}</>;
-  }
-
-  return (
-    <div
-      className="code-block group relative my-5 md:my-7"
-      data-lang={lang ? lang.toLowerCase() : undefined}
-      data-wrapped={isWrapped ? 'true' : undefined}
-    >
-      <div className="code-toolbar">
-        <div className="code-toolbar-info">
-          {filename && (
-            <span className="code-filename" title={filename}>
-              <FileCode size={13} aria-hidden="true" />
-              <span className="truncate">{filename}</span>
-            </span>
-          )}
-          <span className="code-language" aria-label={`代码语言：${lang ? getLangDisplayName(lang) : '纯文本'}`}>
-            {lang ? getLangDisplayName(lang) : '纯文本'}
-          </span>
-        </div>
-        <div className="code-toolbar-actions">
-          {copiedLine !== null ? (
-            <span className="code-copy-feedback" role="status" aria-live="polite">
-              已复制第 {copiedLine} 行
-            </span>
-          ) : copied ? (
-            <span className="code-copy-feedback" role="status" aria-live="polite">
-              代码已复制
-            </span>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => setIsWrapped((wrapped) => !wrapped)}
-            className={`code-action-btn ${isWrapped ? 'code-action-btn-active' : ''}`}
-            title={isWrapped ? '关闭自动换行' : '开启自动换行'}
-            aria-label={isWrapped ? '关闭自动换行' : '开启自动换行'}
-            aria-pressed={isWrapped}
-          >
-            <WrapText size={15} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className={`code-action-btn ${copied || copiedLine !== null ? 'code-action-btn-success' : ''}`}
-            title={copied || copiedLine !== null ? '已复制' : '复制代码'}
-            aria-label={copied || copiedLine !== null ? '已复制' : '复制代码'}
-          >
-            {copied || copiedLine !== null ? (
-              <span className="copy-pop">
-                <Check size={15} aria-hidden="true" />
-              </span>
-            ) : (
-              <Copy size={15} aria-hidden="true" />
-            )}
-            <span>{copied || copiedLine !== null ? '已复制' : '复制'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleDownload}
-            className="code-action-btn"
-            title="下载代码"
-            aria-label="下载代码"
-          >
-            <Download size={15} aria-hidden="true" />
-            <span>下载</span>
-          </button>
-        </div>
-      </div>
-
-      <div className={`code-scroll ${needsExpand && !isExpanded ? 'code-block-collapsed' : 'code-block-expanded'}`}>
-        <div className="code-content">
-          <div className="code-line-numbers" aria-hidden="true">
-            {visibleLineNumbers.map((number) => (
-              <span
-                key={number}
-                data-line={number}
-                title={`复制第 ${number} 行`}
-                onClick={() => {
-                  void handleCopyLine(number);
-                }}
-              >
-                {number}
-              </span>
-            ))}
-          </div>
-          <pre
-            {...props}
-            className={`${props.className || ''} !my-0 !min-w-max !bg-transparent !p-3.5 !leading-6 md:!p-5`}
-          >
-            {childrenWithBlockMark}
-          </pre>
-        </div>
-        {needsExpand && !isExpanded && (
-          <button
-            type="button"
-            onClick={() => setIsExpanded(true)}
-            className="code-expand-btn"
-            aria-label="展开完整代码"
-            aria-expanded="false"
-          >
-            <ChevronDown size={15} aria-hidden="true" />
-            展开完整代码（共 {lineCount} 行）
-          </button>
-        )}
-        {needsExpand && isExpanded && (
-          <button
-            type="button"
-            onClick={() => setIsExpanded(false)}
-            className="code-collapse-btn"
-            aria-label="折叠代码"
-            aria-expanded="true"
-          >
-            <ChevronUp size={15} aria-hidden="true" />
-            折叠代码
-          </button>
-        )}
-      </div>
-    </div>
-  );
 };
 
 const MERMAID_MIN_SCALE = 1;
@@ -1042,6 +716,7 @@ const createMarkdownComponents = (
   imageDimensions: PostMetadata['imageDimensions'],
   headings: MarkdownHeading[],
   shouldReduceMotion: boolean,
+  registerImage: (image: { src: string; alt?: string; title?: string }) => void,
 ): Components => {
   let headingCursor = 0;
   const fallbackHeadingIds = new Map<string, number>();
@@ -1252,6 +927,11 @@ const createMarkdownComponents = (
       // 深色模式图片适配的豁免约定：![alt](url "no-dark") 表示保持原亮度
       // （如深色截图/图表），其余正文图片在暗色下自动柔和降亮。
       const isNoDarkAdapt = title === 'no-dark';
+      // 登记进文章画廊（渲染结果即画廊内容，顺序 = 文档顺序）；
+      // "no-dark" 是深色适配标记而非说明文字，不作为 caption 传递。
+      if (previewTarget) {
+        registerImage({ src: previewTarget, alt, title: title && !isNoDarkAdapt ? title : undefined });
+      }
       return (
         <figure data-role="markdown-figure" className="group/myimage my-6 md:my-8">
           <button
@@ -1278,7 +958,19 @@ const createMarkdownComponents = (
         </figure>
       );
     },
-    pre: PreBlock,
+    pre: ({ children, node: _node, ...props }) => {
+      // Mermaid 块由 code 渲染器输出 MermaidBlock，pre 直接透传，不套代码块外壳。
+      const isMermaidPre = React.Children.toArray(children).some(
+        (child) =>
+          React.isValidElement(child) &&
+          (child.type === MermaidBlock ||
+            /language-mermaid/.test(String((child.props as Record<string, unknown>).className ?? ''))),
+      );
+      if (isMermaidPre) {
+        return <>{children}</>;
+      }
+      return <CodeBlock {...props}>{children}</CodeBlock>;
+    },
     table: ({ children, node: _node, ...props }: React.TableHTMLAttributes<HTMLTableElement> & { node?: unknown }) => (
       <div className="table-wrapper">
         <table {...props} className="min-w-full">
@@ -1287,7 +979,7 @@ const createMarkdownComponents = (
       </div>
     ),
     code: ({ className, children, node: _node, ...props }) => {
-      // 块级代码判定：位于 <pre> 内（PreBlock 注入 data-block-code）或带 language-* 类。
+      // 块级代码判定：位于 <pre> 内（CodeBlock 注入 data-block-code）或带 language-* 类。
       // 无语言围栏块 / 缩进代码块只有前者，仅看 className 会被误判为行内样式。
       const isBlockCode =
         (props as Record<string, unknown>)['data-block-code'] === 'true' || /language-(\w+)/.test(className || '');
@@ -1333,6 +1025,13 @@ export const Post = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt?: string } | null>(null);
+  // 文章画廊注册表：正文 Markdown 渲染时逐张登记（渲染结果 = 画廊内容，
+  // 顺序 = 文档顺序）。按正文内容键控：切换文章后首次登记自动重置，
+  // 无需 effect 清理（effect 晚于新文章首帧渲染，会漏清/误清）。
+  const imageRegistryRef = useRef<{
+    contentKey: string;
+    images: Map<string, { src: string; alt?: string; title?: string }>;
+  }>({ contentKey: '', images: new Map() });
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [remarkPlugins, setRemarkPlugins] = useState<MarkdownPlugin[]>([remarkGfm, remarkCodeMeta]);
   const [rehypePlugins, setRehypePlugins] = useState<MarkdownPlugin[]>([]);
@@ -2006,6 +1705,14 @@ export const Post = () => {
     post?.imageDimensions,
     headings,
     shouldReduceMotion,
+    (image) => {
+      const registry = imageRegistryRef.current;
+      if (registry.contentKey !== (post?.content ?? '')) {
+        registry.contentKey = post?.content ?? '';
+        registry.images = new Map();
+      }
+      registry.images.set(image.src, image);
+    },
   );
 
   if (loading) {
@@ -2093,6 +1800,27 @@ export const Post = () => {
   const authors = getDisplayAuthors(post);
   const authorsLabel = authors.map((author) => author.name).join('\u3001');
   const postDescription = buildMetaDescription(post);
+  // 文章画廊：封面在前，其后按文档顺序为正文渲染出的图片；预览目标未登记时
+  // （异常兜底）退化为单图置顶，保证点击总能打开查看器。
+  const galleryImages: { src: string; alt?: string; title?: string }[] = [];
+  if (post.coverImage) {
+    const coverSrc = resolveBrowserAsset(post.coverImage);
+    if (coverSrc) {
+      galleryImages.push({ src: coverSrc, alt: post.title });
+    }
+  }
+  for (const image of imageRegistryRef.current.images.values()) {
+    galleryImages.push(image);
+  }
+  if (previewImage && !galleryImages.some((image) => image.src === previewImage.src)) {
+    galleryImages.unshift({ src: previewImage.src, alt: previewImage.alt });
+  }
+  const previewIndex = previewImage
+    ? Math.max(
+        0,
+        galleryImages.findIndex((image) => image.src === previewImage.src),
+      )
+    : 0;
   // 阅读时长（分钟）：由 readTime 文案（如「7分钟阅读」）解析，用于 Article 的 timeRequired。
   // 优先匹配「N分钟」，其次「N小时」×60；不能直接取第一个数字——文案含多个数字
   // （如"约 10 分钟（2 小时更新）"）或小时制时都会解析出错。
@@ -2169,7 +1897,12 @@ export const Post = () => {
 
       <Suspense fallback={null}>
         {previewImage && (
-          <ImageViewer src={previewImage.src} alt={previewImage.alt} onClose={() => setPreviewImage(null)} />
+          <ImageViewer
+            src={null}
+            images={galleryImages}
+            initialIndex={previewIndex}
+            onClose={() => setPreviewImage(null)}
+          />
         )}
         {/* 阅读进度徽标与目录按钮常驻：不随滚动位置显隐（用户反馈需求）。 */}
         {!isReadingMode && <ReadingProgressBadge targetRef={articleBodyRef} endRef={readingEndRef} />}
