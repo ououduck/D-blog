@@ -2,14 +2,15 @@
 
 ## 功能概述
 
-文章正文页：SSG 预渲染完整正文、Markdown 渲染（react-markdown + remark/rehype 插件）、代码块工具栏（复制/下载/行号/折叠）、Mermaid 图表（缩放/平移/主题同步）、阅读进度保存与恢复、目录 TOC 与锚点、相邻文章快捷键、分享。
+文章正文页：SSG 预渲染完整正文、Markdown 渲染（react-markdown + remark/rehype 插件）、代码块（CodeBlock.tsx：复制含失败反馈/下载/键盘可达行号/折叠/总行数）、Mermaid 图表（缩放/平移/主题同步）、阅读进度保存与恢复、文章阅读控制台（ArticleConsole：桌面胶囊导航 + 移动工具栏 + 目录，统一进度/激活标题数据源）、图片画廊（ImageViewer 多图模式）、相邻文章快捷键、分享。
 
 ## 关键文件
 
 - `src/pages/Post.tsx`（约 2600 行，全站最大文件）
 - `src/utils/headings-core.mjs` / `headings.ts`（标题提取/锚点 id，**构建端与客户端共享**）
 - `src/utils/remarkCodeMeta.ts` / `markdown-core.mjs` / `markdownText.ts`
-- `src/components/{TableOfContents, GiscusComments, ShareModal, ReadingProgressBadge, ProgressiveImage, ImageViewer}.tsx`
+- `src/components/{CodeBlock, TableOfContents, GiscusComments, ShareModal, ProgressiveImage, ImageViewer}.tsx`
+- `src/components/ArticleConsole/`（useReadingProgress/useActiveHeading/TocTree/CapsuleNav/ArticleToolbar/capsuleState）
 - `src/utils/readingProgress.ts`
 
 ## 修改规则（必须遵守）

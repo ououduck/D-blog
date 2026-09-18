@@ -2,13 +2,15 @@
 
 ## 功能概述
 
-全站外壳：头部导航（桌面下拉/移动抽屉）、主题切换按钮、移动端滑动抽屉手势、滚动进度/返回顶部、页脚、Cookie 提示条、Service Worker 更新提示、错误边界与 View Transitions 页面切换。
+全站外壳：头部导航（桌面下拉/移动抽屉）、主题切换按钮（支持 dblog:toggle-theme 自定义事件供命令面板调用）、移动端滑动抽屉手势、返回顶部、页脚、Cookie 提示条、Service Worker 更新提示、命令面板（Ctrl/Cmd+K 与搜索按钮）、错误边界与 View Transitions 页面切换。
 
 ## 关键文件
 
 - `src/components/Layout.tsx`（约 1350 行）
 - `src/App.tsx`（路由 + 错误边界 + View Transitions）
-- `src/components/{BackToTop, OfflineStatus, ServiceWorkerUpdatePrompt, CookieNotice, ReadingModeToggle}.tsx`
+- `src/components/{BackToTop, OfflineStatus, ServiceWorkerUpdatePrompt, CookieNotice}.tsx`
+- `src/components/CommandPalette.tsx`（命令面板，懒加载 chunk）
+- `src/components/ArticleConsole/`（文章阅读控制台：桌面胶囊/移动工具栏/进度与激活标题 hooks）
 - `src/hooks/useModalOverlay.ts`（弹层栈/滚动锁/焦点陷阱，全局共享）
 
 ## 修改规则（必须遵守）

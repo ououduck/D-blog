@@ -2,7 +2,7 @@
 
 ## 功能概述
 
-PWA Service Worker：页面/静态资源/图片分级缓存、断网离线渲染（页面缓存 → 应用壳 → IndexedDB 正文）、更新提示与强制刷新。
+PWA Service Worker：页面/静态资源/图片分级缓存、断网离线渲染（页面缓存 → 应用壳 → offline.html，无 IndexedDB 正文库）、更新提示（稍后抑制/失败重试）；多标签页经 BroadcastChannel 协调（仅触发更新的标签页自动刷新，其余显示轻提示）；SW_VERSION 由构建产物 hash 注入（scripts/lib/sw-version.mjs）。
 
 ## 关键文件
 
