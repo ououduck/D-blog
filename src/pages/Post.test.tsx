@@ -197,11 +197,19 @@ describe('Post', () => {
     // 缓存复用，resolveHeadingId 游标已走到末尾，标题 id 会退化为 slug-N 兜底并
     // 逐次递增（-1、-2…），与 headings 数组发散，目录点击找不到锚点。
     // 阅读模式现经移动工具栏「更多」菜单进入（ReadingModeToggle 已并入控制台）。
-    fireEvent.click(screen.getByRole('button', { name: '更多阅读操作' }));
+    // 工具栏在懒加载 chunk + 两层 isClient effect 后才挂载：CI 冷环境高负载下
+    // 同步 getByRole 会在挂载前查询（曾致 CI 单次失败），统一改用带超时的
+    // findByRole 轮询。
+    fireEvent.click(await screen.findByRole('button', { name: '更多阅读操作' }, { timeout: 4000 }));
     fireEvent.click(await screen.findByRole('menuitem', { name: '专注阅读' }));
     await waitFor(() => expect(screen.getByRole('button', { name: '退出专注阅读' })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: '退出专注阅读' }));
-    await waitFor(() => expect(screen.getByRole('toolbar', { name: '文章阅读工具' })).toBeInTheDocument());
+    await waitFor(
+      () => {
+        expect(screen.getByRole('toolbar', { name: '文章阅读工具' })).toBeInTheDocument();
+      },
+      { timeout: 4000 },
+    );
     await waitFor(() => expect(assertHeadingIdsInDom()).toBe(true));
   });
 });
