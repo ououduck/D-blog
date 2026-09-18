@@ -1216,11 +1216,22 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
       data-reading-mode={isReadingMode ? 'true' : undefined}
     >
       <Background />
+      {/* 键盘跳转链接：第一个可聚焦元素，Tab 直达正文（视觉隐藏，聚焦时显示） */}
+      {!isReadingMode && (
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-control focus:border focus:border-zinc-900 focus:bg-paper focus:px-4 focus:text-sm focus:font-semibold focus:text-zinc-900 dark:focus:border-zinc-100 dark:focus:text-zinc-100"
+        >
+          跳到主要内容
+        </a>
+      )}
       {!isReadingMode && <Navbar onSearchNavigate={goToSearch} />}
       {/* 非阅读模式：main 顶部内边距 = 导航栏高度 + 呼吸间距，并补偿导航栏
           因 safe-area-inset-top 增高的部分，避免内容被顶高的导航遮挡。 */}
       <main
-        className={`relative min-w-0 w-full flex-grow px-3 sm:px-6 ${
+        id="main-content"
+        tabIndex={-1}
+        className={`relative min-w-0 w-full flex-grow px-3 outline-none sm:px-6 ${
           isReadingMode
             ? 'pt-6 sm:pt-8 md:pt-10'
             : 'pt-[calc(5rem+env(safe-area-inset-top,0px))] sm:pt-[calc(6rem+env(safe-area-inset-top,0px))] md:pt-[calc(6rem+env(safe-area-inset-top,0px))] pb-[calc(var(--tab-bar-height,0px)+0.75rem)] lg:pb-0'

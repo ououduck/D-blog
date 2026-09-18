@@ -14,7 +14,7 @@ import { ShuoShuoItem } from '@/components/ShuoShuoItem';
 import { ImageViewer, type ImageViewerImage } from '@/components/ImageViewer';
 import { Surface } from '@/components/ui/Surface';
 import { SearchField } from '@/components/SearchField';
-import { ShuoShuoShareModal } from '@/components/ShuoShuoShareModal';
+import { ShareModal } from '@/components/ShareModal';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { stripMarkdown } from '@/utils/markdownText';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -323,13 +323,15 @@ export const ShuoShuo = () => {
       )}
 
       {shareTarget && (
-        <ShuoShuoShareModal
+        <ShareModal
           isOpen={Boolean(shareTarget)}
           onClose={handleCloseShare}
+          // 标题取正文首行摘要：社交平台分享文案更有辨识度。
+          title={(strippedContents.get(shareTarget.id) ?? '').slice(0, 24) || `${shareTarget.date} 的说说`}
+          excerpt={strippedContents.get(shareTarget.id) ?? ''}
           url={shareUrl}
-          contentPreview={stripMarkdown(shareTarget.content)}
-          date={shareTarget.date}
           autoCopied={autoCopied}
+          contentLabel="这条说说"
         />
       )}
     </div>

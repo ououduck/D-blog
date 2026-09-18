@@ -13,7 +13,7 @@
 import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -88,7 +88,11 @@ const run = async () => {
   console.log(`[gen:og-card] generated ${path.relative(process.cwd(), OUTPUT_PATH)} ${result.width}x${result.height}`);
 };
 
-run().catch((error) => {
-  console.error(`[gen:og-card] ${error.message}`);
-  process.exitCode = 1;
-});
+// 入口守卫（AGENT.md 规则 11）：仅作为主模块直接运行时执行，被 import 无副作用。
+const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMainModule) {
+  run().catch((error) => {
+    console.error(`[gen:og-card] ${error.message}`);
+    process.exitCode = 1;
+  });
+}

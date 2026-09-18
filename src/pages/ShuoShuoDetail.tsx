@@ -12,7 +12,7 @@ import { getInitialShuoShuo } from '@/services/shuoshuo';
 import type { ShuoShuo as ShuoShuoEntry } from '../types';
 import { ShuoShuoItem } from '@/components/ShuoShuoItem';
 import { ImageViewer, type ImageViewerImage } from '@/components/ImageViewer';
-import { ShuoShuoShareModal } from '@/components/ShuoShuoShareModal';
+import { ShareModal } from '@/components/ShareModal';
 import { NotFoundState } from '@/components/NotFoundState';
 import { formatDate } from '@/utils/date';
 import { stripMarkdown } from '@/utils/markdownText';
@@ -237,13 +237,14 @@ export const ShuoShuoDetail = () => {
       )}
 
       {shareTarget && (
-        <ShuoShuoShareModal
+        <ShareModal
           isOpen={Boolean(shareTarget)}
           onClose={() => setShareTarget(null)}
+          title={snippet}
+          excerpt={itemContent}
           url={shareUrl}
-          contentPreview={itemContent}
-          date={shareTarget.date}
           autoCopied={autoCopied}
+          contentLabel="这条说说"
         />
       )}
     </div>

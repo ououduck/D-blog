@@ -43,15 +43,16 @@ describe('CountUp', () => {
     expect(screen.getByText('0')).toBeInTheDocument();
   });
 
-  it('NaN 目标值防御：渲染 0 而非 NaN', () => {
+  it('NaN 目标值防御：渲染占位符 —（与统计页 formatValue 口径一致）', () => {
     render(<CountUp to={Number.NaN} />);
-    expect(screen.getByText('0')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
     expect(screen.queryByText('NaN')).not.toBeInTheDocument();
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
   });
 
-  it('Infinity 目标值防御：渲染 0 而非 Infinity', () => {
+  it('Infinity 目标值防御：渲染占位符 — 而非 Infinity', () => {
     render(<CountUp to={Number.POSITIVE_INFINITY} />);
-    expect(screen.getByText('0')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
   });
 
   it('方向 down 时挂载后显示起始值（动画从 from 向下滚到 to，终点为目标值）', () => {

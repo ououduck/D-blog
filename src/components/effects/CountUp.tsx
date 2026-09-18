@@ -44,9 +44,10 @@ const getDecimalPlaces = (num: number): number => {
 export const CountUp: React.FC<CountUpProps> = ({ to, from = 0, delay = 0, duration = 1.8, className, separator }) => {
   const ref = useRef<HTMLSpanElement | null>(null);
   const reducedMotion = useReducedMotion();
-  // NaN/非法数字防御：非法值归零，避免渲染 "NaN" 且 NaN 进入 spring 计算
-  // （spring 对 NaN 不收敛，动画会卡死）。
-  const safeTo = Number.isFinite(to) ? to : 0;
+  // NaN/非法数字防御：与统计页 formatValue 的「—」占位口径一致（渲染占位符
+  // 而非 0，避免把"数据异常"误读成"零"）；非法值不进入 spring 计算。
+  const isTargetValid = Number.isFinite(to);
+  const safeTo = isTargetValid ? to : 0;
   const safeFrom = Number.isFinite(from) ? from : 0;
   const maxDecimals = Math.max(getDecimalPlaces(safeFrom), getDecimalPlaces(safeTo));
 
@@ -78,7 +79,7 @@ export const CountUp: React.FC<CountUpProps> = ({ to, from = 0, delay = 0, durat
   const isInView = useInView(ref, { once: true, margin: '0px 0px -8% 0px' });
 
   useEffect(() => {
-    if (!ref.current || reducedMotion) {
+    if (!ref.current || reducedMotion || !isTargetValid) {
       return;
     }
 
@@ -94,10 +95,10 @@ export const CountUp: React.FC<CountUpProps> = ({ to, from = 0, delay = 0, durat
     });
 
     return () => unsubscribe();
-  }, [formatValue, reducedMotion, safeFrom, springValue]);
+  }, [formatValue, reducedMotion, safeFrom, springValue, isTargetValid]);
 
   useEffect(() => {
-    if (!isInView || reducedMotion) {
+    if (!isInView || reducedMotion || !isTargetValid) {
       return;
     }
 
@@ -106,11 +107,11 @@ export const CountUp: React.FC<CountUpProps> = ({ to, from = 0, delay = 0, durat
     }, delay * 1000);
 
     return () => window.clearTimeout(timeoutId);
-  }, [delay, isInView, motionValue, reducedMotion, safeTo]);
+  }, [delay, isInView, motionValue, reducedMotion, safeTo, isTargetValid]);
 
   return (
     <span ref={ref} className={className}>
-      {formatValue(safeTo)}
+      {isTargetValid ? formatValue(safeTo) : '—'}
     </span>
   );
 };
