@@ -51,3 +51,7 @@ MirrorZ 联合镜像站本身并不存储所有开源软件镜像，而是作为
 ![教育网联合镜像站 - 站点页截屏](https://img.pldduck.com/20260919131650460.png)
 
 用户可以在 [教育网联合镜像站 - 站点](https://mirrors.cernet.edu.cn/site) 查看每个镜像站的近期成功同步数量、异常同步数量、未知同步数量，以及镜像站所属高校、名称、主页、联系方式等。
+
+# 其他
+
+项目主页：[https://github.com/mirrorz-org](https://github.com/mirrorz-org)
