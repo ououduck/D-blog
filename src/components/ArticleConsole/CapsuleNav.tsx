@@ -9,7 +9,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUp, Copy, Eye, EyeOff, Link2, List, Pin, PinOff, Share2, X } from 'lucide-react';
+import { Copy, Eye, Link2, List, Pin, PinOff, Share2, X } from 'lucide-react';
 import type { RefObject } from 'react';
 import type { MarkdownHeading } from '@/utils/headings';
 import { buildHeadingTree, buildParentMap, getAncestorIds, getRootBranchId } from '@/utils/toc';
@@ -18,7 +18,7 @@ import { replaceUrlHash, scrollToHeadingElement } from '@/utils/headingScroll';
 import { useActiveHeading } from './useActiveHeading';
 import { useReadingProgress } from './useReadingProgress';
 import { TocTree } from './TocTree';
-import { getCapsuleState, restoreFromReadingMode, setCapsuleState, snapshotForReadingMode } from './capsuleState';
+import { getCapsuleState, setCapsuleState } from './capsuleState';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { hasOpenOverlay } from '@/hooks/useModalOverlay';
 
@@ -36,7 +36,6 @@ interface CapsuleNavProps {
   targetRef: RefObject<HTMLElement | null>;
   /** 正文结尾哨兵。 */
   endRef: RefObject<HTMLElement | null>;
-  isReadingMode: boolean;
   onShare: () => void;
   onCopyArticleLink: () => Promise<boolean>;
   onCopyHeadingLink: (id: string) => Promise<boolean>;
@@ -47,7 +46,6 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
   headings,
   targetRef,
   endRef,
-  isReadingMode,
   onShare,
   onCopyArticleLink,
   onCopyHeadingLink,
@@ -77,23 +75,6 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
   const activeItemRef = useRef<HTMLLIElement | null>(null);
 
   const isExpanded = pinned || userExpanded || hoverPreview || focusWithin;
-
-  // 专注阅读进入/退出：快照与恢复（阅读模式下隐藏与阅读无关的操作）。
-  const wasReadingModeRef = useRef(isReadingMode);
-  useEffect(() => {
-    if (isReadingMode && !wasReadingModeRef.current) {
-      snapshotForReadingMode();
-      setPinned(false);
-      setUserExpanded(false);
-      setCapsuleState({ pinned: false, userExpanded: false });
-    }
-    if (!isReadingMode && wasReadingModeRef.current) {
-      restoreFromReadingMode();
-      setPinned(getCapsuleState().pinned);
-      setUserExpanded(getCapsuleState().userExpanded);
-    }
-    wasReadingModeRef.current = isReadingMode;
-  }, [isReadingMode]);
 
   // 展开态联动目录树的分支折叠（与 TOC 相同策略：仅展开当前分支）。
   const activeAncestorIds = useMemo(() => getAncestorIds(activeHeadingId, parentMap), [activeHeadingId, parentMap]);
@@ -277,10 +258,6 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
     [collapseCapsule, expandBranchForNavigation, parentMap, pinned, shouldReduceMotion],
   );
 
-  const handleBackToTop = useCallback(() => {
-    window.scrollTo({ top: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth' });
-  }, [shouldReduceMotion]);
-
   // 滚动到当前激活目录项在展开面板中可见。
   useEffect(() => {
     const panel = panelRef.current;
@@ -340,9 +317,6 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
         </span>
         <span className="sr-only">阅读进度 {percentage}%</span>
       </span>
-      <button type="button" onClick={handleBackToTop} className="capsule-rail-btn" aria-label="回到顶部">
-        <ArrowUp size={16} />
-      </button>
     </>
   );
 
@@ -384,18 +358,16 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
         <div className="capsule-panel-card">
           <div className="capsule-panel-head">
             <span className="capsule-panel-title">文章目录</span>
-            {!isReadingMode && (
-              <button
-                type="button"
-                onClick={togglePinned}
-                className="capsule-panel-btn"
-                aria-label={pinned ? '取消固定导航面板' : '固定导航面板'}
-                aria-pressed={pinned}
-                title={pinned ? '取消固定' : '固定（阅读期间保持展开）'}
-              >
-                {pinned ? <PinOff size={14} /> : <Pin size={14} />}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={togglePinned}
+              className="capsule-panel-btn"
+              aria-label={pinned ? '取消固定导航面板' : '固定导航面板'}
+              aria-pressed={pinned}
+              title={pinned ? '取消固定' : '固定（阅读期间保持展开）'}
+            >
+              {pinned ? <PinOff size={14} /> : <Pin size={14} />}
+            </button>
             <button type="button" onClick={toggleUserExpanded} className="capsule-panel-btn" aria-label="收起导航面板">
               <X size={14} />
             </button>
@@ -429,49 +401,34 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
               <Share2 size={15} aria-hidden="true" />
               <span>分享</span>
             </button>
-            {!isReadingMode && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => void handleCopyArticleLink()}
-                  className="capsule-action-row"
-                  aria-label="复制文章链接"
-                >
-                  <Link2 size={15} aria-hidden="true" />
-                  <span>复制文章链接</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleCopyHeadingLink()}
-                  className="capsule-action-row"
-                  aria-label="复制当前标题链接"
-                  disabled={!activeHeadingId}
-                >
-                  <Copy size={15} aria-hidden="true" />
-                  <span>复制标题链接</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={onToggleReadingMode}
-                  className="capsule-action-row"
-                  aria-label="进入专注阅读"
-                >
-                  <Eye size={15} aria-hidden="true" />
-                  <span>阅读模式</span>
-                </button>
-              </>
-            )}
-            {isReadingMode && (
-              <button
-                type="button"
-                onClick={onToggleReadingMode}
-                className="capsule-action-row"
-                aria-label="退出专注阅读"
-              >
-                <EyeOff size={15} aria-hidden="true" />
-                <span>退出阅读模式</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => void handleCopyArticleLink()}
+              className="capsule-action-row"
+              aria-label="复制文章链接"
+            >
+              <Link2 size={15} aria-hidden="true" />
+              <span>复制文章链接</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleCopyHeadingLink()}
+              className="capsule-action-row"
+              aria-label="复制当前标题链接"
+              disabled={!activeHeadingId}
+            >
+              <Copy size={15} aria-hidden="true" />
+              <span>复制标题链接</span>
+            </button>
+            <button
+              type="button"
+              onClick={onToggleReadingMode}
+              className="capsule-action-row"
+              aria-label="进入专注阅读"
+            >
+              <Eye size={15} aria-hidden="true" />
+              <span>阅读模式</span>
+            </button>
           </div>
 
           <p className="capsule-copy-status" role="status" aria-live="polite">

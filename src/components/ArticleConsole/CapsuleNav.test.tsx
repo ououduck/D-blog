@@ -16,7 +16,6 @@ const renderCapsule = (overrides: Partial<Parameters<typeof CapsuleNav>[0]> = {}
       headings={makeHeadings()}
       targetRef={{ current: null }}
       endRef={{ current: null }}
-      isReadingMode={false}
       onShare={vi.fn()}
       onCopyArticleLink={vi.fn(async () => true)}
       onCopyHeadingLink={vi.fn(async () => true)}
@@ -110,15 +109,6 @@ describe('CapsuleNav（桌面胶囊文章导航）', () => {
     await user.click(screen.getByRole('button', { name: '复制文章链接' }));
     expect(await screen.findByText('文章链接已复制')).toBeInTheDocument();
     expect(onCopyArticleLink).toHaveBeenCalledTimes(1);
-  });
-
-  it('阅读模式下隐藏复制/阅读模式操作，提供退出入口', async () => {
-    const user = userEvent.setup();
-    renderCapsule({ isReadingMode: true });
-    await user.click(screen.getByRole('button', { name: '展开文章导航' }));
-    expect(screen.queryByRole('button', { name: '复制文章链接' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '退出专注阅读' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '固定导航面板' })).not.toBeInTheDocument();
   });
 
   it('未固定时点击目录项：跳转后自动收起且焦点回到迷你轨展开按钮', async () => {

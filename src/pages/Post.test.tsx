@@ -111,6 +111,18 @@ describe('Post', () => {
     expect(await screen.findByRole('toolbar', { name: '文章阅读工具' }, { timeout: 4000 })).toBeInTheDocument();
   });
 
+  it('进入阅读模式：控制台消失、仅保留退出按钮；退出后恢复', async () => {
+    renderPost();
+    await screen.findByText('测试文章标题');
+    fireEvent.click(await screen.findByRole('button', { name: '更多阅读操作' }, { timeout: 4000 }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: '专注阅读' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '退出专注阅读' })).toBeInTheDocument());
+    expect(screen.queryByRole('toolbar', { name: '文章阅读工具' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '退出专注阅读' }));
+    expect(await screen.findByRole('toolbar', { name: '文章阅读工具' }, { timeout: 4000 })).toBeInTheDocument();
+  });
+
   it('Alt+→ 有下一篇时导航到下一篇', async () => {
     vi.mocked(postsService.getPosts).mockResolvedValue([
       makePost({ id: 'first', title: '第一篇' }),
@@ -203,6 +215,8 @@ describe('Post', () => {
     fireEvent.click(await screen.findByRole('button', { name: '更多阅读操作' }, { timeout: 4000 }));
     fireEvent.click(await screen.findByRole('menuitem', { name: '专注阅读' }));
     await waitFor(() => expect(screen.getByRole('button', { name: '退出专注阅读' })).toBeInTheDocument());
+    // 阅读模式下控制台整体隐藏（仅保留右上角退出按钮）。
+    expect(screen.queryByRole('toolbar', { name: '文章阅读工具' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '退出专注阅读' }));
     await waitFor(
       () => {

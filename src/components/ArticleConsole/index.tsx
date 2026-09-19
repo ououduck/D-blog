@@ -6,11 +6,12 @@
  * - 媒体查询决定渲染哪套 UI，同一时刻只有一套监听器在跑（性能约束）。
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import type { MarkdownHeading } from '@/utils/headings';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useReadingMode } from '@/components/ReadingModeContext';
+import { snapshotForReadingMode, restoreFromReadingMode } from './capsuleState';
 import { useReadingProgress } from './useReadingProgress';
 import { CapsuleNav } from './CapsuleNav';
 import { ArticleToolbar } from './ArticleToolbar';
@@ -32,6 +33,18 @@ export const ArticleConsole: React.FC<ArticleConsoleProps> = ({ headings, target
   // SSR/首帧 false（移动工具栏），挂载后纠正；桌面胶囊仅客户端渲染。
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const { isReadingMode, toggleReadingMode } = useReadingMode();
+  // 专注阅读：快照胶囊状态 → 整个控制台隐藏（仅保留右上角退出按钮），
+  // 退出后恢复展开/固定状态并重新显示控制台。
+  const wasReadingModeRef = useRef(isReadingMode);
+  useEffect(() => {
+    if (isReadingMode && !wasReadingModeRef.current) {
+      snapshotForReadingMode();
+    }
+    if (!isReadingMode && wasReadingModeRef.current) {
+      restoreFromReadingMode();
+    }
+    wasReadingModeRef.current = isReadingMode;
+  }, [isReadingMode]);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
@@ -49,7 +62,7 @@ export const ArticleConsole: React.FC<ArticleConsoleProps> = ({ headings, target
   const openToc = useCallback(() => setIsTocOpen(true), []);
 
   const consoleElement = useMemo(() => {
-    if (!isClient) {
+    if (!isClient || isReadingMode) {
       return null;
     }
     if (isDesktop) {
@@ -58,7 +71,6 @@ export const ArticleConsole: React.FC<ArticleConsoleProps> = ({ headings, target
           headings={headings}
           targetRef={targetRef}
           endRef={endRef}
-          isReadingMode={isReadingMode}
           onShare={onShare}
           onCopyArticleLink={handleCopyArticleLink}
           onCopyHeadingLink={async (id) => {
@@ -76,7 +88,6 @@ export const ArticleConsole: React.FC<ArticleConsoleProps> = ({ headings, target
           headingsCount={headings.length}
           onOpenToc={openToc}
           onShare={onShare}
-          isReadingMode={isReadingMode}
           onToggleReadingMode={toggleReadingMode}
           onCopyArticleLink={handleCopyArticleLink}
         />

@@ -7,9 +7,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUp, Check, Eye, Link2, List, MoreHorizontal, Share2, X } from 'lucide-react';
+import { Eye, Link2, List, MoreHorizontal, Share2 } from 'lucide-react';
 import { useModalOverlay } from '@/hooks/useModalOverlay';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 const TOOLBAR_BOTTOM_STYLE = {
   bottom:
@@ -30,7 +29,6 @@ interface ArticleToolbarProps {
   headingsCount: number;
   onOpenToc: () => void;
   onShare: () => void;
-  isReadingMode: boolean;
   onToggleReadingMode: () => void;
   onCopyArticleLink: () => Promise<boolean>;
 }
@@ -40,11 +38,9 @@ export const ArticleToolbar: React.FC<ArticleToolbarProps> = ({
   headingsCount,
   onOpenToc,
   onShare,
-  isReadingMode,
   onToggleReadingMode,
   onCopyArticleLink,
 }) => {
-  const shouldReduceMotion = useReducedMotion();
   const [isClient, setIsClient] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [copyOk, setCopyOk] = useState<boolean | null>(null);
@@ -81,16 +77,11 @@ export const ArticleToolbar: React.FC<ArticleToolbarProps> = ({
     setMoreOpen(false);
   }, [onCopyArticleLink]);
 
-  const handleBackToTop = useCallback(() => {
-    window.scrollTo({ top: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth' });
-    setMoreOpen(false);
-  }, [shouldReduceMotion]);
-
   const moreActions: MoreAction[] = [
     {
       id: 'reading-mode',
-      label: isReadingMode ? '退出专注阅读' : '专注阅读',
-      icon: isReadingMode ? <X size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />,
+      label: '专注阅读',
+      icon: <Eye size={15} aria-hidden="true" />,
       run: () => {
         setMoreOpen(false);
         onToggleReadingMode();
@@ -101,12 +92,6 @@ export const ArticleToolbar: React.FC<ArticleToolbarProps> = ({
       label: '复制文章链接',
       icon: <Link2 size={15} aria-hidden="true" />,
       run: () => void handleCopyLink(),
-    },
-    {
-      id: 'top',
-      label: '回到顶部',
-      icon: <ArrowUp size={15} aria-hidden="true" />,
-      run: handleBackToTop,
     },
   ];
 
@@ -180,7 +165,6 @@ export const ArticleToolbar: React.FC<ArticleToolbarProps> = ({
               aria-label={moreOpen ? '关闭更多操作' : '更多阅读操作'}
               aria-expanded={moreOpen}
             >
-              {moreOpen ? <Check size={16} aria-hidden="true" className="hidden" /> : null}
               <MoreHorizontal size={16} aria-hidden="true" />
             </button>
           </div>
