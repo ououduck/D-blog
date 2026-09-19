@@ -194,7 +194,10 @@ describe('TableOfContents', () => {
     await screen.findByText('文章目录');
 
     expect(screen.queryByRole('searchbox', { name: '搜索目录标题' })).not.toBeInTheDocument();
-    // useModalOverlay 初始聚焦 Sheet 容器（tabIndex=-1）而非输入框
-    expect(document.activeElement).toBe(screen.getByRole('dialog'));
+    // useModalOverlay 初始聚焦 Sheet 容器（tabIndex=-1）而非输入框；
+    // 聚焦经 requestAnimationFrame 落地：CI 冷负载下晚于首断言，用 waitFor 轮询。
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByRole('dialog'));
+    });
   });
 });
