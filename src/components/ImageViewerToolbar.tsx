@@ -65,11 +65,13 @@ export const ImageViewerToolbar: React.FC<ImageViewerToolbarProps> = ({
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
+          // 水平居中必须由 framer 的 x 承担：动画 y 时 framer 接管 transform
+          // 内联样式，Tailwind 的 -translate-x-1/2 会被覆盖导致整体右偏。
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 8, x: '-50%' }}
+          animate={{ opacity: 1, y: 0, x: '-50%' }}
+          exit={prefersReducedMotion ? undefined : { opacity: 0, y: 8, x: '-50%' }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
-          className="absolute bottom-12 left-1/2 z-40 -translate-x-1/2"
+          className="absolute bottom-12 left-1/2 z-40"
           data-testid="viewer-toolbar"
         >
           <div className="flex items-center gap-0.5 rounded-full bg-white/10 px-1.5 py-1 backdrop-blur-sm">

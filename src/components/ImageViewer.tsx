@@ -705,9 +705,9 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
           {/* 真实 title 才显示的轻量 caption：跟随 UI 一起淡出 */}
           {caption && (
             <motion.p
-              animate={{ opacity: isUiVisible ? 1 : 0 }}
+              animate={{ opacity: isUiVisible ? 1 : 0, x: '-50%' }}
               transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
-              className="pointer-events-none absolute bottom-[6.75rem] left-1/2 z-40 max-w-[min(42rem,88vw)] -translate-x-1/2 px-4 text-center text-xs leading-5 text-white/60 sm:text-sm"
+              className="pointer-events-none absolute bottom-[6.75rem] left-1/2 z-40 max-w-[min(42rem,88vw)] px-4 text-center text-xs leading-5 text-white/60 sm:text-sm"
             >
               {caption}
             </motion.p>
