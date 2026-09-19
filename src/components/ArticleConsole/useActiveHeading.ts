@@ -1,11 +1,12 @@
 /**
  * 当前章节 hook：从 TableOfContents 抽出的 rAF 合并滚动同步逻辑。
- * 按视口边界（HEADING_SCROLL_OFFSET）确定当前应高亮的标题 id；
- * scroll/resize/hashchange 共享一个 rAF 帧，零重复 setState。
+ * 激活判定线与 TOC 点击跳转共用 getHeadingScrollOffset()（CSS 变量
+ * --article-heading-offset）：标题滚动落点即激活切换线，点击跳转后高亮
+ * 立即正确，不会出现"位置对了但高亮晚一截"。
  */
 
 import { useEffect, useState } from 'react';
-import { HEADING_SCROLL_OFFSET } from '@/utils/scroll';
+import { getHeadingScrollOffset } from '@/utils/scroll';
 import type { MarkdownHeading } from '@/utils/headings';
 
 const getHeadingTop = (element: HTMLElement) => element.getBoundingClientRect().top + window.scrollY;
@@ -23,7 +24,9 @@ export const useActiveHeading = (headings: MarkdownHeading[]): string | null => 
 
     const syncActiveHeading = () => {
       animationFrameId = null;
-      const visibleBoundary = window.scrollY + HEADING_SCROLL_OFFSET + 1;
+      // 与 scrollToHeadingElement 同一偏移源：标题被滚动到 offset 位置时，
+      // 恰好跨过激活判定线，位置与高亮永远一致。
+      const visibleBoundary = window.scrollY + getHeadingScrollOffset() + 1;
       let nextActiveId = headings[0]?.id ?? null;
 
       for (const heading of headings) {

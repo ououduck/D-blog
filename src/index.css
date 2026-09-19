@@ -6,6 +6,10 @@
   --cookie-notice-height: 0px;
   --service-worker-prompt-height: 0px;
   --tab-bar-height: 0px;
+  /* 文章标题锚点顶部偏移：唯一数据源。Layout 运行时按实测导航栏高度覆盖
+     （专注阅读为 1.5rem）；JS（TOC 跳转/active 判断/hash 深链）与下方
+     .post-prose 的 scroll-margin-top 统一读取。6.5rem=104px 为桌面兜底。 */
+  --article-heading-offset: 6.5rem;
 }
 
 /* 移动端底部标签栏（lg 以下）：高度 = 内容区 3.5rem + 底部安全区，
@@ -1093,6 +1097,12 @@
 .dark .code-block[data-lang='diff'] .hljs-meta {
   background: rgba(59, 130, 246, 0.13);
   color: #93c5fd;
+}
+
+/* 文章标题原生锚点跳转（URL #hash）与 JS 滚动共用 --article-heading-offset，
+   保证浏览器默认跳转不被固定导航遮挡，且落点与 TOC 点击/激活判定一致。 */
+.post-prose :is(h1, h2, h3, h4, h5, h6) {
+  scroll-margin-top: var(--article-heading-offset);
 }
 
 .prose figcaption {

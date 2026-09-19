@@ -1179,6 +1179,42 @@ const LayoutShell: React.FC<LayoutProps> = ({ children, hasViewTransition }) => 
   const closePalette = useCallback(() => setIsPaletteOpen(false), []);
   const { isReadingMode } = useReadingMode();
   const prefersReducedMotion = useSiteReducedMotion();
+
+  // 文章标题锚点偏移：单一数据源（--article-heading-offset）。普通模式实测
+  // 固定导航栏（含 safe-area）高度 + 16px 余量；专注阅读无固定导航，仅保留
+  // 1.5rem。JS（TOC 跳转/active 判断/hash 深链）与 CSS scroll-margin-top
+  // 统一读取该变量，保证「点击跳转 = 激活判定 = 原生锚点」参考线一致。
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (isReadingMode) {
+      root.style.setProperty('--article-heading-offset', '1.5rem');
+      return;
+    }
+
+    const navbar = document.querySelector('.site-navbar');
+    const update = () => {
+      const height = navbar instanceof HTMLElement ? navbar.getBoundingClientRect().height : 0;
+      if (height > 0) {
+        root.style.setProperty('--article-heading-offset', `${Math.round(height + 16)}px`);
+      }
+    };
+
+    update();
+    const observer =
+      navbar instanceof HTMLElement && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    if (navbar instanceof HTMLElement && observer) {
+      observer.observe(navbar);
+    }
+    window.addEventListener('resize', update);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', update);
+      // 恢复 CSS :root 默认值，避免残留内联值跨上下文污染。
+      root.style.removeProperty('--article-heading-offset');
+    };
+  }, [isReadingMode]);
   const routeVariants = prefersReducedMotion
     ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
     : routeShellVariants;

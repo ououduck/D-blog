@@ -1,12 +1,13 @@
 /**
- * 标题滚动/URL hash 工具：目录（TOC）、胶囊导航、正文锚点共用同一行为，
- * 保证平滑滚动偏移与 hash 写入在全站一致。
+ * 标题滚动/URL hash 工具：目录（TOC/胶囊）、正文锚点、hash 深链共用同一行为。
+ * 偏移量统一来自 getHeadingScrollOffset()（CSS 变量 --article-heading-offset），
+ * 与 CSS scroll-margin-top 及激活判断共享同一参考线。
  */
 
-import { HEADING_SCROLL_OFFSET } from '@/utils/scroll';
+import { getHeadingScrollOffset } from '@/utils/scroll';
 
 export const getHeadingScrollTop = (element: HTMLElement): number =>
-  Math.max(0, element.getBoundingClientRect().top + window.scrollY - HEADING_SCROLL_OFFSET);
+  Math.max(0, element.getBoundingClientRect().top + window.scrollY - getHeadingScrollOffset());
 
 /** 平滑/即时滚动到指定标题（元素不存在时静默跳过）。 */
 export const scrollToHeadingElement = (id: string, behavior: ScrollBehavior) => {

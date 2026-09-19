@@ -86,8 +86,6 @@ export const ArticleConsole: React.FC<ArticleConsoleProps> = ({ headings, target
           desktopShowTrigger={false}
           isOpen={isTocOpen}
           onOpenChange={onOpenChange}
-          progressTargetRef={targetRef}
-          progressEndRef={endRef}
         />
       </>
     );

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { easeOut, easeSmooth, routeTransition } from './motion';
-import { HEADING_SCROLL_OFFSET } from './scroll';
+import { getHeadingScrollOffset } from './scroll';
 
 describe('motion 常量', () => {
   it('缓动曲线为标准 cubic-bezier 数组', () => {
@@ -18,8 +18,8 @@ describe('motion 常量', () => {
   });
 });
 
-describe('scroll 常量', () => {
-  it('标题锚点偏移为正数', () => {
-    expect(HEADING_SCROLL_OFFSET).toBeGreaterThan(0);
+describe('scroll offset', () => {
+  it('标题锚点偏移读取 CSS 变量，缺失时回退为正数', () => {
+    expect(getHeadingScrollOffset()).toBeGreaterThan(0);
   });
 });

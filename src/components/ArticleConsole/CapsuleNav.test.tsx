@@ -76,7 +76,7 @@ describe('CapsuleNav（桌面胶囊文章导航）', () => {
     const toggle = portalHost().querySelector('.capsule-rail .capsule-rail-btn') as HTMLButtonElement;
     await user.click(toggle);
     expect(portalHost().querySelector('.capsule-container')?.getAttribute('data-expanded')).toBe('true');
-    expect(screen.getByText('文章导航')).toBeInTheDocument();
+    expect(screen.getByText('文章目录')).toBeInTheDocument();
 
     // Esc 收起（focus 停留在面板内时点击收起会因 focus-within 保持展开，
     // 这是键盘可达性设计：Esc 才是收起的键盘路径）。
@@ -119,6 +119,28 @@ describe('CapsuleNav（桌面胶囊文章导航）', () => {
     expect(screen.queryByRole('button', { name: '复制文章链接' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '退出专注阅读' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '固定导航面板' })).not.toBeInTheDocument();
+  });
+
+  it('未固定时点击目录项：跳转后自动收起且焦点回到迷你轨展开按钮', async () => {
+    const user = userEvent.setup();
+    renderCapsule();
+    await user.click(screen.getByRole('button', { name: '展开文章导航' }));
+    expect(portalHost().querySelector('.capsule-container')?.getAttribute('data-expanded')).toBe('true');
+
+    await user.click(screen.getByText('使用方法'));
+    expect(portalHost().querySelector('.capsule-container')?.getAttribute('data-expanded')).toBeNull();
+    // 焦点归还：面板视觉隐藏后焦点不能掉到 body
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: '展开文章导航' }));
+  });
+
+  it('已固定（Pin）时点击目录项：保持展开', async () => {
+    const user = userEvent.setup();
+    renderCapsule();
+    await user.click(screen.getByRole('button', { name: '展开文章导航' }));
+    await user.click(screen.getByRole('button', { name: '固定导航面板' }));
+
+    await user.click(screen.getByText('使用方法'));
+    expect(portalHost().querySelector('.capsule-container')?.getAttribute('data-expanded')).toBe('true');
   });
 
   it('Esc 在展开且未固定时收起面板（fireEvent 保持非受控键盘路径）', async () => {

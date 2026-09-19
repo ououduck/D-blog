@@ -1,14 +1,17 @@
 /**
- * 目录树（展示组件）：从 TableOfContents 抽出的递归树渲染，
- * 供移动端目录 Sheet、桌面 TOC popover 与胶囊导航展开面板共用同一渲染与交互。
+ * 目录树（展示组件）：移动 Sheet 与桌面胶囊共用的大纲式渲染。
+ *
+ * 视觉减法（相对旧版）：
+ * - 无数字 badge（flat index 会制造错误的层级感）；
+ * - 无逐项卡片背景/边框，仅「缩进 + 圆点 + 字重」表达层级与激活态；
+ * - chevron 为视觉小、命中区大的透明按钮（h-9 负外边距），仅旋转过渡；
+ * - 分支展开不做递归 height/opacity 动画（保留 Sheet/胶囊自身的进出动画），
+ *   尊重 prefers-reduced-motion（无动画即无差别）。
  */
 
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
 import type { TocNode } from '@/utils/toc';
-
-const formatIndex = (value: number) => String(value).padStart(2, '0');
 
 export interface TocTreeProps {
   nodes: TocNode[];
@@ -18,7 +21,6 @@ export interface TocTreeProps {
   activeBranchIds: Set<string>;
   activeItemRef?: React.RefObject<HTMLLIElement | null>;
   shouldForceExpand: boolean;
-  shouldReduceMotion: boolean;
   onNavigate: (id: string) => void;
   onToggle: (id: string) => void;
 }
@@ -31,111 +33,80 @@ export const TocTree: React.FC<TocTreeProps> = ({
   activeBranchIds,
   activeItemRef,
   shouldForceExpand,
-  shouldReduceMotion,
   onNavigate,
   onToggle,
 }) => {
   return (
-    <ol
-      className={
-        depth === 0 ? 'space-y-1.5' : 'mt-1.5 space-y-1.5 border-l border-zinc-200/80 pl-3.5 dark:border-zinc-800'
-      }
-    >
+    <ol className={depth === 0 ? 'space-y-0.5' : 'space-y-0.5'}>
       {nodes.map((item) => {
         const hasChildren = item.children.length > 0;
         const isExpanded = shouldForceExpand || (expandedMap[item.id] ?? false) || activeBranchIds.has(item.id);
-        const isSubLevel = item.level > 1;
         const isActive = activeHeadingId === item.id;
         const isInActiveBranch = activeBranchIds.has(item.id);
 
         return (
           <li key={item.id} ref={isActive ? activeItemRef : undefined}>
-            <div
-              className={`rounded-control transition-colors duration-200 ${
-                isActive
-                  ? 'bg-zinc-100 dark:bg-zinc-800'
-                  : isInActiveBranch
-                    ? 'bg-zinc-50 dark:bg-zinc-900'
-                    : 'bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900'
-              }`}
-            >
-              <div className="flex items-start gap-1.5 px-2.5 py-2">
+            <div className="flex items-center" style={depth > 0 ? { paddingLeft: `${depth}rem` } : undefined}>
+              <button
+                type="button"
+                onClick={() => onNavigate(item.id)}
+                className={`flex min-w-0 flex-1 items-center gap-2.5 py-1.5 pr-1 text-left transition-colors duration-150 ${
+                  isActive
+                    ? 'font-semibold text-ink dark:text-white'
+                    : isInActiveBranch
+                      ? 'text-ink/80 hover:text-ink dark:text-zinc-300 dark:hover:text-white'
+                      : 'text-zinc-500 hover:text-ink dark:text-zinc-400 dark:hover:text-white'
+                }`}
+                aria-current={isActive ? 'location' : undefined}
+                title={item.text}
+              >
+                {/* 激活圆点：非激活时透明占位，保持文本对齐一致 */}
+                <span
+                  aria-hidden="true"
+                  className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors duration-150 ${
+                    isActive
+                      ? 'bg-zinc-900 dark:bg-zinc-100'
+                      : isInActiveBranch
+                        ? 'bg-zinc-300 dark:bg-zinc-600'
+                        : 'bg-transparent'
+                  }`}
+                />
+                <span className={`truncate leading-6 ${item.level > 1 ? 'text-[12.5px]' : 'text-[13px]'}`}>
+                  {item.text}
+                </span>
+              </button>
+
+              {hasChildren && (
                 <button
                   type="button"
-                  onClick={() => onNavigate(item.id)}
-                  className={`flex min-w-0 flex-1 items-start gap-2.5 px-1 py-1 text-left transition-colors duration-200 ${
-                    isActive
-                      ? 'text-ink dark:text-white'
-                      : isInActiveBranch
-                        ? 'text-ink/85 dark:text-zinc-100'
-                        : 'text-zinc-500 hover:text-ink dark:text-zinc-400 dark:hover:text-white'
-                  }`}
-                  aria-current={isActive ? 'location' : undefined}
+                  onClick={() => onToggle(item.id)}
+                  className="-m-1 flex h-9 w-9 shrink-0 items-center justify-center text-zinc-300 transition-colors duration-150 hover:text-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-zinc-900 dark:text-zinc-600 dark:hover:text-zinc-300 dark:focus-visible:outline-zinc-100"
+                  aria-label={isExpanded ? '折叠子目录' : '展开子目录'}
+                  aria-expanded={isExpanded}
                 >
-                  <span
-                    className={`mt-[0.15rem] inline-flex min-w-[1.9rem] justify-center border border-current/20 px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-[0.14em] transition-colors ${
-                      isActive
-                        ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                        : isInActiveBranch
-                          ? 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300'
-                          : 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500'
-                    }`}
-                  >
-                    {formatIndex(item.index + 1)}
-                  </span>
-
-                  <span
-                    className={`block flex-1 leading-6 line-clamp-2 md:line-clamp-none md:truncate ${isSubLevel ? 'text-[12.5px]' : 'text-[13px]'}`}
-                    title={item.text}
-                  >
-                    {item.text}
-                  </span>
+                  <ChevronDown
+                    size={14}
+                    aria-hidden="true"
+                    className={`transition-transform duration-150 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
+                  />
                 </button>
-
-                {hasChildren && (
-                  <button
-                    type="button"
-                    onClick={() => onToggle(item.id)}
-                    className={`inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-icon transition-colors duration-200 active:scale-[0.98] ${
-                      isInActiveBranch
-                        ? 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300'
-                        : 'text-zinc-400 hover:bg-zinc-200/80 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'
-                    }`}
-                    aria-label={isExpanded ? '折叠子目录' : '展开子目录'}
-                    aria-expanded={isExpanded}
-                  >
-                    <ChevronDown
-                      size={14}
-                      className={`transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
-                    />
-                  </button>
-                )}
-              </div>
-
-              <AnimatePresence initial={false}>
-                {hasChildren && isExpanded && (
-                  <motion.div
-                    initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
-                    transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, ease: 'easeOut' }}
-                    className="overflow-hidden px-2.5 pb-2"
-                  >
-                    <TocTree
-                      nodes={item.children}
-                      depth={depth + 1}
-                      expandedMap={expandedMap}
-                      activeHeadingId={activeHeadingId}
-                      activeBranchIds={activeBranchIds}
-                      shouldForceExpand={shouldForceExpand}
-                      shouldReduceMotion={shouldReduceMotion}
-                      onNavigate={onNavigate}
-                      onToggle={onToggle}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              )}
             </div>
+
+            {hasChildren && isExpanded && (
+              <div className="pb-0.5">
+                <TocTree
+                  nodes={item.children}
+                  depth={depth + 1}
+                  expandedMap={expandedMap}
+                  activeHeadingId={activeHeadingId}
+                  activeBranchIds={activeBranchIds}
+                  shouldForceExpand={shouldForceExpand}
+                  onNavigate={onNavigate}
+                  onToggle={onToggle}
+                />
+              </div>
+            )}
           </li>
         );
       })}

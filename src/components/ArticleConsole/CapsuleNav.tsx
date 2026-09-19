@@ -12,7 +12,8 @@ import { createPortal } from 'react-dom';
 import { ArrowUp, Copy, Eye, EyeOff, Link2, List, Pin, PinOff, Share2, X } from 'lucide-react';
 import type { RefObject } from 'react';
 import type { MarkdownHeading } from '@/utils/headings';
-import { buildHeadingTree, buildParentMap, getAncestorIds, getRootBranchId, type TocNode } from '@/utils/toc';
+import { buildHeadingTree, buildParentMap, getAncestorIds, getRootBranchId } from '@/utils/toc';
+import { useTocExpansion } from './useTocExpansion';
 import { replaceUrlHash, scrollToHeadingElement } from '@/utils/headingScroll';
 import { useActiveHeading } from './useActiveHeading';
 import { useReadingProgress } from './useReadingProgress';
@@ -67,9 +68,13 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
   const hoverTimerRef = useRef<number | null>(null);
   const copyTimerRef = useRef<number | null>(null);
   const railRef = useRef<HTMLElement | null>(null);
+  const railToggleRef = useRef<HTMLButtonElement | null>(null);
+  // 跳转收起后的程序化焦点恢复不触发 focusWithin 自动展开（一次性抑制）：
+  // 否则「收起 + 焦点回轨」会被容器 onFocusCapture 立刻顶开，收起失效。
+  const suppressFocusExpandRef = useRef(false);
+  const suppressTimerRef = useRef<number | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
   const activeItemRef = useRef<HTMLLIElement | null>(null);
-  const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
 
   const isExpanded = pinned || userExpanded || hoverPreview || focusWithin;
 
@@ -90,15 +95,6 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
     wasReadingModeRef.current = isReadingMode;
   }, [isReadingMode]);
 
-  const findNode = useCallback((nodes: TocNode[], id: string): TocNode | null => {
-    for (const node of nodes) {
-      if (node.id === id) return node;
-      const found = findNode(node.children, id);
-      if (found) return found;
-    }
-    return null;
-  }, []);
-
   // 展开态联动目录树的分支折叠（与 TOC 相同策略：仅展开当前分支）。
   const activeAncestorIds = useMemo(() => getAncestorIds(activeHeadingId, parentMap), [activeHeadingId, parentMap]);
   const activeBranchIds = useMemo(
@@ -107,27 +103,16 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
   );
   const activeRootBranchId = useMemo(() => getRootBranchId(activeHeadingId, parentMap), [activeHeadingId, parentMap]);
 
-  useEffect(() => {
-    if (!activeHeadingId) {
-      return;
-    }
-    setExpandedMap((current) => {
-      const nextState = { ...current };
-      headingTree.forEach((node) => {
-        if (node.children.length > 0) {
-          nextState[node.id] = node.id === activeRootBranchId;
-        }
-      });
-      activeAncestorIds.forEach((ancestorId) => {
-        nextState[ancestorId] = true;
-      });
-      const activeNode = findNode(headingTree, activeHeadingId);
-      if (activeNode && activeNode.children.length > 0) {
-        nextState[activeHeadingId] = true;
-      }
-      return nextState;
-    });
-  }, [activeAncestorIds, activeHeadingId, activeRootBranchId, findNode, headingTree]);
+  // 展开状态：与移动 Sheet 共享 useTocExpansion（用户手动展开/折叠优先于
+  // 自动收拢，active 变化只保证 active 分支可见）。
+  const { expandedMap, toggleNode, expandBranchForNavigation } = useTocExpansion({
+    headingTree,
+    activeHeadingId,
+    activeRootBranchId,
+    activeAncestorIds,
+    collapseInactiveRootBranches: true,
+    autoExpandActiveNode: true,
+  });
 
   // 定位：right 偏移 = 文章右缘到视口右缘的可用空间 - 轨宽 - 间隙，钳制在
   // [1rem, 6rem]；窄屏自动贴近边缘，宽屏保持在留白带内（不贴死浏览器边缘）。
@@ -172,6 +157,14 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
     }
     setHoverPreview(false);
   }, []);
+
+  // 收起胶囊（未固定时）：指针/焦点状态与模块级记忆同步复位。
+  const collapseCapsule = useCallback(() => {
+    cancelHoverPreview();
+    setFocusWithin(false);
+    setUserExpanded(false);
+    setCapsuleState({ userExpanded: false });
+  }, [cancelHoverPreview]);
 
   const toggleUserExpanded = useCallback(() => {
     cancelHoverPreview();
@@ -230,6 +223,9 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
       if (copyTimerRef.current !== null) {
         window.clearTimeout(copyTimerRef.current);
       }
+      if (suppressTimerRef.current !== null) {
+        window.clearTimeout(suppressTimerRef.current);
+      }
     };
   }, []);
 
@@ -254,15 +250,32 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
 
   const handleNavigate = useCallback(
     (id: string) => {
+      const ancestorIds = getAncestorIds(id, parentMap);
+      const rootId = getRootBranchId(id, parentMap);
+      expandBranchForNavigation(rootId, ancestorIds);
+
       scrollToHeadingElement(id, shouldReduceMotion ? 'auto' : 'smooth');
       replaceUrlHash(id);
-    },
-    [shouldReduceMotion],
-  );
 
-  const handleToggleNode = useCallback((id: string) => {
-    setExpandedMap((current) => ({ ...current, [id]: !(current[id] ?? false) }));
-  }, []);
+      // 未固定：跳转即收起（与移动端 Sheet 点击后关闭一致），并把焦点归还到
+      // 迷你轨的展开按钮（面板视觉隐藏后焦点会丢失，不能掉到 body）。
+      if (!pinned) {
+        collapseCapsule();
+        if (railToggleRef.current) {
+          suppressFocusExpandRef.current = true;
+          railToggleRef.current.focus();
+          if (suppressTimerRef.current !== null) {
+            window.clearTimeout(suppressTimerRef.current);
+          }
+          suppressTimerRef.current = window.setTimeout(() => {
+            suppressFocusExpandRef.current = false;
+            suppressTimerRef.current = null;
+          }, 0);
+        }
+      }
+    },
+    [collapseCapsule, expandBranchForNavigation, parentMap, pinned, shouldReduceMotion],
+  );
 
   const handleBackToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth' });
@@ -284,6 +297,7 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
   const railActions = (
     <>
       <button
+        ref={railToggleRef}
         type="button"
         onClick={toggleUserExpanded}
         className="capsule-rail-btn"
@@ -341,7 +355,12 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
       // （含 wrapper 内置的 0.5rem 过渡桥）不会触发收起，杜绝抽搐循环。
       onMouseEnter={scheduleHoverPreview}
       onMouseLeave={cancelHoverPreview}
-      onFocusCapture={() => setFocusWithin(true)}
+      onFocusCapture={() => {
+        if (suppressFocusExpandRef.current) {
+          return;
+        }
+        setFocusWithin(true);
+      }}
       onBlurCapture={(event) => {
         if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) {
           setFocusWithin(false);
@@ -364,7 +383,7 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
       <aside ref={panelRef} className="capsule-panel" role="group" aria-label="文章阅读导航面板">
         <div className="capsule-panel-card">
           <div className="capsule-panel-head">
-            <span className="capsule-panel-title">文章导航</span>
+            <span className="capsule-panel-title">文章目录</span>
             {!isReadingMode && (
               <button
                 type="button"
@@ -391,9 +410,8 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
                 activeBranchIds={activeBranchIds}
                 activeItemRef={activeItemRef}
                 shouldForceExpand={false}
-                shouldReduceMotion={shouldReduceMotion}
                 onNavigate={handleNavigate}
-                onToggle={handleToggleNode}
+                onToggle={toggleNode}
               />
             )}
           </div>
@@ -407,10 +425,6 @@ export const CapsuleNav: React.FC<CapsuleNavProps> = ({
           </div>
 
           <div className="capsule-panel-actions">
-            <button type="button" onClick={handleBackToTop} className="capsule-action-row" aria-label="回到顶部">
-              <ArrowUp size={15} aria-hidden="true" />
-              <span>回到顶部</span>
-            </button>
             <button type="button" onClick={onShare} className="capsule-action-row" aria-label="分享文章">
               <Share2 size={15} aria-hidden="true" />
               <span>分享</span>

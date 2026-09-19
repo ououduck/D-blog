@@ -1,13 +1,21 @@
 /**
- * 文章目录：桌面悬浮 popover + 移动端底部 sheet，支持滚动高亮、搜索过滤、折叠/展开与进度条。
- * 进度统一来自 useReadingProgress（真实正文进度）；激活标题统一来自 useActiveHeading。
- * 支持受控模式（isOpen/onOpenChange）：文章页由移动端工具栏接管目录开关。
+ * 文章目录：移动端底部 sheet（受控模式由 ArticleToolbar 驱动）+ 独立桌面 popover。
+ *
+ * 轻量化（任务约束的减法）：
+ * - Sheet 内不再有进度条/百分比/章节统计/回到顶部（由 ArticleToolbar 与其
+ *   「更多」面板提供，避免重复）；
+ * - 搜索按需显示：标题数 ≤ SHOW_TOC_SEARCH_THRESHOLD 时隐藏入口；打开搜索
+ *   才渲染输入框并聚焦（用户主动搜索才弹键盘）；
+ * - 打开 Sheet 默认聚焦容器本身（tabIndex=-1），不会自动弹出手机键盘。
+ *
+ * 激活标题（useActiveHeading）、展开状态
+ * （useTocExpansion）与胶囊导航共享同一实现。
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUp, List, X } from 'lucide-react';
+import { List, Search, X } from 'lucide-react';
 import { SearchField } from '@/components/SearchField';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
@@ -15,20 +23,20 @@ import { useModalOverlay } from '@/hooks/useModalOverlay';
 import { siteConfig } from '@config/site.config';
 import type { MarkdownHeading } from '@/utils/headings';
 import { replaceUrlHash, scrollToHeadingElement } from '@/utils/headingScroll';
-import { useReadingProgress } from '@/components/ArticleConsole/useReadingProgress';
 import { useActiveHeading } from '@/components/ArticleConsole/useActiveHeading';
+import { useTocExpansion } from '@/components/ArticleConsole/useTocExpansion';
 import { TocTree } from '@/components/ArticleConsole/TocTree';
 import {
   buildHeadingTree,
   buildParentMap,
-  collectInitialExpandedState,
-  findTocNodeById,
   getActiveItemScrollTarget,
   getAncestorIds,
   getRootBranchId,
   type TocNode,
 } from '@/utils/toc';
-import type { RefObject } from 'react';
+
+/** 目录条目超过该数量才显示搜索入口（避免短目录浪费空间）。 */
+export const SHOW_TOC_SEARCH_THRESHOLD = 10;
 
 const MOBILE_TOC_TRIGGER_STYLE = {
   bottom:
@@ -58,18 +66,7 @@ export const TableOfContents: React.FC<{
   /** 受控模式：提供时组件开关完全由外部驱动（文章页移动端工具栏接管）。 */
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** 真实阅读进度来源（文章页注入；未传时回退章节序号百分比）。 */
-  progressTargetRef?: RefObject<HTMLElement | null>;
-  progressEndRef?: RefObject<HTMLElement | null>;
-}> = ({
-  headings,
-  mobileShowTrigger = true,
-  desktopShowTrigger = true,
-  isOpen: isOpenProp,
-  onOpenChange,
-  progressTargetRef,
-  progressEndRef,
-}) => {
+}> = ({ headings, mobileShowTrigger = true, desktopShowTrigger = true, isOpen: isOpenProp, onOpenChange }) => {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isControlled = isOpenProp !== undefined;
   const isOpen = isControlled ? isOpenProp : internalIsOpen;
@@ -88,35 +85,35 @@ export const TableOfContents: React.FC<{
   const [isClient, setIsClient] = useState(false);
   const [dragOffsetY, setDragOffsetY] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const shouldReduceMotion = useReducedMotion();
   const touchStartYRef = useRef<number | null>(null);
   // 触摸拖动的 rAF 合并帧：touchmove 频率可高于帧率，同帧内多次移动合并为
-  // 一次 setDragOffsetY，避免整棵目录树（含过滤/展开/AnimatePresence 子树）
-  // 随每次 touchmove 逐帧重渲染。
+  // 一次 setDragOffsetY，避免整棵目录树随每次 touchmove 逐帧重渲染。
   const sheetDragFrameRef = useRef(0);
   // 帧挂起期间的最新位移：touchmove 每次都更新，帧回调与 touchend 读取它，
   // 避免「帧未执行时后续位移丢失」导致 touchend 的关闭判定使用过期值。
   const latestDragOffsetRef = useRef(0);
   const mobileSheetRef = useRef<HTMLElement | null>(null);
-  const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const headingTree = useMemo(() => buildHeadingTree(headings), [headings]);
   const parentMap = useMemo(() => buildParentMap(headingTree), [headingTree]);
   const navRef = useRef<HTMLElement | null>(null);
   const desktopPopoverRef = useRef<HTMLElement | null>(null);
   const desktopTriggerRef = useRef<HTMLButtonElement | null>(null);
   const activeItemRef = useRef<HTMLLIElement | null>(null);
-  const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
   const collapseInactiveRootBranches = siteConfig.toc?.collapseInactiveRootBranches ?? false;
   const isMobileDialogOpen = isOpen && isMobileViewport;
   const closeTableOfContents = useCallback(() => setIsOpen(false), [setIsOpen]);
   // 搜索过滤时强制展开整棵过滤后的树（过滤结果本就精简，无需折叠状态）。
-  // 声明在 TocTree 之前：避免 TDZ 窗口。
   const shouldForceExpandFilteredTree = searchQuery.trim().length > 0;
 
   useModalOverlay({
     isOpen: isMobileDialogOpen,
     onClose: closeTableOfContents,
-    initialFocusRef: mobileSearchInputRef,
+    // 初始聚焦 Sheet 容器（tabIndex=-1）：不会自动弹出手机键盘；用户主动
+    // 打开搜索时才聚焦输入框。
+    initialFocusRef: mobileSheetRef,
     containerRef: mobileSheetRef,
   });
 
@@ -156,6 +153,7 @@ export const TableOfContents: React.FC<{
     if (!isOpen) {
       setDragOffsetY(0);
       setSearchQuery('');
+      setIsSearchOpen(false);
       touchStartYRef.current = null;
       // 清理挂起的拖拽 rAF 帧（关闭后不应再有位移写入）。
       if (sheetDragFrameRef.current) {
@@ -196,11 +194,7 @@ export const TableOfContents: React.FC<{
     };
   }, [isMobileViewport, isOpen, setIsOpen]);
 
-  useEffect(() => {
-    setExpandedMap(collectInitialExpandedState(headingTree));
-  }, [headingTree]);
-
-  // 当前章节：rAF 合并的滚动同步（与胶囊导航共享同一 hook，无第二套实现）。
+  // 当前章节：与胶囊导航/跳转共享同一实现与偏移源。
   const activeHeadingId = useActiveHeading(headings);
 
   const activeAncestorIds = useMemo(() => getAncestorIds(activeHeadingId, parentMap), [activeHeadingId, parentMap]);
@@ -210,44 +204,14 @@ export const TableOfContents: React.FC<{
   );
   const activeRootBranchId = useMemo(() => getRootBranchId(activeHeadingId, parentMap), [activeHeadingId, parentMap]);
 
-  useEffect(() => {
-    if (!activeHeadingId) {
-      return;
-    }
-
-    setExpandedMap((current) => {
-      const nextState = { ...current };
-
-      if (collapseInactiveRootBranches) {
-        headingTree.forEach((node) => {
-          if (node.children.length > 0) {
-            nextState[node.id] = node.id === activeRootBranchId;
-          }
-        });
-      }
-
-      activeAncestorIds.forEach((ancestorId) => {
-        nextState[ancestorId] = true;
-      });
-
-      // 大屏端自动展开当前激活节点（如果有子节点）
-      if (!isMobileViewport) {
-        const activeNode = findTocNodeById(headingTree, activeHeadingId);
-        if (activeNode && activeNode.children.length > 0) {
-          nextState[activeHeadingId] = true;
-        }
-      }
-
-      return nextState;
-    });
-  }, [
-    activeAncestorIds,
+  const { expandedMap, toggleNode, expandBranchForNavigation } = useTocExpansion({
+    headingTree,
     activeHeadingId,
     activeRootBranchId,
+    activeAncestorIds,
     collapseInactiveRootBranches,
-    headingTree,
-    isMobileViewport,
-  ]);
+    autoExpandActiveNode: !isMobileViewport,
+  });
 
   useEffect(() => {
     const navElement = navRef.current;
@@ -278,39 +242,15 @@ export const TableOfContents: React.FC<{
     (id: string) => {
       const branchAncestorIds = getAncestorIds(id, parentMap);
       const branchRootId = getRootBranchId(id, parentMap);
-
-      setExpandedMap((current) => {
-        const nextState = { ...current };
-
-        if (collapseInactiveRootBranches) {
-          headingTree.forEach((node) => {
-            if (node.children.length > 0) {
-              nextState[node.id] = node.id === branchRootId;
-            }
-          });
-        }
-
-        branchAncestorIds.forEach((ancestorId) => {
-          nextState[ancestorId] = true;
-        });
-
-        return nextState;
-      });
+      expandBranchForNavigation(branchRootId, branchAncestorIds);
 
       scrollToHeadingElement(id, shouldReduceMotion ? 'auto' : 'smooth');
       replaceUrlHash(id);
 
       setIsOpen(false);
     },
-    [collapseInactiveRootBranches, headingTree, parentMap, setIsOpen, shouldReduceMotion],
+    [expandBranchForNavigation, parentMap, setIsOpen, shouldReduceMotion],
   );
-
-  const toggleNode = useCallback((id: string) => {
-    setExpandedMap((current) => ({
-      ...current,
-      [id]: !(current[id] ?? false),
-    }));
-  }, []);
 
   // 触摸下滑关闭：仅绑定在顶部抓手区域（nav 列表之外），无需判断触摸起点。
   const handleSheetTouchStart = (event: React.TouchEvent<HTMLElement>) => {
@@ -326,10 +266,7 @@ export const TableOfContents: React.FC<{
     }
 
     const currentY = event.touches[0]?.clientY ?? startY;
-    // 每次都更新最新位移（帧挂起期间也不丢失，供帧回调与 touchend 读取）。
     latestDragOffsetRef.current = Math.max(0, currentY - startY);
-    // rAF 合并：同帧内多次 touchmove 只 commit 一次 setDragOffsetY，
-    // 避免整棵目录树随每次 touchmove 逐帧重渲染。
     if (sheetDragFrameRef.current) {
       return;
     }
@@ -340,7 +277,6 @@ export const TableOfContents: React.FC<{
   };
 
   const handleSheetTouchEnd = () => {
-    // 取消挂起的 rAF 帧：防止 touchmove 调度但未执行的帧在结束后再写入位移。
     if (sheetDragFrameRef.current) {
       window.cancelAnimationFrame(sheetDragFrameRef.current);
       sheetDragFrameRef.current = 0;
@@ -354,6 +290,7 @@ export const TableOfContents: React.FC<{
     latestDragOffsetRef.current = 0;
     touchStartYRef.current = null;
   };
+
   const filteredHeadingTree = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
 
@@ -379,24 +316,30 @@ export const TableOfContents: React.FC<{
 
     return filterNodes(headingTree);
   }, [headingTree, searchQuery]);
-  const rootHeadingsCount = headingTree.length;
-  const visibleHeadingsCount = filteredHeadingTree.reduce((count, node) => {
-    const countNodes = (items: TocNode[]): number =>
-      items.reduce((total, current) => total + 1 + countNodes(current.children), 0);
-    return count + countNodes([node]);
-  }, 0);
 
-  // 真实阅读进度：文章页注入正文 refs 时使用（与胶囊导航/工具栏同源）；
-  // 未注入时回退章节序号百分比（保持旧口径兜底）。
-  const realProgress = useReadingProgress(progressTargetRef ?? { current: null }, progressEndRef);
-  const currentHeadingIndex = headings.findIndex((h) => h.id === activeHeadingId);
-  const fallbackProgress = headings.length > 0 ? Math.round(((currentHeadingIndex + 1) / headings.length) * 100) : 0;
-  const readingProgressDisplay = progressTargetRef ? realProgress.percentage : fallbackProgress;
+  // 搜索入口按需显示：长目录才提供，短目录不占空间。
+  const showSearchToggle = headings.length > SHOW_TOC_SEARCH_THRESHOLD;
+
+  const toggleSearch = useCallback(() => {
+    setIsSearchOpen((open) => {
+      if (open) {
+        setSearchQuery('');
+      }
+      return !open;
+    });
+  }, []);
+
+  // 用户主动打开搜索后聚焦输入框（effect 而非 autoFocus，键盘只在此时弹出）。
+  useEffect(() => {
+    if (isSearchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [isSearchOpen]);
 
   const panelContent = (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-overlay border border-zinc-300 bg-paper p-4 shadow-none dark:border-zinc-700 dark:bg-void sm:p-[1.125rem]">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-overlay border border-zinc-300 bg-paper shadow-none dark:border-zinc-700 dark:bg-void sm:p-[1.125rem]">
       <div
-        className="mb-3 flex justify-center lg:hidden"
+        className="mb-3 flex justify-center pt-3 lg:hidden"
         onTouchStart={handleSheetTouchStart}
         onTouchMove={handleSheetTouchMove}
         onTouchEnd={handleSheetTouchEnd}
@@ -405,70 +348,56 @@ export const TableOfContents: React.FC<{
         <span className="h-1.5 w-14 rounded-full bg-zinc-300 dark:bg-zinc-700" />
       </div>
 
-      <div className="mb-3.5 space-y-3 border-b border-zinc-200 pb-3 dark:border-zinc-800">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-icon bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-              <List size={17} />
-            </span>
-            <div className="min-w-0">
-              <h3
-                id={isMobileDialogOpen ? 'mobile-toc-title' : undefined}
-                className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100"
-              >
-                文章目录
-              </h3>
-              <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">
-                {rootHeadingsCount} 个主章节 · 共 {headings.length} 节
-              </p>
-            </div>
-          </div>
+      <div className="mb-2 flex items-center justify-between gap-2 px-4 pb-2 pt-1 sm:px-5">
+        <h3
+          id={isMobileDialogOpen ? 'mobile-toc-title' : undefined}
+          className="text-sm font-semibold text-zinc-900 dark:text-zinc-100"
+        >
+          文章目录
+        </h3>
 
+        <div className="flex shrink-0 items-center gap-1">
+          {showSearchToggle && (
+            <button
+              type="button"
+              onClick={toggleSearch}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-icon text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 active:scale-[0.98] dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              aria-label={isSearchOpen ? '关闭搜索' : '搜索目录标题'}
+              aria-expanded={isSearchOpen}
+            >
+              {isSearchOpen ? <X size={16} /> : <Search size={16} />}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-icon bg-zinc-100 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-700 active:scale-[0.98] dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-300 lg:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-icon text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 active:scale-[0.98] dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 lg:hidden"
             aria-label="关闭目录"
           >
             <X size={16} />
           </button>
         </div>
+      </div>
 
-        <div className="flex items-center gap-2.5">
-          <div className="h-1 flex-1 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
-            <div
-              className="h-full rounded-full bg-zinc-900 transition-[width] duration-200 ease-out dark:bg-zinc-100"
-              style={{ width: `${readingProgressDisplay}%` }}
-            />
-          </div>
-          <span className="min-w-[2.2rem] text-right text-[11px] font-semibold tabular-nums text-zinc-500 dark:text-zinc-400">
-            {readingProgressDisplay}%
-          </span>
+      {isSearchOpen && (
+        <div className="mb-2 px-4 sm:px-5">
+          <SearchField
+            ref={searchInputRef}
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+            onClear={() => setSearchQuery('')}
+            placeholder="搜索目录标题"
+            className="border-zinc-200 bg-zinc-50 focus:bg-white dark:border-zinc-800 dark:bg-zinc-800 dark:focus:bg-zinc-950"
+            aria-label="搜索目录标题"
+          />
         </div>
-      </div>
-
-      <div className="mb-3.5">
-        <SearchField
-          ref={isMobileDialogOpen ? mobileSearchInputRef : undefined}
-          value={searchQuery}
-          onValueChange={setSearchQuery}
-          onClear={() => setSearchQuery('')}
-          placeholder="搜索目录标题"
-          className="border-zinc-200 bg-zinc-50 focus:bg-white dark:border-zinc-800 dark:bg-zinc-800 dark:focus:bg-zinc-950"
-          aria-label="搜索目录标题"
-        />
-        {searchQuery.trim() ? (
-          <p className="mt-2 px-1 text-[11px] text-zinc-400 dark:text-zinc-500">
-            匹配到 {visibleHeadingsCount} 个目录项
-          </p>
-        ) : null}
-      </div>
+      )}
 
       <nav
         ref={navRef}
         aria-label="目录"
         style={MOBILE_SCROLL_STYLE}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-1 no-scrollbar"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 no-scrollbar sm:px-5"
       >
         {filteredHeadingTree.length > 0 ? (
           <TocTree
@@ -478,7 +407,6 @@ export const TableOfContents: React.FC<{
             activeBranchIds={activeBranchIds}
             activeItemRef={activeItemRef}
             shouldForceExpand={shouldForceExpandFilteredTree}
-            shouldReduceMotion={shouldReduceMotion}
             onNavigate={scrollToHeading}
             onToggle={toggleNode}
           />
@@ -488,26 +416,10 @@ export const TableOfContents: React.FC<{
           </div>
         )}
       </nav>
-
-      <div className="mt-2 border-t border-zinc-100 pt-2 dark:border-zinc-800">
-        <button
-          type="button"
-          onClick={() => {
-            window.scrollTo({ top: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth' });
-            if (isMobileViewport) setIsOpen(false);
-          }}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-control py-2 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 active:scale-[0.98] dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-          aria-label="回到顶部"
-        >
-          <ArrowUp size={14} />
-          回到顶部
-        </button>
-      </div>
     </div>
   );
 
   // AnimatePresence 始终挂载（条件在内部），关闭时子元素被移除但退出动画能正常播放。
-  // 此前 isOpen 条件在外部，关闭即卸载整个 portal（含 AnimatePresence），退出动画失效。
   const mobileSheet =
     isClient && isMobileViewport
       ? createPortal(

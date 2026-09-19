@@ -58,7 +58,7 @@ import { useReadingMode } from '@/components/ReadingModeContext';
 import { GiscusComments } from '@/components/GiscusComments';
 import { useSsgRouteData } from '@/ssr/routeData';
 import { fillBusuanziSpans } from '@/services/busuanzi';
-import { HEADING_SCROLL_OFFSET } from '@/utils/scroll';
+import { replaceUrlHash, scrollToHeadingElement } from '@/utils/headingScroll';
 
 type MarkdownImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   previewSrc?: string;
@@ -879,13 +879,9 @@ const createMarkdownComponents = (
                 return;
               }
               event.preventDefault();
-              window.scrollTo({
-                top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - HEADING_SCROLL_OFFSET),
-                behavior: shouldReduceMotion ? 'auto' : 'smooth',
-              });
-              const url = new URL(window.location.href);
-              url.hash = targetId;
-              window.history.replaceState({}, '', url.toString());
+              // 与 TOC/胶囊跳转、hash 深链共用同一偏移源与行为（headingScroll 工具）。
+              scrollToHeadingElement(targetId, shouldReduceMotion ? 'auto' : 'smooth');
+              replaceUrlHash(targetId);
             }}
             {...props}
           >
@@ -1299,10 +1295,7 @@ export const Post = () => {
 
       // 标记为程序化滚动：hash 深链跳转不是用户阅读行为，不得计入阅读进度。
       programmaticScrollRef.current = true;
-      window.scrollTo({
-        top: Math.max(0, element.getBoundingClientRect().top + window.scrollY - HEADING_SCROLL_OFFSET),
-        behavior: 'auto',
-      });
+      scrollToHeadingElement(hashId, 'auto');
       // 双 rAF 后清除标记：与恢复逻辑保持一致，等待程序化滚动完全落定。
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
@@ -2060,7 +2053,7 @@ export const Post = () => {
 
         <div ref={articleBodyRef} className="post-body mx-auto w-full max-w-5xl px-3 pb-12 sm:px-4 md:pb-20 lg:px-0">
           <div className="mx-auto max-w-[46rem]">
-            <div className="post-prose prose max-w-none dark:prose-invert md:prose-lg prose-headings:scroll-mt-24 prose-a:break-words">
+            <div className="post-prose prose max-w-none dark:prose-invert md:prose-lg prose-a:break-words">
               <ReactMarkdown
                 remarkPlugins={remarkPlugins}
                 rehypePlugins={rehypePlugins}

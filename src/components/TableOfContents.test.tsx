@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TableOfContents } from './TableOfContents';
+import { TableOfContents, SHOW_TOC_SEARCH_THRESHOLD } from './TableOfContents';
 import type { MarkdownHeading } from '@/utils/headings';
 
 const makeHeadings = (): MarkdownHeading[] => [
@@ -9,6 +9,15 @@ const makeHeadings = (): MarkdownHeading[] => [
   { id: 'usage', level: 2, text: '使用方法', rawText: '使用方法' },
   { id: 'faq', level: 2, text: '常见问题', rawText: '常见问题' },
 ];
+
+/** 超过搜索阈值的长目录（触发按需搜索入口）。 */
+const makeLongHeadings = (): MarkdownHeading[] =>
+  Array.from({ length: SHOW_TOC_SEARCH_THRESHOLD + 2 }, (_, index) => ({
+    id: `h-${index}`,
+    level: 1,
+    text: `章节 ${index}`,
+    rawText: `章节 ${index}`,
+  }));
 
 describe('TableOfContents', () => {
   beforeEach(() => {
@@ -65,14 +74,37 @@ describe('TableOfContents', () => {
     expect(await screen.findByText('使用方法')).toBeInTheDocument();
   });
 
-  it('搜索目录标题过滤条目', async () => {
+  it('目录项不含数字 badge（大纲式视觉减法）', async () => {
     const user = userEvent.setup();
     render(<TableOfContents headings={makeHeadings()} />);
     await user.click(await screen.findByRole('button', { name: /打开目录/ }));
+    await screen.findByText('介绍');
+    // 旧版 flat-index 数字 badge（01/02…）已删除
+    expect(screen.queryByText('01')).not.toBeInTheDocument();
+  });
+
+  it('短目录不渲染搜索入口（按需显示）', async () => {
+    const user = userEvent.setup();
+    render(<TableOfContents headings={makeHeadings()} />);
+    await user.click(await screen.findByRole('button', { name: /打开目录/ }));
+    await screen.findByText('介绍');
+    expect(screen.queryByRole('button', { name: '搜索目录标题' })).not.toBeInTheDocument();
+  });
+
+  it('长目录提供搜索入口：点击后出现输入框并聚焦（键盘按需弹出）', async () => {
+    const user = userEvent.setup();
+    render(<TableOfContents headings={makeLongHeadings()} />);
+    await user.click(await screen.findByRole('button', { name: /打开目录/ }));
+    // 打开面板时：无搜索框（不自动弹键盘）
+    expect(screen.queryByRole('searchbox', { name: '搜索目录标题' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '搜索目录标题' }));
     const input = await screen.findByRole('searchbox', { name: '搜索目录标题' });
-    await user.type(input, '常见问题');
-    expect(await screen.findByText('常见问题')).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText('使用方法')).not.toBeInTheDocument());
+    expect(input).toHaveFocus();
+
+    await user.type(input, '章节 3');
+    expect(await screen.findByText('章节 3')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText('章节 4')).not.toBeInTheDocument());
   });
 
   it('Escape 关闭目录并归还焦点到触发按钮（键盘可达性回归）', async () => {
@@ -108,5 +140,61 @@ describe('TableOfContents', () => {
 
     scrollToSpy.mockRestore();
     headingElement.remove();
+  });
+
+  it('受控模式（移动 Sheet）：点击条目后关闭并更新 hash', async () => {
+    const user = userEvent.setup();
+    // 移动端视口
+    (window.matchMedia as unknown as ReturnType<typeof vi.fn>).mockImplementation((query: string) => ({
+      matches: query.includes('max-width: 1023px'),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    const onOpenChange = vi.fn();
+    const headingElement = document.createElement('h2');
+    headingElement.id = 'intro';
+    document.body.appendChild(headingElement);
+
+    render(
+      <TableOfContents
+        headings={makeHeadings()}
+        isOpen
+        onOpenChange={onOpenChange}
+        mobileShowTrigger={false}
+        desktopShowTrigger={false}
+      />,
+    );
+    await screen.findByText('文章目录');
+
+    await user.click(screen.getByText('介绍'));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(window.location.hash).toContain('intro');
+    headingElement.remove();
+  });
+
+  it('打开移动 Sheet：默认聚焦容器、搜索框不渲染（键盘不自动弹出）', async () => {
+    (window.matchMedia as unknown as ReturnType<typeof vi.fn>).mockImplementation((query: string) => ({
+      matches: query.includes('max-width: 1023px'),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    render(<TableOfContents headings={makeHeadings()} isOpen mobileShowTrigger={false} desktopShowTrigger={false} />);
+    await screen.findByText('文章目录');
+
+    expect(screen.queryByRole('searchbox', { name: '搜索目录标题' })).not.toBeInTheDocument();
+    // useModalOverlay 初始聚焦 Sheet 容器（tabIndex=-1）而非输入框
+    expect(document.activeElement).toBe(screen.getByRole('dialog'));
   });
 });
