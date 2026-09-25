@@ -15,8 +15,9 @@
 #   - workflow_dispatch（手动测试；可配合 .pages.yml「🔔 测试 飞书机器人 Webhook 通知」按钮）。
 #
 # 一次性配置（仓库 Settings → Secrets and variables → Actions）：
-#   FEISHU_WEBHOOK_URL — 接收通知的 飞书机器人 Webhook 地址；请求体为飞书文本 JSON：
-#     {"msg_type":"text","content":{"text":"..."}}。
+#   FEISHU_WEBHOOK_URL — 接收通知的 飞书机器人 Webhook 地址；默认请求体为飞书交互式卡片：
+#     {"msg_type":"interactive","card":{...}}。
+#   如需兼容旧版机器人，可设置仓库变量 FEISHU_MESSAGE_FORMAT=text 回退为纯文本。
 # 未配置 FEISHU_WEBHOOK_URL 时脚本优雅跳过（::warning:: 正常退出），不会红叉。
 name: 飞书机器人 Webhook Notify
 
@@ -77,4 +78,5 @@ jobs:
       - name: Send 飞书机器人 Webhook notification
         env:
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          FEISHU_MESSAGE_FORMAT: ${{ vars.FEISHU_MESSAGE_FORMAT }}
         run: node scripts/feishu-webhook.mjs

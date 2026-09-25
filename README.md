@@ -216,13 +216,13 @@ Service Worker 作用域跟随部署路径，在线按页面/静态资源/图片
 
 ## 自动化与通知
 
-仓库事件通过 [`feishu-webhook.yml`](.github/workflows/feishu-webhook.yml) 实时推送到 飞书机器人 Webhook：新评论/新讨论/新 Issue、push 到 main 的提交、任一 Action 运行结果（成功/失败/取消，通知自身的结果被跳过）。**一次性配置**：在仓库 **Settings → Secrets and variables → Actions** 添加 `FEISHU_WEBHOOK_URL`（接收端地址，支持路径或查询串密钥）。未配置时 workflow 优雅跳过（`::warning::` 正常退出，不红叉）。
+仓库事件通过 [`feishu-webhook.yml`](.github/workflows/feishu-webhook.yml) 实时推送到 飞书机器人 Webhook：新评论/新讨论/新 Issue、push 到 main 的提交、任一 Action 运行结果（成功/失败/取消，通知自身的结果被跳过）。**一次性配置**：在仓库 **Settings → Secrets and variables → Actions** 添加 `FEISHU_WEBHOOK_URL`（接收端地址，支持路径或查询串密钥）。通知默认使用带颜色标题、分组正文和可点击链接的飞书交互式卡片；如需兼容旧版机器人，可配置仓库变量 `FEISHU_MESSAGE_FORMAT=text` 回退为纯文本。未配置 Webhook 时 workflow 优雅跳过（`::warning::` 正常退出，不红叉）。
 
 其他自动化：`ci.yml` 每次 push/PR 自动跑类型检查 + 单元测试 + 完整构建 + 双审计；评论 Akismet 反垃圾（`akismet-discussion-comment-check.yml`）与关键词过滤（`comment-keyword-filter.yml` / `comment-keyword-recheck.yml`）、文章更新订阅通知（`notify-post-update.yml`）均为独立 workflow。
 
 ### 🔗 文章外链失效扫描（check-broken-links）
 
-博客内容会随外部站点改版/下线产生死链，且完全可以在构建期检测。`scripts/check-broken-links.mjs` 扫描 `posts/*.md` 中全部 http/https 外链（Markdown 链接 + HTML `<a href>`，排除图片与站内锚点），逐个请求检查可达性，失效链接按文章分组汇总（带行号与 HTTP 状态）推送到 飞书机器人 Webhook。只读操作，不修改仓库、不触发部署。
+博客内容会随外部站点改版/下线产生死链，且完全可以在构建期检测。`scripts/check-broken-links.mjs` 扫描 `posts/*.md` 中全部 http/https 外链（Markdown 链接 + HTML `<a href>`，排除图片与站内锚点），逐个请求检查可达性，失效链接按文章分组汇总（带行号与 HTTP 状态）推送到 飞书机器人 Webhook。检测在 GitHub Actions 本地完成，不依赖第三方链接检测 API；服务器已响应但限制自动化访问的 401/403/405/406/407/429 会标记为“可达但受限”，只记录提示，不误报为死链。只读操作，不修改仓库、不触发部署。
 
 - **触发**：Pages CMS 侧边栏「🔗 检查失效外链」按钮（`check-broken-links.yml`，workflow_dispatch），或每周一 02:00 UTC 定时自动巡检（schedule）；
 - **本地运行**：`npm run check:links`（默认仅报告退出码 0）；`--dry-run` 只打印不上报；`--fail` 发现失效链接时非零退出（可用于 CI 红叉门禁）；`--ignore-hosts=a.com,b.com` 跳过指定域名（用于已知反爬/机器人拦截的站点，如 Cloudflare Dashboard 对非浏览器 GET 返回 403 属误报，CI 中已内置该域名）；

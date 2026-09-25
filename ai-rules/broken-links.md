@@ -2,7 +2,7 @@
 
 ## 功能概述
 
-构建期/CI 扫描 `posts/*.md` 全部 http/https 外链（Markdown 链接 + HTML `<a href>`），逐个请求检查可达性，失效链接按文章分组（带行号与 HTTP 状态）推送 飞书机器人 Webhook。每周定时 + PagesCMS 按钮手动触发。
+构建期/CI 扫描 `posts/*.md` 全部 http/https 外链（Markdown 链接 + HTML `<a href>`），逐个请求检查可达性，失效链接按文章分组（带行号与 HTTP 状态）推送 飞书机器人 Webhook。每周定时 + PagesCMS 按钮手动触发。检测由仓库自身在 GitHub Actions 中执行，不依赖第三方链接检测 API。服务器已响应但限制自动化访问的 401/403/405/406/407/429 标记为“可达但受限”，只记录提示，不作为死链；404/410、其他明确失败状态和网络错误仍按失效处理。
 
 ## 关键文件
 

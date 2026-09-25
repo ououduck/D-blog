@@ -6,6 +6,22 @@ const logger = createActionLogger('feishu-webhook');
 const SAFE_BUDGET = 4000;
 const TIMEOUT_MS = 15000;
 const RETRIES = 2;
+const CONTROL_CHARACTERS = new RegExp(
+  `[${String.fromCharCode(0)}-${String.fromCharCode(31)}${String.fromCharCode(127)}]`,
+  'g',
+);
+
+const CARD_TEMPLATES = Object.freeze({
+  success: 'green',
+  failure: 'red',
+  cancelled: 'orange',
+  error: 'red',
+  comment: 'blue',
+  discussion: 'blue',
+  issue: 'orange',
+  push: 'purple',
+  'link-check': 'orange',
+});
 
 export const sanitizeFeishuWebhookUrlForLogs = (value) => {
   try {
@@ -16,8 +32,52 @@ export const sanitizeFeishuWebhookUrlForLogs = (value) => {
   }
 };
 
+const sanitizeText = (value) => String(value ?? '').replace(CONTROL_CHARACTERS, ' ');
+
 const ensureSafeLength = (text) =>
   text.length <= SAFE_BUDGET ? text : `${text.slice(0, SAFE_BUDGET)}\n\n…(消息过长，其余内容已省略)`;
+
+const toCardMarkdown = (text) =>
+  sanitizeText(text)
+    .replace(/<b>([\s\S]*?)<\/b>/gi, '**$1**')
+    .replace(/(^|[\s(：:])((?:https?:\/\/)[^\s<>]+)(?=$|[\s<>])/g, (_match, prefix, url) => {
+      const trailing = url.match(/[),.;!?]+$/)?.[0] ?? '';
+      const target = trailing ? url.slice(0, -trailing.length) : url;
+      return `${prefix}[${target}](${target})${trailing}`;
+    });
+
+const getCardTemplate = (event) => {
+  const key = String(event ?? '').toLowerCase();
+  if (CARD_TEMPLATES[key]) return CARD_TEMPLATES[key];
+  if (key.includes('failure') || key.includes('error')) return 'red';
+  if (key.includes('success')) return 'green';
+  return 'blue';
+};
+
+export const buildFeishuPayload = (text, { event = 'notification', title = 'D-blog 通知' } = {}) => {
+  const safeTitle = sanitizeText(title);
+  const safeEvent = sanitizeText(event);
+  const content = ensureSafeLength(`[${safeTitle}]\n事件: ${safeEvent}\n\n${sanitizeText(text)}`);
+  if (process.env.FEISHU_MESSAGE_FORMAT === 'text') {
+    return { msg_type: 'text', content: { text: content } };
+  }
+
+  return {
+    msg_type: 'interactive',
+    card: {
+      schema: '2.0',
+      config: { wide_screen_mode: true, enable_forward: true },
+      header: {
+        template: getCardTemplate(event),
+        title: { tag: 'plain_text', content: safeTitle },
+      },
+      body: {
+        direction: 'vertical',
+        elements: [{ tag: 'markdown', content: toCardMarkdown(content) }],
+      },
+    },
+  };
+};
 
 export const sendFeishuWebhookMessage = async (text, { event = 'notification', title = 'D-blog 通知' } = {}) => {
   const url = process.env.FEISHU_WEBHOOK_URL;
@@ -26,8 +86,7 @@ export const sendFeishuWebhookMessage = async (text, { event = 'notification', t
     return null;
   }
 
-  const content = ensureSafeLength(`[${title}]\n事件: ${event}\n\n${String(text ?? '')}`);
-  const payload = { msg_type: 'text', content: { text: content } };
+  const payload = buildFeishuPayload(text, { event, title });
   let response;
   try {
     response = await fetchWithRetry(

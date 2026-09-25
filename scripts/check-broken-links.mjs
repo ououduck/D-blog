@@ -5,7 +5,8 @@
  * 本脚本：
  *   1. 扫描 posts/*.md 中全部 http/https 外链（Markdown 链接 + HTML <a href>，
  *      排除图片与站内锚点）；
- *   2. 逐个请求检查可达性（超时/重定向跟随/网络错误分类）；
+ *   2. 逐个请求检查可达性（超时/重定向跟随/网络错误分类）；服务器已响应但限制自动化访问的
+ *      状态会标记为「可达但受限」，不误报为死链；
  *   3. 汇总失效链接（按文章分组、带行号与状态/原因）；
  *   4. 推送到 飞书机器人 Webhook（复用 lib/feishu-webhook.mjs，FEISHU_WEBHOOK_URL 缺失优雅跳过）。
  *
@@ -148,7 +149,9 @@ export const extractExternalLinks = (content) => {
 
 /**
  * 检查单个 URL 的可达性。
- * 返回 { ok: boolean, status?: number, error?: string }。
+ * 返回 { ok: boolean, restricted?: boolean, status?: number, error?: string }。
+ * 2xx 视为正常；401/403/405/406/407/429 表示服务器已收到请求但限制了自动化访问，
+ * 标记为 restricted 而不是死链。网络失败、404/410、其他明确失败状态仍判为不可达。
  * 复用 fetchWithRetry：网络瞬时抖动（DNS/连接/5xx）自动退避重试，
  * 单次超时不再是「一次抖动即判失效」的误报来源。
  *
@@ -158,6 +161,7 @@ export const extractExternalLinks = (content) => {
  * 导出供单元测试（SSRF 拦截/重定向逐跳校验）。
  */
 const MAX_REDIRECTS = 5;
+const RESTRICTED_STATUS_CODES = new Set([401, 403, 405, 406, 407, 429]);
 
 export const checkUrl = async (url) => {
   let current = url;
@@ -199,15 +203,25 @@ export const checkUrl = async (url) => {
         continue;
       }
 
+      // 服务器已响应但要求认证、拦截机器人或限制方法：目标可达，不作为死链。
+      if (RESTRICTED_STATUS_CODES.has(response.status)) {
+        await response.body?.cancel().catch(() => {});
+        return { ok: true, restricted: true, status: response.status };
+      }
+
       // 释放响应体（不下载页面内容），仅保留状态。
       await response.body?.cancel().catch(() => {});
-      const ok = response.ok || (response.status >= 300 && response.status < 400);
+      const ok = response.ok;
       return ok ? { ok: true, status: response.status } : { ok: false, status: response.status };
     }
     // 重定向超过 MAX_REDIRECTS 跳：判为失效（防重定向环）。
     return { ok: false, error: `重定向超过 ${MAX_REDIRECTS} 跳` };
   } catch (error) {
-    // fetchWithRetry 重试耗尽后抛 RetryableHttpError（含最终状态/网络错误信息）。
+    // fetchWithRetry 对 429/5xx 重试耗尽后抛 RetryableHttpError（含最终状态/网络错误信息）。
+    // 429 说明目标可达但正在限流，不应与网络不可达混为一谈。
+    if (error instanceof RetryableHttpError && RESTRICTED_STATUS_CODES.has(error.status)) {
+      return { ok: true, restricted: true, status: error.status };
+    }
     return {
       ok: false,
       error:
@@ -298,6 +312,7 @@ const main = async () => {
   }
 
   const broken = []; // { url, status?, error? }
+  const restricted = []; // { url, status }
   let checkedCount = 0;
 
   /**
@@ -316,7 +331,10 @@ const main = async () => {
       logger.warn('Blocked non-public URL', sanitizeUrlForLogs(url));
     } else {
       const result = await checkUrl(url);
-      if (!result.ok) {
+      if (result.restricted) {
+        restricted.push({ url, status: result.status });
+        logger.info('Reachable but restricted', `${sanitizeUrlForLogs(url)} (HTTP ${result.status})`);
+      } else if (!result.ok) {
         broken.push({ url, ...result });
         logger.warn(
           'Broken link',
@@ -344,10 +362,13 @@ const main = async () => {
   await Promise.all(workers);
 
   const brokenLinks = broken.length;
-  logger.info('Check complete', `checked=${urlsToCheck.length} broken=${brokenLinks}`);
+  logger.info('Check complete', `checked=${urlsToCheck.length} broken=${brokenLinks} restricted=${restricted.length}`);
 
   if (brokenLinks === 0) {
-    logger.info('No broken links found', `checked=${urlsToCheck.length}`);
+    logger.info(
+      'No broken links found',
+      `checked=${urlsToCheck.length}${restricted.length ? ` restricted=${restricted.length}` : ''}`,
+    );
     return 0;
   }
 
@@ -379,7 +400,10 @@ const main = async () => {
 
   if (!isDryRun) {
     try {
-      const result = await sendFeishuWebhookMessage(report);
+      const result = await sendFeishuWebhookMessage(report, {
+        event: 'link-check',
+        title: '🔗 D-blog 文章外链检查',
+      });
       if (result !== null) {
         logger.info('Broken link report sent to 飞书机器人 Webhook', { messageId: result.message_id ?? 'unknown' });
       }

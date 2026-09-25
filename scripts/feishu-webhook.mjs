@@ -335,7 +335,15 @@ const main = async () => {
     return 0;
   }
 
-  const result = await sendFeishuWebhookMessage(message);
+  const result = await sendFeishuWebhookMessage(message, {
+    event: eventName === 'workflow_run' ? event.workflow_run?.conclusion || eventName : eventName,
+    title:
+      eventName === 'workflow_run'
+        ? `D-blog Action ${event.workflow_run?.conclusion || '完成'}`
+        : eventName === 'workflow_dispatch'
+          ? 'D-blog 通知测试'
+          : 'D-blog 事件通知',
+  });
   if (result === null) {
     // 配置缺失：lib 内已 warning，优雅跳过（正常退出），与 akismet 的降级策略一致。
     return 0;

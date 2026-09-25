@@ -17,7 +17,13 @@ vi.mock('./lib/http.mjs', () => ({
     }
   },
 }));
-import { isSafePublicHttpUrl, fetchWithRetry, isProxyArtifactAddress, lookupWithTimeout } from './lib/http.mjs';
+import {
+  isSafePublicHttpUrl,
+  fetchWithRetry,
+  isProxyArtifactAddress,
+  lookupWithTimeout,
+  RetryableHttpError,
+} from './lib/http.mjs';
 import { checkUrl, isProxyArtifactDnsEnvironment } from './check-broken-links.mjs';
 
 const mockResponse = (status, location) => {
@@ -141,6 +147,31 @@ describe('checkUrl — 重定向逐跳 SSRF 校验', () => {
     expect(result.ok).toBe(true);
     expect(result.status).toBe(200);
     expect(fetchWithRetry).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([401, 403, 405, 406, 407, 429])('服务器返回 HTTP %i 时标记为可达但受限', async (status) => {
+    fetchWithRetry.mockResolvedValueOnce(mockResponse(status));
+
+    const result = await checkUrl('https://public.example.com/');
+
+    expect(result).toEqual({ ok: true, restricted: true, status });
+    expect(fetchWithRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('重试耗尽的 429 仍标记为可达但受限', async () => {
+    fetchWithRetry.mockRejectedValueOnce(new RetryableHttpError('rate limited', 429, 2));
+
+    const result = await checkUrl('https://public.example.com/');
+
+    expect(result).toEqual({ ok: true, restricted: true, status: 429 });
+  });
+
+  it.each([404, 410])('服务器返回 HTTP %i 时仍判为失效', async (status) => {
+    fetchWithRetry.mockResolvedValueOnce(mockResponse(status));
+
+    const result = await checkUrl('https://public.example.com/');
+
+    expect(result).toEqual({ ok: false, status });
   });
 
   it('重定向超过上限判为失效', async () => {
