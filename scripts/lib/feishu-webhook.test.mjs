@@ -53,6 +53,12 @@ describe('sendFeishuWebhookMessage', () => {
     });
     expect(payload.card.body.elements[0].content).toContain('**失效链接**');
     expect(payload.card.body.elements[0].content).toContain('[https://example.com/docs](https://example.com/docs)');
+    expect(payload.card.body.elements[0].content).not.toContain('[外链检查]');
+    expect(payload.card.body.elements[0].content).not.toContain('事件:');
+    expect(payload.card.body.elements[1]).toEqual({
+      tag: 'div',
+      text: { tag: 'plain_text', content: '来源：link-check' },
+    });
   });
 
   it('supports the text fallback format', async () => {

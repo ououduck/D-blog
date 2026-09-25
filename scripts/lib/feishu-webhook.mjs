@@ -57,7 +57,8 @@ const getCardTemplate = (event) => {
 export const buildFeishuPayload = (text, { event = 'notification', title = 'D-blog 通知' } = {}) => {
   const safeTitle = sanitizeText(title);
   const safeEvent = sanitizeText(event);
-  const content = ensureSafeLength(`[${safeTitle}]\n事件: ${safeEvent}\n\n${sanitizeText(text)}`);
+  const businessContent = ensureSafeLength(sanitizeText(text));
+  const content = ensureSafeLength(`[${safeTitle}]\n事件: ${safeEvent}\n\n${businessContent}`);
   if (process.env.FEISHU_MESSAGE_FORMAT === 'text') {
     return { msg_type: 'text', content: { text: content } };
   }
@@ -73,7 +74,13 @@ export const buildFeishuPayload = (text, { event = 'notification', title = 'D-bl
       },
       body: {
         direction: 'vertical',
-        elements: [{ tag: 'markdown', content: toCardMarkdown(content) }],
+        elements: [
+          { tag: 'markdown', content: toCardMarkdown(businessContent) },
+          {
+            tag: 'div',
+            text: { tag: 'plain_text', content: `来源：${safeEvent}` },
+          },
+        ],
       },
     },
   };
