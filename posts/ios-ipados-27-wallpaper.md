@@ -21,7 +21,7 @@ draft: false
 
 # 预览图
 
-++(拼接压缩图 不要直接下载这里的)++  
+++(拼接压缩图 不要直接下载这里的 下载地址在最下面)++  
 
 ![预览图1](https://img.pldduck.com/20260925095150607.webp)  
 ![预览图2](https://img.pldduck.com/20260925095210084.webp) 
@@ -30,8 +30,8 @@ draft: false
 
 # 下载
 
-[跳转OneDrive免登录下载ZIP整合文件]()
+[跳转OneDrive免登录下载ZIP整合文件](https://1drv.ms/f/c/777bf5ca0164e4ef/IgDurBx3owy9TajOt-96AyXcASuqw3lOzS_VvhLPrJnwVps?e=2kpgCm)
 
 
 
-
+&nbsp;
