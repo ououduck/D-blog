@@ -55,10 +55,24 @@ describe('sendFeishuWebhookMessage', () => {
     expect(payload.card.body.elements[0].content).toContain('[https://example.com/docs](https://example.com/docs)');
     expect(payload.card.body.elements[0].content).not.toContain('[外链检查]');
     expect(payload.card.body.elements[0].content).not.toContain('事件:');
-    expect(payload.card.body.elements[1]).toEqual({
+    expect(payload.card.body.elements.at(-2)).toEqual({ tag: 'hr' });
+    expect(payload.card.body.elements.at(-1)).toEqual({
       tag: 'div',
       text: { tag: 'plain_text', content: '来源：link-check' },
     });
+  });
+
+  it('splits card content into separated markdown paragraphs', () => {
+    const payload = buildFeishuPayload('第一段\n\n第二段\n第三行', { event: 'push', title: '推送更新' });
+    const elements = payload.card.body.elements;
+
+    expect(elements).toEqual([
+      { tag: 'markdown', content: '第一段' },
+      { tag: 'hr' },
+      { tag: 'markdown', content: '第二段\n第三行' },
+      { tag: 'hr' },
+      { tag: 'div', text: { tag: 'plain_text', content: '来源：push' } },
+    ]);
   });
 
   it('supports the text fallback format', async () => {
@@ -75,8 +89,12 @@ describe('sendFeishuWebhookMessage', () => {
     vi.stubGlobal('fetch', fetchMock);
     await sendFeishuWebhookMessage('x'.repeat(5000));
     const payload = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(payload.card.body.elements[0].content.length).toBeLessThanOrEqual(4050);
-    expect(payload.card.body.elements[0].content).toContain('消息过长');
+    const content = payload.card.body.elements
+      .filter((element) => element.tag === 'markdown')
+      .map((element) => element.content)
+      .join('\n');
+    expect(content.length).toBeLessThanOrEqual(4017);
+    expect(content).toContain('消息过长');
   });
 
   it('rejects Feishu business errors even on HTTP 200', async () => {

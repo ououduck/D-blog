@@ -7,7 +7,7 @@ const SAFE_BUDGET = 4000;
 const TIMEOUT_MS = 15000;
 const RETRIES = 2;
 const CONTROL_CHARACTERS = new RegExp(
-  `[${String.fromCharCode(0)}-${String.fromCharCode(31)}${String.fromCharCode(127)}]`,
+  `[${String.fromCharCode(0)}-${String.fromCharCode(9)}${String.fromCharCode(11)}-${String.fromCharCode(12)}${String.fromCharCode(14)}-${String.fromCharCode(31)}${String.fromCharCode(127)}]`,
   'g',
 );
 
@@ -46,6 +46,24 @@ const toCardMarkdown = (text) =>
       return `${prefix}[${target}](${target})${trailing}`;
     });
 
+const buildCardBodyElements = (text, event) => {
+  const paragraphs = sanitizeText(text)
+    .split(/\n\s*\n+/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+  const elements = [];
+  paragraphs.forEach((paragraph, index) => {
+    if (index > 0) elements.push({ tag: 'hr' });
+    elements.push({ tag: 'markdown', content: toCardMarkdown(paragraph) });
+  });
+  elements.push({ tag: 'hr' });
+  elements.push({
+    tag: 'div',
+    text: { tag: 'plain_text', content: `来源：${sanitizeText(event)}` },
+  });
+  return elements;
+};
+
 const getCardTemplate = (event) => {
   const key = String(event ?? '').toLowerCase();
   if (CARD_TEMPLATES[key]) return CARD_TEMPLATES[key];
@@ -74,13 +92,7 @@ export const buildFeishuPayload = (text, { event = 'notification', title = 'D-bl
       },
       body: {
         direction: 'vertical',
-        elements: [
-          { tag: 'markdown', content: toCardMarkdown(businessContent) },
-          {
-            tag: 'div',
-            text: { tag: 'plain_text', content: `来源：${safeEvent}` },
-          },
-        ],
+        elements: buildCardBodyElements(businessContent, safeEvent),
       },
     },
   };
