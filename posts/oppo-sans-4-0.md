@@ -22,7 +22,7 @@ draft: false
 
 # OPPO Sans 4.0 使用条款
 
-OPPO Sans 允许个人或企业免费使用，含商业用途，版权归 OPPO 广东移动通信有限公司所有。使用过程中，您应遵守以下条款，违者将会被追究法律责任：    
+OPPO Sans 允许个人或企业免费使用，含商业用途，版权归 OPPO 广东移动通信有限公司所有。使用过程中，您应遵守以下条款，违者将会被追究法律责任：  
 1、不对字体进行改编或二次开发；  
 2、不对外售卖字体；  
 3、不向他方提供其他下载渠道；  
@@ -34,4 +34,6 @@ OPPO Sans 允许个人或企业免费使用，含商业用途，版权归 OPPO �
 
 # 字体下载
 
-[跳转OneDrive免登录下载](https://1drv.ms/f/c/777bf5ca0164e4ef/IgD-wRrXwTzITaML8i8Ol-oLAbtozq_aKC3wYT1RzOvyF0Y?e=xSIlb3)
+[OneDrive(免登录 慢)](https://1drv.ms/f/c/777bf5ca0164e4ef/IgD-wRrXwTzITaML8i8Ol-oLAbtozq_aKC3wYT1RzOvyF0Y?e=xSIlb3)
+
+[移动云盘(需登录 不限速)](https://yun.139.com/shareweb/#/w/i/2xTrLonrhSenu)
