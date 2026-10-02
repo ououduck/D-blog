@@ -27,4 +27,6 @@ CodeDrobe Desktop 是一款面向 AI 桌面应用的开源主题管理器，目�
 
 # 软件下载
 
-[OneDrive 免登录下载](https://1drv.ms/f/c/777bf5ca0164e4ef/IgAqfH5aPCCXRZ5v7GRTZgTYAXnPLgvLK3zWVzHO7Zvt4R0?e=ZBABra)
+[OneDrive (免登录 慢)](https://1drv.ms/f/c/777bf5ca0164e4ef/IgAqfH5aPCCXRZ5v7GRTZgTYAXnPLgvLK3zWVzHO7Zvt4R0?e=ZBABra)
+
+[移动云盘 (需登录 不限速)](https://yun.139.com/shareweb/#/w/i/2xTrM3qmrTx4e)
