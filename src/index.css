@@ -195,16 +195,36 @@
     scrollbar-width: none;
   }
 
-  /* 横向可滚动分类栏：左右边缘渐隐，提示可滑动 */
+  /* 横向可滚动分类栏：只在内容确实被某一侧裁切时，才在该侧渐隐提示可滑动。
+     无条件渐隐会把静止贴边的首枚胶囊左边缘啃成一条半透明带（看着像模糊溢出），
+     所以两个 --fade-* 宽度由 useScrollEdgeFade 依据 scrollLeft/scrollWidth 切换，
+     默认 0（该侧不渐隐）；两侧都不渐隐时连蒙版都不挂，避免无谓的合成层。 */
   .filter-scroll-mask {
+    --fade-start: 0px;
+    --fade-end: 0px;
+  }
+  .filter-scroll-mask-start {
+    --fade-start: 0.375rem;
+  }
+  .filter-scroll-mask-end {
+    --fade-end: 0.375rem;
+  }
+  .filter-scroll-mask-start,
+  .filter-scroll-mask-end {
     -webkit-mask-image: linear-gradient(
       to right,
       transparent 0,
-      black 0.375rem,
-      black calc(100% - 0.375rem),
+      black var(--fade-start),
+      black calc(100% - var(--fade-end)),
       transparent 100%
     );
-    mask-image: linear-gradient(to right, transparent 0, black 0.375rem, black calc(100% - 0.375rem), transparent 100%);
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      black var(--fade-start),
+      black calc(100% - var(--fade-end)),
+      transparent 100%
+    );
   }
 }
 

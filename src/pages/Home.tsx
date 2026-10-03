@@ -14,6 +14,8 @@ import { Seo } from '../components/Seo';
 import { PostCard } from '@/components/PostCard';
 import { usePostSearch } from '@/hooks/usePostSearch';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useScrollEdgeFade } from '@/hooks/useScrollEdgeFade';
+import { mergeClassName } from '@/utils/classNames';
 import { ContentStatus, LoadingStatus } from '@/components/ContentStatus';
 import { sortPosts } from '@/utils/postSorting';
 import { getHeroPost } from '@/utils/postSelection';
@@ -121,9 +123,19 @@ interface FilterBarProps {
 }
 
 const FilterBar: React.FC<FilterBarProps> = ({ categories, selected, onSelect, sortOrder, onToggleSort }) => {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const { fadeStart, fadeEnd } = useScrollEdgeFade(scrollerRef);
+
   return (
     <div className="flex items-center justify-between gap-2 border-y border-zinc-200 py-3 sm:gap-3 dark:border-zinc-800">
-      <div className="filter-scroll-mask min-w-0 flex-1 overflow-x-auto overscroll-x-contain scroll-smooth no-scrollbar">
+      <div
+        ref={scrollerRef}
+        className={mergeClassName(
+          'filter-scroll-mask min-w-0 flex-1 overflow-x-auto overscroll-x-contain scroll-smooth no-scrollbar',
+          fadeStart && 'filter-scroll-mask-start',
+          fadeEnd && 'filter-scroll-mask-end',
+        )}
+      >
         <div className="flex items-center gap-2" role="group" aria-label="文章分类筛选">
           {[ALL_CATEGORY, ...categories].map((category) => (
             <button

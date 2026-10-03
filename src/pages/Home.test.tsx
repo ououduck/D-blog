@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import { Home } from './Home';
@@ -84,6 +84,31 @@ describe('Home', () => {
 
     await user.click(categoryButtons[0]);
     expect(categoryButtons[0]).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('分类栏渐隐只在被裁切的一侧生效（静止贴边时首枚胶囊不被啃出模糊边）', () => {
+    renderHome();
+    const group = screen.getByRole('group', { name: '文章分类筛选' });
+    const scroller = group.parentElement as HTMLElement;
+    expect(scroller.className).toContain('filter-scroll-mask');
+    // jsdom 下无溢出：两侧都不该渐隐。
+    expect(scroller.className).not.toContain('filter-scroll-mask-');
+
+    Object.defineProperty(scroller, 'scrollWidth', { configurable: true, value: 800 });
+    Object.defineProperty(scroller, 'clientWidth', { configurable: true, value: 400 });
+    Object.defineProperty(scroller, 'scrollLeft', { configurable: true, value: 0 });
+    act(() => {
+      scroller.dispatchEvent(new Event('scroll'));
+    });
+    expect(scroller.className).toContain('filter-scroll-mask-end');
+    expect(scroller.className).not.toContain('filter-scroll-mask-start');
+
+    Object.defineProperty(scroller, 'scrollLeft', { configurable: true, value: 400 });
+    act(() => {
+      scroller.dispatchEvent(new Event('scroll'));
+    });
+    expect(scroller.className).toContain('filter-scroll-mask-start');
+    expect(scroller.className).not.toContain('filter-scroll-mask-end');
   });
 
   it('URL 带 ?category= 时应用 URL 分类筛选', async () => {
