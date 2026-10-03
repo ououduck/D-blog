@@ -1,10 +1,13 @@
 /**
- * 离线状态提示条：监听 online/offline 事件，离线时提示当前处于离线模式，
- * 恢复网络后短暂显示「网络已恢复」。
+ * 离线状态提示条：离线时提示当前处于离线模式，恢复网络后短暂显示「网络已恢复」。
+ * 离线由 offline 事件（或首帧 navigator.onLine）判定；恢复则除了 online 事件，
+ * 还在 visibilitychange 与离线期间的定时复查里以 navigator.onLine + 一次真实请求兜底确认
+ * ——事件可能整体丢失、系统级连通性判定也可能长期滞后，否则离线提示会永久停在页面上。
  * 离线时提供「已缓存文章」入口：直接读取 Service Worker 的页面缓存
  * （Cache Storage，复用现有缓存不新增存储），列出可离线阅读的文章。
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { assetUrl } from '@/utils/siteUrl';
 
 interface CachedPostEntry {
   url: string;
@@ -15,6 +18,12 @@ const PAGE_CACHE_KEY_PATTERN = /^dblog-.*-pages$/;
 const POST_PATH_PATTERN = /\/post\/[^/]+\/?$/;
 /** 单次列表最多展示的缓存文章数（防止极端缓存体积撑爆提示条）。 */
 const MAX_CACHED_POSTS = 30;
+/** 「网络已恢复」提示的停留时长。 */
+const RECOVERED_TOAST_MS = 2400;
+/** 离线期间的状态复查间隔：事件整体丢失时兜底，避免提示条永久停留。 */
+const OFFLINE_RECHECK_MS = 5000;
+/** 连通性探测请求的超时（卡死的连接不能让探测悬着）。 */
+const PROBE_TIMEOUT_MS = 4000;
 
 /** 最小 HTML 实体解码（SSG title 常见转义）。 */
 const decodeEntities = (value: string) =>
@@ -83,6 +92,31 @@ const listCachedPosts = async (): Promise<CachedPostEntry[]> => {
   }
 };
 
+/**
+ * 真实连通性探测：`navigator.onLine` 取的是操作系统的连通性判定，
+ * 系统级探测（如 Windows NCSI）失败或被墙时会长期停在 false，浏览器据此
+ * 永不派发 online 事件——离线提示就会永久停留。这里用一次同源请求取证：
+ * 拿到任何 HTTP 响应（含 404）即链路可用，断网则 fetch 直接 reject。
+ * 探测地址取必然 404 的路径：404 不会被 Service Worker 写进缓存，不留垃圾。
+ */
+const probeConnectivity = async (): Promise<boolean> => {
+  const controller = new AbortController();
+  let timer = 0;
+  try {
+    timer = window.setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+    await fetch(assetUrl(`connectivity-probe-${Date.now()}`), {
+      method: 'GET',
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    window.clearTimeout(timer);
+  }
+};
+
 export const OfflineStatus: React.FC = () => {
   const [isOffline, setIsOffline] = useState(false);
   const [showRecovered, setShowRecovered] = useState(false);
@@ -90,41 +124,97 @@ export const OfflineStatus: React.FC = () => {
   const [cachedPosts, setCachedPosts] = useState<CachedPostEntry[] | null>(null);
   const recoveredTimerRef = useRef<number | null>(null);
   const loadRequestIdRef = useRef(0);
+  /** 当前提示条认定的网络状态：复查与事件都据此去重。 */
+  const offlineRef = useRef(false);
+  /** 连通性探测的代际号：卸载或再次复查后丢弃过期的探测结果。 */
+  const probeRequestIdRef = useRef(0);
+
+  const enterOffline = useCallback(() => {
+    offlineRef.current = true;
+    setShowRecovered(false);
+    setIsOffline(true);
+    // 断网时收起列表并清空旧数据：下次离线重新读取。
+    setShowCachedList(false);
+    setCachedPosts(null);
+  }, []);
+
+  const enterOnline = useCallback(() => {
+    offlineRef.current = false;
+    setIsOffline(false);
+    setShowRecovered(true);
+    setShowCachedList(false);
+    if (recoveredTimerRef.current !== null) {
+      window.clearTimeout(recoveredTimerRef.current);
+    }
+    recoveredTimerRef.current = window.setTimeout(() => {
+      recoveredTimerRef.current = null;
+      setShowRecovered(false);
+    }, RECOVERED_TOAST_MS);
+  }, []);
+
+  /**
+   * 离线态的自愈复查：只负责「确认已恢复」，不负责判定离线（离线仍以 offline 事件
+   * 与首帧 navigator.onLine 为准），避免把不可靠的 onLine=false 变成误报。
+   */
+  const recheckOnline = useCallback(() => {
+    if (!offlineRef.current) {
+      return;
+    }
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      enterOnline();
+      return;
+    }
+    // 标志位仍说离线：用一次真实请求取证，探测失败则维持提示条。
+    const requestId = ++probeRequestIdRef.current;
+    void probeConnectivity().then((online) => {
+      if (online && probeRequestIdRef.current === requestId) {
+        enterOnline();
+      }
+    });
+  }, [enterOnline]);
+
+  const handleOffline = useCallback(() => {
+    if (!offlineRef.current) {
+      enterOffline();
+    }
+  }, [enterOffline]);
+
+  const handleOnline = useCallback(() => {
+    if (offlineRef.current) {
+      enterOnline();
+    }
+  }, [enterOnline]);
 
   useEffect(() => {
     // 水合后同步真实网络状态（SSR 首帧固定为在线，避免水合冲突）。
-    setIsOffline(typeof navigator !== 'undefined' && !navigator.onLine);
-    const handleOffline = () => {
-      setShowRecovered(false);
-      setIsOffline(true);
-      // 断网时收起列表并清空旧数据：下次离线重新读取。
-      setShowCachedList(false);
-      setCachedPosts(null);
-    };
-    const handleOnline = () => {
-      setIsOffline(false);
-      setShowRecovered(true);
-      setShowCachedList(false);
-      if (recoveredTimerRef.current !== null) {
-        window.clearTimeout(recoveredTimerRef.current);
-      }
-      recoveredTimerRef.current = window.setTimeout(() => {
-        recoveredTimerRef.current = null;
-        setShowRecovered(false);
-      }, 2400);
-    };
-
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      enterOffline();
+    }
     window.addEventListener('offline', handleOffline);
     window.addEventListener('online', handleOnline);
+    // 从后台或 bfcache 回到页面时 online 事件可能已经错过：立刻复查。
+    document.addEventListener('visibilitychange', recheckOnline);
     return () => {
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', recheckOnline);
       if (recoveredTimerRef.current !== null) {
         window.clearTimeout(recoveredTimerRef.current);
       }
+      probeRequestIdRef.current += 1;
       loadRequestIdRef.current += 1;
     };
-  }, []);
+  }, [enterOffline, handleOffline, handleOnline, recheckOnline]);
+
+  // 离线期间持续复查：online 事件可能整体丢失（标签页被冻结、系统连通性判定滞后），
+  // 提示条必须能自己收起来，不能永远停在页面上。
+  useEffect(() => {
+    if (!isOffline) {
+      return;
+    }
+    const timer = window.setInterval(recheckOnline, OFFLINE_RECHECK_MS);
+    return () => window.clearInterval(timer);
+  }, [isOffline, recheckOnline]);
 
   // 展开时懒加载缓存列表（只加载一次，收起不清空避免闪烁）。
   useEffect(() => {
